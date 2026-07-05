@@ -1,47 +1,47 @@
 # DataWise
 
-[English](./README.en.md)
+[简体中文](./README.zh-CN.md)
 
-**开源多数据源数据库工作台** — 一个仓库里集齐 Explorer、SQL 控制台、表迁移、AI 分析与桌面客户端。
+**Open-source polyglot database workbench** — Explorer, SQL console, table migration, AI analytics, and a desktop client in one monorepo.
 
-浏览器开发调试，Electron 一键打包成「内嵌后端 + JRE」的桌面应用；连接器以插件 JAR 热插拔，SQL 编辑器可独立嵌入你的项目。
+Develop in the browser; ship a Windows desktop app with embedded backend and JRE. Plug in connectors as JARs. Embed the SQL editor in your own Vue 3 app.
 
 ---
 
-## 预览
+## Preview
 
-**SQL 编辑器**（[`@datawise/sql-editor`](./sql-editor/)）— 语法驱动补全、Schema 感知、外键 JOIN 一行生成：
+**SQL editor** ([`@datawise/sql-editor`](./sql-editor/)) — grammar-driven completion, schema-aware hints, FK JOIN snippets:
 
 ![SQL editor demo — CTE, JOIN, completion](sql-editor/docs/demo.gif)
 
-> 完整工作台含连接树、多 Tab 控制台、AI 分析与桌面壳，克隆后按下方「快速开始」本地运行。
+> The full workbench adds connection tree, multi-tab consoles, AI analysis, and Electron packaging. Clone and follow **Quick start** below to run locally.
 
 ---
 
-## 亮点
+## Why DataWise
 
 | | |
 |---|---|
-| **30+ 数据源** | MySQL、PostgreSQL、Oracle、ClickHouse、Hive、Redis、Kafka、Elasticsearch、Doris、OceanBase … 统一 Explorer 与 SQL 入口 |
-| **自研 SQL 编辑器** | 可单独 `npm install` 嵌入任意 Vue 3 应用；Monorepo 内与主产品同源迭代 |
-| **AI 工作台** | 对话式分析、Text-to-SQL、流式执行计划、知识库词条；生成 SQL 可一键落到控制台 |
-| **表迁移** | 跨库表结构 + 数据迁移向导，支持大批量与断点续传 |
-| **插件化架构** | 后端 Connector SPI + 前端功能插件中心，按需开关 AI、书签、监控等能力 |
-| **三种使用方式** | Web 联调 · Windows 桌面一体化包 · [VS Code 扩展](./datawise-vscode/) / [Headless CLI](./headless-cli/) |
+| **30+ data sources** | MySQL, PostgreSQL, Oracle, ClickHouse, Hive, Redis, Kafka, Elasticsearch, Doris, OceanBase, … — one Explorer and SQL entry point |
+| **First-party SQL editor** | Publishable npm package; same completion engine powers the main app |
+| **AI workbench** | Chat analysis, Text-to-SQL, streaming plans, knowledge base; push generated SQL to the console |
+| **Table migration** | Cross-database schema + data wizard with batch runs and resume |
+| **Plugin architecture** | Connector SPI on the server; feature plugin center on the client |
+| **Three ways to use** | Web dev · all-in-one Windows desktop · [VS Code extension](./datawise-vscode/) / [headless CLI](./headless-cli/) |
 
 ---
 
-## 你能做什么
+## What you can do
 
-- **浏览 Schema** — 连接树懒加载、统一命令面板（`Ctrl+K`）、表数据编辑、DDL 查看  
-- **写 SQL** — Monaco 多 Tab 控制台、执行计划、会话/事务、书签与历史  
-- **管数据** — 表迁移、Schema 对比、跨环境抽样对比、CSV 导入导出  
-- **用 AI** — 选库表上下文提问，分析结果带 SQL 与图表，可回流到工作台  
-- **上生产** — 团队共享连接、审批流、环境标签；按数据源能力控制 EXPLAIN / 杀会话等  
+- **Explore** — lazy-loaded connection tree, unified command palette (`Ctrl+K`), table grid, DDL  
+- **Query** — Monaco tabs, execution plans, sessions/transactions, bookmarks & history  
+- **Operate** — migrations, schema compare, cross-env sampling, CSV import/export  
+- **Analyze with AI** — pick tables as context; get SQL, charts, and reports back in the workbench  
+- **Collaborate** — shared connections, approvals, environment labels; capability-gated EXPLAIN / kill session  
 
 ---
 
-## 架构
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -53,73 +53,72 @@
 │  datawise-server (Spring Boot)                          │
 │  database · workspace · ai · connectors                 │
 └──────────────────────────┬──────────────────────────────┘
-                           │ JDBC / 插件 SPI
+                           │ JDBC / plugin SPI
 ┌──────────────────────────▼──────────────────────────────┐
 │  config/plugins/*.jar  +  config/drivers/*.jar            │
-│  MySQL · PG · Redis · Kafka · …                         │
 └─────────────────────────────────────────────────────────┘
 
-sql-editor/  ──►  独立 npm 包，grammar 补全引擎
+sql-editor/  ──►  standalone npm package (grammar completion)
 ```
 
-Monorepo，前后端与编辑器同源维护；本地配置集中在 `config/`（连接、插件、密钥不入库）。
+Local runtime config lives in `config/` (connections, plugins, secrets — not committed).
 
 ---
 
-## 快速开始
+## Quick start
 
-**环境**：Node 18+、JDK 17+、Maven 3.9+
+**Requires** Node 18+, JDK 17+, Maven 3.9+
 
 ```bash
-# 1. 后端 API
+# 1. Backend API
 cd datawise-backend
 mvn spring-boot:run -pl datawise-server -am
 # → http://localhost:18421  (GET /api/health)
 
-# 2. SQL 编辑器（首次克隆需要 build 一次）
+# 2. SQL editor (build once after clone)
 cd ../sql-editor && npm install && npm run build
 
-# 3. 前端
+# 3. Frontend
 cd ../datawise-frontend
-cp .env.development.example .env.development   # 首次
+cp .env.development.example .env.development   # first time
 npm install && npm run dev
 # → http://localhost:28413
 ```
 
-首次使用请在 `config/` 配置连接（参考 `config/connections.xml.example`）并将所需 connector JAR 放入 `config/plugins/`。  
-更多说明见 [docs/README.md](./docs/README.md)。
+Configure `config/connections.xml` (see example) and place connector JARs under `config/plugins/`.  
+Details: [docs/README.md](./docs/README.md).
 
-**桌面版（Windows）**：
+**Desktop (Windows)**:
 
 ```bash
 cd datawise-frontend
-npm run dist:desktop    # 需要 JAVA_HOME + Maven，产物在 release/
+npm run dist:desktop    # needs JAVA_HOME + Maven; output in release/
 ```
 
 ---
 
-## 仓库结构
+## Repository layout
 
-| 目录 | 说明 |
-|------|------|
-| [datawise-frontend/](./datawise-frontend/) | Vue 3 客户端与 Electron 打包 |
-| [datawise-backend/](./datawise-backend/) | Spring Boot API 与 Connector 实现 |
-| [sql-editor/](./sql-editor/) | 可嵌入 SQL 编辑器（MIT） |
-| [datawise-vscode/](./datawise-vscode/) | VS Code → 桌面端 Deep Link |
-| [headless-cli/](./headless-cli/) | 命令行调用迁移与 SQL 执行 |
-| [docs/](./docs/) | 联调、配置与插件说明 |
+| Path | Description |
+|------|-------------|
+| [datawise-frontend/](./datawise-frontend/) | Vue 3 client & Electron packaging |
+| [datawise-backend/](./datawise-backend/) | Spring Boot API & connectors |
+| [sql-editor/](./sql-editor/) | Embeddable SQL editor (MIT) |
+| [datawise-vscode/](./datawise-vscode/) | VS Code deep link to desktop |
+| [headless-cli/](./headless-cli/) | CLI for migration & SQL |
+| [docs/](./docs/) | Setup & plugin notes |
 
 ---
 
-## 技术栈
+## Stack
 
 Vue 3 · Pinia · Vite · Monaco · Electron · Spring Boot 3 · JDBC · Spring AI
 
 ---
 
-## 参与与许可
+## Contributing & license
 
-欢迎 Issue 与 PR。提交前可运行：
+Issues and PRs welcome. Before submitting:
 
 ```bash
 node scripts/pre-commit-check.mjs
@@ -127,5 +126,5 @@ cd datawise-frontend && npm run typecheck && npm run test
 cd datawise-backend && mvn test
 ```
 
-- 主项目：[Apache License 2.0](./LICENSE)  
-- SQL 编辑器：MIT（见 [NOTICE](./NOTICE)）
+- Main project: [Apache License 2.0](./LICENSE)  
+- SQL editor: MIT (see [NOTICE](./NOTICE))

@@ -1,6 +1,6 @@
 # DataWise 文档
 
-项目介绍与亮点见根目录 [README.md](../README.md)（[English](../README.en.md)）。
+项目介绍与亮点见根目录 [README.md](../README.md)（英文）；[中文版](../README.zh-CN.md)。
 
 数据库工作台：**Vue 3 客户端** + **Spring Boot API** + **SQL 编辑器**（`sql-editor/`）。
 
