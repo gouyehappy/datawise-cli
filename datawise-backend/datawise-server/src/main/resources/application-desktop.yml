@@ -1,0 +1,29 @@
+# 桌面一体化打包（Electron 内嵌 JRE）专用：优先缩短冷启动时间
+server:
+  # 仅本机回环，避免 Windows 首次启动弹出 Java 防火墙放行框
+  address: 127.0.0.1
+
+spring:
+  main:
+    banner-mode: off
+    lazy-initialization: true
+  jmx:
+    enabled: false
+
+management:
+  endpoints:
+    enabled-by-default: false
+  endpoint:
+    health:
+      enabled: true
+
+logging:
+  level:
+    root: WARN
+    org.apache.datawise.backend: INFO
+    org.springframework: WARN
+
+datawise:
+  jdbc:
+    # 驱动在首次连接时再加载，避免启动扫描 config/drivers/
+    preload-drivers-on-startup: false

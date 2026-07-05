@@ -1,0 +1,1049 @@
+<script setup lang="ts">
+import {computed, onMounted, ref, watch} from 'vue'
+import {useI18n} from 'vue-i18n'
+import type {TeamInvite, TeamJoinRequest, TeamMember, TeamSharedAiSessionDetail, TeamSharedAiSessionSummary} from '@/core/types'
+import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useShortcutPanelStore} from '@/features/layout/stores/shortcut-panel-store'
+import {useTeamStore} from '@/features/team/stores/team-store'
+import TeamMembersPanel from '@/features/team/components/panels/TeamMembersPanel.vue'
+import TeamInvitesPanel from '@/features/team/components/panels/TeamInvitesPanel.vue'
+import TeamAuditPanel from '@/features/team/components/panels/TeamAuditPanel.vue'
+import TeamProductionApprovalsPanel from '@/features/team/components/panels/TeamProductionApprovalsPanel.vue'
+import TeamSharingPanel from '@/features/team/components/panels/TeamSharingPanel.vue'
+import TeamAiSessionsPanel from '@/features/team/components/panels/TeamAiSessionsPanel.vue'
+import TeamSharedQueriesPanel from '@/features/team/components/panels/TeamSharedQueriesPanel.vue'
+import {DwButton, EmptyState} from '@/core/components'
+import type {SelectOption} from '@/core/components/select.types'
+import {
+    buildConnectionAccessMap,
+    toStoredConnectionAccess,
+    type ConnectionAccessLevel,
+} from '@/features/team/services/connection-access.service'
+import {
+    formatInviteStatusKey,
+    resolvePendingInviteCount,
+    shouldAutoOpenInvitesTab,
+    shouldShowInviteApprovalBadge,
+} from '@/features/team/services/team-invite.service'
+import {parseDelimitedIds} from '@/features/team/services/team-sharing.service'
+import {
+    pruneOnCallConnectionIds,
+    toggleOnCallConnectionId,
+} from '@/features/team/services/team-on-call-pack.service'
+import {
+    ASSIGNABLE_TEAM_ROLES,
+    canManageTeam,
+    isTeamOwner,
+    type TeamRole,
+} from '@/features/team/services/team-role.service'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
+
+type TeamTab = 'members' | 'invites' | 'audit' | 'sharing' | 'aiSessions' | 'sharedQueries'
+
+const {t} = useI18n()
+const layout = useLayoutStore()
+const shortcutPanel = useShortcutPanelStore()
+const teamStore = useTeamStore()
+const auth = useAuthStore()
+
+const createName = ref('')
+const joinCode = ref('')
+const activeTab = ref<TeamTab>('members')
+const sharedConnectionsInput = ref('')
+const sharedConnectionAccess = ref<Record<string, ConnectionAccessLevel>>({})
+const sharedConsolesInput = ref('')
+const shareSqlHistory = ref(false)
+const onCallConnectionIds = ref<string[]>([])
+const requireInviteApproval = ref(false)
+const savingSharedConnections = ref(false)
+const savingOnCallConnections = ref(false)
+const savingSharedConsoles = ref(false)
+const savingShareSqlHistory = ref(false)
+const savingSettings = ref(false)
+
+const members = ref<TeamMember[]>([])
+const invites = ref<TeamInvite[]>([])
+const myJoinRequests = ref<TeamJoinRequest[]>([])
+const sharedAiSessions = ref<TeamSharedAiSessionSummary[]>([])
+const selectedSharedSession = ref<TeamSharedAiSessionDetail | null>(null)
+const loadingMembers = ref(false)
+const loadingInvites = ref(false)
+const loadingSharedAiSessions = ref(false)
+const loadingSharedSessionDetail = ref(false)
+const roleUpdatingUserId = ref<number | null>(null)
+const inviteActionId = ref<string | null>(null)
+const lastPendingInviteCount = ref(0)
+
+const activeTeam = computed(() =>
+    teamStore.teams.find((team) => team.id === teamStore.activeTeamId) ?? null,
+)
+
+const pendingInviteCount = computed(() => resolvePendingInviteCount(activeTeam.value))
+
+const showInviteBadge = computed(() => shouldShowInviteApprovalBadge(activeTeam.value))
+
+const canManage = computed(() => canManageTeam(activeTeam.value?.role))
+
+const isOwner = computed(() => isTeamOwner(activeTeam.value?.role))
+
+const currentUserId = computed(() => auth.user?.userId ?? undefined)
+
+const assignableRoles: readonly TeamRole[] = ASSIGNABLE_TEAM_ROLES
+
+const roleOptions = computed<SelectOption[]>(() =>
+    assignableRoles.map((role) => ({value: role, label: roleLabel(role)})),
+)
+
+const connectionAccessOptions = computed<SelectOption[]>(() => [
+  {value: 'ddl', label: t('team.connectionAccessDdl')},
+  {value: 'readwrite', label: t('team.connectionAccessReadWrite')},
+  {value: 'readonly', label: t('team.connectionAccessReadonly')},
+])
+
+const sharedConnectionRows = computed(() =>
+    parseDelimitedIds(sharedConnectionsInput.value).map((id) => ({
+        id,
+        access: sharedConnectionAccess.value[id] ?? 'ddl',
+    })),
+)
+
+function roleLabel(role: TeamRole | string) {
+    switch (role) {
+        case 'owner':
+            return t('team.roleOwner')
+        case 'admin':
+            return t('team.roleAdmin')
+        case 'viewer':
+            return t('team.roleViewer')
+        default:
+            return t('team.roleMember')
+    }
+}
+
+function inviteStatusLabel(status: string): string {
+    return t(`team.inviteStatus.${formatInviteStatusKey(status)}`)
+}
+
+watch(
+    activeTeam,
+    (team) => {
+        sharedConnectionsInput.value = (team?.sharedConnectionIds ?? []).join(', ')
+        sharedConnectionAccess.value = buildConnectionAccessMap(
+            team?.sharedConnectionIds ?? [],
+            team?.sharedConnectionAccess,
+        )
+        sharedConsolesInput.value = (team?.sharedConsoleIds ?? []).join(', ')
+        onCallConnectionIds.value = [...(team?.onCallConnectionIds ?? [])]
+        shareSqlHistory.value = team?.shareSqlHistory ?? false
+        requireInviteApproval.value = team?.requireInviteApproval ?? false
+        const nextCount = resolvePendingInviteCount(team)
+        if (shouldAutoOpenInvitesTab(lastPendingInviteCount.value, nextCount, canManage.value)) {
+            activeTab.value = 'invites'
+        }
+        lastPendingInviteCount.value = nextCount
+        void reloadTeamDetails()
+    },
+    {immediate: true},
+)
+
+watch(activeTab, () => {
+    void reloadTeamDetails()
+})
+
+async function reloadTeamDetails() {
+    const team = activeTeam.value
+    if (!team) {
+        members.value = []
+        invites.value = []
+        sharedAiSessions.value = []
+        selectedSharedSession.value = null
+        return
+    }
+    if (activeTab.value === 'members' || activeTab.value === 'sharing' || activeTab.value === 'audit') {
+        await loadMembers(team.id)
+    }
+    if (canManage.value) {
+        await loadInvites(team.id)
+    }
+    if (activeTab.value === 'aiSessions') {
+        await loadSharedAiSessions(team.id)
+    }
+}
+
+async function loadMyJoinRequests() {
+    myJoinRequests.value = await teamStore.loadJoinRequests()
+}
+
+async function loadMembers(teamId: string) {
+    loadingMembers.value = true
+    try {
+        members.value = await teamStore.fetchMembers(teamId)
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.membersLoadFailed')
+        layout.showToast(message)
+    } finally {
+        loadingMembers.value = false
+    }
+}
+
+async function loadInvites(teamId: string) {
+    loadingInvites.value = true
+    try {
+        invites.value = await teamStore.fetchInvites(teamId)
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.invitesLoadFailed')
+        layout.showToast(message)
+    } finally {
+        loadingInvites.value = false
+    }
+}
+
+async function loadSharedAiSessions(teamId: string) {
+    loadingSharedAiSessions.value = true
+    selectedSharedSession.value = null
+    try {
+        sharedAiSessions.value = await teamStore.fetchSharedAiSessions(teamId)
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.sharedAiSessions.loadFailed')
+        layout.showToast(message)
+    } finally {
+        loadingSharedAiSessions.value = false
+    }
+}
+
+async function openSharedSession(sessionId: string) {
+    const team = activeTeam.value
+    if (!team) return
+    loadingSharedSessionDetail.value = true
+    try {
+        selectedSharedSession.value = await teamStore.getSharedAiSession(team.id, sessionId)
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.sharedAiSessions.detailFailed')
+        layout.showToast(message)
+    } finally {
+        loadingSharedSessionDetail.value = false
+    }
+}
+
+async function submitCreate() {
+    const name = createName.value.trim()
+    if (!name) {
+        layout.showToast(t('team.nameRequired'))
+        return
+    }
+    try {
+        const team = await teamStore.createTeam(name)
+        layout.showToast(t('team.created', {name: team.name}))
+        createName.value = ''
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.createFailed')
+        layout.showToast(message)
+    }
+}
+
+async function submitJoin() {
+    const code = joinCode.value.trim()
+    if (!code) {
+        layout.showToast(t('team.codeRequired'))
+        return
+    }
+    try {
+        const result = await teamStore.joinTeam(code)
+        if (result.status === 'joined' && result.team) {
+            layout.showToast(t('team.joined', {name: result.team.name}))
+        } else if (result.status === 'pending') {
+            layout.showToast(result.message || t('team.joinPending'))
+            await loadMyJoinRequests()
+        } else if (result.status === 'already_member' && result.team) {
+            layout.showToast(result.message || t('team.alreadyMember', {name: result.team.name}))
+            teamStore.activeTeamId = result.team.id
+        } else {
+            layout.showToast(result.message || t('team.joinFailed'))
+        }
+        joinCode.value = ''
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.joinFailed')
+        layout.showToast(message)
+    }
+}
+
+function selectTeam(teamId: string) {
+    teamStore.activeTeamId = teamId
+}
+
+async function saveSharedConnections() {
+    const team = activeTeam.value
+    if (!team) {
+        layout.showToast(t('team.selectTeamFirst'))
+        return
+    }
+    savingSharedConnections.value = true
+    try {
+        const connectionIds = parseDelimitedIds(sharedConnectionsInput.value)
+        const connectionAccess = buildConnectionAccessMap(connectionIds, sharedConnectionAccess.value)
+        sharedConnectionAccess.value = connectionAccess
+        onCallConnectionIds.value = pruneOnCallConnectionIds(
+            onCallConnectionIds.value,
+            connectionIds,
+        )
+        await teamStore.updateSharedConnections(
+            team.id,
+            connectionIds,
+            toStoredConnectionAccess(connectionAccess),
+        )
+        await shortcutPanel.load()
+        layout.showToast(t('team.sharedConnectionsSaved'))
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.sharedConnectionsSaveFailed')
+        layout.showToast(message)
+    } finally {
+        savingSharedConnections.value = false
+    }
+}
+
+function setSharedConnectionAccess(connectionId: string, access: ConnectionAccessLevel) {
+    sharedConnectionAccess.value = {
+        ...sharedConnectionAccess.value,
+        [connectionId]: access,
+    }
+}
+
+function toggleOnCallConnection(connectionId: string) {
+    onCallConnectionIds.value = toggleOnCallConnectionId(onCallConnectionIds.value, connectionId)
+}
+
+async function saveOnCallConnections() {
+    const team = activeTeam.value
+    if (!team) {
+        layout.showToast(t('team.selectTeamFirst'))
+        return
+    }
+    savingOnCallConnections.value = true
+    try {
+        const sharedIds = parseDelimitedIds(sharedConnectionsInput.value)
+        const payload = pruneOnCallConnectionIds(onCallConnectionIds.value, sharedIds)
+        onCallConnectionIds.value = payload
+        await teamStore.updateOnCallConnections(team.id, payload)
+        layout.showToast(t('team.onCallConnectionsSaved'))
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.onCallConnectionsSaveFailed')
+        layout.showToast(message)
+    } finally {
+        savingOnCallConnections.value = false
+    }
+}
+
+async function saveSharedConsoles() {
+    const team = activeTeam.value
+    if (!team) {
+        layout.showToast(t('team.selectTeamFirst'))
+        return
+    }
+    savingSharedConsoles.value = true
+    try {
+        await teamStore.updateSharedConsoles(team.id, parseDelimitedIds(sharedConsolesInput.value))
+        await shortcutPanel.load()
+        layout.showToast(t('team.sharedConsolesSaved'))
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.sharedConsolesSaveFailed')
+        layout.showToast(message)
+    } finally {
+        savingSharedConsoles.value = false
+    }
+}
+
+async function saveShareSqlHistory() {
+    const team = activeTeam.value
+    if (!team) {
+        layout.showToast(t('team.selectTeamFirst'))
+        return
+    }
+    savingShareSqlHistory.value = true
+    try {
+        await teamStore.updateShareSqlHistory(team.id, shareSqlHistory.value)
+        await shortcutPanel.load()
+        layout.showToast(t('team.shareSqlHistorySaved'))
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.shareSqlHistorySaveFailed')
+        layout.showToast(message)
+    } finally {
+        savingShareSqlHistory.value = false
+    }
+}
+
+async function saveTeamSettings() {
+    const team = activeTeam.value
+    if (!team) {
+        layout.showToast(t('team.selectTeamFirst'))
+        return
+    }
+    savingSettings.value = true
+    try {
+        await teamStore.updateSettings(team.id, requireInviteApproval.value)
+        layout.showToast(t('team.settingsSaved'))
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.settingsSaveFailed')
+        layout.showToast(message)
+    } finally {
+        savingSettings.value = false
+    }
+}
+
+async function updateMemberRole(member: TeamMember, role: TeamRole) {
+    const team = activeTeam.value
+    if (!team || member.role === role) return
+    roleUpdatingUserId.value = member.userId
+    try {
+        await teamStore.updateMemberRole(team.id, member.userId, role)
+        await loadMembers(team.id)
+        layout.showToast(t('team.roleUpdated'))
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.roleUpdateFailed')
+        layout.showToast(message)
+    } finally {
+        roleUpdatingUserId.value = null
+    }
+}
+
+async function approveInvite(invite: TeamInvite) {
+    const team = activeTeam.value
+    if (!team) return
+    inviteActionId.value = invite.id
+    try {
+        await teamStore.approveInvite(team.id, invite.id)
+        await Promise.all([loadInvites(team.id), loadMembers(team.id)])
+        layout.showToast(t('team.inviteApproved'))
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.inviteActionFailed')
+        layout.showToast(message)
+    } finally {
+        inviteActionId.value = null
+    }
+}
+
+async function rejectInvite(invite: TeamInvite) {
+    const team = activeTeam.value
+    if (!team) return
+    inviteActionId.value = invite.id
+    try {
+        await teamStore.rejectInvite(team.id, invite.id)
+        await Promise.all([loadInvites(team.id), teamStore.load()])
+        layout.showToast(t('team.inviteRejected'))
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('team.inviteActionFailed')
+        layout.showToast(message)
+    } finally {
+        inviteActionId.value = null
+    }
+}
+
+function copyInviteCode() {
+    const code = activeTeam.value?.inviteCode
+    if (!code) return
+    void navigator.clipboard.writeText(code).then(() => {
+        layout.showToast(t('team.inviteCodeCopied'))
+    })
+}
+
+function openInvitesTab() {
+    activeTab.value = 'invites'
+}
+
+function openWorkspace() {
+    layout.setModule('database')
+}
+
+function formatDate(value: string) {
+    if (!value) return '—'
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
+}
+
+onMounted(() => {
+    void loadMyJoinRequests()
+})
+</script>
+
+<template>
+  <div class="module-page module-page--ambient team-page">
+    <header class="mp-top">
+      <div class="mp-top__copy">
+        <h1 class="mp-top__title">{{ t('team.title') }}</h1>
+        <p class="mp-top__sub">{{ t('team.subtitle') }}</p>
+      </div>
+      <DwButton variant="secondary" class="mp-btn" @click="openWorkspace">
+        {{ t('team.enterWorkspace') }}
+      </DwButton>
+    </header>
+
+    <div class="team-onboarding mp-grid-2">
+      <section class="mp-card team-onboarding__card">
+        <h2 class="mp-card__title">{{ t('team.createTitle') }}</h2>
+        <p class="mp-card__desc">{{ t('team.createDesc') }}</p>
+        <div class="team-onboarding__row">
+          <input
+              v-model="createName"
+              class="mp-input"
+              :placeholder="t('team.createPlaceholder')"
+              @keydown.enter="submitCreate"
+          />
+          <DwButton variant="primary" class="mp-action" @click="submitCreate">
+            {{ t('team.createAction') }}
+          </DwButton>
+        </div>
+      </section>
+
+      <section class="mp-card team-onboarding__card">
+        <h2 class="mp-card__title">{{ t('team.joinTitle') }}</h2>
+        <p class="mp-card__desc">{{ t('team.joinDesc') }}</p>
+        <div class="team-onboarding__row">
+          <input
+              v-model="joinCode"
+              class="mp-input"
+              :placeholder="t('team.joinPlaceholder')"
+              @keydown.enter="submitJoin"
+          />
+          <DwButton variant="secondary" class="mp-action" @click="submitJoin">
+            {{ t('team.joinAction') }}
+          </DwButton>
+        </div>
+        <ul v-if="myJoinRequests.length" class="join-request-list">
+          <li v-for="request in myJoinRequests" :key="`${request.teamId}-${request.requestedAt}`">
+            {{ t('team.myJoinRequestPending', {name: request.teamName, time: formatDate(request.requestedAt)}) }}
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="team-main">
+      <section class="mp-panel team-sidebar">
+        <header class="mp-panel__head">
+          <span>{{ t('team.myTeams') }}</span>
+          <span class="mp-panel__count">{{ teamStore.teams.length }}</span>
+        </header>
+        <div class="mp-panel__body mp-panel__body--scroll team-sidebar__body">
+          <p v-if="!teamStore.teams.length" class="mp-empty">{{ t('team.emptyTeams') }}</p>
+          <ul v-else class="mp-list team-list">
+            <li
+                v-for="team in teamStore.teams"
+                :key="team.id"
+                class="mp-list__row"
+                :class="{ 'is-active': teamStore.activeTeamId === team.id }"
+                @click="selectTeam(team.id)"
+            >
+              <div class="mp-list__main">
+                <span class="mp-avatar">{{ team.name.charAt(0) }}</span>
+                <div>
+                  <div class="mp-list__name">{{ team.name }}</div>
+                  <div class="mp-list__meta">
+                    {{ t('team.memberCount', {count: team.memberCount}) }}
+                    ·
+                    {{ roleLabel(team.role) }}
+                  </div>
+                </div>
+              </div>
+              <span v-if="teamStore.activeTeamId === team.id" class="mp-list__mark">✓</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="mp-panel team-detail">
+        <template v-if="activeTeam">
+          <header class="mp-panel__head team-detail__head">
+            <span class="team-detail__title">{{ activeTeam.name }}</span>
+            <nav class="team-tabs" role="tablist">
+              <button
+                  type="button"
+                  class="team-tab"
+                  :class="{ 'is-active': activeTab === 'members' }"
+                  @click="activeTab = 'members'"
+              >
+                {{ t('team.tabMembers') }}
+              </button>
+              <button
+                  v-if="canManage"
+                  type="button"
+                  class="team-tab"
+                  :class="{ 'is-active': activeTab === 'invites' }"
+                  @click="activeTab = 'invites'"
+              >
+                {{ t('team.tabInvites') }}
+                <span v-if="showInviteBadge" class="team-tab__badge">{{ pendingInviteCount }}</span>
+              </button>
+              <button
+                  v-if="canManage"
+                  type="button"
+                  class="team-tab"
+                  :class="{ 'is-active': activeTab === 'audit' }"
+                  @click="activeTab = 'audit'"
+              >
+                {{ t('team.tabAudit') }}
+              </button>
+              <button
+                  v-if="canManage"
+                  type="button"
+                  class="team-tab"
+                  :class="{ 'is-active': activeTab === 'sharing' }"
+                  @click="activeTab = 'sharing'"
+              >
+                {{ t('team.tabSharing') }}
+              </button>
+              <button
+                  type="button"
+                  class="team-tab"
+                  :class="{ 'is-active': activeTab === 'sharedQueries' }"
+                  @click="activeTab = 'sharedQueries'"
+              >
+                {{ t('team.tabSharedQueries') }}
+              </button>
+              <button
+                  type="button"
+                  class="team-tab"
+                  :class="{ 'is-active': activeTab === 'aiSessions' }"
+                  @click="activeTab = 'aiSessions'"
+              >
+                {{ t('team.tabAiSessions') }}
+              </button>
+            </nav>
+          </header>
+
+          <div class="mp-panel__body mp-panel__body--scroll team-detail__body">
+        <TeamMembersPanel
+            v-if="activeTab === 'members'"
+            :loading="loadingMembers"
+            :members="members"
+            :is-owner="isOwner"
+            :role-options="roleOptions"
+            :role-updating-user-id="roleUpdatingUserId"
+            :role-label="roleLabel"
+            :format-date="formatDate"
+            @update-role="updateMemberRole"
+        />
+
+        <TeamInvitesPanel
+            v-else-if="activeTab === 'invites' && canManage"
+            :loading="loadingInvites"
+            :invites="invites"
+            :invite-action-id="inviteActionId"
+            :invite-status-label="inviteStatusLabel"
+            :format-date="formatDate"
+            @approve="approveInvite"
+            @reject="rejectInvite"
+        />
+
+        <div v-else-if="activeTab === 'audit' && canManage" class="audit-tab-stack">
+          <TeamProductionApprovalsPanel
+              :team-id="activeTeam.id"
+              :can-manage="canManage"
+          />
+          <TeamAuditPanel
+              :team-id="activeTeam.id"
+              :team-name="activeTeam.name"
+              :members="members"
+          />
+        </div>
+
+        <TeamSharedQueriesPanel
+            v-else-if="activeTab === 'sharedQueries'"
+            :team-id="activeTeam.id"
+            :team-name="activeTeam.name"
+            :members="members"
+            :can-manage="canManage"
+            :current-user-id="currentUserId"
+        />
+
+        <TeamAiSessionsPanel
+            v-else-if="activeTab === 'aiSessions'"
+            :loading-list="loadingSharedAiSessions"
+            :loading-detail="loadingSharedSessionDetail"
+            :sessions="sharedAiSessions"
+            :selected-session="selectedSharedSession"
+            :format-date="formatDate"
+            @select="openSharedSession"
+        />
+
+        <TeamSharingPanel
+            v-else-if="activeTab === 'sharing' && canManage"
+            :invite-code="activeTeam.inviteCode ?? null"
+            v-model:require-invite-approval="requireInviteApproval"
+            v-model:shared-connections-input="sharedConnectionsInput"
+            v-model:shared-consoles-input="sharedConsolesInput"
+            v-model:share-sql-history="shareSqlHistory"
+            :show-invite-badge="showInviteBadge"
+            :pending-invite-count="pendingInviteCount"
+            :shared-connection-rows="sharedConnectionRows"
+            :on-call-connection-ids="onCallConnectionIds"
+            :connection-access-options="connectionAccessOptions"
+            :saving-settings="savingSettings"
+            :saving-shared-connections="savingSharedConnections"
+            :saving-on-call-connections="savingOnCallConnections"
+            :saving-shared-consoles="savingSharedConsoles"
+            :saving-share-sql-history="savingShareSqlHistory"
+            @copy-invite-code="copyInviteCode"
+            @open-invites-tab="openInvitesTab"
+            @save-settings="saveTeamSettings"
+            @update-connection-access="setSharedConnectionAccess"
+            @save-shared-connections="saveSharedConnections"
+            @toggle-on-call-connection="toggleOnCallConnection"
+            @save-on-call-connections="saveOnCallConnections"
+            @save-shared-consoles="saveSharedConsoles"
+            @save-share-sql-history="saveShareSqlHistory"
+        />
+        </div>
+        </template>
+
+        <EmptyState
+            v-else
+            class="team-detail__placeholder"
+            :title="t('team.selectTeamHint')"
+            :hint="t('team.selectTeamHintDesc')"
+        />
+      </section>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.team-page {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: var(--mp-gap);
+  padding: var(--mp-pad);
+  overflow: hidden;
+}
+
+.team-onboarding {
+  align-items: stretch;
+}
+
+.team-onboarding__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+
+.team-onboarding__card .mp-card__desc {
+  margin-bottom: 0;
+}
+
+.team-onboarding__row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.team-onboarding__row .mp-input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  height: var(--mp-input-h);
+}
+
+.team-onboarding__row .mp-action {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 96px;
+  margin: 0;
+  height: var(--mp-input-h);
+  padding-inline: clamp(12px, 1.4vmin, 16px);
+  align-self: stretch;
+}
+
+.team-main {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  gap: var(--mp-gap);
+  min-height: 0;
+}
+
+.team-sidebar__body,
+.team-detail__body {
+  padding: 8px;
+}
+
+.team-list {
+  align-content: start;
+}
+
+.mp-list__row {
+  cursor: pointer;
+}
+
+.mp-list__row.is-active {
+  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-panel));
+}
+
+.team-detail__head {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: var(--mp-head-h);
+  height: auto;
+  padding-block: 8px;
+}
+
+.team-detail__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-detail__placeholder {
+  flex: 1;
+  min-height: 200px;
+}
+
+.team-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-tab-gap);
+  padding: 0 4px;
+  background: var(--dw-tab-bar-bg);
+  border-bottom: 1px solid var(--dw-tab-bar-border);
+}
+
+.team-tab {
+  height: var(--mp-btn-h);
+  padding: 0 clamp(10px, 1.2vmin, 12px);
+  border-radius: var(--dw-tab-pill-radius);
+  font-size: var(--mp-caption);
+  cursor: pointer;
+}
+
+.team-tab.is-active {
+  font-weight: 600;
+}
+
+.team-tab__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--dw-danger, #dc2626);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.join-request-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--dw-text-secondary);
+}
+
+.sharing-block__hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--dw-text-secondary);
+}
+
+.link-btn {
+  margin-left: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--dw-primary);
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 10px;
+  background: var(--dw-bg-panel);
+}
+
+.detail-list__name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.detail-list__meta {
+  font-size: 11px;
+  color: var(--dw-text-muted);
+  margin-top: 2px;
+}
+
+.role-badge {
+  font-size: 12px;
+}
+
+.detail-list__row :deep(.dw-select) {
+  width: auto;
+  min-width: 108px;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.audit-tab-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.audit-list__row {
+  align-items: flex-start;
+}
+
+.audit-detail {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--dw-text-secondary);
+}
+
+.sharing-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sharing-block__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sharing-block__desc {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--dw-text-muted);
+}
+
+.shared-input {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.shared-access-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.shared-access-list__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dw-text-muted);
+}
+
+.shared-access-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 8px;
+  background: var(--dw-bg-panel);
+}
+
+.shared-access-row__id {
+  font-size: 12px;
+}
+
+.shared-access-row :deep(.dw-select) {
+  min-width: 120px;
+  width: auto;
+}
+
+.invite-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.invite-code {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--dw-bg-muted);
+  font-family: var(--dw-mono);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+.share-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.ai-sessions-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 12px;
+  min-height: 320px;
+}
+
+.ai-sessions-list {
+  overflow: auto;
+  max-height: 420px;
+}
+
+.ai-sessions-list__row {
+  cursor: pointer;
+}
+
+.ai-sessions-list__row.is-active {
+  border-color: color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border-light));
+  background: color-mix(in srgb, var(--dw-primary-soft) 40%, var(--dw-bg-panel));
+}
+
+.ai-sessions-detail {
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 10px;
+  background: var(--dw-bg-panel);
+}
+
+@media (max-width: 900px) {
+  .team-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .team-sidebar {
+    max-height: 220px;
+  }
+}
+</style>

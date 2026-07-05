@@ -1,0 +1,857 @@
+/* 表单、搜索、标签与页面头部 */
+
+.dw-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dw-field label,
+.dw-field__label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--dw-text-secondary);
+}
+
+.dw-field--group .radio-row {
+    width: fit-content;
+}
+
+.dw-input,
+.dw-field input:not([type='checkbox']):not([type='radio']),
+.dw-field textarea,
+.dw-field select {
+    width: 100%;
+    padding: clamp(8px, 1vmin, 10px) clamp(10px, 1.2vmin, 12px);
+    border: 1px solid var(--dw-border);
+    border-radius: var(--dw-panel-radius);
+    background: var(--dw-bg);
+    color: var(--dw-text);
+    font-size: var(--mp-sub);
+    line-height: 1.4;
+    transition: border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.dw-input--sm {
+    height: var(--mp-input-h);
+    padding: 0 clamp(8px, 1vmin, 10px);
+    border-radius: var(--dw-panel-radius);
+    font-size: var(--mp-sub);
+    line-height: 1.4;
+}
+
+/* 表格内紧凑输入（设置页词条表等） */
+.dw-input--cell {
+    width: 100%;
+    min-width: 88px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.dw-input--mono {
+    font-family: var(--dw-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+    font-size: 12px;
+}
+
+.dw-textarea--cell {
+    resize: vertical;
+    min-height: 52px;
+    line-height: 1.45;
+}
+
+.dw-input::placeholder,
+.dw-field input::placeholder,
+.dw-field textarea::placeholder {
+    color: var(--dw-text-muted);
+    font-weight: 400;
+}
+
+.dw-input:hover,
+.dw-field input:hover,
+.dw-field textarea:hover,
+.dw-field select:hover {
+    border-color: color-mix(in srgb, var(--dw-primary) 22%, var(--dw-border));
+}
+
+.dw-input:focus,
+.dw-field input:focus,
+.dw-field textarea:focus,
+.dw-field select:focus {
+    outline: none;
+    border-color: var(--dw-primary-border);
+    box-shadow: 0 0 0 3px var(--dw-primary-soft);
+}
+
+/* ── DwCheckbox（统一多选框） ── */
+
+.dw-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--mp-sub);
+    line-height: 1.4;
+    color: var(--dw-text);
+    cursor: pointer;
+}
+
+.dw-checkbox--block {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.dw-checkbox__control {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: var(--dw-primary);
+    cursor: pointer;
+}
+
+.dw-checkbox--block .dw-checkbox__control {
+    margin-top: 2px;
+}
+
+.dw-checkbox__label {
+    min-width: 0;
+}
+
+.dw-checkbox.is-disabled,
+.dw-checkbox:has(.dw-checkbox__control:disabled) {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* ── DwRadioGroup（统一单选 / 分段选择） ── */
+
+.dw-radio-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 3px;
+    border: 1px solid var(--dw-border);
+    border-radius: 10px;
+    background: var(--dw-bg-muted);
+    width: fit-content;
+}
+
+.dw-radio-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    padding: 7px 16px;
+    border-radius: 7px;
+    color: var(--dw-text-secondary);
+    font-size: var(--mp-sub);
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dw-radio-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dw-radio-option:has(input:checked) {
+    background: var(--dw-bg);
+    color: var(--dw-primary);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.dw-radio-option.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.dw-field--group .dw-radio-group {
+    width: fit-content;
+}
+
+.dw-field select {
+    appearance: none;
+    padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 6 8 9.5 11.5 6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    cursor: pointer;
+}
+
+/* ── DwSelect（统一下拉） ── */
+
+.dw-select {
+    position: relative;
+    width: 100%;
+    --dw-select-font: var(--mp-sub);
+    --dw-select-trigger-h: var(--mp-input-h);
+}
+
+.dw-select__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 34px;
+    height: var(--dw-select-trigger-h);
+    padding: 0 clamp(10px, 1.2vmin, 12px) 0 clamp(12px, 1.4vmin, 14px);
+    border: 1px solid var(--dw-border);
+    border-radius: var(--dw-panel-radius);
+    background: var(--dw-bg);
+    color: var(--dw-text);
+    font-size: var(--dw-select-font);
+    line-height: 1.4;
+    font-weight: 400;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.dw-select__trigger:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--dw-primary) 22%, var(--dw-border));
+    background: var(--dw-bg-muted);
+}
+
+.dw-select.is-open .dw-select__trigger,
+.dw-select__trigger:focus-visible {
+    outline: none;
+    border-color: var(--dw-primary-border);
+    background: var(--dw-bg);
+    box-shadow: 0 0 0 3px var(--dw-primary-soft);
+}
+
+.dw-select.is-disabled .dw-select__trigger {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.dw-select__value {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+    color: var(--dw-text);
+    line-height: 1.4;
+}
+
+.dw-select.is-placeholder .dw-select__value {
+    color: var(--dw-text-muted);
+    font-weight: 400;
+}
+
+.dw-select__chevron {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    color: var(--dw-text-muted);
+    transition: transform 0.18s ease, color 0.15s ease;
+}
+
+.dw-select.is-open .dw-select__chevron {
+    transform: rotate(180deg);
+    color: var(--dw-primary);
+}
+
+.dw-select__menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: auto;
+    z-index: 120;
+    margin: 0;
+    padding: 5px;
+    list-style: none;
+    min-width: 100%;
+    width: max-content;
+    max-width: min(420px, 92vw);
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--dw-border-light);
+    border-radius: calc(var(--dw-panel-radius) + 2px);
+    background: var(--dw-bg);
+    box-shadow: var(--dw-menu-shadow);
+}
+
+.dw-select__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 36px;
+    padding: 0 11px;
+    border: none;
+    border-radius: calc(var(--dw-panel-radius) - 1px);
+    background: transparent;
+    color: var(--dw-text-secondary);
+    font-size: var(--dw-select-font);
+    line-height: 1.4;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.dw-select__item:hover:not(:disabled) {
+    background: var(--dw-bg-hover);
+    color: var(--dw-text);
+}
+
+.dw-select__item.is-active {
+    background: var(--dw-primary-soft);
+    color: var(--dw-primary);
+    font-weight: 500;
+}
+
+.dw-select__item:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.dw-select__item-label {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.dw-select__menu .dw-select__item-label {
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.dw-select__check {
+    flex-shrink: 0;
+    color: var(--dw-primary);
+}
+
+.dw-select-menu-enter-active,
+.dw-select-menu-leave-active {
+    transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.dw-select-menu-enter-from,
+.dw-select-menu-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
+/* sm — 表单紧凑（字号与 dw-input 对齐，仅略减内边距） */
+.dw-select--sm .dw-select__trigger {
+    height: var(--mp-input-h);
+    min-height: 30px;
+    padding: 0 clamp(8px, 1vmin, 10px) 0 clamp(10px, 1.2vmin, 12px);
+    font-size: var(--mp-sub);
+    box-shadow: none;
+}
+
+.dw-select--sm .dw-select__item {
+    min-height: 34px;
+    font-size: var(--mp-sub);
+}
+
+/* pill — 工具栏圆角 */
+.dw-select--pill {
+    width: auto;
+}
+
+.dw-select--pill .dw-select__trigger {
+    display: inline-flex;
+    width: auto;
+    max-width: 180px;
+    height: clamp(28px, 3.2vmin, 32px);
+    min-height: 28px;
+    padding: 0 10px 0 12px;
+    border-radius: 999px;
+    background: var(--dw-bg-muted);
+    font-size: var(--mp-sub);
+    box-shadow: none;
+}
+
+.dw-select--pill .dw-select__menu {
+    min-width: 100%;
+}
+
+.dw-select--pill .dw-select__item {
+    font-size: var(--mp-sub);
+}
+
+/* compact — 分页等超窄 */
+.dw-select--compact {
+    width: auto;
+}
+
+.dw-select--compact .dw-select__trigger {
+    display: inline-flex;
+    width: auto;
+    max-width: 80px;
+    height: clamp(26px, 3vmin, 30px);
+    min-height: 26px;
+    padding: 0 8px 0 10px;
+    border-radius: 6px;
+    background: var(--dw-bg-muted);
+    font-size: var(--mp-sub);
+    box-shadow: none;
+}
+
+.dw-select--compact .dw-select__chevron {
+    width: 12px;
+    height: 12px;
+}
+
+.dw-select--compact .dw-select__menu {
+    min-width: max(100%, 88px);
+}
+
+.dw-select--compact .dw-select__item {
+    font-size: var(--mp-sub);
+    min-height: 32px;
+}
+
+/* inline — 嵌入组合控件（DataGrid 筛选等） */
+.dw-select--inline {
+    width: auto;
+    height: 100%;
+}
+
+.dw-select--inline .dw-select__trigger {
+    height: 100%;
+    min-height: 24px;
+    padding: 0 18px 0 8px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--dw-mono, ui-monospace, monospace);
+    box-shadow: none;
+}
+
+.dw-select--inline .dw-select__value {
+    font-weight: 600;
+}
+
+.dw-select--inline .dw-select__trigger:hover:not(:disabled),
+.dw-select--inline.is-open .dw-select__trigger {
+    background: color-mix(in srgb, var(--dw-primary-soft) 40%, transparent);
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.dw-select--inline .dw-select__chevron {
+    width: 10px;
+    height: 10px;
+}
+
+.dw-select--inline .dw-select__menu {
+    left: 0;
+    right: auto;
+    min-width: max(160px, 100%);
+}
+
+.dw-select--inline .dw-select__item {
+    min-height: 32px;
+    font-size: 12px;
+    font-family: var(--dw-mono, ui-monospace, monospace);
+}
+
+.dw-form-error {
+    margin: 0;
+    color: #dc2626;
+    font-size: 12px;
+}
+
+.dw-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--dw-border);
+    border-radius: 9px;
+    background: var(--dw-bg);
+    color: var(--dw-text-muted);
+}
+
+.dw-search input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--dw-text);
+    font-size: 12px;
+}
+
+.dw-search input::placeholder {
+    color: var(--dw-text-muted);
+}
+
+.dw-search:focus-within {
+    border-color: var(--dw-primary-border);
+    box-shadow: 0 0 0 3px var(--dw-primary-soft);
+}
+
+.dw-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 4px 10px;
+    border: 1px solid var(--dw-border);
+    border-radius: 999px;
+    background: var(--dw-bg-panel);
+    color: var(--dw-text-secondary);
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+.dw-chip__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dw-chip__remove {
+    flex-shrink: 0;
+    padding: 0 2px;
+    border: none;
+    background: none;
+    color: var(--dw-text-muted);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dw-chip__remove:hover {
+    color: var(--dw-text);
+}
+
+.dw-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: var(--dw-primary);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 22px;
+}
+
+.dw-badge--soft {
+    background: var(--dw-primary-soft);
+    border: 1px solid color-mix(in srgb, var(--dw-primary) 22%, transparent);
+    color: var(--dw-primary);
+    font-weight: 500;
+}
+
+.dw-empty {
+    padding: 24px 14px;
+    color: var(--dw-text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.dw-page-head {
+    flex-shrink: 0;
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--dw-border-light);
+    background: radial-gradient(ellipse 70% 80% at 0% 0%, color-mix(in srgb, var(--dw-primary) 7%, transparent), transparent),
+    var(--dw-bg);
+}
+
+.dw-page-head__brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.dw-page-head__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.22);
+}
+
+.dw-page-head__title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dw-page-head h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.dw-page-head p {
+    margin: 4px 0 0;
+    color: var(--dw-text-secondary);
+    font-size: 13px;
+}
+
+.dw-page-head__extra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    min-height: 28px;
+}
+
+.dw-page-head__extra .dw-page-head__hint {
+    margin: 0;
+}
+
+.dw-page-head__hint {
+    margin: 10px 0 0;
+    color: var(--dw-text-muted);
+    font-size: 12px;
+}
+
+.dw-composer-wrap {
+    flex-shrink: 0;
+    padding: 14px 24px 16px;
+    border-top: 1px solid var(--dw-border-light);
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--dw-bg-panel) 92%, var(--dw-primary) 8%) 100%);
+}
+
+[data-theme='dark'] .dw-composer-wrap {
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--dw-bg-panel) 97%, var(--dw-primary) 3%) 100%);
+}
+
+.dw-composer-targets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.dw-composer-shell {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--dw-border) 88%, transparent),
+            color-mix(in srgb, var(--dw-primary) 18%, var(--dw-border))
+    );
+    box-shadow: var(--dw-composer-shell-shadow);
+    transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.dw-composer-shell:focus-within {
+    background: linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--dw-primary) 42%, var(--dw-border)),
+            color-mix(in srgb, var(--dw-primary) 72%, transparent)
+    );
+    box-shadow: var(--dw-composer-focus-shadow);
+}
+
+.dw-composer-shell.is-sending {
+    opacity: 0.92;
+}
+
+.dw-composer {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) 30px;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 8px 8px 10px;
+    border-radius: 17px;
+    background: var(--dw-bg);
+}
+
+.dw-composer.is-multiline {
+    align-items: end;
+    padding-top: 10px;
+    padding-bottom: 8px;
+}
+
+.dw-composer-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: linear-gradient(
+            145deg,
+            color-mix(in srgb, var(--dw-primary) 16%, var(--dw-bg-muted)),
+            color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg))
+    );
+    color: var(--dw-primary);
+    box-shadow: var(--dw-surface-inset-highlight);
+}
+
+.dw-composer.is-multiline .dw-composer-badge {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 0;
+}
+
+.dw-composer-input-wrap {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.dw-composer.is-multiline .dw-composer-input-wrap {
+    align-items: stretch;
+}
+
+.dw-composer-input {
+    display: block;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--dw-text);
+    font-size: 14px;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.dw-composer-input--single {
+    height: 30px;
+    line-height: 30px;
+}
+
+.dw-composer-input--multi {
+    min-height: 30px;
+    max-height: 128px;
+    padding: 0;
+    line-height: 1.5;
+    resize: none;
+    overflow-y: auto;
+}
+
+.dw-composer.is-multiline .dw-send-btn {
+    align-self: end;
+}
+
+.dw-composer-input::placeholder {
+    color: var(--dw-text-muted);
+}
+
+.dw-composer-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+}
+
+.dw-composer-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0 0;
+    color: var(--dw-text-muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.dw-composer-hint-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.dw-composer-hint-dot {
+    opacity: 0.45;
+}
+
+.dw-composer-hint kbd {
+    display: inline-flex;
+    align-items: center;
+    min-height: 18px;
+    padding: 0 6px;
+    border: 1px solid var(--dw-border-light);
+    border-radius: 5px;
+    background: var(--dw-bg-muted);
+    color: var(--dw-text-secondary);
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    box-shadow: var(--dw-kbd-elev-shadow);
+}
+
+.dw-send-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 11px;
+    background: linear-gradient(
+            145deg,
+            color-mix(in srgb, var(--dw-primary) 92%, #fff 8%),
+            var(--dw-primary)
+    );
+    color: #fff;
+    cursor: pointer;
+    box-shadow: var(--dw-btn-elev-shadow);
+    transition: transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.dw-send-btn:disabled {
+    opacity: 0.38;
+    cursor: default;
+    box-shadow: none;
+}
+
+.dw-send-btn:not(:disabled):hover {
+    filter: brightness(1.04);
+    box-shadow: var(--dw-btn-elev-shadow-hover);
+}
+
+.dw-send-btn:not(:disabled):active {
+    transform: scale(0.96);
+}
+
+.dw-send-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.28);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: dw-send-spin 0.7s linear infinite;
+}
+
+@keyframes dw-send-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

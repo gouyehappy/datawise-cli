@@ -1,0 +1,46 @@
+import type {TableColumn, TableRow} from '@/core/types'
+import type {ExplainPlanMode, ExplainPlanNode, ExplainPlanResultView} from '@/features/workspace/types/explain-plan'
+
+export interface QueryResultBatchEntry {
+    label: string
+    sql: string
+    status: 'success' | 'error'
+    durationMs: number
+    total: number
+    errorMessage?: string
+    errorLine?: number
+}
+
+export interface QueryResultItem {
+    id: string
+    label: string
+    sql: string
+    columns: TableColumn[]
+    rows: TableRow[]
+    total: number
+    where?: string
+    orderBy?: string
+    durationMs: number
+    status: 'success' | 'error'
+    errorMessage?: string
+    errorLine?: number
+    /** 批量 DDL/DML 合并摘要；有值时只展示摘要页，不再为每条语句开 Tab */
+    batchEntries?: QueryResultBatchEntry[]
+    /** 批量执行进行中；配合 batchTotal 展示进度 */
+    batchRunning?: boolean
+    batchTotal?: number
+    /** EXPLAIN / EXPLAIN ANALYZE 解析后的树形计划 */
+    explainPlan?: ExplainPlanNode[]
+    explainMode?: ExplainPlanMode
+    resultView?: ExplainPlanResultView
+    /** 服务端游标分页：还有更多行可加载 */
+    cursorId?: string
+    hasMore?: boolean
+    pageOffset?: number
+    pageSize?: number
+}
+
+export interface ConsoleQueryState {
+    results: QueryResultItem[]
+    activeView: 'overview' | number
+}

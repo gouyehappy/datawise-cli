@@ -1,0 +1,610 @@
+<script setup lang="ts">
+import {computed, ref, watch} from 'vue'
+import {useI18n} from 'vue-i18n'
+import {storeToRefs} from 'pinia'
+import MonacoEditor from '@/core/components/MonacoEditor.vue'
+import SettingsSelect from '@/core/components/SettingsSelect.vue'
+import LayoutToggleChip from '@/features/settings/components/LayoutToggleChip.vue'
+import {DwCheckbox, DwInput, FormField} from '@/core/components'
+import {
+  EDITOR_FONT_OPTIONS,
+  EDITOR_FONT_SIZE_MAX,
+  EDITOR_FONT_SIZE_MIN,
+  EDITOR_LINE_HEIGHT_MAX,
+  EDITOR_LINE_HEIGHT_MIN,
+  EDITOR_PREVIEW_SQL,
+  EDITOR_THEME_OPTIONS,
+  GRID_PAGE_SIZE_OPTIONS,
+  MAX_RESULT_ROWS_MAX,
+  MAX_RESULT_ROWS_MIN,
+  SLOW_QUERY_THRESHOLD_MAX,
+  SLOW_QUERY_THRESHOLD_MIN,
+  type EditorSettings,
+  type EditorThemeId,
+} from '@/features/settings/constants/editor-presets'
+import {useEditorSettingsStore} from '@/features/settings/stores/editor-settings'
+import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
+import {UserResource} from '@/features/auth/types/user-resource.types'
+import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
+
+const {t} = useI18n()
+const editorSettings = useEditorSettingsStore()
+const {settings: editorPrefs} = storeToRefs(editorSettings)
+const appConfig = useAppConfigStore()
+const {readOnly: editorReadOnly, hint: editorHint} = useResourceWriteGuard(UserResource.EditorPreferences)
+const previewSql = ref(EDITOR_PREVIEW_SQL)
+const previewEditorRef = ref<InstanceType<typeof MonacoEditor> | null>(null)
+
+watch(editorPrefs, () => {
+  requestAnimationFrame(() => previewEditorRef.value?.layout())
+}, {deep: true})
+
+const settingsScrollEl = ref<HTMLElement | null>(null)
+
+const currentThemeDescription = computed(() =>
+    t(`settings.editor.themeDescriptions.${editorSettings.settings.theme}`),
+)
+
+const themeOptions = computed(() =>
+    EDITOR_THEME_OPTIONS.map((theme) => ({
+      value: theme,
+      label: t(`settings.editor.themes.${theme}`),
+    })),
+)
+
+const fontOptions = computed(() =>
+    EDITOR_FONT_OPTIONS.map((font) => ({value: font, label: font})),
+)
+
+const gridPageSizeOptions = computed(() => [
+  {value: '0', label: t('settings.editor.defaultGridPageSizeAuto')},
+  ...GRID_PAGE_SIZE_OPTIONS.map((size) => ({
+    value: String(size),
+    label: t('settings.editor.defaultGridPageSizeValue', {count: size}),
+  })),
+])
+
+const dangerousSqlPrefs = computed(() => appConfig.dangerousSqlPreferences)
+
+const whitelistTablesText = computed({
+  get: () => dangerousSqlPrefs.value.whitelistedTables.join('\n'),
+  set: (value: string) => {
+    appConfig.patchDangerousSql({
+      whitelistedTables: value
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean),
+    })
+  },
+})
+
+function preserveScrollPatch(patch: Partial<EditorSettings>) {
+  const scrollRoot = settingsScrollEl.value?.closest('.module-shell__main') as HTMLElement | null
+  const scrollTop = scrollRoot?.scrollTop ?? 0
+  editorSettings.patchSettings(patch)
+  requestAnimationFrame(() => {
+    if (scrollRoot) scrollRoot.scrollTop = scrollTop
+  })
+}
+
+function setFontSize(fontSize: number) {
+  if (!Number.isFinite(fontSize)) return
+  preserveScrollPatch({
+    fontSize: Math.min(EDITOR_FONT_SIZE_MAX, Math.max(EDITOR_FONT_SIZE_MIN, fontSize)),
+  })
+}
+
+function setLineHeight(lineHeight: number) {
+  if (!Number.isFinite(lineHeight)) return
+  preserveScrollPatch({
+    lineHeight: Math.min(EDITOR_LINE_HEIGHT_MAX, Math.max(EDITOR_LINE_HEIGHT_MIN, lineHeight)),
+  })
+}
+
+function setMaxResultRows(maxResultRows: number) {
+  if (!Number.isFinite(maxResultRows)) return
+  preserveScrollPatch({
+    maxResultRows: Math.min(MAX_RESULT_ROWS_MAX, Math.max(MAX_RESULT_ROWS_MIN, Math.trunc(maxResultRows))),
+  })
+}
+
+function setSlowQueryThresholdMs(slowQueryThresholdMs: number) {
+  if (!Number.isFinite(slowQueryThresholdMs)) return
+  preserveScrollPatch({
+    slowQueryThresholdMs: Math.min(
+        SLOW_QUERY_THRESHOLD_MAX,
+        Math.max(SLOW_QUERY_THRESHOLD_MIN, Math.trunc(slowQueryThresholdMs)),
+    ),
+  })
+}
+
+function setDefaultGridPageSize(value: string) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed < 0) return
+  preserveScrollPatch({defaultGridPageSize: Math.trunc(parsed)})
+}
+
+function setTheme(theme: string) {
+  preserveScrollPatch({theme: theme as EditorThemeId})
+}
+
+function setFontFamily(fontFamily: string) {
+  preserveScrollPatch({fontFamily})
+}
+
+function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') {
+  preserveScrollPatch({[key]: !editorSettings.settings[key]})
+}
+</script>
+
+<template>
+  <div ref="settingsScrollEl" class="editor-settings editor-settings--v2">
+    <header class="panel-head">
+      <h2>{{ t('settings.editor.title') }}</h2>
+      <p>{{ t('settings.editor.subtitle') }}</p>
+    </header>
+
+    <p v-if="editorReadOnly" class="guest-notice">{{ editorHint }}</p>
+
+    <div class="editor-settings__layout" :class="{'is-readonly': editorReadOnly}">
+      <div class="editor-settings__main">
+        <article class="editor-card">
+          <header class="editor-card__head">
+            <h3>{{ t('settings.editor.sectionAppearance') }}</h3>
+            <p>{{ t('settings.editor.sectionAppearanceHint') }}</p>
+          </header>
+          <div class="editor-card__body">
+            <FormField :label="t('settings.editor.theme')" input-id="editor-theme">
+              <template #default="{ id }">
+                <div class="theme-grid">
+                  <button
+                      v-for="option in themeOptions"
+                      :key="option.value"
+                      type="button"
+                      class="theme-tile"
+                      :class="{'is-active': editorSettings.settings.theme === option.value}"
+                      @click="setTheme(option.value)"
+                  >
+                    <span class="theme-tile__label">{{ option.label }}</span>
+                    <span
+                        class="theme-tile__swatch"
+                        :class="`theme-tile__swatch--${option.value}`"
+                        aria-hidden="true"
+                    />
+                  </button>
+                </div>
+              </template>
+            </FormField>
+            <p class="field-note">{{ currentThemeDescription }}</p>
+            <p class="field-note muted">{{ t('settings.editor.themeNote') }}</p>
+
+            <div class="editor-card__grid">
+              <FormField class="editor-field--full" :label="t('settings.editor.fontFamily')" input-id="editor-font">
+                <template #default="{ id }">
+                  <SettingsSelect
+                      :id="id"
+                      :model-value="editorSettings.settings.fontFamily"
+                      :options="fontOptions"
+                      use-option-font
+                      @update:model-value="setFontFamily"
+                  />
+                </template>
+              </FormField>
+              <FormField :label="t('settings.editor.fontSize')" input-id="editor-font-size">
+                <template #default="{ id }">
+                  <div class="input-with-unit">
+                    <DwInput
+                        :id="id"
+                        type="number"
+                        :min="EDITOR_FONT_SIZE_MIN"
+                        :max="EDITOR_FONT_SIZE_MAX"
+                        :model-value="editorSettings.settings.fontSize"
+                        @update:model-value="setFontSize(Number($event))"
+                    />
+                    <span class="unit-chip">px</span>
+                  </div>
+                </template>
+              </FormField>
+              <FormField :label="t('settings.editor.lineHeight')" input-id="editor-line-height">
+                <template #default="{ id }">
+                  <DwInput
+                      :id="id"
+                      type="number"
+                      :min="EDITOR_LINE_HEIGHT_MIN"
+                      :max="EDITOR_LINE_HEIGHT_MAX"
+                      step="0.1"
+                      :model-value="editorSettings.settings.lineHeight"
+                      @update:model-value="setLineHeight(Number($event))"
+                  />
+                </template>
+              </FormField>
+            </div>
+            <p class="field-hint">{{ t('settings.editor.fontSizeHint') }}</p>
+          </div>
+        </article>
+
+        <article class="editor-card">
+          <header class="editor-card__head">
+            <h3>{{ t('settings.editor.sectionDisplay') }}</h3>
+            <p>{{ t('settings.editor.sectionDisplayHint') }}</p>
+          </header>
+          <div class="editor-card__body editor-card__body--toggles">
+            <LayoutToggleChip
+                :label="t('settings.editor.lineNumbers')"
+                :caption="t('settings.editor.lineNumbersHint')"
+                :active="editorSettings.settings.lineNumbers"
+                @toggle="toggleSetting('lineNumbers')"
+            />
+            <LayoutToggleChip
+                :label="t('settings.editor.minimap')"
+                :caption="t('settings.editor.minimapHint')"
+                :active="editorSettings.settings.minimap"
+                @toggle="toggleSetting('minimap')"
+            />
+            <LayoutToggleChip
+                :label="t('settings.editor.wordWrap')"
+                :caption="t('settings.editor.wordWrapHint')"
+                :active="editorSettings.settings.wordWrap"
+                @toggle="toggleSetting('wordWrap')"
+            />
+            <LayoutToggleChip
+                :label="t('settings.editor.folding')"
+                :caption="t('settings.editor.foldingHint')"
+                :active="editorSettings.settings.folding"
+                @toggle="toggleSetting('folding')"
+            />
+          </div>
+        </article>
+
+        <article class="editor-card">
+          <header class="editor-card__head">
+            <h3>{{ t('settings.editor.sectionQuery') }}</h3>
+            <p>{{ t('settings.editor.sectionQueryHint') }}</p>
+          </header>
+          <div class="editor-card__body">
+            <div class="editor-card__grid editor-card__grid--query">
+              <FormField :label="t('settings.editor.maxResultRows')" input-id="editor-max-result-rows">
+                <template #default="{ id }">
+                  <div class="input-with-unit">
+                    <DwInput
+                        :id="id"
+                        type="number"
+                        :min="MAX_RESULT_ROWS_MIN"
+                        :max="MAX_RESULT_ROWS_MAX"
+                        step="1"
+                        :model-value="editorSettings.settings.maxResultRows"
+                        @update:model-value="setMaxResultRows(Number($event))"
+                    />
+                    <span v-if="editorSettings.settings.maxResultRows <= 0" class="unit-chip">
+                      {{ t('settings.editor.maxResultRowsUnlimited') }}
+                    </span>
+                  </div>
+                </template>
+              </FormField>
+              <FormField :label="t('settings.editor.slowQueryThresholdMs')" input-id="editor-slow-query-threshold">
+                <template #default="{ id }">
+                  <div class="input-with-unit">
+                    <DwInput
+                        :id="id"
+                        type="number"
+                        :min="SLOW_QUERY_THRESHOLD_MIN"
+                        :max="SLOW_QUERY_THRESHOLD_MAX"
+                        step="100"
+                        :model-value="editorSettings.settings.slowQueryThresholdMs"
+                        @update:model-value="setSlowQueryThresholdMs(Number($event))"
+                    />
+                    <span class="unit-chip">ms</span>
+                  </div>
+                </template>
+              </FormField>
+              <FormField :label="t('settings.editor.defaultGridPageSize')" input-id="editor-default-grid-page-size">
+                <template #default="{ id }">
+                  <SettingsSelect
+                      :id="id"
+                      :model-value="String(editorSettings.settings.defaultGridPageSize)"
+                      :options="gridPageSizeOptions"
+                      @update:model-value="setDefaultGridPageSize"
+                  />
+                </template>
+              </FormField>
+            </div>
+            <p class="field-hint">{{ t('settings.editor.maxResultRowsHint') }}</p>
+            <p class="field-hint">{{ t('settings.editor.slowQueryThresholdMsHint') }}</p>
+            <p class="field-hint">{{ t('settings.editor.defaultGridPageSizeHint') }}</p>
+          </div>
+        </article>
+
+        <article class="editor-card editor-card--danger">
+          <header class="editor-card__head">
+            <h3>{{ t('settings.editor.dangerousSqlTitle') }}</h3>
+            <p>{{ t('settings.editor.dangerousSqlHint') }}</p>
+          </header>
+          <div class="editor-card__body">
+            <DwCheckbox
+                block
+                class="danger-sql-toggle"
+                :model-value="dangerousSqlPrefs.confirmEnabled"
+                @update:model-value="appConfig.patchDangerousSql({ confirmEnabled: $event })"
+            >
+              <strong>{{ t('settings.editor.dangerousSqlConfirmEnabled') }}</strong>
+              <span class="field-note">{{ t('settings.editor.dangerousSqlConfirmEnabledHint') }}</span>
+            </DwCheckbox>
+            <FormField
+                :label="t('settings.editor.dangerousSqlWhitelist')"
+                input-id="editor-danger-sql-whitelist"
+            >
+              <template #default="{ id }">
+                <textarea
+                    :id="id"
+                    v-model="whitelistTablesText"
+                    class="whitelist-textarea"
+                    rows="4"
+                    :placeholder="t('settings.editor.dangerousSqlWhitelistPlaceholder')"
+                    spellcheck="false"
+                />
+              </template>
+            </FormField>
+            <p class="field-note muted">{{ t('settings.editor.dangerousSqlWhitelistHint') }}</p>
+          </div>
+        </article>
+      </div>
+
+      <aside class="editor-preview" aria-label="preview">
+        <div class="preview-pane">
+          <div class="preview-head">
+            <span class="preview-dot preview-dot--red"/>
+            <span class="preview-dot preview-dot--yellow"/>
+            <span class="preview-dot preview-dot--green"/>
+            <span class="preview-title">{{ t('settings.editor.preview') }}</span>
+          </div>
+          <div class="preview-editor" tabindex="-1">
+            <MonacoEditor
+                ref="previewEditorRef"
+                v-model="previewSql"
+                language="sql"
+                readonly
+                preview
+            />
+          </div>
+        </div>
+        <p class="editor-preview__hint">{{ t('settings.editor.previewHint') }}</p>
+      </aside>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.editor-settings--v2 {
+  max-width: min(1160px, 100%);
+}
+
+.editor-settings__layout.is-readonly {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.editor-settings__layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(320px, 1.05fr);
+  gap: clamp(16px, 2vmin, 22px);
+  margin-top: clamp(16px, 2vmin, 20px);
+  align-items: start;
+}
+
+.editor-settings__main {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.4vmin, 14px);
+  min-width: 0;
+}
+
+.editor-card {
+  position: relative;
+  border: 1px solid var(--dw-panel-border);
+  border-radius: var(--dw-panel-radius);
+  background: var(--dw-bg-panel);
+  box-shadow: var(--dw-panel-shadow);
+  overflow: visible;
+}
+
+.editor-card:has(.dw-select.is-open) {
+  z-index: 40;
+}
+
+.editor-card__body :deep(.dw-select.is-open) {
+  position: relative;
+  z-index: 41;
+}
+
+.editor-card__head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--dw-border-light);
+  background: var(--dw-bg-editor);
+}
+
+.editor-card__head h3 {
+  margin: 0 0 4px;
+  font-size: var(--mp-sub);
+  font-weight: 650;
+}
+
+.editor-card__head p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--dw-text-muted);
+  line-height: 1.45;
+}
+
+.editor-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1vmin, 10px);
+  padding: 12px;
+}
+
+.editor-card__body--toggles {
+  gap: 8px;
+}
+
+.editor-card__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 1.2vmin, 12px);
+}
+
+.editor-card__grid--query {
+  grid-template-columns: 1fr 1fr;
+}
+
+.editor-field--full {
+  grid-column: 1 / -1;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.theme-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--dw-border);
+  border-radius: 10px;
+  background: var(--dw-bg-panel);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.theme-tile:hover {
+  border-color: color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border));
+}
+
+.theme-tile.is-active {
+  border-color: var(--dw-primary-border);
+  background: var(--dw-primary-softer);
+  box-shadow: inset 0 0 0 1px var(--dw-primary-ring);
+}
+
+.theme-tile__label {
+  font-size: var(--mp-caption);
+  font-weight: 600;
+}
+
+.theme-tile__swatch {
+  width: 28px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.theme-tile__swatch--one-dark {
+  background: linear-gradient(180deg, #282c34 0%, #1a1b26 100%);
+}
+
+.theme-tile__swatch--github-light {
+  background: linear-gradient(180deg, #fff 0%, #f6f8fa 100%);
+}
+
+.field-hint,
+.field-note {
+  margin: 0;
+  font-size: var(--mp-caption);
+  line-height: 1.5;
+  color: var(--dw-text-muted);
+}
+
+.field-note {
+  color: var(--dw-text-secondary);
+}
+
+.field-note.muted {
+  color: var(--dw-text-muted);
+}
+
+.danger-sql-toggle {
+  margin-bottom: 4px;
+}
+
+.whitelist-textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: clamp(8px, 1vmin, 10px) clamp(10px, 1.2vmin, 12px);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-panel-radius);
+  background: var(--dw-bg-panel);
+  color: var(--dw-text);
+  font-family: var(--dw-mono);
+  font-size: var(--mp-caption);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.editor-preview {
+  position: sticky;
+  top: 12px;
+  min-width: 0;
+}
+
+.editor-preview .preview-pane {
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-preview__hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--dw-text-muted);
+  line-height: 1.45;
+}
+
+.preview-editor {
+  height: clamp(360px, 42vh, 460px);
+  padding: 2px;
+  background: #1a1b26;
+  contain: layout size;
+  overflow: hidden;
+}
+
+.preview-editor :deep(.monaco-host),
+.preview-editor :deep(.sql-editor) {
+  height: 100%;
+  min-height: 0;
+}
+
+.preview-editor :deep(.monaco-host) {
+  border-radius: 0 0 10px 10px;
+}
+
+@media (max-width: 960px) {
+  .editor-settings__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-settings__main {
+    max-width: none;
+  }
+
+  .editor-preview {
+    position: static;
+    order: -1;
+  }
+
+  .editor-preview .preview-pane {
+    min-height: 0;
+  }
+
+  .editor-card__grid,
+  .editor-card__grid--query,
+  .theme-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-editor {
+    height: 300px;
+  }
+}
+</style>

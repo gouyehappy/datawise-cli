@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="60 seconds">
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="LOG_DIR" source="datawise.logging.dir" defaultValue="config/logs"/>
+
+    <property name="FILE_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{56} - %msg%n"/>
+
+    <!-- ── 同步文件 appender（由 async 包装）──────────────────────────── -->
+    <appender name="MAIN_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/datawise.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/datawise.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="EXCEPTION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/exception.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/exception.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="API_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/api-access.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/api-access.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONNECTION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/connection.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/connection.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="AI_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/ai.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archive/ai.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── 异步包装：避免热路径同步写盘阻塞请求 ───────────────────────── -->
+    <appender name="ASYNC_MAIN" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="MAIN_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_ERROR" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="ERROR_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_EXCEPTION" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="EXCEPTION_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_API" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="API_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_CONNECTION" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="CONNECTION_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_AI" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="AI_FILE"/>
+    </appender>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 分类 logger：additivity=false，避免同一行写多份文件 -->
+    <logger name="org.apache.datawise.backend.perf" level="INFO" additivity="true">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+
+    <logger name="datawise.exception" level="WARN" additivity="true">
+        <appender-ref ref="ASYNC_EXCEPTION"/>
+        <appender-ref ref="ASYNC_ERROR"/>
+    </logger>
+
+    <logger name="org.apache.datawise.backend.server.web.RequestLoggingFilter" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_API"/>
+    </logger>
+
+    <logger name="org.apache.datawise.backend.controller" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_API"/>
+    </logger>
+
+    <logger name="org.apache.datawise.backend.connector" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+
+    <logger name="org.apache.datawise.backend.jdbc.support.JdbcDriverLoader" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.jdbc.support.JdbcConnectionPoolManager" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.jdbc.support.JdbcDriverConnectionFactory" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.jdbc.session.JdbcSessionManager" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.jdbc.execution.JdbcQueryExecutor" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.connector.redis.support.RedisConnectionSupport" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+
+    <logger name="org.apache.datawise.backend.database.explorer.ExplorerService" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.database.connection.ConnectionTestService" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.database.sql.SqlService" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.database.sql.SqlSessionService" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.database.connection.JdbcDriverService" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.database.table.TableDataService" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.database.table.TableDetailService" level="WARN" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.database.table.TableSqlExportService" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+    <logger name="org.apache.datawise.backend.database.explorer.ExplorerRedisService" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_CONNECTION"/>
+    </logger>
+
+    <logger name="org.apache.datawise.backend.ai" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_AI"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_MAIN"/>
+        <appender-ref ref="ASYNC_ERROR"/>
+    </root>
+</configuration>

@@ -1,0 +1,315 @@
+/**
+ * 工作区 / 结果区共享 Tab 栏（IDEA 风格：默认平铺无色差，仅 hover / 激活有背景）
+ */
+.dw-tab-bar {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    height: var(--dw-tab-height);
+    padding: 0 4px;
+    border-bottom: 1px solid var(--dw-tab-bar-border);
+    background: var(--dw-tab-bar-bg);
+}
+
+.dw-tab-scroll {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    gap: var(--dw-tab-gap);
+    overflow: auto hidden;
+    padding: 0 2px;
+}
+
+.dw-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 220px;
+    height: var(--dw-tab-pill-height);
+    padding: 0 6px 0 5px;
+    border: 1px solid transparent;
+    border-radius: var(--dw-tab-pill-radius);
+    background: transparent;
+    color: var(--dw-tab-inactive-text);
+    white-space: nowrap;
+    font-size: var(--dw-tab-title-size);
+    font-weight: 400;
+    flex-shrink: 0;
+    transition: color 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.dw-tab:hover:not(.active) {
+    background: var(--dw-tab-hover-bg);
+    color: var(--dw-tab-inactive-text);
+}
+
+.dw-tab.active,
+.dw-tab.active:hover {
+    background: var(--dw-tab-active-bg);
+    border-color: var(--dw-tab-active-border);
+    color: var(--dw-tab-active-text);
+    box-shadow: none;
+}
+
+.dw-tab__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    opacity: 0.85;
+}
+
+.dw-tab__icon svg {
+    display: block;
+    width: 12px;
+    height: 12px;
+}
+
+.dw-tab.active .dw-tab__icon {
+    opacity: 1;
+}
+
+.dw-tab__dirty {
+    flex-shrink: 0;
+    margin-left: 1px;
+    color: #f59e0b;
+    font-size: 10px;
+    line-height: 1;
+}
+
+.dw-tab.active .dw-tab__dirty {
+    color: #d97706;
+}
+
+.dw-tab__status {
+    flex-shrink: 0;
+    color: #22c55e;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.dw-tab__status--error {
+    color: #ef4444;
+}
+
+.tab-prod-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--dw-danger, #dc2626);
+    flex-shrink: 0;
+}
+
+.dw-tab__title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    font-size: var(--dw-tab-title-size);
+    line-height: var(--dw-tab-title-line);
+    /* 留足基线空间，避免 _ 等字符被 overflow 裁切 */
+    padding-block: 1px;
+}
+
+.dw-tab.is-renaming {
+    cursor: default;
+    max-width: 200px;
+}
+
+.dw-tab__rename-input--suffix-only {
+    flex: 1;
+    min-width: 56px;
+    max-width: 140px;
+}
+
+.dw-tab__rename-input {
+    flex: 1;
+    min-width: 48px;
+    max-width: 160px;
+    margin: 0;
+    padding: 0 4px;
+    border: 1px solid var(--dw-accent, #3b82f6);
+    border-radius: 3px;
+    background: var(--dw-bg-editor, #fff);
+    color: var(--dw-text);
+    font-size: var(--dw-tab-title-size);
+    line-height: var(--dw-tab-title-line);
+    outline: none;
+}
+
+.dw-tab__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    margin-left: 1px;
+    border-radius: 4px;
+    color: inherit;
+    opacity: 0;
+    transition: opacity 0.12s ease, background 0.12s ease;
+}
+
+.dw-tab:hover .dw-tab__close,
+.dw-tab.active .dw-tab__close {
+    opacity: 0.55;
+}
+
+.dw-tab.active .dw-tab__close {
+    opacity: 0.7;
+}
+
+.dw-tab__close:hover {
+    opacity: 1;
+    background: var(--dw-tab-close-hover);
+}
+
+.dw-tab-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: var(--dw-tab-pill-height);
+    height: var(--dw-tab-pill-height);
+    margin: 0 1px 0 3px;
+    border: 1px solid transparent;
+    border-radius: var(--dw-tab-pill-radius);
+    background: transparent;
+    color: var(--dw-tab-inactive-text);
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.dw-tab-add:hover {
+    background: var(--dw-tab-hover-bg);
+    color: var(--dw-text-secondary);
+}
+
+.dw-tab-overflow {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: 2px;
+    padding-left: 6px;
+    border-left: 1px solid var(--dw-tab-bar-border);
+}
+
+.dw-tab-overflow--visible .dw-tab-overflow__btn {
+    color: var(--dw-text-secondary);
+}
+
+.dw-tab-overflow__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--dw-tab-inactive-text);
+    transform: rotate(90deg);
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.dw-tab-overflow__btn:hover {
+    background: var(--dw-tab-hover-bg);
+    color: var(--dw-text-secondary);
+}
+
+.dw-tab-overflow__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 50;
+    width: 220px;
+    max-height: 280px;
+    overflow: auto;
+    padding: 6px;
+    border: 1px solid var(--dw-border);
+    border-radius: 8px;
+    background: var(--dw-bg);
+    box-shadow: var(--dw-shadow);
+}
+
+.dw-tab-overflow__search {
+    width: 100%;
+    height: 28px;
+    margin-bottom: 4px;
+    padding: 0 8px;
+    border: 1px solid var(--dw-border);
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.dw-tab-overflow__item {
+    justify-content: flex-start;
+}
+
+.dw-tab-overflow__item.is-active {
+    color: var(--dw-tab-active-text);
+    font-weight: 500;
+    background: var(--dw-tab-active-bg);
+    border: 1px solid var(--dw-tab-active-border);
+    border-radius: var(--dw-tab-pill-radius);
+}
+
+/* ---- IDEA 风格 Tab 基元（其它 Tab 栏复用同一套令牌） ---- */
+
+.dw-ide-tab-strip {
+    display: flex;
+    align-items: center;
+    gap: var(--dw-tab-gap);
+    padding: 0 4px;
+    background: var(--dw-tab-bar-bg);
+    border-bottom: 1px solid var(--dw-tab-bar-border);
+}
+
+.dw-ide-tab,
+.team-tab,
+.migration-panel__tab,
+.sql-monitor__tab,
+.plugin-dev-tab,
+.modal-segment__btn,
+.mp-segment__btn,
+.mode-segment__btn {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--dw-tab-inactive-text);
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.dw-ide-tab:hover:not(.active):not(.is-active):not(:disabled),
+.team-tab:hover:not(.is-active),
+.migration-panel__tab:hover:not(.is-active),
+.sql-monitor__tab:hover:not(:disabled):not(.sql-monitor__tab--active),
+.plugin-dev-tab:hover:not(.is-active),
+.modal-segment__btn:hover:not(.is-active),
+.mp-segment__btn:hover:not(.is-active):not(:disabled),
+.mode-segment__btn:hover:not(.is-active):not(:disabled) {
+    background: var(--dw-tab-hover-bg);
+    color: var(--dw-tab-inactive-text);
+}
+
+.dw-ide-tab.active,
+.dw-ide-tab.is-active,
+.team-tab.is-active,
+.migration-panel__tab.is-active,
+.sql-monitor__tab--active,
+.plugin-dev-tab.is-active,
+.modal-segment__btn.is-active,
+.mp-segment__btn.is-active,
+.mode-segment__btn.is-active {
+    background: var(--dw-tab-active-bg);
+    border-color: var(--dw-tab-active-border);
+    color: var(--dw-tab-active-text);
+    box-shadow: none;
+}

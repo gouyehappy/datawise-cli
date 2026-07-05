@@ -1,0 +1,41 @@
+/**
+ * Monaco 缩略图 — 窄条、浅色通道、轻量视口框
+ */
+.monaco-host :deep(.minimap) {
+    border-left: 1px solid var(--dw-minimap-border);
+    box-shadow: inset 6px 0 10px -10px var(--dw-minimap-inset-shadow);
+}
+
+.monaco-host :deep(.minimap-slider) {
+    background: var(--dw-minimap-slider-bg) !important;
+    border: 1px solid var(--dw-minimap-slider-border) !important;
+    border-radius: 3px !important;
+    box-shadow: 0 0 0 1px var(--dw-minimap-slider-ring) inset !important;
+    transition: background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.monaco-host :deep(.minimap:hover .minimap-slider) {
+    background: var(--dw-minimap-slider-hover-bg) !important;
+    border-color: var(--dw-minimap-slider-hover-border) !important;
+}
+
+.monaco-host[data-minimap-tone='dark'] {
+    --dw-minimap-border: rgba(255, 255, 255, 0.07);
+    --dw-minimap-inset-shadow: rgba(0, 0, 0, 0.18);
+    --dw-minimap-slider-bg: rgba(255, 255, 255, 0.05);
+    --dw-minimap-slider-border: rgba(255, 255, 255, 0.16);
+    --dw-minimap-slider-ring: rgba(255, 255, 255, 0.06);
+    --dw-minimap-slider-hover-bg: rgba(167, 139, 250, 0.1);
+    --dw-minimap-slider-hover-border: rgba(167, 139, 250, 0.38);
+}
+
+.monaco-host[data-minimap-tone='light'] {
+    --dw-minimap-border: rgba(15, 23, 42, 0.08);
+    --dw-minimap-inset-shadow: rgba(15, 23, 42, 0.04);
+    --dw-minimap-slider-bg: rgba(15, 23, 42, 0.04);
+    --dw-minimap-slider-border: rgba(15, 23, 42, 0.12);
+    --dw-minimap-slider-ring: rgba(255, 255, 255, 0.6);
+    --dw-minimap-slider-hover-bg: rgba(124, 58, 237, 0.06);
+    --dw-minimap-slider-hover-border: rgba(124, 58, 237, 0.28);
+}

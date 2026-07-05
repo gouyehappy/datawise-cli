@@ -1,0 +1,66 @@
+import {computed, onMounted, reactive, watch} from 'vue'
+import type {ConnectionConfig, DbType} from '@/core/types'
+import {DB_TYPE_LABELS} from '@/features/connection/constants/db-types'
+import {createDefaultConnection} from '@/features/connection/utils/connection-defaults'
+import {buildJdbcUrl} from '@/features/connection/utils/jdbc-url'
+import {normalizeConnectionEnvironment} from '@/features/connection/services/connection-environment.service'
+import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource-catalog'
+
+/** 新建 / 编辑连接表单：默认值 + JDBC URL 自动同步 */
+export function useConnectionForm(dbType: DbType) {
+    const catalogStore = useDatasourceCatalogStore()
+    const form = reactive(createDefaultConnection(dbType))
+
+    onMounted(() => {
+        void catalogStore.ensureLoaded().then(() => applyCatalogDefaults(dbType))
+    })
+
+    const label = computed(() => {
+        const id = form.dbType ?? dbType
+        return catalogStore.items.find((item) => item.id === id)?.label
+            ?? DB_TYPE_LABELS[id as DbType]
+            ?? id
+    })
+
+    function applyCatalogDefaults(type: DbType) {
+        const item = catalogStore.items.find((entry) => entry.id === type)
+        if (!item) return
+        if (!form.port) form.port = item.defaultPort
+        if (!form.driver && item.defaultDriverMaven) form.driver = item.defaultDriverMaven
+        if (!form.driverClass && item.defaultDriverClass) form.driverClass = item.defaultDriverClass
+    }
+
+    watch(
+        () => [form.host, form.port, form.sid, form.database] as const,
+        () => {
+            form.url = buildJdbcUrl(form.dbType ?? dbType, form.host, form.port, {
+                sid: form.sid,
+                database: form.database,
+            })
+        },
+        {immediate: true},
+    )
+
+    function applyConfig(config: ConnectionConfig) {
+        const resolvedType = (config.dbType ?? dbType) as DbType
+        const item = catalogStore.items.find((entry) => entry.id === resolvedType)
+        const normalizedEnv = normalizeConnectionEnvironment(config.env, config.envCustom)
+        Object.assign(form, createDefaultConnection(resolvedType, item), config, {
+            dbType: resolvedType,
+            password: config.password ?? '',
+            env: normalizedEnv.env,
+            envCustom: normalizedEnv.envCustom,
+        })
+    }
+
+    function getPayload(): ConnectionConfig {
+        const normalizedEnv = normalizeConnectionEnvironment(form.env, form.envCustom)
+        return {
+            ...form,
+            env: normalizedEnv.env,
+            envCustom: normalizedEnv.envCustom,
+        }
+    }
+
+    return {form, label, getPayload, applyConfig}
+}

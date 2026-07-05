@@ -1,0 +1,196 @@
+/**
+ * 全局设计令牌（颜色、尺寸、字体）
+ *
+ * 明暗配色由 theme.service.ts 在运行时统一写入；
+ * 此处仅保留首屏兜底（index.html 内联脚本设置 data-theme 后生效）。
+ */
+:root {
+    /* 视口缩放尺度 — 全应用统一，布局固定，仅尺寸随屏变化 */
+    --mp-pad: clamp(10px, 1.4vmin, 20px);
+    --mp-gap: clamp(6px, 0.9vmin, 12px);
+    --mp-gap-lg: clamp(10px, 1.2vmin, 16px);
+    --mp-title: clamp(17px, 2vmin, 22px);
+    --mp-section: clamp(13px, 1.45vmin, 15px);
+    --mp-sub: clamp(11px, 1.2vmin, 13px);
+    --mp-body: clamp(11px, 1.15vmin, 13px);
+    --mp-caption: clamp(10px, 1vmin, 11px);
+    --mp-stat-num: clamp(20px, 2.6vmin, 28px);
+    --mp-btn-h: clamp(28px, 3.2vmin, 36px);
+    --mp-input-h: clamp(30px, 3.4vmin, 36px);
+    --mp-radius: clamp(6px, 0.8vmin, 10px);
+    --mp-head-h: clamp(30px, 3.6vmin, 36px);
+    --mp-nav-w: clamp(168px, 15vmin, 220px);
+    --mp-stat-min-h: clamp(56px, 7vmin, 72px);
+    --mp-quick-h: clamp(32px, 4vmin, 40px);
+    --mp-page-max: clamp(960px, 92vw, 1240px);
+    --mp-hero-radius: clamp(10px, 1.2vmin, 16px);
+    --mp-tone-sky: #0ea5e9;
+    --mp-tone-amber: #d97706;
+    --mp-tone-emerald: #059669;
+    --mp-tone-rose: #e11d48;
+    --mp-tone-indigo: #4f46e5;
+
+    --dw-primary: #7c3aed;
+    --dw-primary-hover: #6d28d9;
+    --dw-primary-softer: rgba(124, 58, 237, 0.06);
+    --dw-primary-mild: rgba(124, 58, 237, 0.1);
+    --dw-primary-soft: rgba(124, 58, 237, 0.12);
+    --dw-primary-tint: color-mix(in srgb, #7c3aed 11%, #ffffff);
+    --dw-primary-border: rgba(124, 58, 237, 0.45);
+    --dw-primary-ring: rgba(124, 58, 237, 0.22);
+
+    --dw-bg: #ffffff;
+    --dw-bg-muted: #f8f9fb;
+    --dw-bg-panel: #fafbfc;
+    --dw-bg-hover: #f3f4f6;
+    --dw-bg-rail: #f5f6f8;
+    --dw-bg-editor: #ffffff;
+    --dw-bg-chrome: #e3e6eb;
+
+    --dw-border: #e5e7eb;
+    --dw-border-light: #eef0f3;
+    --dw-panel-border: rgba(15, 23, 42, 0.08);
+    --dw-panel-radius: var(--mp-radius);
+    --dw-panel-gap: var(--mp-gap);
+    --dw-panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --dw-shell-padding: var(--mp-gap);
+    --dw-tool-stripe-width: 64px;
+    --dw-workbench-inset: calc(var(--dw-shell-padding) + var(--dw-tool-stripe-width) + var(--dw-panel-gap));
+    --dw-explorer-min-width: 180px;
+    --dw-side-panel-max-width: min(960px, 55vw);
+
+    --dw-text: #111827;
+    --dw-text-secondary: #6b7280;
+    --dw-text-muted: #9ca3af;
+    --dw-text-dim: #808080;
+
+    --dw-tool-pill-radius: 8px;
+    --dw-tool-caption-size: 10px;
+    --dw-rail-width: var(--dw-tool-stripe-width);
+    --dw-shortcut-width: var(--dw-tool-stripe-width);
+    --dw-menu-height: clamp(26px, 3vmin, 28px);
+    --dw-toolbar-height: clamp(36px, 4.2vmin, 42px);
+    --dw-status-height: clamp(30px, 3.4vmin, 34px);
+    --dw-tab-height: clamp(28px, 3.4vmin, 32px);
+    --dw-tab-pill-height: clamp(22px, 2.6vmin, 24px);
+    --dw-tab-pill-radius: var(--mp-radius);
+    --dw-tab-gap: clamp(2px, 0.35vmin, 3px);
+    --dw-tab-title-size: var(--mp-caption);
+    --dw-tab-title-line: clamp(13px, 1.5vmin, 14px);
+
+    --dw-tab-bar-bg: #dee1e6;
+    --dw-tab-bar-border: #c8ccd4;
+    --dw-tab-active-bg: #ffffff;
+    --dw-tab-active-border: #007acc;
+    --dw-tab-active-text: #1f2937;
+    --dw-tab-inactive-text: #6b7280;
+    --dw-tab-hover-bg: rgba(0, 0, 0, 0.08);
+    --dw-tab-close-hover: rgba(0, 0, 0, 0.08);
+
+    --dw-tool-hover: color-mix(in srgb, var(--dw-text) 6%, transparent);
+    --dw-tool-active: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-rail));
+    --dw-tool-pill-active: color-mix(in srgb, var(--dw-text) 9%, var(--dw-bg-hover));
+
+    --dw-radius: var(--mp-radius);
+    --dw-radius-sm: clamp(3px, 0.45vmin, 4px);
+    --dw-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+    --dw-menu-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.06),
+    0 16px 40px rgba(15, 23, 42, 0.1);
+    --dw-composer-shell-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 10px 28px rgba(15, 23, 42, 0.05);
+    --dw-composer-focus-shadow: 0 0 0 1px color-mix(in srgb, var(--dw-primary) 22%, transparent),
+    0 8px 24px color-mix(in srgb, var(--dw-primary) 14%, transparent),
+    0 2px 8px rgba(15, 23, 42, 0.06);
+    --dw-surface-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    --dw-kbd-elev-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+    --dw-btn-elev-shadow: 0 1px 2px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    --dw-btn-elev-shadow-hover: 0 4px 12px color-mix(in srgb, var(--dw-primary) 34%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    --dw-console-chrome-inset: clamp(6px, 0.8vmin, 8px);
+    --dw-console-action-inset: clamp(6px, 0.8vmin, 8px);
+    --dw-console-toolbar-height: clamp(31px, 3.5vmin, 34px);
+    --dw-console-btn-size: clamp(25px, 2.9vmin, 28px);
+    --dw-console-icon-size: clamp(15px, 1.7vmin, 17px);
+
+    --dw-icon-size-xs: clamp(10px, 1.15vmin, 12px);
+    --dw-icon-size-sm: clamp(12px, 1.35vmin, 14px);
+    --dw-icon-size-md: clamp(14px, 1.55vmin, 16px);
+    --dw-icon-size-lg: clamp(18px, 2vmin, 20px);
+    --dw-icon-size-xl: clamp(20px, 2.35vmin, 22px);
+    --dw-icon-size-rail: clamp(20px, 2.4vmin, 22px);
+    --dw-icon-size-console: var(--dw-console-icon-size);
+    --dw-icon-size-tab: clamp(13px, 1.45vmin, 14px);
+    --dw-icon-size-menu: clamp(13px, 1.5vmin, 15px);
+    --dw-icon-size: var(--dw-icon-size-md);
+    --dw-console-ctx-height: clamp(24px, 2.8vmin, 26px);
+    --dw-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --dw-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    --dw-scrollbar-size: 8px;
+    --dw-scrollbar-thumb: color-mix(in srgb, var(--dw-text-muted) 36%, transparent);
+    --dw-scrollbar-thumb-hover: color-mix(in srgb, var(--dw-text-secondary) 52%, transparent);
+    --dw-scrollbar-track: transparent;
+}
+
+/* 首屏兜底：完整深色令牌，避免 :root 浅色残留（theme-boot.js / theme-init 加载前） */
+[data-theme='dark'] {
+    color-scheme: dark;
+    --dw-primary: #7c3aed;
+    --dw-primary-hover: #6d28d9;
+    --dw-primary-softer: rgba(124, 58, 237, 0.08);
+    --dw-primary-mild: rgba(124, 58, 237, 0.16);
+    --dw-primary-soft: rgba(124, 58, 237, 0.14);
+    --dw-primary-tint: color-mix(in srgb, #7c3aed 18%, #1c1c1f);
+    --dw-primary-border: rgba(124, 58, 237, 0.45);
+    --dw-primary-ring: rgba(124, 58, 237, 0.34);
+    --dw-bg: #111113;
+    --dw-bg-muted: #18181b;
+    --dw-bg-panel: #1c1c1f;
+    --dw-bg-hover: #27272a;
+    --dw-bg-rail: #141416;
+    --dw-bg-editor: var(--dw-bg);
+    --dw-bg-chrome: var(--dw-bg-rail);
+    --dw-border: #2e2e32;
+    --dw-border-light: #232326;
+    --dw-panel-border: rgba(255, 255, 255, 0.06);
+    --dw-panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+    --dw-text: #bcbec4;
+    --dw-text-secondary: #a0a3a8;
+    --dw-text-muted: #868a91;
+    --dw-text-dim: #6f737a;
+    --dw-tool-hover: color-mix(in srgb, #fff 7%, transparent);
+    --dw-tool-active: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-rail));
+    --dw-tool-pill-active: #4a4d50;
+    --dw-tab-bar-bg: #3c3f41;
+    --dw-tab-bar-border: #323437;
+    --dw-tab-active-bg: #4e5254;
+    --dw-tab-active-border: #3574f0;
+    --dw-tab-active-text: #dfe1e5;
+    --dw-tab-inactive-text: #a0a3a8;
+    --dw-tab-hover-bg: rgba(255, 255, 255, 0.08);
+    --dw-tab-close-hover: rgba(255, 255, 255, 0.1);
+    --dw-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --dw-menu-shadow: 0 1px 2px rgba(0, 0, 0, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.24),
+    0 16px 40px rgba(0, 0, 0, 0.32);
+    --dw-composer-shell-shadow: 0 1px 2px rgba(0, 0, 0, 0.32),
+    0 6px 16px rgba(0, 0, 0, 0.24);
+    --dw-composer-focus-shadow: 0 0 0 1px color-mix(in srgb, var(--dw-primary) 28%, transparent),
+    0 6px 20px color-mix(in srgb, var(--dw-primary) 18%, transparent),
+    0 2px 6px rgba(0, 0, 0, 0.28);
+    --dw-surface-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --dw-kbd-elev-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --dw-btn-elev-shadow: 0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    --dw-btn-elev-shadow-hover: 0 4px 12px color-mix(in srgb, var(--dw-primary) 28%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    --dw-scrollbar-thumb: color-mix(in srgb, var(--dw-text-muted) 72%, #000);
+    --dw-scrollbar-thumb-hover: color-mix(in srgb, var(--dw-text-secondary) 88%, #000);
+}
+
+.keyword {
+    color: var(--dw-primary);
+    font-weight: 600;
+}

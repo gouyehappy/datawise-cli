@@ -1,0 +1,14 @@
+/** 补全收集器类型（plan / grammar / provider 共用） */
+export type CompletionCollector =
+    | 'fkJoinLines'
+    | 'tables'
+    | 'keywords'
+    | 'snippets'
+    | 'columns'
+    | 'aliasDotStar'
+    | 'aliasComplete'
+    | 'starExpansion'
+    | 'fkOn'
+    | 'predicateValues'
+    | 'ddlTypes'
+    | 'aiAssist'

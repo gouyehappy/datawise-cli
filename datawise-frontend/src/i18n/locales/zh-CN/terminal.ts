@@ -1,0 +1,16 @@
+export default {
+    title: 'Terminal',
+    subtitle: 'Electron 下连接系统 Shell（PowerShell / Bash）；浏览器模式为演示终端',
+    nativeMode: '系统 Shell（{shell}）',
+    demoMode: '演示终端 — 请使用桌面版获得完整 Shell',
+    openInTab: '在新标签打开',
+    clear: '清屏',
+    cleared: '终端已清屏',
+    nativeFailed: '无法启动系统终端',
+    processExit: '进程已退出 (code: {code})',
+    mockHint: '演示模式：Tab 可输入制表符，完整补全请使用 Electron 桌面版',
+    contextHint: '{tool} · {name}',
+    contextCopyTitle: '复制 CLI 连接命令',
+    contextCopied: 'CLI 连接命令已复制到剪贴板',
+    contextCopyFailed: '复制 CLI 连接命令失败',
+}

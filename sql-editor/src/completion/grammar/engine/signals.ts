@@ -1,0 +1,182 @@
+import type {SqlCompletionSlot} from '@sql-editor/types'
+import type {FromJoinTableState} from '../../from-join'
+import {isKeywordFirstContext} from '../../keyword-first'
+import type {TransitionId} from '../definitions/types'
+import {detectAfterCompleteGroupByList} from '../transitions/clause'
+import {
+    detectAfterCompleteOnPredicate,
+    detectAfterCompleteWherePredicate,
+    segmentEndsWithOperator,
+} from '../transitions/predicate'
+import {detectAfterSelectAggregateKeyword} from '../transitions/select-list'
+import {detectDdlAwaitingColumnType} from '../transitions/ddl'
+
+/** 所有 TransitionId（always 由 evaluateTransition 直接处理，不入 signals） */
+export const TRANSITION_IDS: readonly TransitionId[] = [
+    'column_ref',
+    'after_comma',
+    'after_select_aggregate',
+    'after_complete_on_predicate',
+    'after_complete_where_predicate',
+    'after_complete_group_by_list',
+    'after_predicate_operator',
+    'after_complete_column_ref',
+    'after_condition_connector',
+    'order_by_after_column',
+    'from_awaiting_on_clause',
+    'from_table_clause_complete',
+    'from_awaiting_table_name',
+    'from_awaiting_join_table',
+    'keyword_first_slot',
+    'ddl_awaiting_column_type',
+] as const
+
+export type GrammarSignals = Readonly<Record<Exclude<TransitionId, 'always'>, boolean>>
+
+const PREDICATE_SLOTS = new Set<SqlCompletionSlot>(['where', 'having', 'on', 'set'])
+
+const CONDITION_KEYWORDS = new Set([
+    'and', 'or', 'not', 'in', 'like', 'between', 'is', 'exists', 'null',
+])
+
+export type ComputeSignalsInput = {
+    segment: string
+    slot: SqlCompletionSlot
+    columnPrefix: string | null
+    resolvedTable: string | null
+    knownColumns: Record<string, { name: string }[]>
+    knownColumnNames: Set<string>
+    fromJoin: FromJoinTableState | null
+}
+
+function emptySignals(): Record<Exclude<TransitionId, 'always'>, boolean> {
+    return Object.fromEntries(TRANSITION_IDS.map((id) => [id, false])) as Record<
+        Exclude<TransitionId, 'always'>,
+        boolean
+    >
+}
+
+function isKnownColumnName(name: string, knownColumnNames: Set<string>): boolean {
+    const lower = name.toLowerCase()
+    if (CONDITION_KEYWORDS.has(lower)) return false
+    return knownColumnNames.has(lower)
+}
+
+function detectAfterComma(segment: string, slot: SqlCompletionSlot): boolean {
+    if (
+        slot !== 'select_list' &&
+        slot !== 'where' &&
+        slot !== 'group_by' &&
+        slot !== 'order_by' &&
+        slot !== 'tail'
+    ) {
+        return false
+    }
+    return /,\s*[\w$`"']*$/.test(segment) || /,\s*$/.test(segment)
+}
+
+function detectAfterCompleteColumnRef(input: ComputeSignalsInput): boolean {
+    const {segment, slot, columnPrefix, resolvedTable, knownColumns, knownColumnNames} = input
+    if (segmentEndsWithOperator(segment)) return false
+
+    if (slot === 'column_ref' && columnPrefix && columnPrefix !== '*') {
+        if (resolvedTable) {
+            const cols = knownColumns[resolvedTable] ?? knownColumns[resolvedTable.toLowerCase()]
+            if (cols?.some((c) => c.name.toLowerCase() === columnPrefix.toLowerCase())) return true
+        }
+    }
+
+    if (PREDICATE_SLOTS.has(slot)) {
+        const qualMatch = /\b([\w$]+)\.([\w$]+)\s*$/i.exec(segment.trimEnd())
+        if (qualMatch) {
+            const col = qualMatch[2]
+            if (col && isKnownColumnName(col, knownColumnNames)) return true
+        }
+
+        const unqualMatch = /\b(?:AND|OR|WHERE|HAVING|ON|,)\s+([\w$]+)\s*$/i.exec(segment.trimEnd())
+        if (unqualMatch?.[1]) {
+            const col = unqualMatch[1]
+            if (isKnownColumnName(col, knownColumnNames)) return true
+        }
+    }
+
+    if (slot === 'order_by') {
+        const tail = segment.trimEnd()
+        if (/\b(ASC|DESC)\s*$/i.test(tail)) return false
+        const match = /\bORDER BY\s+(.+)$/i.exec(tail)
+        if (!match?.[1]?.trim()) return false
+        const orderList = match[1].trimEnd()
+        return /\b[`"'\[]?[\w$]+[`"'\]]?\s*$/i.test(orderList)
+    }
+
+    return false
+}
+
+function detectAfterConditionConnector(segment: string, slot: SqlCompletionSlot): boolean {
+    if (!PREDICATE_SLOTS.has(slot) && slot !== 'where' && slot !== 'having' && slot !== 'on') {
+        return false
+    }
+    const tail = segment.trimEnd()
+    if (/\b(AND|OR)\s*$/i.test(tail)) return true
+    if (/\bWHERE\s+1\s*=\s*1\s+AND\s*$/i.test(tail)) return true
+    return false
+}
+
+function detectAfterPredicateOperator(segment: string, slot: SqlCompletionSlot): boolean {
+    if (!PREDICATE_SLOTS.has(slot)) return false
+    if (segmentEndsWithOperator(segment)) return true
+    const tail = segment.trimEnd()
+    if (/\b(LIKE|IN|IS|BETWEEN)\s+$/i.test(tail)) return true
+    return false
+}
+
+/** 单一入口：从 segment + 作用域计算全部语法信号 */
+export function computeGrammarSignals(input: ComputeSignalsInput): GrammarSignals {
+    const {segment, slot, fromJoin} = input
+    const signals = emptySignals()
+
+    signals.column_ref = slot === 'column_ref'
+    signals.after_comma = detectAfterComma(segment, slot)
+    signals.after_select_aggregate = detectAfterSelectAggregateKeyword(segment, slot)
+    signals.after_complete_on_predicate = detectAfterCompleteOnPredicate(segment, slot)
+    signals.after_complete_where_predicate = detectAfterCompleteWherePredicate(segment, slot)
+    signals.after_complete_group_by_list = detectAfterCompleteGroupByList(segment, slot)
+
+    const clauseComplete =
+        signals.after_complete_on_predicate || signals.after_complete_where_predicate
+
+    signals.after_complete_column_ref = clauseComplete
+        ? false
+        : detectAfterCompleteColumnRef(input)
+
+    signals.after_condition_connector =
+        !signals.after_complete_column_ref && detectAfterConditionConnector(segment, slot)
+
+    signals.after_predicate_operator =
+        !signals.after_complete_column_ref &&
+        !signals.after_condition_connector &&
+        detectAfterPredicateOperator(segment, slot)
+
+    signals.order_by_after_column = slot === 'order_by' && signals.after_complete_column_ref
+
+    signals.from_awaiting_on_clause = fromJoin?.awaitingOnClause === true
+    signals.from_table_clause_complete =
+        fromJoin?.tableClauseComplete === true && !fromJoin?.awaitingOnClause
+    signals.from_awaiting_table_name = fromJoin?.awaitingTableName === true
+    signals.from_awaiting_join_table = fromJoin?.awaitingJoinTable === true
+
+    signals.keyword_first_slot = isKeywordFirstContext(
+        slot,
+        signals.after_comma,
+        signals.after_condition_connector,
+        signals.after_predicate_operator,
+    )
+
+    signals.ddl_awaiting_column_type = detectDdlAwaitingColumnType(segment)
+
+    return signals
+}
+
+export function hasSignal(ctx: { signals: GrammarSignals }, id: Exclude<TransitionId, 'always'>): boolean {
+    return ctx.signals[id] === true
+}

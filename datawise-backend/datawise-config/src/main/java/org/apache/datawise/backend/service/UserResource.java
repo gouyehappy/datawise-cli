@@ -1,0 +1,19 @@
+package org.apache.datawise.backend.service;
+
+/**
+ * 用户资源域：菜单/配置/数据源/AI/用户产出，统一由 {@link UserResourcePolicy} 裁决。
+ */
+public enum UserResource {
+    LAYOUT_MENU,
+    APP_CONFIG,
+    AI_PREFERENCES,
+    AI_KNOWLEDGE,
+    CONNECTION_CATALOG,
+    WORKSPACE_SCRIPTS,
+    /** SQL 历史、收藏控制台、导出任务等用户产出数据 */
+    WORKSPACE_USER_DATA,
+    SQL_SNIPPETS_PERSONAL,
+    SQL_SNIPPETS_SHARED,
+    UPDATER_PREFERENCES,
+    CONNECTIONS_XML_BULK
+}

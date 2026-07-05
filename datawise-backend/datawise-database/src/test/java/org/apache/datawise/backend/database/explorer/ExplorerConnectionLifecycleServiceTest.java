@@ -1,0 +1,133 @@
+package org.apache.datawise.backend.database.explorer;
+
+import org.apache.datawise.backend.connector.facade.ConnectorFacade;
+import org.apache.datawise.backend.connector.facade.catalog.ConnectorCatalogAccess;
+import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
+import org.apache.datawise.backend.domain.ConnectionTestResult;
+import org.apache.datawise.backend.model.ConnectionEntity;
+import org.apache.datawise.backend.jdbc.support.JdbcDriverConnectionFactory;
+import org.apache.datawise.backend.database.connection.JdbcConnectionPoolWarmupService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class ExplorerConnectionLifecycleServiceTest {
+
+    @Mock
+    private ConnectionExecutionContext connectionContext;
+    @Mock
+    private ConnectorFacade connectorFacade;
+    @Mock
+    private ConnectorCatalogAccess catalogAccess;
+    @Mock
+    private JdbcDriverConnectionFactory jdbcDriverConnectionFactory;
+    @Mock
+    private ExplorerSchemaSessionPool schemaSessionPool;
+    @Mock
+    private ExplorerTreeBuilder treeBuilder;
+    @Mock
+    private JdbcConnectionPoolWarmupService poolWarmupService;
+
+    private ExplorerConnectionLifecycleService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new ExplorerConnectionLifecycleService(
+                connectionContext,
+                connectorFacade,
+                jdbcDriverConnectionFactory,
+                schemaSessionPool,
+                treeBuilder,
+                poolWarmupService
+        );
+    }
+
+    @Test
+    void disconnect_evictsPoolAndInvalidatesSchemaSession() {
+        stubConnection("conn-1");
+
+        service.disconnect("conn-1");
+
+        verify(jdbcDriverConnectionFactory).evictPool("conn-1");
+        verify(schemaSessionPool).invalidate("conn-1");
+        verify(treeBuilder).saveSchemaChildren("conn-1", List.of());
+    }
+
+    @Test
+    void connect_warmupSuccessSkipsSeparateProbe() {
+        ConnectionEntity entity = stubConnection("conn-2");
+        when(poolWarmupService.warmup(entity)).thenReturn(new JdbcConnectionPoolWarmupService.WarmupResult(2, 2));
+
+        ConnectionTestResult result = service.connect("conn-2");
+
+        assertTrue(result.ok());
+        assertTrue(result.message().contains("pool warmed"));
+        verify(poolWarmupService).warmup(entity);
+        verify(catalogAccess, never()).pingConnection(entity);
+        verify(catalogAccess, never()).testConnection(entity);
+    }
+
+    @Test
+    void connect_fallsBackToPingWhenWarmupFails() {
+        ConnectionEntity entity = stubConnection("conn-4");
+        when(connectorFacade.catalog()).thenReturn(catalogAccess);
+        when(poolWarmupService.warmup(entity)).thenReturn(new JdbcConnectionPoolWarmupService.WarmupResult(0, 2));
+        when(catalogAccess.pingConnection(entity)).thenReturn(new ConnectionTestResult(false, "fail", 3));
+
+        ConnectionTestResult result = service.connect("conn-4");
+
+        assertFalse(result.ok());
+        verify(poolWarmupService).warmup(entity);
+        verify(catalogAccess).pingConnection(entity);
+    }
+
+    @Test
+    void ping_delegatesToCatalogPing() {
+        ConnectionEntity entity = stubConnection("conn-ping");
+        when(connectorFacade.catalog()).thenReturn(catalogAccess);
+        when(catalogAccess.pingConnection(entity)).thenReturn(new ConnectionTestResult(true, "reachable", 2));
+
+        ConnectionTestResult result = service.ping("conn-ping");
+
+        assertTrue(result.ok());
+        verify(catalogAccess).pingConnection(entity);
+    }
+
+    @Test
+    void reconnect_disconnectsBeforeTesting() {
+        ConnectionEntity entity = stubConnection("conn-3");
+        when(poolWarmupService.warmup(entity)).thenReturn(new JdbcConnectionPoolWarmupService.WarmupResult(1, 1));
+
+        ConnectionTestResult result = service.reconnect("conn-3");
+
+        assertTrue(result.ok());
+        verify(jdbcDriverConnectionFactory).evictPool("conn-3");
+        verify(schemaSessionPool).invalidate("conn-3");
+        verify(treeBuilder).saveSchemaChildren("conn-3", List.of());
+        verify(poolWarmupService).warmup(entity);
+        verify(catalogAccess, never()).testConnection(entity);
+    }
+
+    private ConnectionEntity stubConnection(String connectionId) {
+        ConnectionEntity entity = new ConnectionEntity();
+        entity.setId(connectionId);
+        entity.setDbType("mysql");
+        when(connectionContext.requireAvailableConnectionForCurrentUser(
+                eq(connectionId),
+                eq(ConnectionExecutionContext.EXPLORER_CONNECTION_NOT_FOUND)
+        )).thenReturn(new ConnectionExecutionContext.ResolvedConnection(1L, entity));
+        return entity;
+    }
+}

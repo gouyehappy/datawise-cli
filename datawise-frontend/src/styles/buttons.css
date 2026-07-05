@@ -1,0 +1,394 @@
+:root {
+    --dw-icon-btn-size: clamp(24px, 2.8vmin, 28px);
+    --dw-icon-btn-size-sm: clamp(20px, 2.4vmin, 24px);
+    --dw-icon-btn-size-lg: clamp(32px, 3.8vmin, 38px);
+    --dw-icon-glyph-size: clamp(13px, 1.5vmin, 15px);
+
+    --dw-btn-height: var(--mp-btn-h);
+    --dw-btn-height-sm: clamp(26px, 3vmin, 30px);
+    --dw-btn-radius: var(--mp-radius);
+    --dw-btn-gap: 2px;
+}
+
+/* ---- 图标按钮（工具栏风格） ---- */
+.dw-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: var(--dw-icon-btn-size);
+    height: var(--dw-icon-btn-size);
+    border-radius: var(--dw-btn-radius);
+    border: 1px solid transparent;
+    color: var(--dw-text-muted);
+    overflow: visible;
+    transition: background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.dw-icon-btn--sm {
+    width: var(--dw-icon-btn-size-sm);
+    height: var(--dw-icon-btn-size-sm);
+}
+
+.dw-icon-btn--lg {
+    width: var(--dw-icon-btn-size-lg);
+    height: var(--dw-icon-btn-size-lg);
+    border-radius: 8px;
+}
+
+.dw-icon-btn:hover {
+    background: var(--dw-primary-softer);
+    border-color: color-mix(in srgb, var(--dw-primary) 12%, transparent);
+    color: var(--dw-primary);
+}
+
+.dw-icon-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.dw-icon-btn:disabled:hover {
+    background: transparent;
+    border-color: transparent;
+    color: var(--dw-text-muted);
+}
+
+.dw-icon-btn.is-active {
+    background: var(--dw-primary-soft);
+    border-color: var(--dw-primary-ring);
+    color: var(--dw-primary);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dw-primary) 10%, transparent);
+}
+
+.dw-icon-btn.is-nav-active {
+    background: var(--dw-primary-soft);
+    color: var(--dw-primary);
+    box-shadow: inset 0 0 0 1px var(--dw-primary-ring);
+}
+
+.dw-icon-btn.is-nav-active:hover {
+    background: var(--dw-primary-mild);
+    color: var(--dw-primary-hover);
+}
+
+.dw-icon-btn.is-nav-db-active {
+    background: rgba(8, 145, 178, 0.12);
+    color: #0891b2;
+    box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.22);
+}
+
+.dw-icon-btn.is-nav-db-active:hover {
+    background: rgba(8, 145, 178, 0.18);
+    color: #0e7490;
+}
+
+.dw-icon-btn--accent {
+    background: var(--dw-primary-tint);
+    border-color: var(--dw-primary-ring);
+    color: var(--dw-primary);
+}
+
+.dw-icon-btn--accent:hover {
+    background: var(--dw-primary-soft);
+    border-color: var(--dw-primary-border);
+    color: var(--dw-primary-hover);
+}
+
+/* ---- 文字按钮 ---- */
+.dw-text-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--dw-btn-height-sm);
+    padding: 0 12px;
+    border-radius: var(--dw-btn-radius);
+    border: 1px solid transparent;
+    color: var(--dw-text-secondary);
+    font-size: 13px;
+    white-space: nowrap;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.dw-text-btn:hover {
+    background: var(--dw-primary-softer);
+    border-color: color-mix(in srgb, var(--dw-primary) 10%, transparent);
+    color: var(--dw-primary);
+}
+
+.dw-text-btn--accent {
+    background: var(--dw-primary-tint);
+    border-color: var(--dw-primary-ring);
+    color: var(--dw-primary);
+    font-weight: 500;
+}
+
+.dw-text-btn--accent:hover {
+    background: var(--dw-primary-soft);
+    border-color: var(--dw-primary-border);
+    color: var(--dw-primary-hover);
+}
+
+.dw-text-btn--solid {
+    background: var(--dw-primary-tint);
+    border-color: var(--dw-primary-ring);
+    color: var(--dw-primary);
+}
+
+.dw-text-btn--solid:hover {
+    background: var(--dw-primary-soft);
+    color: var(--dw-primary-hover);
+}
+
+.dw-text-btn--compact {
+    height: 26px;
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+/* ---- 主/次操作按钮 ---- */
+.btn-primary,
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--mp-btn-h);
+    padding: 0 clamp(12px, 1.4vmin, 16px);
+    border-radius: var(--dw-btn-radius);
+    font-size: var(--mp-sub);
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn-primary {
+    border: 1px solid var(--dw-primary-ring);
+    background: var(--dw-primary-tint);
+    color: var(--dw-primary);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--dw-primary) 8%, transparent);
+}
+
+.btn-primary:hover {
+    background: var(--dw-primary-soft);
+    border-color: var(--dw-primary-border);
+    color: var(--dw-primary-hover);
+}
+
+.btn-primary.btn-danger {
+    border-color: #ef4444;
+    background: #ef4444;
+    color: #fff;
+    box-shadow: none;
+}
+
+.btn-primary.btn-danger:hover:not(:disabled) {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+.btn-secondary {
+    border: 1px solid color-mix(in srgb, var(--dw-primary) 16%, var(--dw-border));
+    background: var(--dw-bg);
+    color: var(--dw-text);
+}
+
+.btn-secondary:hover {
+    background: var(--dw-primary-softer);
+    border-color: var(--dw-primary-ring);
+    color: var(--dw-primary);
+}
+
+.btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 88px;
+    height: var(--dw-btn-height);
+    padding: 0 16px;
+    border-radius: 9px;
+    border: 1px solid color-mix(in srgb, var(--dw-primary) 14%, var(--dw-border));
+    background: var(--dw-primary-softer);
+    color: var(--dw-text);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.btn-ghost:hover {
+    background: var(--dw-primary-soft);
+    border-color: var(--dw-primary-ring);
+    color: var(--dw-primary);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.btn-sm {
+    height: var(--dw-btn-height-sm);
+    padding: 0 12px;
+    font-size: 12px;
+}
+
+/* ---- 菜单项按钮 ---- */
+.dw-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--dw-btn-radius);
+    text-align: left;
+    font-size: 13px;
+    color: var(--dw-text);
+}
+
+.dw-menu-item:hover,
+.dw-menu-item.is-active {
+    background: var(--dw-primary-softer);
+    color: var(--dw-primary);
+}
+
+.dw-link-btn {
+    color: var(--dw-primary);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.dw-link-btn:hover {
+    color: var(--dw-primary-hover);
+}
+
+/* ---- SQL 控制台工具栏 ---- */
+.dw-console-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: var(--dw-console-toolbar-height);
+    padding: 0 var(--dw-console-chrome-inset);
+    background: var(--dw-bg-editor);
+}
+
+.dw-console-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dw-console-actions .dw-icon-btn {
+    box-sizing: border-box;
+    width: var(--dw-console-btn-size);
+    height: var(--dw-console-btn-size);
+    min-width: var(--dw-console-btn-size);
+    min-height: var(--dw-console-btn-size);
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--dw-text-secondary);
+}
+
+.dw-console-actions .dw-icon-btn:hover:not(:disabled) {
+    color: var(--dw-text);
+    background: color-mix(in srgb, var(--dw-text) 6%, transparent);
+    border-color: color-mix(in srgb, var(--dw-border) 80%, transparent);
+}
+
+.dw-console-actions .console-run-btn:not(.console-run-btn--cancel):not(:disabled) {
+    color: #22c55e;
+}
+
+.dw-console-actions .console-run-btn:not(.console-run-btn--cancel):hover:not(:disabled) {
+    color: #16a34a;
+    background: color-mix(in srgb, #22c55e 12%, transparent);
+    border-color: color-mix(in srgb, #22c55e 22%, transparent);
+}
+
+.dw-console-actions .console-run-btn:not(.console-run-btn--cancel) .dw-icon--run .dw-icon__glyph :deep(path) {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2px;
+}
+
+.console-run-btn--cancel .dw-icon--stop .dw-icon__glyph :deep(rect) {
+    fill: currentColor;
+    stroke: none;
+}
+
+.dw-console-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: var(--dw-console-icon-size);
+    height: var(--dw-console-icon-size);
+    font-size: var(--dw-console-icon-size);
+    line-height: 1;
+}
+
+.dw-console-glyph > svg,
+.dw-console-glyph .dw-icon-root,
+.dw-console-glyph .dw-icon__glyph,
+.dw-console-glyph .ai-icon--fit,
+.dw-console-glyph .editor-fs-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.dw-console-glyph .dw-icon-root {
+    width: 100%;
+    height: 100%;
+}
+
+/* ListVideo：三角略大、横线略细，与实心「执行」区分 */
+.dw-console-glyph .dw-icon--explain-plan .dw-icon__glyph :deep(path:nth-child(1)) {
+    transform: scale(1.12);
+    transform-origin: 32% 50%;
+}
+
+.dw-console-glyph .dw-icon--explain-plan .dw-icon__glyph :deep(path:not(:first-child)) {
+    stroke-width: 1.5px;
+}
+
+.dw-icon--muted,
+.dw-console-glyph--muted .dw-icon-root {
+    opacity: 0.5;
+}
+
+.dw-console-divider {
+    flex-shrink: 0;
+    width: 1px;
+    height: calc(var(--dw-console-icon-size) + 6px);
+    margin: 0 6px;
+    background: var(--dw-border);
+}
+
+.console-ai-btn.is-active {
+    color: var(--dw-primary);
+}
+
+.editor-fs-btn--toolbar.is-active {
+    color: var(--dw-primary);
+}
+
+.dw-console-ctx {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.dw-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dw-btn-gap);
+}

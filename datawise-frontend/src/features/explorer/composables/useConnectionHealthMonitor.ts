@@ -1,0 +1,69 @@
+import {onMounted, onUnmounted, watch} from 'vue'
+import {storeToRefs} from 'pinia'
+import {useI18n} from 'vue-i18n'
+import {
+    extractDashboardConnections,
+} from '@/features/dashboard/services/dashboard-summary.service'
+import {
+    collectConnectionHealthAlerts,
+    resolveProbeIntervalMs,
+} from '@/features/explorer/services/connection-health-alert.service'
+import {dispatchConnectionHealthAlert} from '@/features/layout/services/app-alert.actions'
+import {useExplorerStore} from '@/features/explorer/stores/explorer'
+import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
+import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useNotificationStore} from '@/features/layout/stores/notification-store'
+
+/** 定时探测全部连接健康状态；按告警规则 toast 提醒 */
+export function useConnectionHealthMonitor() {
+    const {t} = useI18n()
+    const appConfig = useAppConfigStore()
+    const {connectionHealthPreferences} = storeToRefs(appConfig)
+    const explorer = useExplorerStore()
+    const layout = useLayoutStore()
+    const notifications = useNotificationStore()
+
+    let timer: ReturnType<typeof setInterval> | null = null
+
+    function notifyAlerts(before: Record<string, 'ok' | 'error'>) {
+        const rows = extractDashboardConnections(explorer.tree, explorer.connectionHealthById)
+        const alerts = collectConnectionHealthAlerts(
+            before,
+            rows,
+            connectionHealthPreferences.value,
+        )
+        for (const row of alerts) {
+            void dispatchConnectionHealthAlert(row, connectionHealthPreferences.value, {
+                showToast: (message) => layout.showToast(message),
+                toastMessage: t('dashboard.connectionHealthFailed', {name: row.name}),
+                pushNotification: (input) => notifications.push(input),
+            })
+        }
+    }
+
+    async function probe(notifyOnFailure: boolean) {
+        if (!explorer.hasAttemptedConnections()) return
+        const before = {...explorer.connectionHealthById}
+        await explorer.probeAllConnectionHealth()
+        if (notifyOnFailure) notifyAlerts(before)
+    }
+
+    function startTimer() {
+        if (timer) clearInterval(timer)
+        const ms = resolveProbeIntervalMs(connectionHealthPreferences.value.probeIntervalMinutes)
+        timer = setInterval(() => {
+            if (document.visibilityState !== 'visible') return
+            void probe(true)
+        }, ms)
+    }
+
+    onMounted(() => {
+        startTimer()
+    })
+
+    watch(() => connectionHealthPreferences.value.probeIntervalMinutes, startTimer)
+
+    onUnmounted(() => {
+        if (timer) clearInterval(timer)
+    })
+}

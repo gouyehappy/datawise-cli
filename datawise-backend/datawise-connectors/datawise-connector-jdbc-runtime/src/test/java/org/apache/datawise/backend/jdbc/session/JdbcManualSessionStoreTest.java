@@ -1,0 +1,54 @@
+package org.apache.datawise.backend.jdbc.session;
+
+import org.apache.datawise.backend.domain.SqlSessionStatus;
+import org.junit.jupiter.api.Test;
+
+import java.sql.Connection;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+
+class JdbcManualSessionStoreTest {
+
+    @Test
+    void key_composesUserAndSessionKey() {
+        assertEquals("42:tab-1", JdbcManualSessionStore.key(42L, "tab-1"));
+    }
+
+    @Test
+    void getStatus_returnsIdleWhenMissing() {
+        JdbcManualSessionStore store = new JdbcManualSessionStore();
+        SqlSessionStatus status = store.getStatus(1L, "missing");
+        assertNull(status.connectionId());
+        assertNull(status.database());
+    }
+
+    @Test
+    void requireManualSession_returnsNullForAutocommitSession() {
+        JdbcManualSessionStore store = new JdbcManualSessionStore();
+        JdbcManualSessionStore.ManagedSession session = store.getOrCreate(1L, "tab-1", "conn-1", "shop");
+        assertNull(store.requireManualSession(1L, "tab-1"));
+        session.autocommit = false;
+        assertEquals(session, store.requireManualSession(1L, "tab-1"));
+    }
+
+    @Test
+    void invalidateConnection_clearsSessionReference() {
+        JdbcManualSessionStore store = new JdbcManualSessionStore();
+        JdbcManualSessionStore.ManagedSession session = store.getOrCreate(1L, "tab-a", "conn-1", "shop");
+        session.connection = mock(Connection.class);
+
+        store.invalidateConnection("1:tab-a");
+
+        assertNull(session.connection);
+    }
+
+    @Test
+    void getOrCreate_returnsSameInstanceForSameKey() {
+        JdbcManualSessionStore store = new JdbcManualSessionStore();
+        JdbcManualSessionStore.ManagedSession first = store.getOrCreate(1L, "tab-1", "conn-1", "shop");
+        JdbcManualSessionStore.ManagedSession second = store.getOrCreate(1L, "tab-1", "conn-2", "other");
+        assertEquals(first, second);
+    }
+}

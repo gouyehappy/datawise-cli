@@ -1,0 +1,902 @@
+<script setup lang="ts">
+import {computed, ref, watch} from 'vue'
+import {useI18n} from 'vue-i18n'
+import AiAnalysisStepIcon from '@/features/ai/analysis/components/AiAnalysisStepIcon.vue'
+import {
+    formatStepRouteMessage,
+    isStepCancelledByEarlierFailure,
+    isStepEventStale,
+    visibleAnalysisStepOrder,
+} from '@/features/ai/analysis/services/analysis-step.service'
+import type {AiAnalysisStepEvent} from '@/features/ai/types/analysis'
+
+const props = defineProps<{
+  steps: AiAnalysisStepEvent[]
+  defaultExpanded?: boolean
+  readonly?: boolean
+  live?: boolean
+}>()
+
+const {t} = useI18n()
+
+const expanded = ref(props.defaultExpanded ?? props.live ?? false)
+const isBootstrapping = computed(() => props.live && props.steps.length === 0)
+
+const visibleStepOrder = computed(() => visibleAnalysisStepOrder(props.steps))
+
+const stepMap = computed(() => {
+  const map = new Map<string, AiAnalysisStepEvent>()
+  for (const step of props.steps) {
+    map.set(step.step, step)
+  }
+  return map
+})
+
+function stepLabel(stepId: string): string {
+  const key = `ai.analysis.steps.${stepId}`
+  const translated = t(key)
+  return translated === key ? stepId : translated
+}
+
+function stepMessage(stepId: string): string {
+  const event = stepMap.value.get(stepId)
+  if (stepId === 'step_route') {
+    return formatStepRouteMessage(event, stepLabel, t('ai.analysis.skippedStepsPrefix'))
+  }
+  return event?.message ?? ''
+}
+
+function stepStatus(stepId: string): 'pending' | 'running' | 'ok' | 'failed' | 'skipped' {
+  if (isBootstrapping.value) {
+    return stepId === visibleStepOrder.value[0] ? 'running' : 'pending'
+  }
+  const event = stepMap.value.get(stepId)
+  if (event && isStepEventStale(stepId as (typeof visibleStepOrder.value)[number], props.steps, visibleStepOrder.value)) {
+    return 'pending'
+  }
+  if (!event) {
+    const index = visibleStepOrder.value.indexOf(stepId as (typeof visibleStepOrder.value)[number])
+    if (index >= 0) {
+      if (isStepCancelledByEarlierFailure(stepId as (typeof visibleStepOrder.value)[number], props.steps)) {
+        return 'skipped'
+      }
+
+      const laterCompleted = visibleStepOrder.value.slice(index + 1).some((laterId) => {
+        const later = stepMap.value.get(laterId)
+        return later?.status === 'ok' || later?.status === 'failed'
+      })
+      if (laterCompleted) return 'ok'
+    }
+    return 'pending'
+  }
+  if (event.status === 'running') return 'running'
+  if (event.status === 'failed') return 'failed'
+  return 'ok'
+}
+
+function isLineFlowing(index: number): boolean {
+  const stepId = visibleStepOrder.value[index]
+  const status = stepStatus(stepId)
+  if (status !== 'ok') return false
+  const nextId = visibleStepOrder.value[index + 1]
+  return nextId ? stepStatus(nextId) === 'running' : false
+}
+
+function statusLabel(status: 'pending' | 'running' | 'ok' | 'failed' | 'skipped'): string {
+  return t(`ai.analysis.progressStatus.${status}`)
+}
+
+function formatDuration(ms?: number | null): string | null {
+  if (ms == null || ms < 0) return null
+  if (ms < 1000) return `${ms}ms`
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
+const doneCount = computed(() =>
+    visibleStepOrder.value.filter((id) => {
+      const status = stepStatus(id)
+      return status === 'ok' || status === 'failed'
+    }).length,
+)
+
+const hasFailed = computed(() =>
+    visibleStepOrder.value.some((id) => stepStatus(id) === 'failed'),
+)
+
+const currentStepId = computed(() => {
+  const running = visibleStepOrder.value.find((id) => stepStatus(id) === 'running')
+  if (running) return running
+  const failed = visibleStepOrder.value.find((id) => stepStatus(id) === 'failed')
+  if (failed) return failed
+  const firstPending = visibleStepOrder.value.find((id) => stepStatus(id) === 'pending')
+  if (firstPending) return firstPending
+  return visibleStepOrder.value[visibleStepOrder.value.length - 1] ?? 'intent'
+})
+
+const currentLabel = computed(() => stepLabel(currentStepId.value))
+
+const currentMessage = computed(() => {
+  if (isBootstrapping.value) return t('ai.analysis.bootstrapStarting')
+  return stepMessage(currentStepId.value)
+})
+
+const headerStatus = computed(() => stepStatus(currentStepId.value))
+
+const completedTrail = computed(() =>
+    visibleStepOrder.value.filter((id) => stepStatus(id) === 'ok').map((id) => stepLabel(id)),
+)
+
+const isAllDone = computed(
+    () =>
+        visibleStepOrder.value.length > 0 &&
+        visibleStepOrder.value.every((id) => {
+          const status = stepStatus(id)
+          return status === 'ok' || status === 'failed'
+        }) &&
+        !hasFailed.value,
+)
+
+const progressPercent = computed(() => {
+  const total = visibleStepOrder.value.length || 1
+  let value = doneCount.value
+  if (headerStatus.value === 'running') value += 0.35
+  else if (headerStatus.value === 'failed') value += 0.15
+  return Math.min(100, Math.round((value / total) * 100))
+})
+
+const showIndeterminateBar = computed(
+    () => props.live && !props.readonly && isBootstrapping.value,
+)
+
+watch(
+    () => props.live,
+    (live) => {
+      if (live && !props.readonly) expanded.value = true
+    },
+    {immediate: true},
+)
+
+watch(hasFailed, (failed) => {
+  if (failed && !props.readonly) expanded.value = true
+})
+
+function toggleExpanded() {
+  expanded.value = !expanded.value
+}
+</script>
+
+<template>
+  <div
+      class="analysis-progress-panel"
+      :class="{
+      'is-expanded': expanded,
+      'is-readonly': readonly,
+      'is-complete': isAllDone,
+      'is-live': live && !readonly,
+    }"
+  >
+    <div
+        class="analysis-progress-panel__bar"
+        :class="{ 'is-indeterminate': showIndeterminateBar }"
+        aria-hidden="true"
+    >
+      <span
+          class="analysis-progress-panel__bar-fill"
+          :style="{ width: showIndeterminateBar ? undefined : `${progressPercent}%` }"
+      />
+    </div>
+
+    <button
+        class="analysis-progress-panel__header"
+        type="button"
+        :aria-expanded="expanded"
+        :disabled="live && !readonly"
+        @click="toggleExpanded"
+    >
+      <div class="analysis-progress-panel__summary">
+        <span
+            class="analysis-progress-panel__header-icon"
+            :class="headerStatus"
+            aria-hidden="true"
+        >
+          <AiAnalysisStepIcon :step="currentStepId" :size="14"/>
+        </span>
+        <div class="analysis-progress-panel__titles">
+          <span class="analysis-progress-panel__eyebrow">{{ t('ai.analysis.progressTitle') }}</span>
+          <span class="analysis-progress-panel__current">
+            {{ isAllDone ? t('ai.analysis.progressAllDone') : currentLabel }}
+          </span>
+          <span
+              v-if="!expanded && (currentMessage || completedTrail.length)"
+              class="analysis-progress-panel__message"
+          >
+            <template v-if="isAllDone && completedTrail.length">
+              {{ completedTrail.join(' ? ') }}
+            </template>
+            <template v-else-if="currentMessage">
+              {{ currentMessage }}
+            </template>
+          </span>
+        </div>
+      </div>
+
+      <div class="analysis-progress-panel__meta">
+        <span class="analysis-progress-panel__count">
+          {{ t('ai.analysis.progressStepCount', {done: doneCount, total: visibleStepOrder.length}) }}
+        </span>
+        <span class="analysis-progress-panel__chevron" aria-hidden="true"/>
+      </div>
+    </button>
+
+    <div
+        class="analysis-progress-panel__track"
+        :style="{ gridTemplateColumns: `repeat(${Math.max(visibleStepOrder.length, 1)}, minmax(0, 1fr))` }"
+        aria-hidden="true"
+    >
+      <div
+          v-for="(stepId, index) in visibleStepOrder"
+          :key="stepId"
+          class="analysis-progress-panel__track-item"
+          :class="stepStatus(stepId)"
+          :title="stepLabel(stepId)"
+      >
+        <span class="analysis-progress-panel__track-node">
+          <span
+              v-if="stepStatus(stepId) === 'running'"
+              class="analysis-progress-panel__track-ring"
+              aria-hidden="true"
+          />
+          <AiAnalysisStepIcon :step="stepId" :size="12"/>
+          <span v-if="stepStatus(stepId) === 'ok'" class="analysis-progress-panel__track-done" aria-hidden="true">
+            ??          </span>
+          <span
+              v-else-if="stepStatus(stepId) === 'failed'"
+              class="analysis-progress-panel__track-fail"
+              aria-hidden="true"
+          >
+            ?
+          </span>
+        </span>
+        <span class="analysis-progress-panel__track-label">{{ stepLabel(stepId) }}</span>
+        <span
+            v-if="index < visibleStepOrder.length - 1"
+            class="analysis-progress-panel__track-line"
+            :class="{
+            'is-done': stepStatus(stepId) === 'ok' && !isLineFlowing(index),
+            'is-flowing': isLineFlowing(index),
+          }"
+        />
+      </div>
+    </div>
+
+    <div v-if="live && !readonly && !isAllDone" class="analysis-progress-panel__live-footer">
+      <span class="analysis-progress-panel__live-icon" :class="headerStatus">
+        <AiAnalysisStepIcon :step="currentStepId" :size="15"/>
+      </span>
+      <span class="analysis-progress-panel__live-text">
+        {{ currentMessage || t('ai.analysis.bootstrapStarting') }}
+      </span>
+    </div>
+
+    <div v-show="expanded" class="analysis-progress-panel__body">
+      <ol class="analysis-progress" :aria-label="t('ai.analysis.progressTitle')">
+        <li
+            v-for="(stepId, index) in visibleStepOrder"
+            :key="stepId"
+            class="analysis-progress__item"
+            :class="[
+            stepStatus(stepId),
+            { 'analysis-progress__item--last': index === visibleStepOrder.length - 1 },
+          ]"
+        >
+          <div class="analysis-progress__track" aria-hidden="true">
+            <span class="analysis-progress__marker" :class="stepStatus(stepId)">
+              <AiAnalysisStepIcon :step="stepId" :size="11"/>
+            </span>
+            <span
+                v-if="index < visibleStepOrder.length - 1"
+                class="analysis-progress__line"
+                :class="{ 'analysis-progress__line--done': stepStatus(stepId) === 'ok' }"
+            />
+          </div>
+          <div class="analysis-progress__text">
+            <div class="analysis-progress__row">
+              <span class="analysis-progress__label">{{ stepLabel(stepId) }}</span>
+              <span class="analysis-progress__status" :class="stepStatus(stepId)">
+                {{ statusLabel(stepStatus(stepId)) }}
+              </span>
+              <span
+                  v-if="formatDuration(stepMap.get(stepId)?.durationMs)"
+                  class="analysis-progress__duration"
+              >
+                {{ formatDuration(stepMap.get(stepId)?.durationMs) }}
+              </span>
+            </div>
+            <span v-if="stepMessage(stepId)" class="analysis-progress__message">
+              {{ stepMessage(stepId) }}
+            </span>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.analysis-progress-panel {
+  position: relative;
+  border-bottom: 1px solid var(--dw-border-light);
+  background: radial-gradient(ellipse 120% 80% at 10% -30%, color-mix(in srgb, var(--dw-primary) 8%, transparent), transparent 55%),
+  linear-gradient(180deg, color-mix(in srgb, var(--dw-primary) 4%, var(--dw-bg-panel)), var(--dw-bg-panel));
+}
+
+.analysis-progress-panel.is-live {
+  background: radial-gradient(ellipse 120% 80% at 10% -30%, color-mix(in srgb, var(--dw-primary) 10%, transparent), transparent 55%),
+  linear-gradient(180deg, color-mix(in srgb, var(--dw-primary) 5%, var(--dw-bg-panel)), var(--dw-bg-panel));
+}
+
+.analysis-progress-panel__bar {
+  height: 3px;
+  background: color-mix(in srgb, var(--dw-text) 6%, transparent);
+  overflow: hidden;
+}
+
+.analysis-progress-panel__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--dw-primary) 75%, transparent),
+      var(--dw-primary)
+  );
+  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.analysis-progress-panel__bar.is-indeterminate .analysis-progress-panel__bar-fill {
+  width: 32% !important;
+  animation: bar-indeterminate 3.2s ease-in-out infinite;
+}
+
+.analysis-progress-panel.is-complete .analysis-progress-panel__bar-fill {
+  background: linear-gradient(90deg, var(--dw-primary), color-mix(in srgb, var(--dw-primary) 70%, #34d399));
+}
+
+.analysis-progress-panel.is-readonly {
+  background: radial-gradient(ellipse 100% 60% at 90% -20%, color-mix(in srgb, var(--dw-primary) 6%, transparent), transparent 50%),
+  linear-gradient(180deg, color-mix(in srgb, var(--dw-bg) 25%, var(--dw-bg-panel)), var(--dw-bg-panel));
+}
+
+.analysis-progress-panel.is-complete .analysis-progress-panel__current {
+  color: var(--dw-text-secondary);
+}
+
+.analysis-progress-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 16px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.18s ease;
+}
+
+.analysis-progress-panel__header:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--dw-primary) 4%, transparent);
+}
+
+.analysis-progress-panel__header:disabled {
+  cursor: default;
+}
+
+.analysis-progress-panel__summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.analysis-progress-panel__header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 1px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--dw-text) 14%, transparent);
+  background: var(--dw-bg);
+  color: var(--dw-text-muted);
+  flex-shrink: 0;
+}
+
+.analysis-progress-panel__header-icon.running {
+  border-color: color-mix(in srgb, var(--dw-primary) 45%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg));
+  color: var(--dw-primary);
+}
+
+.analysis-progress-panel__header-icon.ok {
+  border-color: color-mix(in srgb, var(--dw-primary) 40%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg));
+  color: var(--dw-primary);
+}
+
+.analysis-progress-panel__header-icon.failed {
+  border-color: color-mix(in srgb, #ef4444 40%, var(--dw-border));
+  background: color-mix(in srgb, #ef4444 8%, var(--dw-bg));
+  color: #ef4444;
+}
+
+.analysis-progress-panel__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.analysis-progress-panel__eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--dw-text-muted);
+}
+
+.analysis-progress-panel__current {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--dw-text);
+}
+
+.analysis-progress-panel__message {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--dw-text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.analysis-progress-panel__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.analysis-progress-panel__count {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--dw-primary) 20%, var(--dw-border-light));
+  background: color-mix(in srgb, var(--dw-bg) 85%, var(--dw-primary-soft));
+  color: var(--dw-primary);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-progress-panel__chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--dw-text-muted);
+  border-bottom: 2px solid var(--dw-text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.25s ease;
+}
+
+.analysis-progress-panel.is-expanded .analysis-progress-panel__chevron {
+  transform: rotate(-135deg) translate(-1px, 1px);
+}
+
+.analysis-progress-panel__track {
+  display: grid;
+  gap: 0;
+  padding: 2px 12px 14px;
+}
+
+.analysis-progress-panel__track-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 2px;
+}
+
+.analysis-progress-panel__track-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--dw-text) 12%, transparent);
+  background: var(--dw-bg);
+  color: var(--dw-text-muted);
+  z-index: 1;
+  transition: border-color 0.5s ease,
+  background 0.5s ease,
+  color 0.5s ease,
+  opacity 0.5s ease;
+}
+
+.analysis-progress-panel__track-item.pending .analysis-progress-panel__track-node {
+  opacity: 0.42;
+}
+
+.analysis-progress-panel__track-item.running .analysis-progress-panel__track-node {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--dw-primary) 50%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg));
+  color: var(--dw-primary);
+}
+
+.analysis-progress-panel__track-item.ok .analysis-progress-panel__track-node {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-primary) 12%, var(--dw-bg));
+  color: var(--dw-primary);
+}
+
+.analysis-progress-panel__track-item.skipped .analysis-progress-panel__track-node {
+  opacity: 0.85;
+  border-color: color-mix(in srgb, var(--dw-text-muted) 35%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-bg-panel) 80%, var(--dw-bg));
+  color: var(--dw-text-muted);
+}
+
+.analysis-progress-panel__track-item.failed .analysis-progress-panel__track-node {
+  opacity: 1;
+  border-color: color-mix(in srgb, #ef4444 45%, var(--dw-border));
+  background: color-mix(in srgb, #ef4444 8%, var(--dw-bg));
+  color: #ef4444;
+}
+
+.analysis-progress-panel__track-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 11px;
+  border: 1.5px solid transparent;
+  border-top-color: color-mix(in srgb, var(--dw-primary) 70%, transparent);
+  border-right-color: color-mix(in srgb, var(--dw-primary) 20%, transparent);
+  animation: step-ring-spin 3.6s linear infinite;
+  pointer-events: none;
+}
+
+.analysis-progress-panel__track-done,
+.analysis-progress-panel__track-skip,
+.analysis-progress-panel__track-fail {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid var(--dw-bg-panel);
+}
+
+.analysis-progress-panel__track-done {
+  background: var(--dw-primary);
+  color: #fff;
+}
+
+.analysis-progress-panel__track-skip {
+  background: var(--dw-text-muted);
+  color: #fff;
+}
+
+.analysis-progress-panel__track-fail {
+  background: #ef4444;
+  color: #fff;
+}
+
+.analysis-progress-panel__track-label {
+  width: 100%;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--dw-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.5s ease;
+}
+
+.analysis-progress-panel__track-item.running .analysis-progress-panel__track-label {
+  color: var(--dw-primary);
+}
+
+.analysis-progress-panel__track-item.ok .analysis-progress-panel__track-label {
+  color: var(--dw-text-secondary);
+}
+
+.analysis-progress-panel__track-line {
+  position: absolute;
+  top: 14px;
+  left: calc(50% + 16px);
+  right: calc(-50% + 16px);
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--dw-text) 10%, transparent);
+  z-index: 0;
+  transition: background 0.5s ease;
+}
+
+.analysis-progress-panel__track-line.is-done {
+  background: color-mix(in srgb, var(--dw-primary) 35%, transparent);
+}
+
+.analysis-progress-panel__track-line.is-flowing {
+  background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--dw-primary) 20%, transparent) 0%,
+      color-mix(in srgb, var(--dw-primary) 55%, transparent) 45%,
+      color-mix(in srgb, var(--dw-primary) 20%, transparent) 100%
+  );
+  background-size: 220% 100%;
+  animation: line-flow 3.5s ease-in-out infinite;
+}
+
+.analysis-progress-panel__live-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--dw-border-light) 90%, transparent);
+  background: color-mix(in srgb, var(--dw-bg) 50%, var(--dw-bg-panel));
+}
+
+.analysis-progress-panel__live-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--dw-primary) 30%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg));
+  color: var(--dw-primary);
+  flex-shrink: 0;
+}
+
+.analysis-progress-panel__live-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--dw-text-secondary);
+}
+
+.analysis-progress-panel__body {
+  padding: 0 16px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--dw-border-light) 80%, transparent);
+  background: color-mix(in srgb, var(--dw-bg) 60%, var(--dw-bg-panel));
+}
+
+.analysis-progress {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.analysis-progress__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 38px;
+  color: var(--dw-text-muted);
+}
+
+.analysis-progress__item.running {
+  color: var(--dw-primary);
+  padding: 6px 10px;
+  margin: 0 -10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--dw-primary) 5%, transparent);
+}
+
+.analysis-progress__item.ok {
+  color: var(--dw-text-secondary);
+}
+
+.analysis-progress__item.failed {
+  color: #ef4444;
+}
+
+.analysis-progress__track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 22px;
+  align-self: stretch;
+}
+
+.analysis-progress__marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--dw-text) 14%, transparent);
+  background: var(--dw-bg-panel);
+  color: var(--dw-text-muted);
+  flex-shrink: 0;
+}
+
+.analysis-progress__marker.running {
+  border-color: color-mix(in srgb, var(--dw-primary) 40%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-panel));
+  color: var(--dw-primary);
+}
+
+.analysis-progress__marker.ok {
+  border-color: color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-panel));
+  color: var(--dw-primary);
+}
+
+.analysis-progress__marker.failed {
+  border-color: color-mix(in srgb, #ef4444 40%, var(--dw-border));
+  background: color-mix(in srgb, #ef4444 8%, var(--dw-bg-panel));
+  color: #ef4444;
+}
+
+.analysis-progress__line {
+  flex: 1;
+  width: 2px;
+  min-height: 8px;
+  margin: 3px 0;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--dw-text) 12%, transparent);
+}
+
+.analysis-progress__line--done {
+  background: color-mix(in srgb, var(--dw-primary) 35%, transparent);
+}
+
+.analysis-progress__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+  padding: 1px 0 10px;
+}
+
+.analysis-progress__item--last .analysis-progress__text {
+  padding-bottom: 0;
+}
+
+.analysis-progress__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.analysis-progress__label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.analysis-progress__item.pending .analysis-progress__label {
+  font-weight: 500;
+}
+
+.analysis-progress__status {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 1px solid var(--dw-border-light);
+  background: var(--dw-bg);
+  color: var(--dw-text-muted);
+}
+
+.analysis-progress__status.running {
+  border-color: color-mix(in srgb, var(--dw-primary) 30%, var(--dw-border));
+  background: var(--dw-primary-soft);
+  color: var(--dw-primary);
+}
+
+.analysis-progress__status.ok {
+  border-color: color-mix(in srgb, var(--dw-primary) 24%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg));
+  color: var(--dw-primary);
+}
+
+.analysis-progress__status.failed {
+  border-color: color-mix(in srgb, #ef4444 30%, var(--dw-border));
+  background: color-mix(in srgb, #ef4444 8%, var(--dw-bg));
+  color: #ef4444;
+}
+
+.analysis-progress__status.skipped {
+  border-color: var(--dw-border-light);
+  background: color-mix(in srgb, var(--dw-bg-panel) 80%, var(--dw-bg));
+  color: var(--dw-text-muted);
+}
+
+.analysis-progress__duration {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dw-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-progress__message {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--dw-text-secondary);
+  white-space: pre-line;
+}
+
+.analysis-progress__item.running .analysis-progress__message {
+  color: color-mix(in srgb, var(--dw-primary) 75%, var(--dw-text));
+}
+
+@keyframes step-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bar-indeterminate {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(330%);
+  }
+}
+
+@keyframes line-flow {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .analysis-progress-panel__track {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .analysis-progress-panel__track-item {
+    flex: 0 0 64px;
+  }
+
+  .analysis-progress-panel__track-line {
+    display: none;
+  }
+}
+</style>

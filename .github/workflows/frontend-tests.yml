@@ -1,0 +1,49 @@
+name: Frontend tests
+
+on:
+  push:
+    paths:
+      - 'datawise-frontend/**'
+      - 'datawise-backend/datawise-workspace/src/main/resources/seed/plugins.json'
+      - 'sql-editor/**'
+      - '.github/workflows/frontend-tests.yml'
+  pull_request:
+    paths:
+      - 'datawise-frontend/**'
+      - 'datawise-backend/datawise-workspace/src/main/resources/seed/plugins.json'
+      - 'sql-editor/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: datawise-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: datawise-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run test:analysis-stream
+      - run: npx playwright install chromium --with-deps
+      - run: npm run test:e2e:analysis
+
+  plugin-catalog-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: datawise-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: datawise-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run audit:plugin-catalog:strict

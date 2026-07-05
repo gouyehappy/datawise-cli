@@ -1,0 +1,15 @@
+/** 控制台工具栏统一图标名（Lucide Icons） */
+export type ConsoleToolbarIconName =
+    | 'run'
+    | 'stop'
+    | 'explainPlan'
+    | 'submit'
+    | 'rollback'
+    | 'disconnect'
+    | 'save'
+    | 'saveAs'
+    | 'bookmark'
+    | 'viewModel'
+    | 'format'
+    | 'fullscreen'
+    | 'ai'

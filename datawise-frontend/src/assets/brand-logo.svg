@@ -1,0 +1,23 @@
+<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dw-brand-grad" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="38%" stop-color="#7c3aed"/>
+      <stop offset="72%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="dw-brand-shine" x1="8" y1="6" x2="20" y2="14" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#dw-brand-grad)"/>
+  <path d="M6 7.5h14a1.5 1.5 0 0 1 0 3H6a1.5 1.5 0 0 1 0-3Z" fill="url(#dw-brand-shine)"/>
+  <path
+      d="M11.2 9.5h4.6c3.5 0 6.4 2.7 6.4 6s-2.9 6-6.4 6h-4.6V9.5Zm3.2 9.4h1.5c2.1 0 3.8-1.6 3.8-3.6s-1.7-3.6-3.8-3.6h-1.5v7.2Z"
+      fill="#fff"
+  />
+  <path d="M22.2 8.8 24 7l1.2 2.5 2.5 1.2-2.5 1.2-1.2 2.5-1.2-2.5-2.5-1.2 2.5-1.2Z" fill="#fde68a"/>
+  <circle cx="24.5" cy="22.5" r="1.6" fill="#34d399"/>
+  <circle cx="21" cy="20" r="1.1" fill="#fff" opacity="0.85"/>
+</svg>

@@ -1,0 +1,27 @@
+import type {NativeTerminalBridge} from '@/features/terminal/services/native-terminal.types'
+import {resolveWebSocketTerminalBridge} from '@/features/terminal/services/websocket-terminal.bridge'
+
+let bridgePromise: Promise<NativeTerminalBridge | null> | null = null
+
+export function getNativeTerminalBridge(): NativeTerminalBridge | null {
+    if (typeof window === 'undefined') return null
+    return window.datawise?.terminal ?? null
+}
+
+export async function getTerminalBridge(): Promise<NativeTerminalBridge | null> {
+    const electronBridge = getNativeTerminalBridge()
+    if (electronBridge) return electronBridge
+    if (!bridgePromise) {
+        bridgePromise = resolveWebSocketTerminalBridge()
+    }
+    return bridgePromise
+}
+
+export function isNativeTerminalAvailable(): boolean {
+    return Boolean(getNativeTerminalBridge())
+}
+
+export async function isRealTerminalAvailable(): Promise<boolean> {
+    if (isNativeTerminalAvailable()) return true
+    return Boolean(await getTerminalBridge())
+}

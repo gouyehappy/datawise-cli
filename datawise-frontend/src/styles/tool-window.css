@@ -1,0 +1,182 @@
+/**
+ * IDEA 风格右侧工具窗口 — 与 ShortcutRail 并排，挤开工作区并留间隙
+ */
+.workbench-edge {
+    display: flex;
+    flex-shrink: 0;
+    align-self: stretch;
+    gap: var(--dw-panel-gap);
+    min-height: 0;
+}
+
+.workbench-edge__panel {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid var(--dw-panel-border);
+    border-radius: var(--dw-panel-radius);
+    background: var(--dw-bg-panel);
+    box-shadow: var(--dw-panel-shadow);
+    overflow: hidden;
+}
+
+.workbench-edge__panel > * {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+}
+
+.tool-window-host {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+}
+
+.tool-window {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+}
+
+.tool-window__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 8px 8px 8px 14px;
+    border-bottom: 1px solid var(--dw-border-light);
+    background: color-mix(in srgb, var(--dw-bg) 40%, var(--dw-bg-panel));
+}
+
+.tool-window__head-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.tool-window__title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.25;
+}
+
+.tool-window__subtitle {
+    margin: 0;
+    color: var(--dw-text-muted);
+    font-size: 11px;
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tool-window__head-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.tool-window__icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--dw-text-secondary);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.tool-window__icon-btn:hover {
+    background: var(--dw-bg-hover);
+    color: var(--dw-text);
+}
+
+.tool-window__body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.tool-window__dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 20;
+    min-width: 168px;
+    padding: 4px;
+    border: 1px solid var(--dw-border);
+    border-radius: 8px;
+    background: var(--dw-bg);
+    box-shadow: var(--dw-shadow);
+}
+
+.tool-window__dropdown button {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--dw-text);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.tool-window__dropdown button:hover:not(:disabled) {
+    background: var(--dw-bg-hover);
+}
+
+.tool-window__dropdown button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.tool-window__dropdown button.is-danger {
+    color: #dc2626;
+}
+
+.tool-window__menu {
+    position: relative;
+}
+
+.tool-window--standalone {
+    position: fixed;
+    top: var(--dw-panel-gap);
+    right: var(--dw-shell-padding);
+    bottom: calc(var(--dw-status-height) + var(--dw-panel-gap));
+    z-index: 850;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border: 1px solid var(--dw-panel-border);
+    border-radius: var(--dw-panel-radius);
+    background: var(--dw-bg-panel);
+    box-shadow: var(--dw-panel-shadow), 0 8px 24px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+}
+
+.tool-window--standalone .tool-window {
+    flex: 1;
+    min-height: 0;
+}

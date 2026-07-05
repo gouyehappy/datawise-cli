@@ -1,0 +1,12 @@
+export {
+    detectAfterCompleteOnPredicate,
+    detectAfterCompleteWherePredicate,
+    segmentEndsWithOperator,
+    completionSegmentAtOffset,
+} from './predicate'
+
+export {detectAfterCompleteGroupByList} from './clause'
+
+export {detectAfterSelectAggregateKeyword} from './select-list'
+
+export {detectDdlAwaitingColumnType} from './ddl'

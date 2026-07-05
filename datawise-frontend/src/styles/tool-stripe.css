@@ -1,0 +1,182 @@
+/**
+ * IDEA 风格工具条 — 圆角块激活态 + 图标/英文标签
+ */
+.tool-stripe {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    background: var(--dw-bg-chrome);
+}
+
+.tool-stripe--left {
+    width: var(--dw-tool-stripe-width);
+}
+
+.tool-stripe--right {
+    position: relative;
+    width: var(--dw-tool-stripe-width);
+}
+
+.tool-stripe__group {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: 1px;
+    padding: 3px 4px;
+}
+
+.tool-stripe__group--bottom {
+    padding-top: 4px;
+    border-top: 1px solid var(--dw-panel-border);
+}
+
+.tool-stripe__spacer {
+    flex: 1;
+    min-height: 8px;
+}
+
+.tool-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--dw-text-muted);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.12s ease;
+}
+
+.tool-btn:focus {
+    outline: none;
+}
+
+.tool-btn--stack {
+    flex-direction: column;
+    gap: 2px;
+    min-height: 48px;
+    padding: 6px 3px 5px;
+    border-radius: var(--dw-tool-pill-radius);
+    transition: color 0.12s ease,
+    background 0.12s ease;
+}
+
+.tool-btn--stack:hover {
+    color: var(--dw-text-secondary);
+    background: var(--dw-tool-hover);
+}
+
+.tool-btn--stack.active {
+    color: var(--dw-text);
+    background: var(--dw-tool-pill-active);
+}
+
+.tool-btn--stack:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--dw-primary-border);
+}
+
+.tool-btn__graphic {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.tool-btn__graphic svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.tool-btn__graphic .ai-icon--fit {
+    width: 22px;
+    height: 22px;
+}
+
+.tool-btn__caption {
+    max-width: 100%;
+    padding: 0 1px;
+    color: inherit;
+    font-size: var(--dw-tool-caption-size);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-align: center;
+    word-break: break-word;
+}
+
+.tool-btn--stack.active .tool-btn__caption {
+    font-weight: 500;
+}
+
+.tool-btn--brand {
+    min-height: 44px;
+    color: var(--dw-text-secondary);
+}
+
+.tool-btn--brand:hover {
+    color: var(--dw-text-secondary);
+    background: transparent;
+}
+
+.tool-btn--brand:hover .app-brand-logo {
+    transform: scale(1.06);
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.38),
+    0 2px 4px rgba(15, 23, 42, 0.1);
+}
+
+.tool-btn--brand.active {
+    color: var(--dw-text-secondary);
+    background: transparent;
+}
+
+.tool-btn--brand.active .app-brand-logo {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--dw-primary) 35%, transparent),
+    0 6px 18px rgba(124, 58, 237, 0.4);
+}
+
+.tool-btn__graphic--brand {
+    width: 28px;
+    height: 28px;
+}
+
+.tool-btn__dot {
+    position: absolute;
+    top: -1px;
+    right: -3px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #f59e0b;
+    box-shadow: 0 0 0 1.5px var(--dw-bg-chrome);
+}
+
+.tool-btn__badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 15px;
+    text-align: center;
+}
+
+.nav-brand {
+    position: relative;
+    flex-shrink: 0;
+    padding: 3px 4px 2px;
+}

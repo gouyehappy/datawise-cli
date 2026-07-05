@@ -1,0 +1,16 @@
+export default {
+    title: 'Terminal',
+    subtitle: 'Electron connects to the OS shell (PowerShell / Bash); browser mode uses a demo terminal',
+    nativeMode: 'System shell ({shell})',
+    demoMode: 'Demo terminal — install the desktop app for a real shell',
+    openInTab: 'Open in tab',
+    clear: 'Clear',
+    cleared: 'Terminal cleared',
+    nativeFailed: 'Failed to start system shell',
+    processExit: 'Process exited (code: {code})',
+    mockHint: 'Demo mode: Tab inserts a tab character; use the Electron desktop app for full shell completion',
+    contextHint: '{tool} · {name}',
+    contextCopyTitle: 'Copy CLI connect command',
+    contextCopied: 'CLI command copied to clipboard',
+    contextCopyFailed: 'Failed to copy CLI command',
+}

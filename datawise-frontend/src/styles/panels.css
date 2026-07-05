@@ -1,0 +1,214 @@
+/* 侧边栏面板（聊天记录、目标数据库、设置导航等） */
+
+/**
+ * 数据库侧栏 / 工具窗：右上角操作默认隐藏，悬停面板或聚焦时显示。
+ * 编辑区、结果区不使用此类（见 ToolWindowShell / DatabaseExplorer）。
+ */
+.dw-panel-hover-chrome .dw-panel-hover-actions {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+}
+
+.dw-panel-hover-chrome:hover .dw-panel-hover-actions,
+.dw-panel-hover-actions:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.dw-side-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--dw-bg-panel);
+}
+
+.dw-side-panel--border-right {
+    border-right: 1px solid var(--dw-border-light);
+}
+
+.dw-side-panel--border-left {
+    border-left: 1px solid var(--dw-border-light);
+}
+
+.dw-side-panel__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 14px 12px;
+    border-bottom: 1px solid var(--dw-border-light);
+}
+
+.dw-side-panel__head h2 {
+    margin: 0;
+    font-size: var(--mp-sub);
+    font-weight: 600;
+}
+
+.dw-side-panel__head p {
+    margin: 4px 0 0;
+    color: var(--dw-text-secondary);
+    font-size: var(--mp-caption);
+    line-height: 1.45;
+}
+
+.dw-side-panel__toolbar {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--dw-border-light);
+}
+
+.dw-side-panel__toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.dw-side-panel__body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.dw-side-panel__group-title {
+    margin: 10px 8px 6px;
+    color: var(--dw-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.dw-list {
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+}
+
+.dw-list-item-wrap {
+    position: relative;
+}
+
+.dw-list-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    width: 100%;
+    padding: 10px 34px 10px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.dw-list-item:hover,
+.dw-list-item.is-active {
+    background: var(--dw-bg);
+    border-color: var(--dw-border-light);
+}
+
+.dw-list-item.is-active {
+    border-color: color-mix(in srgb, var(--dw-primary) 24%, var(--dw-border-light));
+    background: var(--dw-primary-soft);
+}
+
+.dw-list-item__title {
+    width: 100%;
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dw-list-item__meta {
+    width: 100%;
+    color: var(--dw-text-secondary);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dw-list-item__time {
+    color: var(--dw-text-muted);
+    font-size: 10px;
+}
+
+.dw-list-item__delete {
+    position: absolute;
+    top: 8px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--dw-text-muted);
+    font-size: 16px;
+    line-height: 1;
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.dw-list-item-wrap:hover .dw-list-item__delete,
+.dw-list-item__delete:focus-visible {
+    opacity: 1;
+}
+
+.dw-list-item__delete:hover {
+    background: color-mix(in srgb, #ef4444 12%, transparent);
+    color: #dc2626;
+}
+
+.dw-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.dw-check-item:hover {
+    background: var(--dw-bg-hover);
+}
+
+.dw-check-item.is-selected {
+    background: var(--dw-primary-soft);
+}
+
+.dw-check-item input {
+    flex-shrink: 0;
+    accent-color: var(--dw-primary);
+}
+
+.dw-check-item__text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.dw-check-item__text strong {
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dw-check-item__text span {
+    color: var(--dw-text-secondary);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

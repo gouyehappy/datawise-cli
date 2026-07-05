@@ -1,0 +1,18 @@
+export default {
+    title: '命令面板',
+    placeholder: '导航、对象、SQL…（> 命令 · # 知识库）',
+    empty: '没有匹配的导航、对象、知识库或命令',
+    noIndexedObjects: '连接树中暂无可搜索对象。请先展开连接并加载表结构。',
+    commandModeHint: '命令模式：选择下方操作执行',
+    knowledgeModeHint: '知识库模式：选择条目打开 SQL 或复制内容',
+    commandLabel: '命令',
+    knowledgeLabel: '知识库',
+    knowledgeCopied: '知识库内容已复制',
+    types: {
+        table: '表',
+        view: '视图',
+        column: '列',
+        procedure: '存储过程',
+        function: '函数',
+    },
+}

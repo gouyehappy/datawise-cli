@@ -1,0 +1,129 @@
+{
+  "name": "datawise-cli",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DataWise CLI - database desktop client",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "cross-env ELECTRON=true vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "build:electron": "cross-env ELECTRON=true vue-tsc --noEmit && cross-env ELECTRON=true vite build",
+    "pack:electron": "node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs --dir",
+    "dist:electron": "npm run gen:icons && node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs",
+    "dist:win": "npm run gen:icons && node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs --win",
+    "prepare:desktop": "node scripts/prepare-desktop-bundle.mjs",
+    "dist:desktop": "npm run gen:icons && npm run stop:desktop && npm run prepare:desktop && node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs --win",
+    "stop:desktop": "node scripts/stop-desktop-app.mjs",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "typecheck:all": "npm run typecheck --prefix ../sql-editor && vue-tsc --noEmit",
+    "test": "tsx --import ./scripts/test-setup.mjs --test src/__tests__/**/*.test.ts",
+    "test:bugs": "tsx --import ./scripts/test-setup.mjs --test src/__tests__/regression/**/*.test.ts",
+    "test:analysis-stream": "tsx --import ./scripts/test-setup.mjs --test src/__tests__/regression/analysis-stream*.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:analysis": "playwright test e2e/analysis-stream.spec.ts",
+    "gen:sql-snippets": "npx tsx scripts/generate-sql-snippets-shared.ts",
+    "audit:plugin-catalog": "tsx --import ./scripts/test-setup.mjs scripts/audit-plugin-catalog.ts",
+    "audit:plugin-catalog:strict": "tsx --import ./scripts/test-setup.mjs scripts/audit-plugin-catalog.ts --strict",
+    "gen:icons": "node scripts/generate-app-icons.mjs",
+    "sync:sql-editor": "node scripts/sync-sql-editor.mjs",
+    "setup:electron": "node scripts/install-electron.mjs",
+    "rebuild:electron-pty": "node scripts/install-electron-pty.mjs",
+    "postinstall": "node scripts/install-electron.mjs && node scripts/install-electron-pty.mjs"
+  },
+  "dependencies": {
+    "@datawise/sql-editor": "file:../sql-editor",
+    "@vueuse/core": "^12.8.2",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "echarts": "^5.6.0",
+    "exceljs": "^4.4.0",
+    "lucide-vue-next": "^0.577.0",
+    "monaco-editor": "^0.55.1",
+    "node-pty": "npm:@homebridge/node-pty-prebuilt-multiarch@0.13.1",
+    "pinia": "^3.0.1",
+    "simple-icons": "^16.24.1",
+    "sql-formatter": "^15.8.1",
+    "vue": "^3.5.13",
+    "vue-i18n": "^9.14.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "@vue/tsconfig": "^0.7.0",
+    "cross-env": "^7.0.3",
+    "electron": "^29.4.6",
+    "electron-builder": "^25.1.8",
+    "rcedit": "^5.0.1",
+    "sharp": "^0.35.2",
+    "svg-path-bbox": "^2.1.0",
+    "to-ico": "^1.1.5",
+    "tsx": "^4.19.4",
+    "typescript": "~5.7.2",
+    "vite": "^7.3.1",
+    "vite-plugin-electron": "^0.29.0",
+    "vue-tsc": "^3.2.6"
+  },
+  "build": {
+    "appId": "org.apache.datawise.cli",
+    "productName": "DataWiseCLI",
+    "icon": "build/icon.png",
+    "protocols": [
+      {
+        "name": "DataWise Deep Link",
+        "schemes": [
+          "datawise"
+        ]
+      }
+    ],
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "build/icon.png",
+      "node_modules/node-pty/**/*",
+      "!node_modules/@datawise{,/**}"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/desktop/backend",
+        "to": "backend",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "resources/desktop/config-bundle",
+        "to": "config-bundle",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "npmRebuild": false,
+    "forceCodeSigning": false,
+    "afterPack": "scripts/embed-win-icon.cjs",
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "include": "build/installer.nsh"
+    }
+  }
+}

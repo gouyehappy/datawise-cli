@@ -1,0 +1,141 @@
+server:
+  # 与 datawise-frontend/runtime-ports.json → backend 保持一致
+  port: 18421
+
+spring:
+  application:
+    name: datawise-backend
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    org.apache.datawise.backend: INFO
+    datawise.exception: WARN
+
+datawise:
+  config:
+    # 相对 backend 模块 cwd（mvn spring-boot:run）指向仓库根 config/
+    dir: config
+    secrets:
+      # 启动时将 connections.xml / app.xml 中明文密钥批量加密
+      migrate-on-startup: true
+  auth:
+    session:
+      # 登录 token 默认有效 1 小时；可在设置页覆盖 config/auth-session.json
+      ttl-minutes: 60
+      sliding-renewal: true
+  logging:
+    # 分类日志目录（见 logback-spring.xml）
+    dir: config/logs
+  jdbc:
+    # 启动时预加载 config/drivers/ 下已存在的 JDBC 驱动 JAR
+    preload-drivers-on-startup: true
+    pool:
+      # 每个已保存连接的 HikariCP 池参数（可按部署规模调大 maximum-pool-size）
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout-ms: 60000
+      max-lifetime-ms: 600000
+      connection-timeout-ms: 10000
+      validation-timeout-ms: 3000
+      keepalive-time-ms: 30000
+      # SELECT 默认 fetch size；0 表示使用驱动默认值
+      default-fetch-size: 500
+  connectors:
+    # 可选数据源 connector 插件目录（相对 datawise.config.dir）
+    plugins-dir: plugins
+  query:
+    # 服务端默认最大返回行数；0 表示不限制（客户端可在设置中进一步收紧）
+    max-result-rows: 0
+  workspace:
+    # SQL 脚本根目录默认值（可在设置页修改，持久化到 config/workspace.xml）
+    scripts-dir: scripts
+  terminal:
+    websocket:
+      # 默认关闭：启用前须完成安全评审
+      enabled: false
+      # 非空时仅允许所列 IP / IPv4 CIDR 握手；示例：127.0.0.1、10.0.0.0/8
+      allowed-ips: []
+      # 非空时仅当直连 remote 命中列表才读取 X-Forwarded-For / X-Real-IP（防伪造）
+      trusted-proxy-ips: []
+  explorer:
+    schema-session:
+      # Explorer 懒加载树复用的 JDBC schema 会话空闲回收时间（毫秒）
+      idle-timeout-ms: 120000
+      max-entries: 16
+      schema-cache-ttl-ms: 3600000
+      table-list-page-size: 500
+  migration:
+    default-batch-size: 500
+    max-batch-tables: 50
+    continue-on-table-failure: true
+    table-retry-attempts: 2
+    pipeline-read-ahead: true
+  ai:
+    rag:
+      enabled: true
+      # 向量库：none | memory | pgvector
+      vector-store: none
+      pgvector:
+        jdbc-url:
+        username:
+        password:
+        table: ai_evidence_embeddings
+      max-snippets: 12
+      max-glossary-hits: 6
+      embedding:
+        # hash — 离线确定性向量；openai — OpenAI 兼容 embedding API
+        provider: hash
+        base-url:
+        api-key:
+        model: text-embedding-3-small
+        # dimensions: 1536
+    analysis:
+      checkpoint:
+        # memory | file — file 持久化 SQL 确认 interrupt 会话（config/ai-checkpoints/）
+        storage: file
+      semantic-check: lenient
+      retry:
+        max-sql-validation-retries: 2
+        max-sql-execute-attempts: 2
+      steps:
+        planner: true
+        evidence: true
+        sql-validate: true
+        python: true
+        chart: true
+        summary: true
+        report: true
+    python:
+      enabled: true
+      executor: simulated
+      sandbox-enabled: true
+      python-command: python
+      pip-command: pip
+      dependency-install-enabled: true
+      allowed-packages: pandas,numpy,scipy,scikit-learn,matplotlib,statsmodels,seaborn
+      dependency-install-timeout-seconds: 60
+      docker-binary: docker
+      docker-image: python:3.12-slim
+      docker-memory: 512m
+      k8s-binary: kubectl
+      k8s-namespace: default
+      k8s-image: python:3.12-slim
+      k8s-memory: 512Mi
+      timeout-seconds: 30
+      max-retries: 2

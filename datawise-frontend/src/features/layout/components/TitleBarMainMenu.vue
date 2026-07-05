@@ -1,0 +1,416 @@
+<script setup lang="ts">
+import {computed, ref} from 'vue'
+import {useI18n} from 'vue-i18n'
+import {DwIcon} from '@/core/icons'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useOnboardingStore} from '@/features/onboarding/stores/onboarding-store'
+import {useShortcutSettingsStore} from '@/features/settings/stores/shortcut-settings-store'
+import {formatBinding} from '@/core/shortcuts/shortcut.service'
+import {runExplorerRefresh} from '@/features/explorer/services/explorer-toolbar.actions'
+import {useWorkspaceActions} from '@/features/layout/composables/useWorkspaceActions'
+import type {WorkspaceListEntry} from '@/features/settings/services/config-dir-settings.service'
+
+const props = defineProps<{
+  menuStyle?: {top: string; left: string}
+}>()
+
+const emit = defineEmits<{ close: [] }>()
+
+const {t} = useI18n()
+const layout = useLayoutStore()
+const auth = useAuthStore()
+const onboarding = useOnboardingStore()
+const shortcuts = useShortcutSettingsStore()
+const {
+    canSwitch,
+    recentWorkspaces,
+    activeEntry,
+    displayName,
+    createWorkspace,
+    openFolder,
+    confirmSwitch,
+    useDefaultWorkspace,
+} = useWorkspaceActions()
+
+const recentOpen = ref(false)
+
+const settingsShortcut = computed(() => formatBinding(shortcuts.getBinding('app.openSettings')))
+
+const showDefaultWorkspace = computed(() => {
+    const active = activeEntry()
+    return Boolean(active && !active.isDefault && canSwitch.value)
+})
+
+const recentEntries = computed(() => recentWorkspaces.value.filter((entry) => !entry.active))
+
+function closeMenu() {
+    recentOpen.value = false
+    emit('close')
+}
+
+function openSettings() {
+    layout.openSettingsModule('basic')
+    closeMenu()
+}
+
+function openProfile() {
+    layout.openSettingsModule('profile')
+    closeMenu()
+}
+
+function openOnboardingGuide() {
+    onboarding.showGuide()
+    closeMenu()
+}
+
+function openTeam() {
+    layout.openTeamModule()
+    closeMenu()
+}
+
+function openAccountLogin() {
+    auth.openLoginDialog()
+    closeMenu()
+}
+
+function signOut() {
+    void auth.signOut()
+    closeMenu()
+}
+
+function exitApp() {
+    void window.datawise?.chrome?.close()
+    closeMenu()
+}
+
+function onSelectRecent(entry: WorkspaceListEntry) {
+    recentOpen.value = false
+    confirmSwitch(entry)
+    closeMenu()
+}
+
+function onCreateWorkspace() {
+    createWorkspace()
+    closeMenu()
+}
+
+function onOpenFolder() {
+    void openFolder().finally(() => closeMenu())
+}
+
+function onUseDefault() {
+    useDefaultWorkspace()
+    closeMenu()
+}
+
+function onReloadExplorer() {
+    void runExplorerRefresh().finally(() => closeMenu())
+}
+</script>
+
+<template>
+  <div
+      class="titlebar-main-menu"
+      :class="{ 'titlebar-main-menu--anchored': !!props.menuStyle }"
+      :style="props.menuStyle"
+      @click.stop
+  >
+    <section v-if="canSwitch" class="titlebar-main-menu__section">
+      <button type="button" class="titlebar-main-menu__item" @click="onCreateWorkspace">
+        <span class="titlebar-main-menu__icon" aria-hidden="true">
+          <DwIcon name="plus" size="menu" :stroke-width="1.35"/>
+        </span>
+        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.newWorkspace') }}</span>
+      </button>
+
+      <button type="button" class="titlebar-main-menu__item" @click="onOpenFolder">
+        <span class="titlebar-main-menu__icon" aria-hidden="true">
+          <DwIcon name="open" size="menu" :stroke-width="1.35"/>
+        </span>
+        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.openFolder') }}</span>
+      </button>
+
+      <div
+          class="titlebar-main-menu__submenu"
+          @mouseenter="recentOpen = true"
+          @mouseleave="recentOpen = false"
+      >
+        <button
+            type="button"
+            class="titlebar-main-menu__item"
+            :class="{ 'is-open': recentOpen }"
+            :aria-expanded="recentOpen"
+            @click="recentOpen = !recentOpen"
+        >
+          <span class="titlebar-main-menu__icon" aria-hidden="true">
+            <DwIcon name="history" size="menu" :stroke-width="1.35"/>
+          </span>
+          <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.recentWorkspaces') }}</span>
+          <DwIcon class="titlebar-main-menu__arrow" name="chevron-right" size="xs" :stroke-width="1.3"/>
+        </button>
+
+        <div v-if="recentOpen" class="titlebar-main-menu__flyout">
+          <template v-if="recentEntries.length">
+            <button
+                v-for="entry in recentEntries"
+                :key="entry.path"
+                type="button"
+                class="titlebar-main-menu__flyout-item"
+                @click="onSelectRecent(entry)"
+            >
+              <span class="titlebar-main-menu__flyout-name">{{ displayName(entry) }}</span>
+              <span class="titlebar-main-menu__flyout-path">{{ entry.path }}</span>
+            </button>
+          </template>
+          <p v-else class="titlebar-main-menu__flyout-empty">
+            {{ t('app.titleBar.mainMenu.recentEmpty') }}
+          </p>
+          <button
+              v-if="showDefaultWorkspace"
+              type="button"
+              class="titlebar-main-menu__flyout-item titlebar-main-menu__flyout-item--accent"
+              @click="onUseDefault"
+          >
+            {{ t('app.titleBar.workspaceSwitcher.useDefault') }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div v-if="canSwitch" class="titlebar-main-menu__divider"/>
+
+    <section class="titlebar-main-menu__section">
+      <button type="button" class="titlebar-main-menu__item" @click="openSettings">
+        <span class="titlebar-main-menu__icon" aria-hidden="true">
+          <DwIcon name="settings-basic" size="menu" :stroke-width="1.35"/>
+        </span>
+        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.settings') }}</span>
+        <kbd v-if="settingsShortcut" class="titlebar-main-menu__shortcut">{{ settingsShortcut }}</kbd>
+      </button>
+
+      <button type="button" class="titlebar-main-menu__item" @click="openProfile">
+        <span class="titlebar-main-menu__icon" aria-hidden="true">
+          <DwIcon name="user" size="menu" :stroke-width="1.35"/>
+        </span>
+        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.profile') }}</span>
+      </button>
+    </section>
+
+    <div class="titlebar-main-menu__divider"/>
+
+    <section class="titlebar-main-menu__section">
+      <button type="button" class="titlebar-main-menu__item" @click="onReloadExplorer">
+        <span class="titlebar-main-menu__icon" aria-hidden="true">
+          <DwIcon name="refresh" size="menu" :stroke-width="1.35"/>
+        </span>
+        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.reloadExplorer') }}</span>
+      </button>
+
+      <button type="button" class="titlebar-main-menu__item" @click="openOnboardingGuide">
+        <span class="titlebar-main-menu__icon" aria-hidden="true">
+          <DwIcon name="about" size="menu" :stroke-width="1.35"/>
+        </span>
+        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.onboarding') }}</span>
+      </button>
+    </section>
+
+    <div class="titlebar-main-menu__divider"/>
+
+    <section class="titlebar-main-menu__section">
+      <button v-if="auth.isGuest" type="button" class="titlebar-main-menu__item" @click="openAccountLogin">
+        <span class="titlebar-main-menu__icon" aria-hidden="true">
+          <DwIcon name="user" size="menu" :stroke-width="1.35"/>
+        </span>
+        <span class="titlebar-main-menu__label">{{ t('auth.accountLogin') }}</span>
+      </button>
+
+      <button type="button" class="titlebar-main-menu__item" @click="openTeam">
+        <span class="titlebar-main-menu__icon" aria-hidden="true">
+          <DwIcon name="users" size="menu" :stroke-width="1.25"/>
+        </span>
+        <span class="titlebar-main-menu__label">{{ t('profile.menu.createOrJoinTeam') }}</span>
+      </button>
+
+      <button v-if="!auth.isGuest" type="button" class="titlebar-main-menu__item" @click="signOut">
+        <span class="titlebar-main-menu__icon" aria-hidden="true">
+          <DwIcon name="log-out" size="menu" :stroke-width="1.35"/>
+        </span>
+        <span class="titlebar-main-menu__label">{{ t('auth.signOutAccount') }}</span>
+      </button>
+    </section>
+
+    <div class="titlebar-main-menu__divider"/>
+
+    <section class="titlebar-main-menu__section">
+      <button type="button" class="titlebar-main-menu__item" @click="exitApp">
+        <span class="titlebar-main-menu__icon" aria-hidden="true"/>
+        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.exit') }}</span>
+      </button>
+    </section>
+  </div>
+</template>
+
+<style scoped>
+.titlebar-main-menu {
+  position: fixed;
+  left: calc(var(--dw-rail-width) + 8px);
+  top: 10px;
+  z-index: 3300;
+  width: min(300px, calc(100vw - 24px));
+  padding: 5px 0;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 10px;
+  background: var(--dw-bg-panel);
+  box-shadow:
+      0 16px 40px rgba(15, 23, 42, 0.16),
+      0 0 0 1px color-mix(in srgb, var(--dw-text) 4%, transparent);
+}
+
+.titlebar-main-menu--anchored {
+  left: auto;
+  top: auto;
+}
+
+.titlebar-main-menu__section {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+}
+
+.titlebar-main-menu__divider {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--dw-border-light);
+}
+
+.titlebar-main-menu__item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--dw-text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.titlebar-main-menu__item:hover,
+.titlebar-main-menu__item.is-open {
+  background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-hover));
+}
+
+.titlebar-main-menu__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dw-text-muted);
+}
+
+.titlebar-main-menu__icon svg {
+  display: block;
+}
+
+.titlebar-main-menu__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titlebar-main-menu__shortcut {
+  justify-self: end;
+  padding: 1px 6px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--dw-bg) 88%, var(--dw-text) 4%);
+  color: var(--dw-text-muted);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.titlebar-main-menu__arrow {
+  width: 10px;
+  height: 10px;
+  margin-left: auto;
+  opacity: 0.55;
+}
+
+.titlebar-main-menu__submenu {
+  position: relative;
+}
+
+.titlebar-main-menu__flyout {
+  position: absolute;
+  top: -4px;
+  left: calc(100% + 4px);
+  z-index: 1;
+  width: min(320px, calc(100vw - 48px));
+  max-height: min(360px, 50vh);
+  overflow: auto;
+  padding: 5px 0;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 10px;
+  background: var(--dw-bg-panel);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+}
+
+.titlebar-main-menu__flyout-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.titlebar-main-menu__flyout-item:hover,
+.titlebar-main-menu__flyout-item--accent:hover {
+  background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-hover));
+}
+
+.titlebar-main-menu__flyout-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dw-text);
+}
+
+.titlebar-main-menu__flyout-path {
+  max-width: 100%;
+  font-family: var(--dw-mono);
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--dw-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titlebar-main-menu__flyout-empty {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--dw-text-muted);
+  font-size: 12px;
+}
+
+.titlebar-main-menu__flyout-item--accent {
+  border-top: 1px solid var(--dw-border-light);
+  margin-top: 2px;
+  padding-top: 9px;
+  color: var(--dw-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+</style>

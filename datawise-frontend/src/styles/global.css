@@ -1,0 +1,56 @@
+@import './variables.css';
+@import './scrollbars.css';
+@import './tool-stripe.css';
+@import './tool-window.css';
+@import './module-workbench.css';
+@import './module-page.css';
+@import './settings-panel.css';
+@import './modals.css';
+@import './buttons.css';
+@import './icons.css';
+@import './forms.css';
+@import './panels.css';
+@import './status.css';
+@import './shortcut-panel.css';
+@import './migration-wizard.css';
+@import './migration-panel.css';
+@import './resizable-table.css';
+@import './panel-resize.css';
+@import './context-menu.css';
+@import './menus.css';
+@import './tab-bar.css';
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: var(--dw-font);
+    font-size: var(--mp-body);
+    color: var(--dw-text);
+    background: var(--dw-bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+button {
+    font: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+}
+
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}

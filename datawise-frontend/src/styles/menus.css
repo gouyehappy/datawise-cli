@@ -1,0 +1,142 @@
+/**
+ * 下拉 / 飞出面板的共享样式
+ */
+.dw-dropdown-shell {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 120;
+    display: flex;
+    align-items: flex-start;
+}
+
+.dw-dropdown-panel {
+    flex-shrink: 0;
+    border: 1px solid var(--dw-border-light);
+    border-radius: 12px;
+    background: var(--dw-bg);
+    box-shadow: var(--dw-menu-shadow);
+    overflow: hidden;
+}
+
+.dw-dropdown-panel--primary {
+    min-width: 188px;
+    padding: 6px;
+}
+
+.dw-dropdown-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 38px;
+    padding: 0 12px 0 10px;
+    border-radius: 9px;
+    text-align: left;
+    color: var(--dw-text);
+    transition: background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dw-dropdown-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 3px;
+    height: 0;
+    border-radius: 0 3px 3px 0;
+    background: var(--dw-primary);
+    transform: translateY(-50%);
+    transition: height 0.15s ease;
+}
+
+.dw-dropdown-item:hover {
+    background: var(--dw-bg-hover);
+}
+
+.dw-dropdown-item:focus {
+    outline: none;
+}
+
+.dw-dropdown-item:focus-visible {
+    outline: 2px solid var(--dw-primary-border);
+    outline-offset: -2px;
+}
+
+.dw-dropdown-item.is-active {
+    background: var(--dw-primary-soft);
+    color: var(--dw-primary);
+}
+
+.dw-dropdown-item.is-active::before {
+    height: 18px;
+}
+
+.dw-dropdown-item__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: var(--dw-bg-muted);
+    color: var(--dw-text-secondary);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dw-dropdown-item:hover .dw-dropdown-item__icon {
+    background: color-mix(in srgb, var(--dw-bg-muted) 70%, var(--dw-bg-hover));
+}
+
+.dw-dropdown-item.is-active .dw-dropdown-item__icon {
+    background: color-mix(in srgb, var(--dw-primary-soft) 80%, var(--dw-bg-panel));
+    color: var(--dw-primary);
+}
+
+.dw-dropdown-item__label {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.dw-dropdown-item__chevron {
+    flex-shrink: 0;
+    color: var(--dw-text-muted);
+    opacity: 0.55;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.dw-dropdown-item__shortcut {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 2px 6px;
+    border: 1px solid var(--dw-border-light);
+    border-radius: 4px;
+    background: var(--dw-bg-muted);
+    font-family: var(--dw-mono);
+    font-size: 10px;
+    line-height: 1.35;
+    color: var(--dw-text-muted);
+}
+
+.dw-dropdown-item.is-active .dw-dropdown-item__chevron {
+    color: var(--dw-primary);
+    opacity: 1;
+    transform: translateX(1px);
+}
+
+.dw-dropdown-panel--flyout-host {
+    overflow: visible;
+}
+
+.dw-dropdown-divider {
+    height: 1px;
+    margin: 4px 8px;
+    background: var(--dw-border-light);
+}
