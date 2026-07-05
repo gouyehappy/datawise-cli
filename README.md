@@ -12,14 +12,14 @@ Develop in the browser; ship a Windows desktop app with embedded backend and JRE
 
 ### Workbench
 
-Captured from the Vue client (mocked API — no live database required). Regenerate with `npm run capture:demos --prefix datawise-frontend`.
+Screenshots from the Vue client (mocked API). Regenerate: `npm run capture:demos --prefix datawise-frontend`.
 
 | | | |
 |:---:|:---:|:---:|
-| **Dashboard** — metrics & quick entry | **Explorer** — connection tree & command palette | **SQL console** — run query & result grid |
-| ![Dashboard](docs/assets/gifs/01-dashboard.gif) | ![Explorer](docs/assets/gifs/02-explorer.gif) | ![SQL console](docs/assets/gifs/03-sql-console.gif) |
-| **AI analysis** — streaming Text-to-SQL | | |
-| ![AI analysis](docs/assets/gifs/04-ai-analysis.gif) | | |
+| **Dashboard** | **Explorer** | **SQL console** |
+| ![Dashboard](docs/assets/screenshots/01-dashboard.png) | ![Explorer](docs/assets/screenshots/02-explorer.png) | ![SQL console](docs/assets/screenshots/03-sql-console.png) |
+| **AI analysis** | | |
+| ![AI analysis](docs/assets/screenshots/04-ai-analysis.png) | | |
 
 ### SQL editor ([`@datawise/sql-editor`](./sql-editor/))
 

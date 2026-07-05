@@ -12,14 +12,14 @@
 
 ### 工作台
 
-由 Vue 客户端自动录制（Mock API，无需真实数据库）。重新生成：`npm run capture:demos --prefix datawise-frontend`。
+由 Vue 客户端自动截图（Mock API）。重新生成：`npm run capture:demos --prefix datawise-frontend`。
 
 | | | |
 |:---:|:---:|:---:|
-| **仪表盘** — 指标与快捷入口 | **Explorer** — 连接树与命令面板 | **SQL 控制台** — 执行与结果网格 |
-| ![Dashboard](docs/assets/gifs/01-dashboard.gif) | ![Explorer](docs/assets/gifs/02-explorer.gif) | ![SQL console](docs/assets/gifs/03-sql-console.gif) |
-| **AI 分析** — 流式 Text-to-SQL | | |
-| ![AI analysis](docs/assets/gifs/04-ai-analysis.gif) | | |
+| **仪表盘** | **Explorer** | **SQL 控制台** |
+| ![Dashboard](docs/assets/screenshots/01-dashboard.png) | ![Explorer](docs/assets/screenshots/02-explorer.png) | ![SQL console](docs/assets/screenshots/03-sql-console.png) |
+| **AI 分析** | | |
+| ![AI analysis](docs/assets/screenshots/04-ai-analysis.png) | | |
 
 ### SQL 编辑器（[`@datawise/sql-editor`](./sql-editor/)）
 
