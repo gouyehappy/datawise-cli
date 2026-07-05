@@ -8,13 +8,10 @@ test.describe('Workspace main path', () => {
 
         await expect(page.locator('.shell')).toBeVisible({timeout: 15000})
 
-        await page.getByRole('button', {name: '数据库', exact: true}).click()
+        await page.locator('nav.tool-stripe__group').first().getByRole('button', {name: '数据库', exact: true}).click()
         await expect(page.getByText('Test MySQL')).toBeVisible({timeout: 15000})
 
-        const newConsole = page.getByRole('button', {name: /新建控制台/})
-        if (await newConsole.isVisible()) {
-            await newConsole.click()
-        }
+        await page.keyboard.press('Control+Shift+KeyL')
 
         const editor = page.getByRole('textbox', {name: 'Editor content'})
         await expect(editor).toBeVisible({timeout: 15000})

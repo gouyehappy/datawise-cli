@@ -10,11 +10,24 @@ Develop in the browser; ship a Windows desktop app with embedded backend and JRE
 
 ## Preview
 
-**SQL editor** ([`@datawise/sql-editor`](./sql-editor/)) — grammar-driven completion, schema-aware hints, FK JOIN snippets:
+### Workbench
+
+Captured from the Vue client (mocked API — no live database required). Regenerate with `npm run capture:demos --prefix datawise-frontend`.
+
+| | | |
+|:---:|:---:|:---:|
+| **Dashboard** — metrics & quick entry | **Explorer** — connection tree & command palette | **SQL console** — run query & result grid |
+| ![Dashboard](docs/assets/gifs/01-dashboard.gif) | ![Explorer](docs/assets/gifs/02-explorer.gif) | ![SQL console](docs/assets/gifs/03-sql-console.gif) |
+| **AI analysis** — streaming Text-to-SQL | | |
+| ![AI analysis](docs/assets/gifs/04-ai-analysis.gif) | | |
+
+### SQL editor ([`@datawise/sql-editor`](./sql-editor/))
+
+Grammar-driven completion, schema-aware hints, FK JOIN snippets:
 
 ![SQL editor demo — CTE, JOIN, completion](sql-editor/docs/demo.gif)
 
-> The full workbench adds connection tree, multi-tab consoles, AI analysis, and Electron packaging. Clone and follow **Quick start** below to run locally.
+> Clone the repo and follow **Quick start** below to run the full workbench locally (browser or Windows desktop).
 
 ---
 

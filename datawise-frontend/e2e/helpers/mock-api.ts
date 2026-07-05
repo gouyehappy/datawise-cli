@@ -4,6 +4,27 @@ function apiBody(data: unknown) {
     return JSON.stringify({success: true, code: 0, data, msg: 'ok'})
 }
 
+const MOCK_EXPLORER_TREE = {
+    tree: [
+        {
+            id: 'g1',
+            label: 'Default',
+            type: 'group',
+            expanded: true,
+            children: [
+                {
+                    id: 'conn-1',
+                    label: 'Test MySQL',
+                    type: 'connection',
+                    dbType: 'mysql',
+                    expanded: false,
+                    children: [],
+                },
+            ],
+        },
+    ],
+}
+
 const MOCK_CATALOG = {
     version: 1,
     groups: [{id: 'g1', label: 'Default', sortOrder: 0, expanded: true}],
@@ -124,6 +145,9 @@ export function buildAnalysisSseBody() {
 }
 
 export async function installWorkspaceE2eMocks(page: Page) {
+    await page.addInitScript(() => {
+        localStorage.setItem('dw-cli-onboarding-completed', '1')
+    })
     await page.route('**/*', async (route: Route) => {
         const url = new URL(route.request().url())
         const path = url.pathname
@@ -156,11 +180,25 @@ export async function installWorkspaceE2eMocks(page: Page) {
         if (path === '/api/config/connections') {
             return route.fulfill({status: 200, contentType: 'application/json', body: apiBody(MOCK_CATALOG)})
         }
+        if (path === '/api/explorer/tree') {
+            return route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: apiBody(MOCK_EXPLORER_TREE),
+            })
+        }
         if (path === '/api/plugins') {
             return route.fulfill({status: 200, contentType: 'application/json', body: apiBody(MOCK_PLUGINS)})
         }
         if (path === '/api/teams') {
             return route.fulfill({status: 200, contentType: 'application/json', body: apiBody([])})
+        }
+        if (path.startsWith('/api/explorer/connections/') && path.endsWith('/ping')) {
+            return route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: apiBody({ok: true, latencyMs: 3}),
+            })
         }
         if (path.startsWith('/api/explorer/connections/') && path.endsWith('/children')) {
             return route.fulfill({
@@ -192,6 +230,9 @@ export async function installWorkspaceE2eMocks(page: Page) {
 }
 
 export async function installAnalysisE2eMocks(page: Page, sseBody = buildAnalysisSseBody()) {
+    await page.addInitScript(() => {
+        localStorage.setItem('dw-cli-onboarding-completed', '1')
+    })
     await page.addInitScript((seed) => {
         localStorage.setItem('dw-cli-ai-chat', JSON.stringify(seed))
     }, AI_CHAT_SEED)
@@ -228,17 +269,32 @@ export async function installAnalysisE2eMocks(page: Page, sseBody = buildAnalysi
         if (path === '/api/config/connections') {
             return route.fulfill({status: 200, contentType: 'application/json', body: apiBody(MOCK_CATALOG)})
         }
+        if (path === '/api/explorer/tree') {
+            return route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: apiBody(MOCK_EXPLORER_TREE),
+            })
+        }
         if (path === '/api/plugins') {
             return route.fulfill({status: 200, contentType: 'application/json', body: apiBody(MOCK_PLUGINS)})
         }
         if (path === '/api/teams') {
             return route.fulfill({status: 200, contentType: 'application/json', body: apiBody([])})
         }
-        if (path.startsWith('/api/workspace/')) {
-            return route.fulfill({status: 200, contentType: 'application/json', body: apiBody([])})
+        if (path.startsWith('/api/explorer/connections/') && path.endsWith('/children')) {
+            return route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: apiBody(MOCK_DATABASE_CHILDREN),
+            })
         }
-        if (path.startsWith('/api/notifications')) {
-            return route.fulfill({status: 200, contentType: 'application/json', body: apiBody([])})
+        if (path === '/api/sql/execute') {
+            return route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: apiBody(MOCK_SQL_EXECUTE_RESULT),
+            })
         }
         if (path === '/api/ai/analyze/stream') {
             return route.fulfill({
@@ -246,6 +302,12 @@ export async function installAnalysisE2eMocks(page: Page, sseBody = buildAnalysi
                 headers: {'Content-Type': 'text/event-stream'},
                 body: sseBody,
             })
+        }
+        if (path.startsWith('/api/workspace/')) {
+            return route.fulfill({status: 200, contentType: 'application/json', body: apiBody([])})
+        }
+        if (path.startsWith('/api/notifications')) {
+            return route.fulfill({status: 200, contentType: 'application/json', body: apiBody([])})
         }
 
         if (path.startsWith('/api/')) {

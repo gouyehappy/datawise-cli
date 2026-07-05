@@ -10,11 +10,24 @@
 
 ## 预览
 
-**SQL 编辑器**（[`@datawise/sql-editor`](./sql-editor/)）— 语法驱动补全、Schema 感知、外键 JOIN 一行生成：
+### 工作台
+
+由 Vue 客户端自动录制（Mock API，无需真实数据库）。重新生成：`npm run capture:demos --prefix datawise-frontend`。
+
+| | | |
+|:---:|:---:|:---:|
+| **仪表盘** — 指标与快捷入口 | **Explorer** — 连接树与命令面板 | **SQL 控制台** — 执行与结果网格 |
+| ![Dashboard](docs/assets/gifs/01-dashboard.gif) | ![Explorer](docs/assets/gifs/02-explorer.gif) | ![SQL console](docs/assets/gifs/03-sql-console.gif) |
+| **AI 分析** — 流式 Text-to-SQL | | |
+| ![AI analysis](docs/assets/gifs/04-ai-analysis.gif) | | |
+
+### SQL 编辑器（[`@datawise/sql-editor`](./sql-editor/)）
+
+语法驱动补全、Schema 感知、外键 JOIN 一行生成：
 
 ![SQL editor demo — CTE, JOIN, completion](sql-editor/docs/demo.gif)
 
-> 完整工作台含连接树、多 Tab 控制台、AI 分析与桌面壳，克隆后按下方「快速开始」本地运行。
+> 克隆仓库后按下方「快速开始」在浏览器或 Windows 桌面版本地运行完整工作台。
 
 ---
 
