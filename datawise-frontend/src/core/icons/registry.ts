@@ -204,6 +204,7 @@ export type DwIconName =
     | 'settings-ai'
     | 'settings-data-agent'
     | 'settings-knowledge'
+    | 'settings-platform'
     | 'settings-about'
     | 'tab-welcome'
     | 'tab-console'
@@ -328,6 +329,7 @@ export const DW_ICON_REGISTRY: Record<DwIconName, Component> = {
     'settings-ai': Sparkles,
     'settings-data-agent': Network,
     'settings-knowledge': BookOpen,
+    'settings-platform': LayoutTemplate,
     'settings-about': Info,
     'tab-welcome': Home,
     'tab-console': Terminal,

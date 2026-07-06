@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {AiAnalysisResult} from '@/features/ai/types/analysis'
 import {
@@ -14,10 +14,13 @@ import {buildAiChartOption} from '@/features/ai/analysis/services/ai-chart.servi
 import AiAnalysisChart from '@/features/ai/analysis/components/AiAnalysisChart.vue'
 import AiAnalysisReportSection from '@/features/ai/analysis/components/AiAnalysisReportSection.vue'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {platformApi} from '@/api'
 
 const props = defineProps<{
   analysis: AiAnalysisResult
   federatedTargetCount?: number
+  summaryText?: string
+  targetsJson?: string
 }>()
 
 const emit = defineEmits<{
@@ -26,6 +29,7 @@ const emit = defineEmits<{
 
 const {t} = useI18n()
 const layout = useLayoutStore()
+const savingCanvas = ref(false)
 
 const PREVIEW_LIMIT = 8
 
@@ -67,6 +71,33 @@ function exportHtml() {
   exportAnalysisHtml(props.analysis)
   layout.showToast(t('ai.analysis.exportHtmlDone'))
 }
+
+async function saveAsCanvas() {
+  if (savingCanvas.value) return
+  savingCanvas.value = true
+  try {
+    const title =
+        props.analysis.chart?.title?.trim()
+        || props.summaryText?.trim().slice(0, 80)
+        || t('ai.analysis.saveAsCanvasDefaultTitle')
+    await platformApi.saveAnalysisCanvas({
+      title,
+      description: props.summaryText?.trim().slice(0, 240) || undefined,
+      promptTemplate: props.summaryText?.trim() || undefined,
+      sql: props.analysis.sql,
+      summary: props.summaryText?.trim() || undefined,
+      chartSpecJson: props.analysis.chart ? JSON.stringify(props.analysis.chart) : undefined,
+      reportMarkdown: props.analysis.report?.markdown || undefined,
+      targetsJson: props.targetsJson,
+      parameters: [],
+    })
+    layout.showToast(t('ai.analysis.saveAsCanvasDone'))
+  } catch (error) {
+    layout.showToast(error instanceof Error ? error.message : String(error))
+  } finally {
+    savingCanvas.value = false
+  }
+}
 </script>
 
 <template>
@@ -78,6 +109,14 @@ function exportHtml() {
       </button>
       <button class="ai-text-action" type="button" @click="exportHtml">
         {{ t('ai.analysis.exportHtml') }}
+      </button>
+      <button
+          class="ai-text-action"
+          type="button"
+          :disabled="savingCanvas"
+          @click="saveAsCanvas"
+      >
+        {{ t('ai.analysis.saveAsCanvas') }}
       </button>
     </header>
     <section class="ai-section-card analysis-sql-card">

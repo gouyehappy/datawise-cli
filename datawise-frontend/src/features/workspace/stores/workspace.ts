@@ -7,7 +7,9 @@ import type {DbType, StatusSnapshot, WorkspaceTab} from '@/core/types'
 import {t} from '@/i18n'
 import type {ConsoleQueryState, QueryResultItem} from '@/features/workspace/types'
 import type {WorkspaceTabSnapshot} from '@/shared/config/app-config.types'
+import type {PlatformFeatureId} from '@/features/platform/types/platform.types'
 import {captureWorkspaceTabs} from '@/features/workspace/utils/workspace-session'
+import {platformCatalogTabTitle} from '@/features/platform/services/platform-catalog.service'
 import {resolveConsoleInstanceLabel} from '@/features/workspace/services/resolve-console-instance'
 import {
     buildConsoleTabTitleFromParts,
@@ -599,6 +601,42 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             database: options.database,
             instanceId: options.instanceId,
             explorerNodeId: options.explorerNodeId,
+        })
+        activeTabId.value = id
+        return id
+    }
+
+    function openPlatformCatalog(options: {
+        feature: PlatformFeatureId
+        connectionId: string
+        database: string
+        instanceId?: string
+        explorerNodeId?: string
+    }) {
+        const existing = tabs.value.find(
+            (tab) =>
+                tab.type === 'platform_catalog'
+                && tab.platformFeature === options.feature
+                && tab.connectionId === options.connectionId
+                && tab.database === options.database,
+        )
+        if (existing) {
+            if (options.instanceId) existing.instanceId = options.instanceId
+            if (options.explorerNodeId) existing.explorerNodeId = options.explorerNodeId
+            activeTabId.value = existing.id
+            return existing.id
+        }
+        const id = nextTabId('platform-catalog')
+        tabs.value.push({
+            id,
+            title: platformCatalogTabTitle(options.feature, options.database, t),
+            type: 'platform_catalog',
+            closable: true,
+            connectionId: options.connectionId,
+            database: options.database,
+            instanceId: options.instanceId,
+            explorerNodeId: options.explorerNodeId,
+            platformFeature: options.feature,
         })
         activeTabId.value = id
         return id
@@ -1444,6 +1482,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (type === 'kafka-topics') return 'kafka-topics'
         if (type === 'kafka-topic') return 'kafka-topic'
         if (type === 'kafka-consumer-groups') return 'kafka-consumer-groups'
+        if (type === 'platform_catalog') return 'platform-catalog'
         return 'tab'
     }
 
@@ -1501,6 +1540,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         openSchemaCompare,
         openSchemaEr,
         openSchemaTables,
+        openPlatformCatalog,
         openCrossEnvCompare,
         openTableMigration,
         openViewModelData,

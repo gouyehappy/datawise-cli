@@ -29,6 +29,7 @@ export default {
         keys: '键',
         indexes: '索引',
         empty: '节点',
+        platform_feature: '平台能力',
     },
     infoFields: {
         dbType: '数据库类型',
@@ -47,6 +48,14 @@ export default {
         section: '分类',
         itemCount: '条目数',
         nodeType: '节点类型',
+        metricKind: '指标类型',
+        unitOrExpression: '单位 / 表达式',
+    },
+    infoFieldValues: {
+        metricKind: {
+            auto: '自动生成',
+            defined: '手动定义',
+        },
     },
     infoLists: {
         instances: '实例列表',
@@ -54,6 +63,7 @@ export default {
         columns: '列结构',
         keys: '键',
         indexes: '索引',
+        semanticMetrics: '语义层指标',
     },
     tableInfo: '表信息',
     sqlLog: 'SQL 日志',

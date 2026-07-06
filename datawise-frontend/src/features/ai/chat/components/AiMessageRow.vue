@@ -87,6 +87,8 @@ const hasSummaryText = computed(() =>
               <AiAnalysisPanel
                   :analysis="message.analysis"
                   :federated-target-count="message.databases?.length ?? 0"
+                  :summary-text="message.content"
+                  :targets-json="message.databases?.length ? JSON.stringify(message.databases) : undefined"
                   @open-in-console="emit('openInConsole', $event)"
               />
             </div>

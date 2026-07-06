@@ -61,6 +61,7 @@ export type SettingsSection =
     | 'ai'
     | 'dataAgent'
     | 'knowledge'
+    | 'platform'
     | 'about'
 
 /** 右侧快捷栏面板，对应 Chat2DB Shortcut Bar */
@@ -87,6 +88,7 @@ export type TreeNodeType =
     | 'index'
     | 'sql_file'
     | 'view_model'
+    | 'platform_feature'
     | 'redis-key'
     | 'redis-empty'
     | 'redis-browser'
@@ -165,6 +167,7 @@ export type WorkspaceTabType =
     | 'kafka-topics'
     | 'kafka-topic'
     | 'kafka-consumer-groups'
+    | 'platform_catalog'
 
 export interface WorkspaceTab {
     id: string
@@ -224,6 +227,8 @@ export interface WorkspaceTab {
     kafkaTopic?: string
     /** Redis 工作台初始视图 */
     redisView?: 'keys' | 'command'
+    /** Explorer AI 平台能力目录 Tab */
+    platformFeature?: import('@/features/platform/types/platform.types').PlatformFeatureId
 }
 
 export interface TableColumn {
@@ -344,6 +349,7 @@ export type ExplorerInfoKind =
     | 'columns'
     | 'keys'
     | 'indexes'
+    | 'platform_feature'
 
 export interface ExplorerInfoField {
     /** i18n key under shortcut.infoFields */
@@ -365,9 +371,12 @@ export interface ExplorerNodeInfo {
     sourceNodeId?: string
     breadcrumb?: string
     comment?: string
+    semanticHint?: string
     fields: ExplorerInfoField[]
     listTitleKey?: string
     listItems: ExplorerInfoListItem[]
+    semanticListTitleKey?: string
+    semanticItems?: ExplorerInfoListItem[]
 }
 
 export interface TeamSummary {

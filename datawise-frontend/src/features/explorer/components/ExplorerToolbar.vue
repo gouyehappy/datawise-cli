@@ -20,6 +20,7 @@ import {
   runExplorerRefresh,
   runToggleAllComments,
   runToggleColumnComment,
+  runToggleSemanticLayer,
   runToggleTableComment,
 } from '@/features/explorer/services/explorer-toolbar.actions'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
@@ -46,6 +47,7 @@ const settingsMenuItems = computed(() =>
         {
           showColumnComment: explorer.showColumnComment,
           showTableComment: explorer.showTableComment,
+          showSemanticLayer: explorer.showSemanticLayer,
           allCommentsVisible: explorer.allCommentsVisible,
         },
         shortcutLabel,
@@ -89,6 +91,7 @@ function toggleSettings() {
 function onSettingsMenuSelect(id: string) {
   if (id === 'toggle-column-comment') runToggleColumnComment()
   if (id === 'toggle-table-comment') runToggleTableComment()
+  if (id === 'toggle-semantic-layer') runToggleSemanticLayer()
   if (id === 'toggle-all-comments') runToggleAllComments()
   settingsMenu.close()
 }

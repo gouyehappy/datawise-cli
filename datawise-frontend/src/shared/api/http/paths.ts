@@ -272,4 +272,23 @@ export const API_PATHS = {
     aiSchema: {
         tables: '/api/ai/schema/tables',
     },
+    platform: {
+        analysisCanvas: '/api/platform/analysis-canvas',
+        analysisCanvasRerun: '/api/platform/analysis-canvas/rerun',
+        semanticMetrics: '/api/platform/semantic-metrics',
+        semanticMetricsAutoGenerate: '/api/platform/semantic-metrics/auto-generate',
+        sqlReview: '/api/platform/sql-review',
+        federatedViews: '/api/platform/federated-views',
+        federatedViewsExecute: '/api/platform/federated-views/execute',
+        schemaDriftMonitors: '/api/platform/schema-drift/monitors',
+        schemaDriftCompare: '/api/platform/schema-drift/compare',
+        schemaDriftMonitorRun: (id: string) =>
+            `/api/platform/schema-drift/monitors/${encodeURIComponent(id)}/run`,
+        scheduledTasks: '/api/platform/scheduled-tasks',
+        scheduledTaskRun: (id: string) =>
+            `/api/platform/scheduled-tasks/${encodeURIComponent(id)}/run`,
+        queryLibraryVersions: (teamId: string, queryId: string) =>
+            `/api/platform/query-library/${encodeURIComponent(teamId)}/${encodeURIComponent(queryId)}/versions`,
+        queryLibrarySaveVersion: '/api/platform/query-library/versions',
+    },
 } as const

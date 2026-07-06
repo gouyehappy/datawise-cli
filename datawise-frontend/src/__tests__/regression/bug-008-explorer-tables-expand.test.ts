@@ -35,6 +35,28 @@ describe('BUG-008 explorer tables expand', () => {
         assert.equal(needsLazyLoad(viewsFolder), true)
     })
 
+    it('ai folder is expandable and lazy-loads platform features', () => {
+        const aiFolder = node({
+            id: 'folder-ai-conn-1-admin_db',
+            label: 'ai',
+            type: 'folder',
+            children: [],
+        })
+
+        assert.equal(canExpandTreeNode(aiFolder), true)
+        assert.equal(needsLazyLoad(aiFolder), true)
+    })
+
+    it('platform_feature nodes are leaf entries', () => {
+        const featureNode = node({
+            id: 'pf-conn-1-admin_db-semantic_metrics',
+            label: 'semantic_metrics',
+            type: 'platform_feature',
+            meta: 'semantic_metrics',
+        })
+        assert.equal(canExpandTreeNode(featureNode), false)
+    })
+
     it('functions, procedures, and triggers folders show expand arrows', () => {
         for (const label of ['functions', 'procedures', 'triggers'] as const) {
             const folder = node({

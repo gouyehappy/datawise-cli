@@ -41,6 +41,7 @@ export interface ExplorerPreferences {
     expandedNodeIds: string[]
     showColumnComment: boolean
     showTableComment: boolean
+    showSemanticLayer: boolean
 }
 
 export interface WorkspaceTabSnapshot {

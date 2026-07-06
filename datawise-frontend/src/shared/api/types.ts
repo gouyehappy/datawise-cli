@@ -36,6 +36,30 @@ import type {SqlEditorShortcutsLayer} from '@datawise/sql-editor/types'
 import type {UpdatePreferences} from '@/features/settings/services/about-settings.service'
 import type {ConnectionsCatalog} from '@/shared/config/connections-catalog.types'
 import type {DatasourceDefinition, JdbcDriverResolveResult} from '@/features/datasource/types/datasource.types'
+import type {
+    AnalysisCanvasDetail,
+    AnalysisCanvasSummary,
+    AutoGenerateSemanticMetricsRequest,
+    ExecuteFederatedViewRequest,
+    FederatedViewDetail,
+    FederatedViewSummary,
+    QueryLibraryVersion,
+    RerunAnalysisCanvasRequest,
+    RerunAnalysisCanvasResult,
+    SaveAnalysisCanvasRequest,
+    SaveFederatedViewRequest,
+    SaveQueryLibraryVersionRequest,
+    SaveScheduledTaskRequest,
+    SaveSchemaDriftMonitorRequest,
+    SaveSemanticMetricRequest,
+    ScheduledTask,
+    SchemaDriftCompareRequest,
+    SchemaDriftMonitor,
+    SchemaDriftReport,
+    SemanticMetric,
+    SqlReviewRequest,
+    SqlReviewResult,
+} from '@/features/platform/types/platform.types'
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 
@@ -1220,6 +1244,62 @@ export interface MigrationApi {
     resumeJob(jobId: string): Promise<MigrationJobView>
 }
 
+// ── Platform ────────────────────────────────────────────────────────────────
+
+export interface PlatformApi {
+    listAnalysisCanvas(): Promise<AnalysisCanvasSummary[]>
+
+    getAnalysisCanvas(id: string): Promise<AnalysisCanvasDetail>
+
+    saveAnalysisCanvas(request: SaveAnalysisCanvasRequest): Promise<AnalysisCanvasDetail>
+
+    deleteAnalysisCanvas(id: string): Promise<void>
+
+    rerunAnalysisCanvas(request: RerunAnalysisCanvasRequest): Promise<RerunAnalysisCanvasResult>
+
+    listSemanticMetrics(connectionId?: string, database?: string): Promise<SemanticMetric[]>
+
+    saveSemanticMetric(request: SaveSemanticMetricRequest): Promise<SemanticMetric>
+
+    deleteSemanticMetric(id: string): Promise<void>
+
+    autoGenerateSemanticMetrics(request: AutoGenerateSemanticMetricsRequest): Promise<SemanticMetric[]>
+
+    reviewSql(request: SqlReviewRequest): Promise<SqlReviewResult>
+
+    listFederatedViews(): Promise<FederatedViewSummary[]>
+
+    getFederatedView(id: string): Promise<FederatedViewDetail>
+
+    saveFederatedView(request: SaveFederatedViewRequest): Promise<FederatedViewDetail>
+
+    deleteFederatedView(id: string): Promise<void>
+
+    executeFederatedView(request: ExecuteFederatedViewRequest): Promise<ExecuteSqlResult>
+
+    listSchemaDriftMonitors(): Promise<SchemaDriftMonitor[]>
+
+    saveSchemaDriftMonitor(request: SaveSchemaDriftMonitorRequest): Promise<SchemaDriftMonitor>
+
+    deleteSchemaDriftMonitor(id: string): Promise<void>
+
+    compareSchemaDrift(request: SchemaDriftCompareRequest): Promise<SchemaDriftReport>
+
+    runSchemaDriftMonitor(id: string): Promise<SchemaDriftReport>
+
+    listScheduledTasks(): Promise<ScheduledTask[]>
+
+    saveScheduledTask(request: SaveScheduledTaskRequest): Promise<ScheduledTask>
+
+    deleteScheduledTask(id: string): Promise<void>
+
+    runScheduledTask(id: string): Promise<ScheduledTask>
+
+    listQueryLibraryVersions(teamId: string, queryId: string): Promise<QueryLibraryVersion[]>
+
+    saveQueryLibraryVersion(request: SaveQueryLibraryVersionRequest): Promise<QueryLibraryVersion>
+}
+
 // ── Client ──────────────────────────────────────────────────────────────────
 
 export interface ApiClient {
@@ -1239,4 +1319,5 @@ export interface ApiClient {
     config: ConfigApi
     datasources: DatasourcesApi
     migration: MigrationApi
+    platform: PlatformApi
 }

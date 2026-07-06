@@ -24,6 +24,8 @@ import {
   isExplorerFavoritesViewAllId,
 } from '@/features/explorer/services/explorer-favorites.constants'
 import {resolveExplorerCatalogLabel} from '@/features/explorer/services/explorer-catalog-label.service'
+import {resolvePlatformFeatureId} from '@/features/explorer/services/explorer-ai-tree.service'
+import {platformFeatureTreeLabel} from '@/features/platform/services/platform-catalog.service'
 import {
   resolveLastFlatNodeIndex,
   useTreeVirtualWindow,
@@ -262,6 +264,9 @@ function displayNodeLabel(node: TreeNode) {
     if (node.meta === 'consumer-groups') return t('explorer.kafkaFeatures.consumerGroups')
   }
   if (node.type === 'load_more') return 'Load more'
+  if (node.type === 'platform_feature') {
+    return platformFeatureTreeLabel(resolvePlatformFeatureId(node) as import('@/features/platform/types/platform.types').PlatformFeatureId, t)
+  }
   return resolveExplorerCatalogLabel(node, t)
 }
 

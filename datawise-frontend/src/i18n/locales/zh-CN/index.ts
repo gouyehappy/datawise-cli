@@ -31,6 +31,7 @@ import viewModel from './viewModel'
 import commandPalette from './commandPalette'
 import globalObjectSearch from './globalObjectSearch'
 import capabilities from './capabilities'
+import platform from './platform'
 
 export default {
     app,
@@ -66,4 +67,5 @@ export default {
     commandPalette,
     globalObjectSearch,
     capabilities,
+    platform,
 }

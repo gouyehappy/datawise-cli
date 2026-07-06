@@ -22,6 +22,10 @@ import {openSqlFileFromTree} from '@/features/explorer/services/instance-console
 import {deleteInstanceSqlScript} from '@/features/explorer/services/sql-script.service'
 import {useScriptHistoryDrawerStore} from '@/features/explorer/stores/script-history-drawer-store'
 import {runSqlFileForDatabase} from '@/features/explorer/services/run-sql-file.service'
+import {
+    resolvePlatformFeatureId,
+} from '@/features/explorer/services/explorer-ai-tree.service'
+import type {PlatformFeatureId} from '@/features/platform/types/platform.types'
 import {resolveSchemaScopeFromDatabaseNode} from '@/features/schema-compare/services/schema-scope.service'
 import {resolveExplorerSchemaErContext} from '@/features/explorer/services/schema-er-context.service'
 import {
@@ -202,7 +206,13 @@ export function useConnectionTree() {
             (nodeId) => explorer.ensureChildrenLoaded(nodeId),
             (nodeId) => explorer.findNode(nodeId),
         )
-        shortcutPanel.syncExplorerInfo(buildExplorerNodeInfo(prepared, explorer.tree))
+        await explorer.prefetchSemanticMetricsForNode(prepared.id)
+        const scope = findAncestorByType(explorer.tree, prepared.id, 'database')
+        const connectionId = findConnectionId(prepared)
+        const semanticIndex = connectionId && scope
+            ? explorer.getSemanticIndex(connectionId, scope.label)
+            : null
+        shortcutPanel.syncExplorerInfo(buildExplorerNodeInfo(prepared, explorer.tree, semanticIndex))
     }
 
     function findConnectionId(node: TreeNode): string | undefined {
@@ -331,6 +341,21 @@ export function useConnectionTree() {
             } else {
                 await openViewModelDataFromNode(node)
             }
+            return
+        }
+        if (node.type === 'platform_feature') {
+            const connectionId = findConnectionId(node)
+            const scope = resolveExplorerSqlFileScope(explorer.tree, node.id)
+            if (!connectionId || !scope) return
+            const feature = resolvePlatformFeatureId(node) as PlatformFeatureId
+            workspace.openPlatformCatalog({
+                feature,
+                connectionId,
+                database: scope.instanceLabel,
+                instanceId: scope.scopeNode.id,
+                explorerNodeId: node.id,
+            })
+            layout.setModule('database')
             return
         }
         if (node.type === 'redis-key') {

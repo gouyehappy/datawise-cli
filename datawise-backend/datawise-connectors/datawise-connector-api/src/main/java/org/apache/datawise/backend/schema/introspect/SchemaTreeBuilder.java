@@ -50,6 +50,7 @@ public final class SchemaTreeBuilder {
         folders.add(emptyFolder("procedures", connectionId, catalog, "folder-procedures"));
         folders.add(emptyFolder("triggers", connectionId, catalog, "folder-triggers"));
         folders.add(emptyFolder("workspaces", connectionId, catalog, "folder-ws"));
+        folders.add(emptyFolder("ai", connectionId, catalog, "folder-ai"));
         return folders;
     }
 
@@ -74,6 +75,7 @@ public final class SchemaTreeBuilder {
         folders.add(schemaEmptyFolder("procedures", connectionId, catalog, schema, "folder-procedures"));
         folders.add(schemaEmptyFolder("triggers", connectionId, catalog, schema, "folder-triggers"));
         folders.add(schemaEmptyFolder("workspaces", connectionId, catalog, schema, "folder-ws"));
+        folders.add(schemaEmptyFolder("ai", connectionId, catalog, schema, "folder-ai"));
         return folders;
     }
 

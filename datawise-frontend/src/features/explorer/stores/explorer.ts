@@ -1,7 +1,7 @@
 import {defineStore} from 'pinia'
 import {computed, ref} from 'vue'
 import type {ConnectionConfig, TreeNode, WorkspaceTab} from '@/core/types'
-import {findNodeById, findParentNode, resolveConnectionId, walkTree, buildTreeNodeIndex} from '@/core/utils/tree'
+import {findNodeById, findParentNode, resolveConnectionId, walkTree, buildTreeNodeIndex, findAncestorByType} from '@/core/utils/tree'
 import {logPerf, perfNow} from '@/core/utils/perf-log'
 import {scrollExplorerNodeIntoView} from '@/core/shortcuts/action-registry'
 import {resolveConsoleInstanceLabel, buildExplorerScopedLabelResolver} from '@/features/workspace/services/resolve-console-instance'
@@ -35,7 +35,7 @@ import {
     countTreeNodesWithId,
 } from '@/features/explorer/services/explorer-locate.service'
 import {resolveSqlFileForLocate} from '@/features/workspace/services/console-tab-title'
-import {explorerApi} from '@/api'
+import {explorerApi, platformApi} from '@/api'
 import {applyExplorerTreeStructure} from '@/shared/config/connections-explorer-tree'
 import {resolveConnectionErrorMessage} from '@/features/explorer/services/connection-error-message'
 import {
@@ -62,6 +62,17 @@ import {
     EXPLORER_HEALTH_PROBE_CONCURRENCY,
     runWithConcurrencyLimit,
 } from '@/core/utils/concurrency-limit'
+import {resolveExplorerInstanceLabel} from '@/features/explorer/services/explorer-database-scope'
+import {
+    isAiFolder,
+    ensureAiFolderInScopeChildren,
+    migrateExplorerTreeAiStructure,
+} from '@/features/explorer/services/explorer-ai-tree.service'
+import {
+    buildSemanticExplorerIndex,
+    semanticScopeKey,
+    type SemanticExplorerIndex,
+} from '@/features/explorer/services/semantic-layer-explorer.service'
 
 function resolveExplorerLoadPerfOperation(
     connectionId: string,
@@ -74,6 +85,7 @@ function resolveExplorerLoadPerfOperation(
         if (node.label === 'workspaces') return 'explorer.loadWorkspaces'
         if (node.label === 'models') return 'explorer.loadModels'
         if (node.label === 'views') return 'explorer.loadViews'
+        if (node.label === 'ai') return 'explorer.loadAi'
     }
     return 'explorer.loadChildren'
 }
@@ -88,6 +100,9 @@ export const useExplorerStore = defineStore('explorer', () => {
     const width = ref(248)
     const showColumnComment = ref(true)
     const showTableComment = ref(true)
+    const showSemanticLayer = ref(true)
+    const semanticIndexByScope = ref<Map<string, SemanticExplorerIndex>>(new Map())
+    const semanticLoadPromises = new Map<string, Promise<void>>()
     const isRefreshing = ref(false)
     const flashNodeId = ref<string | null>(null)
     const loadingNodeIds = ref<Set<string>>(new Set())
@@ -233,6 +248,11 @@ export const useExplorerStore = defineStore('explorer', () => {
                     appendTablePageChildren(latest, result.tree)
                 } else {
                     mergeLoadedChildren(latest, result.tree)
+                }
+                if (latest.type === 'connection') {
+                    migrateExplorerTreeAiStructure(tree.value)
+                } else if (latest.type === 'database' || latest.type === 'schema') {
+                    ensureAiFolderInScopeChildren(latest, connectionId)
                 }
                 markExplorerFolderLoadedIfNeeded(latest)
                 rebuildNodeIndex()
@@ -681,6 +701,7 @@ export const useExplorerStore = defineStore('explorer', () => {
 
     function commitExplorerTree(nextRoots: TreeNode[]) {
         tree.value = applyExplorerTreeStructure(nextRoots, tree.value)
+        migrateExplorerTreeAiStructure(tree.value)
         rebuildNodeIndex()
         backfillPinnedTableMetadata(tree.value)
         applyPinnedSortInTree(tree.value)
@@ -931,6 +952,78 @@ export const useExplorerStore = defineStore('explorer', () => {
         setAllCommentsVisible(!allCommentsVisible.value)
     }
 
+    function getSemanticIndex(connectionId: string, database: string): SemanticExplorerIndex | null {
+        return semanticIndexByScope.value.get(semanticScopeKey(connectionId, database)) ?? null
+    }
+
+    async function ensureSemanticMetrics(connectionId: string, database: string): Promise<void> {
+        if (!showSemanticLayer.value || !connectionId || !database) return
+        const scopeKey = semanticScopeKey(connectionId, database)
+        if (semanticIndexByScope.value.has(scopeKey)) return
+
+        const inFlight = semanticLoadPromises.get(scopeKey)
+        if (inFlight) {
+            await inFlight
+            return
+        }
+
+        const task = (async () => {
+            try {
+                const metrics = await platformApi.listSemanticMetrics(connectionId, database)
+                semanticIndexByScope.value = new Map(semanticIndexByScope.value).set(
+                    scopeKey,
+                    buildSemanticExplorerIndex(metrics),
+                )
+            } catch {
+                semanticIndexByScope.value = new Map(semanticIndexByScope.value).set(
+                    scopeKey,
+                    buildSemanticExplorerIndex([]),
+                )
+            }
+        })()
+
+        semanticLoadPromises.set(scopeKey, task)
+        try {
+            await task
+        } finally {
+            semanticLoadPromises.delete(scopeKey)
+        }
+    }
+
+    function resolveSemanticScope(nodeId: string): {connectionId: string; database: string} | null {
+        const connectionId = resolveConnectionId(tree.value, nodeId)
+        if (!connectionId) return null
+        const connection = findNode(connectionId)
+        const schemaNode = findAncestorByType(tree.value, nodeId, 'schema')
+        const databaseNode = findAncestorByType(tree.value, nodeId, 'database')
+        const scopeNode = schemaNode ?? databaseNode
+        if (!scopeNode) return null
+        const database =
+            resolveExplorerInstanceLabel(tree.value, scopeNode.id, connection?.dbType) ?? scopeNode.label
+        return {connectionId, database}
+    }
+
+    async function prefetchSemanticMetricsForNode(nodeId: string): Promise<void> {
+        if (!showSemanticLayer.value) return
+        const scope = resolveSemanticScope(nodeId)
+        if (!scope) return
+        await ensureSemanticMetrics(scope.connectionId, scope.database)
+    }
+
+    function invalidateSemanticMetrics(connectionId?: string) {
+        if (!connectionId) {
+            semanticIndexByScope.value = new Map()
+            return
+        }
+        const next = new Map(semanticIndexByScope.value)
+        for (const key of next.keys()) {
+            if (key.startsWith(`${connectionId}:`)) {
+                next.delete(key)
+            }
+        }
+        semanticIndexByScope.value = next
+    }
+
     function clearConnectionLoadedState(connectionId: string) {
         const node = findNode(connectionId)
         if (!node || node.type !== 'connection') return
@@ -943,6 +1036,7 @@ export const useExplorerStore = defineStore('explorer', () => {
             }
         }
         clearExplorerFolderLoadedIds((nodeId) => nodeId.includes(connectionId))
+        invalidateSemanticMetrics(connectionId)
         if (attemptedConnectionIds.value.has(connectionId)) {
             attemptedConnectionIds.value = new Set(
                 [...attemptedConnectionIds.value].filter((id) => id !== connectionId),
@@ -1124,6 +1218,11 @@ export const useExplorerStore = defineStore('explorer', () => {
         width,
         showColumnComment,
         showTableComment,
+        showSemanticLayer,
+        getSemanticIndex,
+        ensureSemanticMetrics,
+        prefetchSemanticMetricsForNode,
+        invalidateSemanticMetrics,
         isRefreshing,
         flashNodeId,
         loadingNodeIds,

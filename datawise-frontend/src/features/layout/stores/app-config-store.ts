@@ -338,6 +338,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
                 expandedNodeIds: collectExpandedNodeIds(explorer.tree),
                 showColumnComment: explorer.showColumnComment,
                 showTableComment: explorer.showTableComment,
+                showSemanticLayer: explorer.showSemanticLayer,
             },
             workspace: {
                 ...(config.value.workspace ?? {
@@ -425,6 +426,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
                 explorer.searchQuery = explorerPrefs.searchQuery
                 explorer.showColumnComment = explorerPrefs.showColumnComment
                 explorer.showTableComment = explorerPrefs.showTableComment
+                explorer.showSemanticLayer = explorerPrefs.showSemanticLayer
                 applyExpandedNodeIds(explorer.tree, explorerPrefs.expandedNodeIds)
             },
             applyWorkspace: (workspacePrefs) => {
@@ -471,6 +473,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
     watch(() => explorer.searchQuery, () => persistSoon())
     watch(() => explorer.showColumnComment, () => persistSoon())
     watch(() => explorer.showTableComment, () => persistSoon())
+    watch(() => explorer.showSemanticLayer, () => persistSoon())
     watch(() => explorer.tree, () => persistSoon(), {deep: true})
     watch(() => workspace.tabs, () => persistSoon(), {deep: true})
     watch(() => workspace.activeTabId, () => persistSoon())

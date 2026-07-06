@@ -1,7 +1,14 @@
 /* Plugin center page layout */
 
+.plugin-page,
+.plugin-page__wrap {
+    min-width: 0;
+}
+
 .plugin-page__wrap {
     max-width: 1440px;
+    container-type: inline-size;
+    container-name: plugin-page;
 }
 
 /* ---- Hero ---- */
@@ -9,6 +16,13 @@
 .plugin-hero .mp-hero__inner {
     flex-wrap: wrap;
     align-items: flex-start;
+}
+
+.plugin-hero .mp-hero__actions {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-shrink: 1;
+    justify-content: flex-start;
 }
 
 .plugin-hero__stats {
@@ -117,14 +131,19 @@
 
 .plugin-layout {
     display: grid;
-    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
     gap: clamp(16px, 2vmin, 24px);
     align-items: start;
+    min-width: 0;
 }
 
-@media (max-width: 960px) {
+@container plugin-page (max-width: 820px) {
     .plugin-layout {
         grid-template-columns: 1fr;
+    }
+
+    .plugin-sidebar {
+        position: static;
     }
 }
 
@@ -134,12 +153,7 @@
     gap: clamp(12px, 1.5vmin, 16px);
     position: sticky;
     top: clamp(12px, 1.5vmin, 16px);
-}
-
-@media (max-width: 960px) {
-    .plugin-sidebar {
-        position: static;
-    }
+    min-width: 0;
 }
 
 .plugin-panel {
@@ -288,6 +302,12 @@
     background: color-mix(in srgb, var(--dw-bg-editor) 92%, transparent);
     backdrop-filter: blur(10px);
     box-shadow: var(--dw-panel-shadow);
+    min-width: 0;
+}
+
+.plugin-filter-dock__group .mp-segment {
+    flex: 1 1 100%;
+    min-width: 0;
 }
 
 .plugin-filter-dock__search-row {

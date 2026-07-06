@@ -62,7 +62,7 @@ export function resolveConnectionDbType(tree: TreeNode[], nodeId: string): DbTyp
 
 export const TABLES_FOLDER_LOADED_META = 'tables:loaded'
 
-const LAZY_LOAD_FOLDER_LABELS = new Set(['tables', 'workspaces', 'models', 'views'])
+const LAZY_LOAD_FOLDER_LABELS = new Set(['tables', 'workspaces', 'models', 'views', 'ai', 'semantics'])
 
 const loadedExplorerFolderIds = new Set<string>()
 

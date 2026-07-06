@@ -18,6 +18,7 @@ export function settingsSectionDwIcon(section: SettingsSection): DwIconName {
         ai: 'settings-ai',
         dataAgent: 'settings-data-agent',
         knowledge: 'settings-knowledge',
+        platform: 'settings-platform',
         about: 'settings-about',
     }
     return map[section]
@@ -54,6 +55,8 @@ export function workspaceTabDwIcon(type: WorkspaceTabType): DwIconName {
         case 'kafka-topic':
         case 'kafka-consumer-groups':
             return 'tab-kafka'
+        case 'platform_catalog':
+            return 'ai'
         default:
             return 'tab-file'
     }

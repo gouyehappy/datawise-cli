@@ -66,3 +66,8 @@ export function runToggleAllComments() {
     const explorer = useExplorerStore()
     explorer.toggleAllComments()
 }
+
+export function runToggleSemanticLayer() {
+    const explorer = useExplorerStore()
+    explorer.showSemanticLayer = !explorer.showSemanticLayer
+}

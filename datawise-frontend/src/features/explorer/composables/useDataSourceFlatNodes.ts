@@ -4,6 +4,7 @@ import {collectSearchTreeVisibility, flattenVisibleTree} from '@/core/utils/tree
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {matchesExplorerTreeSearch} from '@/features/explorer/services/explorer-catalog-label.service'
 import {buildExplorerFavoritesGroup} from '@/features/explorer/services/explorer-favorites-group.service'
+import {filterExplorerTreeAiFolders} from '@/features/explorer/services/explorer-ai-tree.service'
 import {readPinnedTableFavorites} from '@/features/explorer/services/pinned-table-favorites.service'
 
 /** Explorer / AI 共用：同一棵数据源树的可见扁平列表 */
@@ -16,19 +17,24 @@ export function useDataSourceFlatNodes(search: Ref<string>) {
         return readPinnedTableFavorites()
     })
 
+    const filteredTree = computed(() =>
+        filterExplorerTreeAiFolders(explorer.tree, explorer.showSemanticLayer),
+    )
+
     const searchVisibility = computed(() => {
         const query = search.value.trim()
         if (!query) return null
-        return collectSearchTreeVisibility(explorer.tree, query, (node, q) =>
+        return collectSearchTreeVisibility(filteredTree.value, query, (node, q) =>
             matchesExplorerTreeSearch(node, q, t),
         )
     })
 
     const visibleTree = computed(() => {
-        if (search.value.trim()) return explorer.tree
+        const baseTree = filteredTree.value
+        if (search.value.trim()) return baseTree
 
         const favoritesGroup = buildExplorerFavoritesGroup(
-            explorer.tree,
+            baseTree,
             tableFavorites.value,
             {
                 group: t('explorer.favoritesGroup'),
@@ -44,8 +50,8 @@ export function useDataSourceFlatNodes(search: Ref<string>) {
             },
         )
 
-        if (!favoritesGroup) return explorer.tree
-        return [favoritesGroup, ...explorer.tree]
+        if (!favoritesGroup) return baseTree
+        return [favoritesGroup, ...baseTree]
     })
 
     const flatNodes = computed(() =>

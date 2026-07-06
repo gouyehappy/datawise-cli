@@ -34,6 +34,7 @@ import RedisKeyTab from './components/tabs/RedisKeyTab.vue'
 import RedisConsoleTab from './components/tabs/RedisConsoleTab.vue'
 import KafkaTopicsTab from './components/tabs/KafkaTopicsTab.vue'
 import KafkaTopicTab from './components/tabs/KafkaTopicTab.vue'
+import PlatformCatalogTab from './components/tabs/PlatformCatalogTab.vue'
 import KafkaConsumerGroupsTab from './components/tabs/KafkaConsumerGroupsTab.vue'
 
 
@@ -72,6 +73,8 @@ const definitions = [
     {key: 'kafka-topic' as const, component: KafkaTopicTab},
 
     {key: 'kafka-consumer-groups' as const, component: KafkaConsumerGroupsTab},
+
+    {key: 'platform_catalog' as const, component: PlatformCatalogTab},
 
 ]
 

@@ -41,4 +41,28 @@ public final class ConfigPaths {
     public static String userAiKnowledge(long userId) {
         return USERS_DIR + "/" + userId + "/ai-knowledge.json";
     }
+
+    public static String userAnalysisCanvas(long userId) {
+        return USERS_DIR + "/" + userId + "/analysis-canvas.json";
+    }
+
+    public static String userSemanticMetrics(long userId) {
+        return USERS_DIR + "/" + userId + "/semantic-metrics.json";
+    }
+
+    public static String userFederatedViews(long userId) {
+        return USERS_DIR + "/" + userId + "/federated-views.json";
+    }
+
+    public static String userSchemaDriftMonitors(long userId) {
+        return USERS_DIR + "/" + userId + "/schema-drift-monitors.json";
+    }
+
+    public static String userScheduledTasks(long userId) {
+        return USERS_DIR + "/" + userId + "/scheduled-tasks.json";
+    }
+
+    public static String userQueryLibraryVersions(long userId) {
+        return USERS_DIR + "/" + userId + "/query-library-versions.json";
+    }
 }

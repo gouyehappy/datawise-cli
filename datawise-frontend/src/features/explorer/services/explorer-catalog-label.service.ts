@@ -10,6 +10,8 @@ export const EXPLORER_CATALOG_LABEL_KEYS = [
     'procedures',
     'triggers',
     'workspaces',
+    'ai',
+    'semantics',
     'columns',
     'keys',
     'indexes',

@@ -15,6 +15,7 @@ import {createHttpSystemApi} from '@/shared/api/http/system'
 import {createHttpConfigApi} from '@/shared/api/http/config'
 import {createHttpDatasourcesApi} from '@/shared/api/http/datasources'
 import {createHttpMigrationApi} from '@/shared/api/http/migration'
+import {createHttpPlatformApi} from '@/shared/api/http/platform'
 
 /** HTTP 实现：按域组装，路径见 http/paths.ts */
 export function createHttpApiClient(): ApiClient {
@@ -35,6 +36,7 @@ export function createHttpApiClient(): ApiClient {
         config: createHttpConfigApi(),
         datasources: createHttpDatasourcesApi(),
         migration: createHttpMigrationApi(),
+        platform: createHttpPlatformApi(),
     }
 }
 

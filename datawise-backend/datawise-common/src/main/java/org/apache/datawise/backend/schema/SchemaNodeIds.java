@@ -52,6 +52,19 @@ public final class SchemaNodeIds {
         return "vm-file-" + conn + "-" + inst + "-" + fileKey;
     }
 
+    /** 语义层指标节点 id：连接 + 实例 + 指标 id */
+    public static String semanticMetricNodeId(String connectionId, String instanceName, String metricId) {
+        String conn = slug(connectionId);
+        String inst = slug(instanceName);
+        String metricKey = slug(metricId);
+        return "sem-metric-" + conn + "-" + inst + "-" + metricKey;
+    }
+
+    /** 平台能力入口节点 id */
+    public static String platformFeatureNodeId(String connectionId, String instanceName, String featureKey) {
+        return "pf-" + slug(connectionId) + "-" + slug(instanceName) + "-" + slug(featureKey);
+    }
+
     public static String encodeViewModelFileNameKey(String fileName) {
         String normalized = PathSegmentSanitizer.sanitizeViewModelFileName(fileName, "query.view.sql")
                 .toLowerCase(Locale.ROOT);

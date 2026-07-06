@@ -5,6 +5,7 @@ import type {ComposerTranslation} from 'vue-i18n'
 interface ExplorerSettingsState {
     showColumnComment: boolean
     showTableComment: boolean
+    showSemanticLayer: boolean
     allCommentsVisible: boolean
 }
 
@@ -29,6 +30,13 @@ export function getExplorerSettingsMenuItems(
                 : t('explorer.showTableComment'),
             icon: 'table',
             shortcut: shortcutLabel('explorer.toggleTableComment') || undefined,
+        },
+        {
+            id: 'toggle-semantic-layer',
+            label: state.showSemanticLayer
+                ? t('explorer.hideSemanticLayer')
+                : t('explorer.showSemanticLayer'),
+            icon: 'format',
         },
         {id: 'divider-1', label: '', divider: true},
         {

@@ -48,6 +48,7 @@ const navGroups: NavGroup[] = [
     items: [
       {id: 'ai', labelKey: 'settings.nav.aiModels'},
       {id: 'dataAgent', labelKey: 'settings.nav.dataAgent'},
+      {id: 'platform', labelKey: 'settings.nav.platform'},
     ],
   },
   {

@@ -71,6 +71,8 @@ import {
     wrapExplainSql,
 } from '@/features/workspace/services/explain-plan.service'
 import {validateCrossEnvCompareSql, buildCrossEnvCompareScope} from '@/features/cross-env-compare/services/cross-env-compare.service'
+import {reviewSql} from '@/features/platform/services/sql-review.service'
+import type {SqlReviewFinding} from '@/features/platform/types/platform.types'
 
 const {t} = useI18n()
 const {readOnly: guestReadOnly, hint: guestReadOnlyHint} = useResourceWriteGuard(UserResource.WorkspaceScripts)
@@ -358,6 +360,8 @@ function onRequestAiExplain() {
 const teamStore = useTeamStore()
 const productionApprovalDialogOpen = ref(false)
 const productionApprovalSubmitting = ref(false)
+const sqlReviewFindings = ref<SqlReviewFinding[]>([])
+const sqlReviewBlocked = ref(false)
 
 const productionApprovalTeams = computed(() => {
   const pendingSql = dangerousSqlPendingSql.value
@@ -424,6 +428,33 @@ function batchNeedsDangerousConfirmation(resolvedSql: string): boolean {
   return batch.some((statement) => requiresDangerousSqlConfirmation(statement.trim()))
 }
 
+async function loadSqlReviewFindings(resolvedSql: string) {
+  sqlReviewFindings.value = []
+  sqlReviewBlocked.value = false
+  const connId = connectionId.value || props.tab.connectionId
+  if (!connId) return
+  try {
+    const result = await reviewSql(
+        {
+          sql: resolvedSql,
+          connectionId: connId,
+          database: databaseName.value,
+        },
+        {silent: true},
+    )
+    sqlReviewFindings.value = result.findings ?? []
+    sqlReviewBlocked.value = !result.allowed
+  } catch {
+    sqlReviewFindings.value = []
+    sqlReviewBlocked.value = false
+  }
+}
+
+async function armDangerousSqlWithReview(resolved: string) {
+  await loadSqlReviewFindings(resolved)
+  await armDangerousSqlPending(resolved)
+}
+
 function executeSql(executableOverride?: unknown, runOptions?: SqlRunOptions) {
   if (isEditorFullscreen.value) {
     exitEditorFullscreen()
@@ -434,11 +465,13 @@ function executeSql(executableOverride?: unknown, runOptions?: SqlRunOptions) {
     if (trimmed) {
       const resolved = applySqlParameters(trimmed, sqlParamValues.value)
       if (batchNeedsDangerousConfirmation(resolved)) {
-        void armDangerousSqlPending(resolved)
+        void armDangerousSqlWithReview(resolved)
         return
       }
     }
   }
+  sqlReviewFindings.value = []
+  sqlReviewBlocked.value = false
   runSql(executableOverride, runOptions)
 }
 
@@ -878,6 +911,8 @@ onMounted(() => {
         :error-message="dangerousSqlErrorMessage"
         :production-forced="dangerousSqlProductionForced"
         :production-approval-required="needsProductionApproval"
+        :sql-review-findings="sqlReviewFindings"
+        :sql-review-blocked="sqlReviewBlocked"
     />
 
     <div ref="splitRef" class="split">

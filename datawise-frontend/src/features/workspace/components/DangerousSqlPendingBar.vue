@@ -2,6 +2,7 @@
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {TableColumn, TableRow} from '@/core/types'
+import type {SqlReviewFinding} from '@/features/platform/types/platform.types'
 import type {DangerousSqlPreview} from '@/features/workspace/services/dangerous-sql-preview.service'
 
 const props = defineProps<{
@@ -13,6 +14,8 @@ const props = defineProps<{
   errorMessage: string | null
   productionForced?: boolean
   productionApprovalRequired?: boolean
+  sqlReviewFindings?: SqlReviewFinding[]
+  sqlReviewBlocked?: boolean
 }>()
 
 const {t} = useI18n()
@@ -51,6 +54,20 @@ const statusMessage = computed(() => {
       </span>
       <span class="dangerous-pending__hint">{{ statusMessage }}</span>
     </div>
+    <ul v-if="sqlReviewFindings?.length" class="dangerous-pending__review">
+      <li class="dangerous-pending__review-title">{{ t('platform.sqlReview.title') }}</li>
+      <li v-if="sqlReviewBlocked" class="dangerous-pending__review-blocked">
+        {{ t('platform.sqlReview.blocked') }}
+      </li>
+      <li
+          v-for="(finding, index) in sqlReviewFindings"
+          :key="`${finding.code}-${index}`"
+          class="dangerous-pending__finding"
+      >
+        <strong>[{{ finding.severity }}]</strong> {{ finding.message }}
+        <span v-if="finding.suggestion" class="dangerous-pending__suggestion">{{ finding.suggestion }}</span>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -95,5 +112,32 @@ const statusMessage = computed(() => {
 
 .dangerous-pending__hint {
   color: var(--dw-text);
+}
+
+.dangerous-pending__review {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 11px;
+  color: var(--dw-text-muted);
+}
+
+.dangerous-pending__review-title {
+  list-style: none;
+  margin-left: -18px;
+  font-weight: 600;
+  color: var(--dw-text);
+}
+
+.dangerous-pending__review-blocked {
+  color: var(--dw-danger, #dc2626);
+}
+
+.dangerous-pending__finding {
+  margin-top: 2px;
+}
+
+.dangerous-pending__suggestion {
+  display: block;
+  opacity: 0.85;
 }
 </style>

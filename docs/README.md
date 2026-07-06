@@ -2,7 +2,7 @@
 
 项目介绍与亮点见根目录 [README.md](../README.md)（英文）；[中文版](../README.zh-CN.md)。
 
-数据库工作台：**Vue 3 客户端** + **Spring Boot API** + **SQL 编辑器**（`sql-editor/`）。
+**AI 驱动的团队数据工作台**：Vue 3 客户端 + Spring Boot API（AI / 平台 / 数据连接）+ 可嵌入 SQL 编辑器（`sql-editor/`）+ MCP 服务（`datawise-mcp/`）。
 
 ## 仓库结构
 
@@ -11,6 +11,7 @@ datawise-cli/
 ├── config/              # 本地运行时配置（勿提交密钥）
 ├── datawise-frontend/   # Vue 3 + Electron
 ├── datawise-backend/    # Spring Boot 多模块
+├── datawise-mcp/        # MCP 服务（Cursor / Claude）
 ├── sql-editor/          # @datawise/sql-editor
 ├── datawise-vscode/     # VS Code 扩展
 └── headless-cli/        # 无头 CLI

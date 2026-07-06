@@ -21,6 +21,7 @@ export default {
         ai: 'AI 模型',
         aiModels: 'AI 模型',
         dataAgent: 'DataAgent',
+        platform: '平台中心',
         about: '关于',
     },
     basic: {

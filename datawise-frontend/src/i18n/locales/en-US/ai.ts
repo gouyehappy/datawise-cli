@@ -97,6 +97,9 @@ export default {
         exportHtml: 'HTML',
         exportMarkdownDone: 'Markdown report downloaded',
         exportHtmlDone: 'HTML report downloaded',
+        saveAsCanvas: 'Save as Canvas',
+        saveAsCanvasDone: 'Analysis saved to canvas',
+        saveAsCanvasDefaultTitle: 'Analysis canvas',
         rowCount: '{count} rows',
         previewShown: 'Showing {shown} of {total} rows',
         chartTypes: {

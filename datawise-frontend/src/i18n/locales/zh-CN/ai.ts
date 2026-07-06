@@ -97,6 +97,9 @@ export default {
         exportHtml: 'HTML',
         exportMarkdownDone: 'Markdown 报告已下载',
         exportHtmlDone: 'HTML 报告已下载',
+        saveAsCanvas: '保存为画布',
+        saveAsCanvasDone: '分析已保存到画布',
+        saveAsCanvasDefaultTitle: '分析画布',
         rowCount: '{count} 行',
         previewShown: '展示前 {shown} / {total} 行',
         chartTypes: {

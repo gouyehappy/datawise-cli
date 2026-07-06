@@ -2,9 +2,9 @@
 
 [English](./README.md)
 
-**开源多数据源数据库工作台** — 一个仓库里集齐 Explorer、SQL 控制台、表迁移、AI 分析与桌面客户端。
+**AI 驱动的团队数据工作台** — 连接团队数据资产，用自然语言提问，在统一界面里协作产出可治理的 SQL 与洞察。
 
-浏览器开发调试，Electron 一键打包成「内嵌后端 + JRE」的桌面应用；连接器以插件 JAR 热插拔，SQL 编辑器可独立嵌入你的项目。
+DataWise 不是又一款数据库图形客户端。它以 AI 分析、语义层、联邦视图和生产级团队流程为核心，底层对接 30+ 数据源 — 可在浏览器、Windows 桌面使用，也可通过 MCP 接入 Cursor / Claude 等 IDE。
 
 ---
 
@@ -35,22 +35,24 @@
 
 | | |
 |---|---|
-| **30+ 数据源** | MySQL、PostgreSQL、Oracle、ClickHouse、Hive、Redis、Kafka、Elasticsearch、Doris、OceanBase … 统一 Explorer 与 SQL 入口 |
-| **自研 SQL 编辑器** | 可单独 `npm install` 嵌入任意 Vue 3 应用；Monorepo 内与主产品同源迭代 |
-| **AI 工作台** | 对话式分析、Text-to-SQL、流式执行计划、知识库词条；生成 SQL 可一键落到控制台 |
-| **表迁移** | 跨库表结构 + 数据迁移向导，支持大批量与断点续传 |
-| **插件化架构** | 后端 Connector SPI + 前端功能插件中心，按需开关 AI、书签、监控等能力 |
+| **AI 原生分析** | 选表上下文对话、流式执行计划、Text-to-SQL、分析画布与报告；生成 SQL 可回流控制台 |
+| **语义层** | 按库维护指标目录、从 Schema 自动生成、Explorer → AI 文件夹浏览与管理 |
+| **团队治理** | 共享连接、Query Library、生产审批、环境标签、执行前 SQL 审查 |
+| **平台能力** | 联邦视图、Schema 漂移监控、定时任务、跨环境对比 — 内建在工作台 |
+| **MCP 接入智能体** | [DataWise MCP Server](./datawise-mcp/) 向 Cursor / Claude Desktop 暴露连接、Schema、审查与只读 SQL |
+| **数据连接底座** | MySQL、PostgreSQL、Oracle、ClickHouse、Hive、Redis、Kafka、Elasticsearch、Doris、OceanBase … 统一 Explorer，插件 JAR 热插拔 |
 | **三种使用方式** | Web 联调 · Windows 桌面一体化包 · [VS Code 扩展](./datawise-vscode/) / [Headless CLI](./headless-cli/) |
 
 ---
 
 ## 你能做什么
 
-- **浏览 Schema** — 连接树懒加载、统一命令面板（`Ctrl+K`）、表数据编辑、DDL 查看  
-- **写 SQL** — Monaco 多 Tab 控制台、执行计划、会话/事务、书签与历史  
-- **管数据** — 表迁移、Schema 对比、跨环境抽样对比、CSV 导入导出  
-- **用 AI** — 选库表上下文提问，分析结果带 SQL 与图表，可回流到工作台  
-- **上生产** — 团队共享连接、审批流、环境标签；按数据源能力控制 EXPLAIN / 杀会话等  
+- **用 AI 分析** — 选库表上下文提问，获得 SQL、图表、摘要与可复用的分析画布  
+- **建设语义层** — 定义指标、从 Schema 自动生成、在 Explorer → AI 下浏览管理  
+- **团队协作** — 共享查询、书签、审批流，按环境能力控制生产访问  
+- **治理与编排** — SQL 审查、漂移监控、定时任务、跨源联邦虚拟视图  
+- **按需写 SQL** — Monaco 控制台、执行计划、会话/事务、历史、自研 SQL 编辑器  
+- **安全迁移数据** — 表迁移、Schema 对比、跨环境抽样、CSV 导入导出  
 
 ---
 
@@ -59,18 +61,19 @@
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  datawise-frontend (Vue 3 · Electron)                   │
-│  Explorer · Workspace · AI · Dashboard · Plugin Center  │
+│  AI · Explorer · Workspace · Platform Hub · Dashboard   │
 └──────────────────────────┬──────────────────────────────┘
                            │ REST / SSE
 ┌──────────────────────────▼──────────────────────────────┐
 │  datawise-server (Spring Boot)                          │
-│  database · workspace · ai · connectors                 │
+│  ai · platform · workspace · database · connectors      │
 └──────────────────────────┬──────────────────────────────┘
                            │ JDBC / 插件 SPI
 ┌──────────────────────────▼──────────────────────────────┐
 │  config/plugins/*.jar  +  config/drivers/*.jar            │
-│  MySQL · PG · Redis · Kafka · …                         │
-└─────────────────────────────────────────────────────────┘
+└──────────────────────────┬──────────────────────────────┘
+                           │
+                    datawise-mcp/  ──►  IDE 智能体（Cursor、Claude）
 
 sql-editor/  ──►  独立 npm 包，grammar 补全引擎
 ```
@@ -116,7 +119,8 @@ npm run dist:desktop    # 需要 JAVA_HOME + Maven，产物在 release/
 | 目录 | 说明 |
 |------|------|
 | [datawise-frontend/](./datawise-frontend/) | Vue 3 客户端与 Electron 打包 |
-| [datawise-backend/](./datawise-backend/) | Spring Boot API 与 Connector 实现 |
+| [datawise-backend/](./datawise-backend/) | Spring Boot API、AI 与平台服务 |
+| [datawise-mcp/](./datawise-mcp/) | 面向 IDE 智能体的 MCP 服务 |
 | [sql-editor/](./sql-editor/) | 可嵌入 SQL 编辑器（MIT） |
 | [datawise-vscode/](./datawise-vscode/) | VS Code → 桌面端 Deep Link |
 | [headless-cli/](./headless-cli/) | 命令行调用迁移与 SQL 执行 |
@@ -126,7 +130,7 @@ npm run dist:desktop    # 需要 JAVA_HOME + Maven，产物在 release/
 
 ## 技术栈
 
-Vue 3 · Pinia · Vite · Monaco · Electron · Spring Boot 3 · JDBC · Spring AI
+Vue 3 · Pinia · Vite · Monaco · Electron · Spring Boot 3 · Spring AI · JDBC
 
 ---
 

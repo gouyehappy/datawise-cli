@@ -8,6 +8,7 @@ import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.schema.CatalogSchemaScope;
 import org.apache.datawise.backend.service.InstanceWorkspaceService;
 import org.apache.datawise.backend.service.ViewModelService;
+import org.apache.datawise.backend.service.semantic.AiPlatformExplorerService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,17 +20,20 @@ public class ExplorerNodeResolver {
     private final ExplorerTreeBuilder treeBuilder;
     private final InstanceWorkspaceService instanceWorkspaceService;
     private final ViewModelService viewModelService;
+    private final AiPlatformExplorerService aiPlatformExplorerService;
     private final ExplorerSchemaProperties schemaProperties;
 
     public ExplorerNodeResolver(
             ExplorerTreeBuilder treeBuilder,
             InstanceWorkspaceService instanceWorkspaceService,
             ViewModelService viewModelService,
+            AiPlatformExplorerService aiPlatformExplorerService,
             ExplorerSchemaProperties schemaProperties
     ) {
         this.treeBuilder = treeBuilder;
         this.instanceWorkspaceService = instanceWorkspaceService;
         this.viewModelService = viewModelService;
+        this.aiPlatformExplorerService = aiPlatformExplorerService;
         this.schemaProperties = schemaProperties;
     }
 
@@ -139,6 +143,11 @@ public class ExplorerNodeResolver {
             ExplorerTreeBuilder.CatalogSchemaContext context = resolveTablesFolderContext(schemaRoots, target);
             String instanceKey = CatalogSchemaScope.formatInstanceKey(context.catalog(), context.schema());
             return viewModelService.listViewModelNodes(session.connectionId(), instanceKey);
+        }
+        if ("ai".equalsIgnoreCase(target.getLabel()) || "semantics".equalsIgnoreCase(target.getLabel())) {
+            ExplorerTreeBuilder.CatalogSchemaContext context = resolveTablesFolderContext(schemaRoots, target);
+            String instanceKey = CatalogSchemaScope.formatInstanceKey(context.catalog(), context.schema());
+            return aiPlatformExplorerService.listFeatureNodes(session.connectionId(), instanceKey);
         }
         return target.getChildren() != null ? target.getChildren() : List.of();
     }

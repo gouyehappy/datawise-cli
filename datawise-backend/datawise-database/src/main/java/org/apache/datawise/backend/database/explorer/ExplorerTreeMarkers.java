@@ -10,7 +10,7 @@ public final class ExplorerTreeMarkers {
 
     public static final String TABLES_FOLDER_LOADED_META = "tables:loaded";
 
-    private static final Set<String> LAZY_LOAD_FOLDER_LABELS = Set.of("tables", "workspaces", "models", "views");
+    private static final Set<String> LAZY_LOAD_FOLDER_LABELS = Set.of("tables", "workspaces", "models", "views", "ai");
 
     private ExplorerTreeMarkers() {
     }

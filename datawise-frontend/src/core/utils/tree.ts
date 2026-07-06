@@ -55,6 +55,8 @@ const EXPLORER_EXPANDABLE_FOLDERS = new Set([
     'models',
     'views',
     'workspaces',
+    'ai',
+    'semantics',
     'functions',
     'procedures',
     'triggers',

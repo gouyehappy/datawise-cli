@@ -29,6 +29,7 @@ export default {
         keys: 'Keys',
         indexes: 'Indexes',
         empty: 'Node',
+        platform_feature: 'Platform feature',
     },
     infoFields: {
         dbType: 'Database type',
@@ -47,6 +48,14 @@ export default {
         section: 'Section',
         itemCount: 'Items',
         nodeType: 'Node type',
+        metricKind: 'Metric kind',
+        unitOrExpression: 'Unit / expression',
+    },
+    infoFieldValues: {
+        metricKind: {
+            auto: 'Auto-generated',
+            defined: 'Manual',
+        },
     },
     infoLists: {
         instances: 'Instances',
@@ -54,6 +63,7 @@ export default {
         columns: 'Columns',
         keys: 'Keys',
         indexes: 'Indexes',
+        semanticMetrics: 'Semantic metrics',
     },
     tableInfo: 'Table info',
     sqlLog: 'SQL log',

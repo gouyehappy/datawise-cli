@@ -65,6 +65,7 @@ export const DEFAULT_EXPLORER_PREFERENCES: ExplorerPreferences = {
     expandedNodeIds: [],
     showColumnComment: true,
     showTableComment: true,
+    showSemanticLayer: true,
 }
 
 export const DEFAULT_WORKSPACE_PREFERENCES: WorkspacePreferences = {

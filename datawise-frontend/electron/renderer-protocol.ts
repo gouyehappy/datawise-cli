@@ -3,6 +3,7 @@
  */
 import {app, net, protocol} from 'electron'
 import {join} from 'path'
+import {resolveRendererDistFile} from './renderer-protocol-path'
 import {pathToFileURL} from 'node:url'
 
 export const APP_RENDERER_SCHEME = 'app'
@@ -24,20 +25,16 @@ function resolveDistRoot(): string {
     return join(app.getAppPath(), 'dist')
 }
 
-function resolveDistFile(pathname: string): string {
-    let relative = decodeURIComponent(pathname)
-    if (relative === '/' || relative === '') {
-        relative = '/index.html'
-    }
-    if (relative.startsWith('/')) {
-        relative = relative.slice(1)
-    }
-    return join(resolveDistRoot(), relative)
+function resolveDistFile(pathname: string): string | null {
+    return resolveRendererDistFile(resolveDistRoot(), pathname)
 }
 
 export function registerRendererProtocol(): void {
     protocol.handle(APP_RENDERER_SCHEME, (request) => {
         const filePath = resolveDistFile(new URL(request.url).pathname)
+        if (!filePath) {
+            return new Response('Not found', {status: 404})
+        }
         return net.fetch(pathToFileURL(filePath).toString())
     })
 }

@@ -220,6 +220,7 @@ export function normalizeExplorer(raw: Partial<ExplorerPreferences> | undefined)
             : base.expandedNodeIds,
         showColumnComment: raw?.showColumnComment ?? base.showColumnComment,
         showTableComment: raw?.showTableComment ?? base.showTableComment,
+        showSemanticLayer: raw?.showSemanticLayer ?? base.showSemanticLayer,
     }
 }
 

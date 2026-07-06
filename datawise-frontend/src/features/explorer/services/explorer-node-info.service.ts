@@ -1,5 +1,11 @@
 import type {ExplorerInfoField, ExplorerInfoListItem, ExplorerNodeInfo, TreeNode} from '@/core/types'
 import {findAncestorByType, findParentNode} from '@/core/utils/tree'
+import {
+    resolveSemanticHintForNode,
+    resolveSemanticItemsForNode,
+    type SemanticExplorerIndex,
+} from '@/features/explorer/services/semantic-layer-explorer.service'
+import {resolvePlatformFeatureId} from '@/features/explorer/services/explorer-ai-tree.service'
 
 const EMPTY_INFO: ExplorerNodeInfo = {
     kind: 'empty',
@@ -181,36 +187,80 @@ function buildPrimaryKeyConstraintInfo(node: TreeNode, tree: TreeNode[]): Explor
     }
 }
 
-function withSource(node: TreeNode, info: ExplorerNodeInfo): ExplorerNodeInfo {
-    return {...info, sourceNodeId: node.id}
+function buildPlatformFeatureInfo(node: TreeNode, tree: TreeNode[]): ExplorerNodeInfo {
+    return {
+        kind: 'platform_feature',
+        title: node.label,
+        breadcrumb: breadcrumb(tree, node.id, false),
+        comment: node.comment,
+        fields: [
+            {key: 'nodeType', value: resolvePlatformFeatureId(node)},
+        ],
+        listItems: [],
+    }
+}
+
+function withSemantic(
+    node: TreeNode,
+    tree: TreeNode[],
+    info: ExplorerNodeInfo,
+    semanticIndex?: SemanticExplorerIndex | null,
+): ExplorerNodeInfo {
+    const semanticItems = resolveSemanticItemsForNode(node, tree, semanticIndex)
+    if (!semanticItems.length) return info
+    const semanticHint = resolveSemanticHintForNode(node, tree, semanticIndex) ?? undefined
+    return {
+        ...info,
+        semanticHint,
+        semanticListTitleKey: 'semanticMetrics',
+        semanticItems,
+    }
+}
+
+function withSource(
+    node: TreeNode,
+    info: ExplorerNodeInfo,
+    tree?: TreeNode[],
+    semanticIndex?: SemanticExplorerIndex | null,
+): ExplorerNodeInfo {
+    const sourced = {...info, sourceNodeId: node.id}
+    return tree ? withSemantic(node, tree, sourced, semanticIndex) : sourced
 }
 
 /** 从连接树节点构建 Info 面板数据 */
-export function buildExplorerNodeInfo(node: TreeNode, tree: TreeNode[]): ExplorerNodeInfo {
+export function buildExplorerNodeInfo(
+    node: TreeNode,
+    tree: TreeNode[],
+    semanticIndex?: SemanticExplorerIndex | null,
+): ExplorerNodeInfo {
     switch (node.type) {
         case 'connection':
-            return withSource(node, buildConnectionInfo(node, tree))
+            return withSource(node, buildConnectionInfo(node, tree), tree, semanticIndex)
         case 'database':
-            return withSource(node, buildDatabaseInfo(node, tree))
+            return withSource(node, buildDatabaseInfo(node, tree), tree, semanticIndex)
         case 'table':
-            return withSource(node, buildTableInfo(node, tree))
+            return withSource(node, buildTableInfo(node, tree), tree, semanticIndex)
         case 'column':
-            return withSource(node, buildColumnInfo(node, tree))
+            return withSource(node, buildColumnInfo(node, tree), tree, semanticIndex)
         case 'primary_key': {
             const parent = findParentNode(tree, node.id)
-            if (parent?.type === 'keys') return withSource(node, buildPrimaryKeyConstraintInfo(node, tree))
-            return withSource(node, buildColumnInfo(node, tree))
+            if (parent?.type === 'keys') {
+                return withSource(node, buildPrimaryKeyConstraintInfo(node, tree), tree, semanticIndex)
+            }
+            return withSource(node, buildColumnInfo(node, tree), tree, semanticIndex)
         }
         case 'foreign_key':
-            return withSource(node, buildForeignKeyInfo(node, tree))
+            return withSource(node, buildForeignKeyInfo(node, tree), tree, semanticIndex)
         case 'index':
-            return withSource(node, buildIndexInfo(node, tree))
+            return withSource(node, buildIndexInfo(node, tree), tree, semanticIndex)
         case 'columns':
-            return withSource(node, buildSectionInfo(node, tree, 'columns'))
+            return withSource(node, buildSectionInfo(node, tree, 'columns'), tree, semanticIndex)
         case 'keys':
-            return withSource(node, buildSectionInfo(node, tree, 'keys'))
+            return withSource(node, buildSectionInfo(node, tree, 'keys'), tree, semanticIndex)
         case 'indexes':
-            return withSource(node, buildSectionInfo(node, tree, 'indexes'))
+            return withSource(node, buildSectionInfo(node, tree, 'indexes'), tree, semanticIndex)
+        case 'platform_feature':
+            return withSource(node, buildPlatformFeatureInfo(node, tree))
         default:
             return withSource(node, {
                 ...EMPTY_INFO,
@@ -218,7 +268,7 @@ export function buildExplorerNodeInfo(node: TreeNode, tree: TreeNode[]): Explore
                 title: node.label,
                 breadcrumb: breadcrumb(tree, node.id),
                 fields: [{key: 'nodeType', value: node.type}],
-            })
+            }, tree, semanticIndex)
     }
 }
 
@@ -233,6 +283,7 @@ const INFO_NODE_TYPES = new Set([
     'columns',
     'keys',
     'indexes',
+    'platform_feature',
 ])
 
 export function isExplorerInfoNode(node: TreeNode): boolean {
@@ -252,6 +303,15 @@ export async function prepareExplorerInfoNode(
 
     if (node.type === 'database' || node.type === 'table') {
         await ensureLoaded(node.id)
+        return findNode(node.id) ?? node
+    }
+
+    if (node.type === 'folder' && node.label.toLowerCase() === 'ai') {
+        await ensureLoaded(node.id)
+        return findNode(node.id) ?? node
+    }
+
+    if (node.type === 'platform_feature') {
         return findNode(node.id) ?? node
     }
 

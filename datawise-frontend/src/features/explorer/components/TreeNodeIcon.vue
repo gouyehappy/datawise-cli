@@ -33,6 +33,7 @@ function resolveTreeIcon(type: TreeNodeType, expanded?: boolean, feature?: strin
   if (type === 'column') return 'comment-table'
   if (type === 'sql_file') return 'editor'
   if (type === 'view_model') return 'view-model'
+  if (type === 'platform_feature') return 'format'
   if (type === 'function' || type === 'procedure' || type === 'trigger') return 'command'
   if (type === 'console') return 'console'
   if (type === 'kafka-topic') return 'tab-kafka'
