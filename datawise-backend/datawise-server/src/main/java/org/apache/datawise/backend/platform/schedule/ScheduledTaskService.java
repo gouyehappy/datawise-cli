@@ -9,6 +9,7 @@ import org.apache.datawise.backend.database.drift.SchemaDriftService;
 import org.apache.datawise.backend.database.sql.SqlReviewService;
 import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
+import org.apache.datawise.backend.domain.PushNotificationRequest;
 import org.apache.datawise.backend.domain.RerunAnalysisCanvasRequest;
 import org.apache.datawise.backend.domain.SaveScheduledTaskRequest;
 import org.apache.datawise.backend.domain.ScheduledTaskDto;
@@ -18,6 +19,7 @@ import org.apache.datawise.backend.configstore.UserScheduledTaskStore.OwnedSched
 import org.apache.datawise.backend.model.ScheduledTaskEntry;
 import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.TeamService;
+import org.apache.datawise.backend.service.workspace.WorkspaceNotificationService;
 import org.apache.datawise.backend.connector.api.support.SqlWriteClassifier;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -30,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ScheduledTaskService {
@@ -42,6 +45,7 @@ public class ScheduledTaskService {
     private final SchemaDriftService schemaDriftService;
     private final AnalysisCanvasService analysisCanvasService;
     private final TeamService teamService;
+    private final WorkspaceNotificationService notificationService;
     private final ObjectMapper objectMapper;
 
     public ScheduledTaskService(
@@ -51,6 +55,7 @@ public class ScheduledTaskService {
             SchemaDriftService schemaDriftService,
             AnalysisCanvasService analysisCanvasService,
             TeamService teamService,
+            WorkspaceNotificationService notificationService,
             ObjectMapper objectMapper
     ) {
         this.taskStore = taskStore;
@@ -59,6 +64,7 @@ public class ScheduledTaskService {
         this.schemaDriftService = schemaDriftService;
         this.analysisCanvasService = analysisCanvasService;
         this.teamService = teamService;
+        this.notificationService = notificationService;
         this.objectMapper = objectMapper;
     }
 
@@ -138,9 +144,31 @@ public class ScheduledTaskService {
             }
             entry.setLastRunStatus("ok");
             entry.setLastRunMessage("completed");
+            pushTaskNotification(entry, true, null);
         } catch (Exception ex) {
             entry.setLastRunStatus("failed");
-            entry.setLastRunMessage(ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
+            String message = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+            entry.setLastRunMessage(message);
+            pushTaskNotification(entry, false, message);
+        }
+    }
+
+    private void pushTaskNotification(ScheduledTaskEntry entry, boolean ok, String errorMessage) {
+        try {
+            String titleKey = ok ? "scheduledTaskOk" : "scheduledTaskFailed";
+            String bodyKey = titleKey;
+            notificationService.pushNotification(new PushNotificationRequest(
+                    "workspace",
+                    titleKey,
+                    bodyKey,
+                    Map.of(
+                            "name", entry.getName() != null ? entry.getName() : entry.getId(),
+                            "type", entry.getType() != null ? entry.getType() : "",
+                            "message", errorMessage != null ? errorMessage : ""
+                    )
+            ));
+        } catch (RuntimeException ex) {
+            log.warn("Scheduled task notification failed taskId={}", entry.getId(), ex);
         }
     }
 

@@ -16,6 +16,13 @@ const props = defineProps<{
   productionApprovalRequired?: boolean
   sqlReviewFindings?: SqlReviewFinding[]
   sqlReviewBlocked?: boolean
+  sqlReviewSuggestedSql?: string | null
+  sqlReviewRewriteNote?: string | null
+  sqlReviewRewriteLoading?: boolean
+}>()
+
+const emit = defineEmits<{
+  applySuggestedSql: []
 }>()
 
 const {t} = useI18n()
@@ -68,6 +75,20 @@ const statusMessage = computed(() => {
         <span v-if="finding.suggestion" class="dangerous-pending__suggestion">{{ finding.suggestion }}</span>
       </li>
     </ul>
+    <div v-if="sqlReviewSuggestedSql?.trim()" class="dangerous-pending__rewrite">
+      <p class="dangerous-pending__rewrite-note">
+        {{ sqlReviewRewriteNote || t('platform.sqlReview.rewriteReady') }}
+      </p>
+      <pre class="dangerous-pending__rewrite-sql">{{ sqlReviewSuggestedSql }}</pre>
+      <button
+          type="button"
+          class="dangerous-pending__rewrite-btn"
+          :disabled="sqlReviewRewriteLoading"
+          @click="emit('applySuggestedSql')"
+      >
+        {{ t('platform.sqlReview.applyRewrite') }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -139,5 +160,43 @@ const statusMessage = computed(() => {
 .dangerous-pending__suggestion {
   display: block;
   opacity: 0.85;
+}
+
+.dangerous-pending__rewrite {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, var(--dw-border-light) 80%, transparent);
+}
+
+.dangerous-pending__rewrite-note {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--dw-text);
+}
+
+.dangerous-pending__rewrite-sql {
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--dw-bg-subtle);
+  font-size: 11px;
+  white-space: pre-wrap;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.dangerous-pending__rewrite-btn {
+  border: 1px solid var(--dw-accent);
+  background: transparent;
+  color: var(--dw-accent);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dangerous-pending__rewrite-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

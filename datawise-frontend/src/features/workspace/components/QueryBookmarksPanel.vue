@@ -15,6 +15,8 @@ import {
     REPORT_TEMPLATE_FOLDER_PREFIX,
     type QueryBookmarkItem,
 } from '@/features/workspace/services/query-bookmark.service'
+import QueryLibraryVersionsDialog from '@/features/platform/components/QueryLibraryVersionsDialog.vue'
+import {useTeamStore} from '@/features/team/stores/team-store'
 import {
     REPORT_TEMPLATE_CATEGORIES,
     type ReportTemplateCategory,
@@ -28,10 +30,14 @@ const {t} = useI18n()
 const layout = useLayoutStore()
 const shortcutPanel = useShortcutPanelStore()
 const workspace = useWorkspaceStore()
+const teamStore = useTeamStore()
 
 const search = ref('')
 const activeTag = ref<string | null>(null)
 const activeReportCategory = ref<ReportTemplateCategory | null>(null)
+const libraryDialogOpen = ref(false)
+const libraryQueryId = ref<string | null>(null)
+const libraryQueryTitle = ref('')
 
 const allBookmarks = computed(() =>
     mergeQueryBookmarks(
@@ -71,6 +77,14 @@ function openBookmark(item: { connectionName?: string; sql: string }) {
         connectionName: item.connectionName && item.connectionName !== '—' ? item.connectionName : undefined,
         sql: item.sql || 'SELECT 1;',
     })
+}
+
+function openQueryLibraryHistory(item: QueryBookmarkItem, event: Event) {
+    event.stopPropagation()
+    if (!teamStore.activeTeamId || item.source !== 'console') return
+    libraryQueryId.value = item.id
+    libraryQueryTitle.value = item.name
+    libraryDialogOpen.value = true
 }
 </script>
 
@@ -166,12 +180,28 @@ function openBookmark(item: { connectionName?: string; sql: string }) {
                 <span v-else-if="displayTags(item).length" class="bookmark-card__meta">{{ displayTags(item).join(' · ') }}</span>
               </span>
               <span class="bookmark-card__chevron" aria-hidden="true">›</span>
+              <button
+                  v-if="item.source === 'console' && teamStore.activeTeamId"
+                  class="bookmark-card__history"
+                  type="button"
+                  :title="t('platform.queryLibrary.viewHistory')"
+                  @click="openQueryLibraryHistory(item, $event)"
+              >
+                <DwIcon name="history" size="sm" :stroke-width="1.35"/>
+              </button>
             </button>
           </li>
         </ul>
       </section>
     </div>
   </div>
+
+  <QueryLibraryVersionsDialog
+      v-model:open="libraryDialogOpen"
+      :team-id="teamStore.activeTeamId"
+      :query-id="libraryQueryId"
+      :query-title="libraryQueryTitle"
+  />
 </template>
 
 <style scoped>
@@ -374,6 +404,22 @@ function openBookmark(item: { connectionName?: string; sql: string }) {
   font-size: 18px;
   line-height: 1;
   opacity: 0.45;
+}
+
+.bookmark-card__history {
+  flex-shrink: 0;
+  align-self: center;
+  border: none;
+  background: transparent;
+  color: var(--dw-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.bookmark-card__history:hover {
+  color: var(--dw-primary);
+  background: var(--dw-bg-subtle);
 }
 
 .bookmark-card:hover .bookmark-card__chevron {

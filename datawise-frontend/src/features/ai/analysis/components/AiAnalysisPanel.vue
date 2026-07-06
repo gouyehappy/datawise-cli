@@ -15,6 +15,7 @@ import AiAnalysisChart from '@/features/ai/analysis/components/AiAnalysisChart.v
 import AiAnalysisReportSection from '@/features/ai/analysis/components/AiAnalysisReportSection.vue'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {platformApi} from '@/api'
+import {extractCanvasParameters} from '@/features/platform/services/analysis-canvas-parameters.service'
 
 const props = defineProps<{
   analysis: AiAnalysisResult
@@ -80,6 +81,10 @@ async function saveAsCanvas() {
         props.analysis.chart?.title?.trim()
         || props.summaryText?.trim().slice(0, 80)
         || t('ai.analysis.saveAsCanvasDefaultTitle')
+    const parameters = extractCanvasParameters(
+        props.summaryText,
+        props.analysis.sql,
+    )
     await platformApi.saveAnalysisCanvas({
       title,
       description: props.summaryText?.trim().slice(0, 240) || undefined,
@@ -89,7 +94,7 @@ async function saveAsCanvas() {
       chartSpecJson: props.analysis.chart ? JSON.stringify(props.analysis.chart) : undefined,
       reportMarkdown: props.analysis.report?.markdown || undefined,
       targetsJson: props.targetsJson,
-      parameters: [],
+      parameters,
     })
     layout.showToast(t('ai.analysis.saveAsCanvasDone'))
   } catch (error) {

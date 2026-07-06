@@ -96,6 +96,7 @@ export interface SqlReviewRequest {
     sql: string
     connectionId?: string | null
     database?: string | null
+    aiRewrite?: boolean | null
 }
 
 export interface SqlReviewFinding {
@@ -109,6 +110,18 @@ export interface SqlReviewResult {
     allowed: boolean
     requiresApproval: boolean
     findings: SqlReviewFinding[]
+    suggestedSql?: string | null
+    rewriteNote?: string | null
+}
+
+export interface GenerateFederatedSqlRequest {
+    prompt: string
+    sources: FederatedViewSource[]
+}
+
+export interface GenerateFederatedSqlResult {
+    sql: string
+    summary?: string | null
 }
 
 export interface FederatedViewSource {

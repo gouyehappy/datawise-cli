@@ -48,3 +48,6 @@ npm start
 - `review_sql` — pre-execution safety review
 - `execute_readonly_sql` — SELECT-only via DataWise gate
 - `compare_schema` — drift between environments
+- `list_semantic_metrics` — semantic layer metrics for a database
+- `rerun_canvas` — parameterize and rerun a saved analysis canvas
+- `generate_federated_sql` — AI cross-source federated SQL from natural language

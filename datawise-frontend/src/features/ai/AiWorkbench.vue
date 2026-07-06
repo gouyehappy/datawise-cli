@@ -11,11 +11,11 @@ import {useAiChatScroll} from '@/features/ai/chat/composables/useAiChatScroll'
 import {useAiChatSend} from '@/features/ai/chat/composables/useAiChatSend'
 import {useAiConsoleBridge} from '@/features/ai/shared/composables/useAiConsoleBridge'
 import {useAiDatabaseScope} from '@/features/ai/datasource/composables/useAiDatabaseScope'
+import {provideAiTaggedScope} from '@/features/ai/datasource/composables/ai-tagged-scope.context'
 import {extractSqlFromContent} from '@/features/ai/chat/services/ai-chat.service'
 import {useAiChatStore} from '@/features/ai/stores/ai-chat'
 import type {AiAnalysisMode} from '@/features/ai/types/analysis'
 import type {AiAnalysisTemplate} from '@/features/ai/analysis/types/analysis-template.types'
-import {resolveTargetIdFromNode} from '@/features/ai/shared/utils/database-targets'
 import {
     buildTeamAiSessionSharePayload,
     serializeTeamAiSessionSharePayload,
@@ -43,13 +43,15 @@ const {min: explorerResizeMin, max: explorerResizeMax} = useSidePanelResizeBound
 const input = ref('')
 const chatMainRef = ref<InstanceType<typeof AiChatMain>>()
 
+const taggedScope = provideAiTaggedScope()
+
 const {
   allTargets,
   selectedTargetIds,
   selectedTargets,
   removeTarget,
   formatTargetLabel,
-} = useAiDatabaseScope()
+} = useAiDatabaseScope(taggedScope)
 
 const {scrollToBottom} = useAiChatScroll(
     computed(() => chatMainRef.value?.getScrollEl?.()),
@@ -94,8 +96,7 @@ const showQuickPrompts = computed(
 )
 
 function resolveInitialTargetIds() {
-  const initialId = resolveTargetIdFromNode(explorer.tree, explorer.selectedNodeId)
-  return initialId ? [initialId] : []
+  return []
 }
 
 onMounted(() => {

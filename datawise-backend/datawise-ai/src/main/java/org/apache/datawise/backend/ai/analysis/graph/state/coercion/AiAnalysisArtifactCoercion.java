@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.ai.analysis.graph.state.coercion;
 
+import org.apache.datawise.backend.ai.schema.AiSemanticMetricHint;
 import org.apache.datawise.backend.ai.schema.AiSqlSchemaContext;
 import org.apache.datawise.backend.ai.schema.AiTableRelationHint;
 import org.apache.datawise.backend.ai.schema.AiTableDdlSnippet;
@@ -121,13 +122,30 @@ public final class AiAnalysisArtifactCoercion {
                 }
             }
         }
+        List<AiSemanticMetricHint> metrics = new ArrayList<>();
+        Object metricsRaw = map.get("semanticMetrics");
+        if (metricsRaw instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof AiSemanticMetricHint hint) {
+                    metrics.add(hint);
+                } else if (item instanceof Map<?, ?> metricMap) {
+                    metrics.add(new AiSemanticMetricHint(
+                            stringValue(metricMap.get("name")),
+                            stringValue(metricMap.get("expression")),
+                            stringValue(metricMap.get("description")),
+                            stringValue(metricMap.get("unit"))
+                    ));
+                }
+            }
+        }
         return new AiSqlSchemaContext(
                 stringValue(map.get("connectionLabel")),
                 stringValue(map.get("database")),
                 stringValue(map.get("dbType")),
                 castStringList(map.get("tables")),
                 ddls,
-                relations
+                relations,
+                metrics
         );
     }
 

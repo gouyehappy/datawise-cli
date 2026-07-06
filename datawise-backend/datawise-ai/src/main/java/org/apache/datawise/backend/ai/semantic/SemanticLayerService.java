@@ -2,10 +2,10 @@ package org.apache.datawise.backend.ai.semantic;
 
 import org.apache.datawise.backend.common.support.IdGenerator;
 import org.apache.datawise.backend.configstore.SemanticMetricStore;
+import org.apache.datawise.backend.ai.tag.AiTableTagService;
 import org.apache.datawise.backend.database.table.TableDetailService;
 import org.apache.datawise.backend.domain.AutoGenerateSemanticMetricsRequest;
 import org.apache.datawise.backend.domain.SaveSemanticMetricRequest;
-import org.apache.datawise.backend.domain.SchemaTableSummary;
 import org.apache.datawise.backend.domain.SemanticMetricDto;
 import org.apache.datawise.backend.domain.TablePropertiesResult;
 import org.apache.datawise.backend.model.ConnectionEntity;
@@ -26,15 +26,18 @@ public class SemanticLayerService {
     private final SemanticMetricStore metricStore;
     private final TableDetailService tableDetailService;
     private final ConnectionVisibilityService connectionVisibilityService;
+    private final AiTableTagService tableTagService;
 
     public SemanticLayerService(
             SemanticMetricStore metricStore,
             TableDetailService tableDetailService,
-            ConnectionVisibilityService connectionVisibilityService
+            ConnectionVisibilityService connectionVisibilityService,
+            AiTableTagService tableTagService
     ) {
         this.metricStore = metricStore;
         this.tableDetailService = tableDetailService;
         this.connectionVisibilityService = connectionVisibilityService;
+        this.tableTagService = tableTagService;
     }
 
     public List<SemanticMetricDto> list(String connectionId, String database) {
@@ -182,13 +185,7 @@ public class SemanticLayerService {
     }
 
     private List<String> listTableNames(String connectionId, String database) {
-        try {
-            return tableDetailService.loadSchemaTables(connectionId, database).tables().stream()
-                    .map(SchemaTableSummary::tableName)
-                    .toList();
-        } catch (Exception ex) {
-            return List.of();
-        }
+        return tableTagService.listTaggedTableNames(connectionId, database);
     }
 
     private TablePropertiesResult tryLoadProperties(String table, String connectionId, String database) {

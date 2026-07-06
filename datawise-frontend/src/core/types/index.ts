@@ -61,7 +61,6 @@ export type SettingsSection =
     | 'ai'
     | 'dataAgent'
     | 'knowledge'
-    | 'platform'
     | 'about'
 
 /** 右侧快捷栏面板，对应 Chat2DB Shortcut Bar */

@@ -74,6 +74,14 @@ export default {
             title: 'Slow query',
             body: '{connection}Duration {duration} (threshold {threshold}ms): {sql}',
         },
+        scheduledTaskOk: {
+            title: 'Scheduled task completed',
+            body: '"{name}" ({type}) finished successfully.',
+        },
+        scheduledTaskFailed: {
+            title: 'Scheduled task failed',
+            body: '"{name}" failed: {message}',
+        },
     },
     time: {
         justNow: 'Just now',

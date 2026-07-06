@@ -21,7 +21,6 @@ export default {
         ai: 'AI models',
         aiModels: 'AI models',
         dataAgent: 'DataAgent',
-        platform: 'Platform Hub',
         about: 'About Us',
     },
     basic: {

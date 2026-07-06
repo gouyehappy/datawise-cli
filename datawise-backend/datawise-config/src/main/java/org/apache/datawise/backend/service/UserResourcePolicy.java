@@ -36,7 +36,7 @@ public class UserResourcePolicy {
             case LAYOUT_MENU, APP_CONFIG, AI_PREFERENCES, SQL_SNIPPETS_PERSONAL, WORKSPACE_SCRIPTS,
                     WORKSPACE_USER_DATA ->
                     new ResourceRule(StorageScope.USER, true, false);
-            case AI_KNOWLEDGE, AI_ANALYSIS_CANVAS, SEMANTIC_METRICS, FEDERATED_VIEWS,
+            case AI_KNOWLEDGE, AI_TABLE_TAGS, AI_ANALYSIS_CANVAS, SEMANTIC_METRICS, FEDERATED_VIEWS,
                     SCHEMA_DRIFT_MONITORS, SCHEDULED_TASKS ->
                     new ResourceRule(StorageScope.USER, true, false);
             case CONNECTION_CATALOG ->

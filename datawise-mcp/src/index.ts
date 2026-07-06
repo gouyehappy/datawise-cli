@@ -111,6 +111,56 @@ server.tool(
     },
 )
 
+server.tool(
+    'list_semantic_metrics',
+    'List semantic layer metrics for a connection/database',
+    {
+        connectionId: z.string(),
+        database: z.string(),
+    },
+    async ({connectionId, database}) => {
+        const params = new URLSearchParams({connectionId, database})
+        const result = await apiFetch<unknown>(`/api/platform/mcp/semantic-metrics?${params}`)
+        return {content: [{type: 'text', text: JSON.stringify(result, null, 2)}]}
+    },
+)
+
+server.tool(
+    'rerun_canvas',
+    'Rerun an analysis canvas with optional parameter values',
+    {
+        canvasId: z.string(),
+        parameterValues: z.record(z.string()).optional(),
+    },
+    async (args) => {
+        const result = await apiFetch<unknown>('/api/platform/mcp/canvas/rerun', {
+            method: 'POST',
+            body: JSON.stringify(args),
+        })
+        return {content: [{type: 'text', text: JSON.stringify(result, null, 2)}]}
+    },
+)
+
+server.tool(
+    'generate_federated_sql',
+    'Generate cross-source federated SQL from natural language',
+    {
+        prompt: z.string(),
+        sources: z.array(z.object({
+            alias: z.string(),
+            connectionId: z.string(),
+            database: z.string().optional(),
+        })),
+    },
+    async (args) => {
+        const result = await apiFetch<unknown>('/api/platform/mcp/invoke', {
+            method: 'POST',
+            body: JSON.stringify({tool: 'generate_federated_sql', arguments: args}),
+        })
+        return {content: [{type: 'text', text: JSON.stringify(result, null, 2)}]}
+    },
+)
+
 async function main() {
     const transport = new StdioServerTransport()
     await server.connect(transport)

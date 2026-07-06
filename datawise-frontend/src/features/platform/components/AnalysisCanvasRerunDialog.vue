@@ -1,0 +1,207 @@
+<script setup lang="ts">
+import {computed, reactive, ref, watch} from 'vue'
+import {useI18n} from 'vue-i18n'
+import {platformApi} from '@/api'
+import {AppModal, FormField, ModalActions} from '@/core/components'
+import type {AiCanvasParameter, RerunAnalysisCanvasResult} from '@/features/platform/types/platform.types'
+import {buildParameterValueMap} from '@/features/platform/services/analysis-canvas-parameters.service'
+import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+
+const props = defineProps<{
+    open: boolean
+    canvasId: string | null
+}>()
+
+const emit = defineEmits<{
+    'update:open': [value: boolean]
+    completed: [result: RerunAnalysisCanvasResult]
+}>()
+
+const {t} = useI18n()
+const layout = useLayoutStore()
+const workspace = useWorkspaceStore()
+
+const loading = ref(false)
+const running = ref(false)
+const error = ref('')
+const parameters = ref<AiCanvasParameter[]>([])
+const canvasTitle = ref('')
+const values = reactive<Record<string, string>>({})
+const lastResult = ref<RerunAnalysisCanvasResult | null>(null)
+
+const hasParameters = computed(() => parameters.value.length > 0)
+
+watch(
+    () => [props.open, props.canvasId] as const,
+    async ([open, canvasId]) => {
+        if (!open || !canvasId) return
+        loading.value = true
+        error.value = ''
+        lastResult.value = null
+        try {
+            const detail = await platformApi.getAnalysisCanvas(canvasId)
+            canvasTitle.value = detail.title
+            parameters.value = detail.parameters ?? []
+            for (const key of Object.keys(values)) {
+                delete values[key]
+            }
+            for (const param of parameters.value) {
+                if (!param.key) continue
+                values[param.key] = param.defaultValue ?? ''
+            }
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : String(err)
+        } finally {
+            loading.value = false
+        }
+    },
+    {immediate: true},
+)
+
+function close() {
+    emit('update:open', false)
+}
+
+async function rerun() {
+    if (!props.canvasId || running.value) return
+    running.value = true
+    error.value = ''
+    try {
+        const result = await platformApi.rerunAnalysisCanvas({
+            canvasId: props.canvasId,
+            parameterValues: buildParameterValueMap(parameters.value, {...values}),
+        })
+        lastResult.value = result
+        emit('completed', result)
+        layout.showToast(t('platform.canvas.rerunDone'))
+    } catch (err) {
+        error.value = err instanceof Error ? err.message : String(err)
+    } finally {
+        running.value = false
+    }
+}
+
+async function copySql() {
+    const sql = lastResult.value?.sql?.trim()
+    if (!sql) return
+    await navigator.clipboard.writeText(sql)
+    layout.showToast(t('platform.canvas.copiedSql'))
+}
+
+function openInConsole() {
+    const sql = lastResult.value?.sql?.trim()
+    if (!sql) return
+    layout.setModule('database')
+    workspace.openConsole({sql})
+    close()
+}
+</script>
+
+<template>
+  <AppModal
+      :open="open"
+      :title="t('platform.canvas.rerunTitle', {title: canvasTitle || '—'})"
+      width="520px"
+      @close="close"
+  >
+    <p v-if="loading" class="canvas-rerun__status">{{ t('platform.common.loading') }}</p>
+    <p v-else-if="error" class="canvas-rerun__error">{{ error }}</p>
+
+    <template v-else>
+      <p v-if="!hasParameters" class="canvas-rerun__hint">{{ t('platform.canvas.rerunNoParams') }}</p>
+      <form v-else class="canvas-rerun__form" @submit.prevent="rerun">
+        <FormField
+            v-for="param in parameters"
+            :key="param.key"
+            :label="param.label || param.key"
+            :input-id="`canvas-param-${param.key}`"
+        >
+          <template #default="{ id }">
+            <input :id="id" v-model="values[param.key]" class="dw-input" type="text"/>
+          </template>
+        </FormField>
+      </form>
+
+      <section v-if="lastResult" class="canvas-rerun__result">
+        <h4>{{ t('platform.canvas.rerunResult') }}</h4>
+        <pre v-if="lastResult.sql" class="canvas-rerun__sql">{{ lastResult.sql }}</pre>
+        <p v-if="lastResult.prompt && !lastResult.sql" class="canvas-rerun__prompt">{{ lastResult.prompt }}</p>
+        <div class="canvas-rerun__actions">
+          <button v-if="lastResult.sql" type="button" class="dw-btn dw-btn--ghost" @click="copySql">
+            {{ t('platform.canvas.copySql') }}
+          </button>
+          <button v-if="lastResult.sql" type="button" class="dw-btn" @click="openInConsole">
+            {{ t('platform.canvas.openInConsole') }}
+          </button>
+        </div>
+      </section>
+    </template>
+
+    <template #footer>
+      <ModalActions
+          :confirm-label="t('platform.canvas.rerun')"
+          :confirm-disabled="loading || running || Boolean(error)"
+          :confirm-loading="running"
+          @cancel="close"
+          @confirm="rerun"
+      />
+    </template>
+  </AppModal>
+</template>
+
+<style scoped>
+.canvas-rerun__status,
+.canvas-rerun__hint {
+    margin: 0;
+    font-size: 13px;
+    color: var(--dw-text-muted);
+}
+
+.canvas-rerun__error {
+    margin: 0;
+    font-size: 13px;
+    color: var(--dw-danger);
+}
+
+.canvas-rerun__form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.canvas-rerun__result {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--dw-border-light);
+}
+
+.canvas-rerun__result h4 {
+    margin: 0 0 8px;
+    font-size: 13px;
+}
+
+.canvas-rerun__sql {
+    margin: 0;
+    padding: 8px;
+    border-radius: 6px;
+    background: var(--dw-bg-subtle);
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 160px;
+    overflow: auto;
+}
+
+.canvas-rerun__prompt {
+    margin: 0;
+    font-size: 12px;
+    color: var(--dw-text-muted);
+}
+
+.canvas-rerun__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+</style>

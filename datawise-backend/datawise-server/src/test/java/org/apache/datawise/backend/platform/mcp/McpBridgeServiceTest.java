@@ -1,7 +1,8 @@
 package org.apache.datawise.backend.platform.mcp;
 
+import org.apache.datawise.backend.ai.tag.AiTableTagService;
 import org.apache.datawise.backend.database.drift.SchemaDriftService;
-import org.apache.datawise.backend.database.sql.SqlReviewService;
+import org.apache.datawise.backend.platform.sql.SqlReviewOrchestrator;
 import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.database.table.TableDetailService;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
@@ -33,8 +34,12 @@ class McpBridgeServiceTest {
                 mock(ConnectionVisibilityService.class),
                 mock(TableDetailService.class),
                 sqlService,
-                mock(SqlReviewService.class),
-                mock(SchemaDriftService.class)
+                mock(SqlReviewOrchestrator.class),
+                mock(SchemaDriftService.class),
+                mock(AiTableTagService.class),
+                mock(org.apache.datawise.backend.ai.semantic.SemanticLayerService.class),
+                mock(org.apache.datawise.backend.ai.canvas.AnalysisCanvasService.class),
+                mock(org.apache.datawise.backend.ai.federated.FederatedSqlGeneratorService.class)
         );
         UserContext.setApiToken(1L, "tok-1", Set.of(ApiTokenScopes.MIGRATION));
 

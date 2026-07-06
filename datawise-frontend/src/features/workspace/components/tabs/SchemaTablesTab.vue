@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DwDataGrid from '@/core/components/DwDataGrid.vue'
 import {DwIcon} from '@/core/icons'
 import type {DwDataGridColumn, DwDataGridLabels} from '@/core/components/dw-data-grid.types'
 import type {WorkspaceTab} from '@/core/types'
+import {fetchAiTableTags, updateAiTableTags} from '@/features/ai/tag/services/ai-table-tag.service'
+import {notifyAiTableTagsChanged} from '@/features/ai/tag/services/ai-table-tag.events'
 import {rebuildAiRagIndex} from '@/features/ai/rag/services/ai-rag.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useSchemaTables} from '@/features/workspace/composables/useSchemaTables'
@@ -17,6 +19,8 @@ import {
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import type {SchemaTableSummary} from '@/shared/api/types'
 
+type SchemaTableRow = SchemaTableSummary & {aiTagged: boolean}
+
 const props = defineProps<{ tab: WorkspaceTab }>()
 const {t} = useI18n()
 const workspace = useWorkspaceStore()
@@ -25,8 +29,36 @@ const layout = useLayoutStore()
 const {rows, loading, error, databaseName, loadSchemaTables} = useSchemaTables(props.tab)
 const selectedKeys = ref<string[]>([])
 const syncingToAi = ref(false)
+const tagging = ref(false)
+const taggedTableNames = ref<string[]>([])
 
-const columns = computed<DwDataGridColumn<SchemaTableSummary>[]>(() => [
+const scopeDatabase = computed(() => props.tab.database ?? databaseName.value ?? '')
+
+const gridRows = computed<SchemaTableRow[]>(() => {
+  const tagged = new Set(taggedTableNames.value)
+  return rows.value.map((row) => ({
+    ...row,
+    aiTagged: tagged.has(row.tableName),
+  }))
+})
+
+const canTag = computed(() =>
+    selectedKeys.value.some((tableName) => !taggedTableNames.value.includes(tableName)),
+)
+
+const canUntag = computed(() =>
+    selectedKeys.value.some((tableName) => taggedTableNames.value.includes(tableName)),
+)
+
+const columns = computed<DwDataGridColumn<SchemaTableRow>[]>(() => [
+  {
+    key: 'aiTagged',
+    label: t('workspace.schemaTables.aiTagged'),
+    align: 'center',
+    headerClass: 'col-ai-tag',
+    cellClass: 'col-ai-tag',
+    format: (row) => (row.aiTagged ? t('common.yes') : t('common.no')),
+  },
   {
     key: 'tableName',
     label: t('workspace.schemaTables.tableName'),
@@ -78,17 +110,39 @@ const columns = computed<DwDataGridColumn<SchemaTableSummary>[]>(() => [
 ])
 
 const gridLabels = computed<Partial<DwDataGridLabels>>(() => ({
-  filterValue: t('workspace.schemaTables.filter'),
+  filter: t('workspace.schemaTables.filter'),
   empty: t('workspace.schemaTables.empty'),
   noMatch: t('workspace.schemaTables.noMatch'),
   loading: t('workspace.tableDetail.loading'),
 }))
 
+async function loadAiTableTags() {
+  const connectionId = props.tab.connectionId
+  const database = scopeDatabase.value
+  if (!connectionId || !database) {
+    taggedTableNames.value = []
+    return
+  }
+  try {
+    taggedTableNames.value = await fetchAiTableTags(connectionId, database)
+  } catch {
+    taggedTableNames.value = []
+  }
+}
+
+watch(
+    () => [props.tab.connectionId, scopeDatabase.value, rows.value.length] as const,
+    () => {
+      void loadAiTableTags()
+    },
+    {immediate: true},
+)
+
 function openErDiagram() {
   if (!props.tab.connectionId) return
   workspace.openSchemaEr({
     connectionId: props.tab.connectionId,
-    database: props.tab.database ?? databaseName.value ?? '',
+    database: scopeDatabase.value,
     instanceId: props.tab.instanceId ?? undefined,
     explorerNodeId: props.tab.explorerNodeId,
   })
@@ -100,7 +154,7 @@ async function syncToAiDataset() {
   try {
     const result = await rebuildAiRagIndex(
         props.tab.connectionId,
-        props.tab.database ?? databaseName.value,
+        scopeDatabase.value,
     )
     layout.showToast(result.message || t('workspace.schemaTables.syncToAiSuccess'))
   } catch {
@@ -109,56 +163,124 @@ async function syncToAiDataset() {
     syncingToAi.value = false
   }
 }
+
+async function updateSelectedTags(tagged: boolean) {
+  const connectionId = props.tab.connectionId
+  const database = scopeDatabase.value
+  if (!connectionId || !database || !selectedKeys.value.length || tagging.value) return
+  tagging.value = true
+  try {
+    taggedTableNames.value = await updateAiTableTags(
+        connectionId,
+        database,
+        selectedKeys.value,
+        tagged,
+    )
+    notifyAiTableTagsChanged()
+    layout.showToast(t('workspace.schemaTables.tagForAiSuccess'))
+  } catch (err) {
+    layout.showErrorToast(err instanceof Error ? err.message : t('workspace.schemaTables.tagForAiFailed'))
+  } finally {
+    tagging.value = false
+  }
+}
 </script>
 
 <template>
-  <DwDataGrid
-      v-model:selected-keys="selectedKeys"
-      :rows="rows"
-      :columns="columns"
-      row-key="tableName"
-      column-filter
-      :loading="loading"
-      :error="error"
-      :labels="gridLabels"
-  >
-    <template #toolbar-actions>
-      <button
-          type="button"
-          :disabled="loading"
-          @click="loadSchemaTables"
-      >
-        <DwIcon name="refresh" size="sm" :stroke-width="1.35"/>
-        {{ t('workspace.schemaTables.refresh') }}
-      </button>
-      <button
-          type="button"
-          :disabled="loading || syncingToAi"
-          @click="syncToAiDataset"
-      >
-        <DwIcon name="ai" size="sm" :stroke-width="1.35"/>
-        {{ syncingToAi ? t('workspace.schemaTables.syncingToAi') : t('workspace.schemaTables.syncToAi') }}
-      </button>
-      <button
-          type="button"
-          @click="openErDiagram"
-      >
-        <DwIcon name="tab-schema-er" size="sm" :stroke-width="1.35"/>
-        {{ t('workspace.schemaTables.openEr') }}
-      </button>
-    </template>
+  <div class="schema-tables-tab">
+    <DwDataGrid
+        v-model:selected-keys="selectedKeys"
+        :rows="gridRows"
+        :columns="columns"
+        row-key="tableName"
+        :loading="loading"
+        :error="error"
+        :labels="gridLabels"
+    >
+      <template #toolbar-actions>
+        <button
+            type="button"
+            :disabled="loading"
+            @click="loadSchemaTables"
+        >
+          <DwIcon name="refresh" size="sm" :stroke-width="1.35"/>
+          {{ t('workspace.schemaTables.refresh') }}
+        </button>
+        <button
+            type="button"
+            :disabled="loading || tagging || !canTag"
+            @click="updateSelectedTags(true)"
+        >
+          <DwIcon name="ai" size="sm" :stroke-width="1.35"/>
+          {{ t('workspace.schemaTables.tagForAi') }}
+        </button>
+        <button
+            type="button"
+            :disabled="loading || tagging || !canUntag"
+            @click="updateSelectedTags(false)"
+        >
+          <DwIcon name="minus" size="sm" :stroke-width="1.35"/>
+          {{ t('workspace.schemaTables.untagForAi') }}
+        </button>
+        <button
+            type="button"
+            :disabled="loading || syncingToAi"
+            @click="syncToAiDataset"
+        >
+          <DwIcon name="refresh" size="sm" :stroke-width="1.35"/>
+          {{ syncingToAi ? t('workspace.schemaTables.syncingToAi') : t('workspace.schemaTables.syncToAi') }}
+        </button>
+        <button
+            type="button"
+            @click="openErDiagram"
+        >
+          <DwIcon name="tab-schema-er" size="sm" :stroke-width="1.35"/>
+          {{ t('workspace.schemaTables.openEr') }}
+        </button>
+      </template>
 
-    <template #toolbar-end>
-      <div class="dw-data-grid__end-chip" :title="databaseName || '—'">
-        <DwIcon name="database" size="sm" :stroke-width="1.3"/>
-        <strong>{{ databaseName || '—' }}</strong>
-        <DwIcon name="chevron-down" size="xs" :stroke-width="1.5" style="opacity: 0.65; flex-shrink: 0"/>
-      </div>
-    </template>
-  </DwDataGrid>
+      <template #toolbar-end>
+        <span class="schema-tables-tab__hint" :title="t('workspace.schemaTables.aiTagHint')">
+          {{ t('workspace.schemaTables.aiTagHint') }}
+        </span>
+        <div class="dw-data-grid__end-chip" :title="databaseName || '—'">
+          <DwIcon name="database" size="sm" :stroke-width="1.3"/>
+          <strong>{{ databaseName || '—' }}</strong>
+          <DwIcon name="chevron-down" size="xs" :stroke-width="1.5" style="opacity: 0.65; flex-shrink: 0"/>
+        </div>
+      </template>
+    </DwDataGrid>
+  </div>
 </template>
 
 <style scoped>
+.schema-tables-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.schema-tables-tab :deep(.dw-data-grid) {
+  flex: 1;
+  min-height: 0;
+}
+
+.schema-tables-tab :deep(.schema-tables-tab__hint) {
+  max-width: min(320px, 36vw);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--dw-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.col-ai-tag) {
+  width: 72px;
+  white-space: nowrap;
+}
+
 :deep(.col-name) {
   font-weight: 600;
   white-space: nowrap;

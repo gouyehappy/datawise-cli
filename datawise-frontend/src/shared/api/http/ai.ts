@@ -87,6 +87,19 @@ export function createHttpAiApi(): AiApi {
             return getJson<string[]>(`${API_PATHS.aiSchema.tables}?${params.toString()}`, undefined, options)
         },
 
+        fetchAiTableTags: async (connectionId, database) => {
+            const params = new URLSearchParams({connectionId})
+            if (database?.trim()) params.set('database', database.trim())
+            return getJson<string[]>(`${API_PATHS.aiTableTags.list}?${params.toString()}`)
+        },
+
+        fetchAiTableTagCatalog: () =>
+            getJson<import('@/features/ai/tag/types/ai-table-tag.types').AiTableTagCatalogItem[]>(
+                API_PATHS.aiTableTags.catalog,
+            ),
+
+        updateAiTableTags: (request) => putJson<string[]>(API_PATHS.aiTableTags.list, request),
+
         fetchPythonRuntime: () => getJson(API_PATHS.aiPython.runtime),
     }
 }

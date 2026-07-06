@@ -17,7 +17,6 @@ import ProfileSettingsPanel from '@/features/settings/components/ProfileSettings
 import PluginSettingsPanel from '@/features/settings/components/PluginSettingsPanel.vue'
 import SqlEditorShortcutsPanel from '@/features/settings/components/SqlEditorShortcutsPanel.vue'
 import ShortcutSettingsPanel from '@/features/settings/components/ShortcutSettingsPanel.vue'
-import PlatformHubSettingsPanel from '@/features/settings/components/PlatformHubSettingsPanel.vue'
 
 const definitions = [
     {key: 'basic' as const, component: BasicSettingsPanel},
@@ -32,7 +31,6 @@ const definitions = [
     {key: 'ai' as const, component: AiSettingsPanel},
     {key: 'dataAgent' as const, component: AiDataAgentHubPanel},
     {key: 'knowledge' as const, component: AiDataAgentHubPanel},
-    {key: 'platform' as const, component: PlatformHubSettingsPanel},
     {key: 'about' as const, component: AboutSettingsPanel},
 ]
 

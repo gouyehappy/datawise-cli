@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.ai.support.prompt;
 
+import org.apache.datawise.backend.ai.schema.AiSemanticMetricHint;
 import org.apache.datawise.backend.ai.schema.AiSqlSchemaContext;
 import org.apache.datawise.backend.ai.schema.AiTableDdlSnippet;
 import org.apache.datawise.backend.ai.schema.AiTableRelationHint;
@@ -59,6 +60,26 @@ public final class AiSqlPromptTemplates {
             lines.add("Known foreign-key relationships (use for JOINs when needed):");
             for (AiTableRelationHint relation : context.tableRelations()) {
                 lines.add("-- FK: " + relation.describe());
+            }
+        }
+
+        if (context.semanticMetrics() != null && !context.semanticMetrics().isEmpty()) {
+            lines.add("Business metrics (semantic layer — prefer these definitions when the user asks for KPIs):");
+            for (AiSemanticMetricHint metric : context.semanticMetrics()) {
+                if (metric.name() == null || metric.name().isBlank()) {
+                    continue;
+                }
+                StringBuilder line = new StringBuilder("- ").append(metric.name());
+                if (metric.expression() != null && !metric.expression().isBlank()) {
+                    line.append(" = ").append(metric.expression());
+                }
+                if (metric.description() != null && !metric.description().isBlank()) {
+                    line.append(" (").append(metric.description()).append(")");
+                }
+                if (metric.unit() != null && !metric.unit().isBlank()) {
+                    line.append(" [").append(metric.unit()).append("]");
+                }
+                lines.add(line.toString());
             }
         }
 

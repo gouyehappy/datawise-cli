@@ -18,7 +18,6 @@ export function settingsSectionDwIcon(section: SettingsSection): DwIconName {
         ai: 'settings-ai',
         dataAgent: 'settings-data-agent',
         knowledge: 'settings-knowledge',
-        platform: 'settings-platform',
         about: 'settings-about',
     }
     return map[section]

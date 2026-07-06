@@ -31,5 +31,14 @@ export const aiApi = {
         api.ai.rebuildRagIndex(connectionId, database),
     fetchSchemaTables: (connectionId: string, database?: string, options?: HttpRequestOptions) =>
         api.ai.fetchSchemaTables(connectionId, database, options),
+    fetchAiTableTags: (connectionId: string, database?: string) =>
+        api.ai.fetchAiTableTags(connectionId, database),
+    fetchAiTableTagCatalog: () => api.ai.fetchAiTableTagCatalog(),
+    updateAiTableTags: (request: {
+        connectionId: string
+        database: string
+        tableNames: string[]
+        tagged: boolean
+    }) => api.ai.updateAiTableTags(request),
     fetchPythonRuntime: () => api.ai.fetchPythonRuntime(),
 }

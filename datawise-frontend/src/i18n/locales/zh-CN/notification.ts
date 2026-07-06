@@ -74,6 +74,14 @@ export default {
             title: '慢查询',
             body: '{connection}耗时 {duration}（阈值 {threshold}ms）：{sql}',
         },
+        scheduledTaskOk: {
+            title: '定时任务完成',
+            body: '「{name}」（{type}）已成功执行。',
+        },
+        scheduledTaskFailed: {
+            title: '定时任务失败',
+            body: '「{name}」执行失败：{message}',
+        },
     },
     time: {
         justNow: '刚刚',

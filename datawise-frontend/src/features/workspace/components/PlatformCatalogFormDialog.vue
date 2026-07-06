@@ -16,6 +16,9 @@ import {
     savePlatformCatalogItem,
     type PlatformCatalogFormPayload,
 } from '@/features/platform/services/platform-catalog-mutations.service'
+import {platformApi} from '@/api'
+import type {FederatedViewSource} from '@/features/platform/types/platform.types'
+import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 
 const props = defineProps<{
@@ -31,7 +34,10 @@ const emit = defineEmits<{
 
 const {t} = useI18n()
 const explorer = useExplorerStore()
+const layout = useLayoutStore()
 const saving = ref(false)
+const federatedGenerating = ref(false)
+const federatedPrompt = ref('')
 const error = ref('')
 const firstFieldRef = ref<HTMLInputElement | HTMLTextAreaElement>()
 
@@ -132,6 +138,7 @@ function resetForms() {
     federatedForm.description = ''
     federatedForm.sql = ''
     federatedForm.sourcesJson = '[]'
+    federatedPrompt.value = ''
     driftForm.name = ''
     driftForm.targetConnectionId = ''
     driftForm.targetDatabase = ''
@@ -150,6 +157,18 @@ watch(
     async (isOpen) => {
         if (!isOpen) return
         resetForms()
+        if (props.feature === 'federated_views' && props.tab.connectionId && props.tab.database) {
+            const connectionLabel = explorer.findNode(props.tab.connectionId)?.label ?? props.tab.connectionId
+            federatedForm.sourcesJson = JSON.stringify([
+                {
+                    alias: 'primary',
+                    connectionId: props.tab.connectionId,
+                    connectionLabel,
+                    database: props.tab.database,
+                },
+                {alias: 'secondary', connectionId: '', database: ''},
+            ] satisfies FederatedViewSource[], null, 2)
+        }
         await nextTick()
         firstFieldRef.value?.focus()
     },
@@ -173,6 +192,42 @@ function buildPayload(): PlatformCatalogFormPayload | null {
             return {...taskForm, feature: 'scheduled_tasks'}
         default:
             return null
+    }
+}
+
+function parseFederatedSources(): FederatedViewSource[] {
+    if (!federatedForm.sourcesJson.trim()) return []
+    return JSON.parse(federatedForm.sourcesJson) as FederatedViewSource[]
+}
+
+async function generateFederatedSql() {
+    if (!federatedPrompt.value.trim() || federatedGenerating.value) return
+    let sources: FederatedViewSource[]
+    try {
+        sources = parseFederatedSources().filter(
+            (item) => item.alias?.trim() && item.connectionId?.trim(),
+        )
+    } catch {
+        error.value = t('platform.federated.invalidSourcesJson')
+        return
+    }
+    if (sources.length < 2) {
+        error.value = t('platform.federated.needTwoSources')
+        return
+    }
+    federatedGenerating.value = true
+    error.value = ''
+    try {
+        const result = await platformApi.generateFederatedSql({
+            prompt: federatedPrompt.value.trim(),
+            sources,
+        })
+        federatedForm.sql = result.sql
+        layout.showToast(t('platform.federated.generateDone'))
+    } catch (err) {
+        error.value = err instanceof Error ? err.message : String(err)
+    } finally {
+        federatedGenerating.value = false
     }
 }
 
@@ -361,6 +416,27 @@ async function submit() {
 
         <fieldset class="modal-fieldset">
           <legend>{{ t('workspace.platformCatalog.form.section.definition') }}</legend>
+          <FormField :label="t('platform.federated.generatePrompt')">
+            <template #default="{ id }">
+              <textarea
+                  :id="id"
+                  v-model="federatedPrompt"
+                  class="modal-textarea"
+                  rows="2"
+                  :placeholder="t('platform.federated.generatePromptPlaceholder')"
+              />
+            </template>
+          </FormField>
+          <div class="federated-generate-row">
+            <button
+                type="button"
+                class="dw-btn dw-btn--ghost"
+                :disabled="federatedGenerating || !federatedPrompt.trim()"
+                @click="generateFederatedSql"
+            >
+              {{ federatedGenerating ? t('platform.common.loading') : t('platform.federated.generateSql') }}
+            </button>
+          </div>
           <FormField :label="t('platform.common.sql')">
             <template #default="{ id }">
               <textarea
@@ -530,5 +606,11 @@ async function submit() {
 
 .modal-fieldset:last-of-type {
   margin-bottom: 0;
+}
+
+.federated-generate-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
 }
 </style>

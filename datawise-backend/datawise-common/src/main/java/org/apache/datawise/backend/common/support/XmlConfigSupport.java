@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 
 public final class XmlConfigSupport {
@@ -40,12 +41,19 @@ public final class XmlConfigSupport {
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        var transformer = TransformerFactory.newInstance().newTransformer();
-        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-        try (var writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
-            transformer.transform(new DOMSource(document), new StreamResult(writer));
+        String xml = documentToString(document);
+        Path temp = Files.createTempFile(
+                parent != null ? parent : path.toAbsolutePath().getParent(),
+                path.getFileName().toString() + ".",
+                ".tmp"
+        );
+        try {
+            Files.writeString(temp, xml, StandardCharsets.UTF_8);
+            Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (java.nio.file.AtomicMoveNotSupportedException ex) {
+            Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(temp);
         }
     }
 

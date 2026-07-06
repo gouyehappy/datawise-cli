@@ -272,6 +272,10 @@ export const API_PATHS = {
     aiSchema: {
         tables: '/api/ai/schema/tables',
     },
+    aiTableTags: {
+        list: '/api/ai/table-tags',
+        catalog: '/api/ai/table-tags/catalog',
+    },
     platform: {
         analysisCanvas: '/api/platform/analysis-canvas',
         analysisCanvasRerun: '/api/platform/analysis-canvas/rerun',
@@ -280,6 +284,7 @@ export const API_PATHS = {
         sqlReview: '/api/platform/sql-review',
         federatedViews: '/api/platform/federated-views',
         federatedViewsExecute: '/api/platform/federated-views/execute',
+        federatedViewsGenerateSql: '/api/platform/federated-views/generate-sql',
         schemaDriftMonitors: '/api/platform/schema-drift/monitors',
         schemaDriftCompare: '/api/platform/schema-drift/compare',
         schemaDriftMonitorRun: (id: string) =>

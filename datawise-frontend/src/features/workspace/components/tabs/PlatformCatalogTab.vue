@@ -6,12 +6,16 @@ import {ConfirmDialog} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import type {DwDataGridLabels} from '@/core/components/dw-data-grid.types'
 import type {WorkspaceTab} from '@/core/types'
+import {platformApi} from '@/api'
 import {buildPlatformCatalogColumns} from '@/features/platform/services/platform-catalog.service'
 import {
     autoGeneratePlatformSemanticMetrics,
     deletePlatformCatalogItems,
     platformCatalogRowLabel,
 } from '@/features/platform/services/platform-catalog-mutations.service'
+import AnalysisCanvasRerunDialog from '@/features/platform/components/AnalysisCanvasRerunDialog.vue'
+import SchemaDriftReportDialog from '@/features/platform/components/SchemaDriftReportDialog.vue'
+import type {SchemaDriftReport} from '@/features/platform/types/platform.types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import PlatformCatalogFormDialog from '@/features/workspace/components/PlatformCatalogFormDialog.vue'
 import {usePlatformCatalog} from '@/features/workspace/composables/usePlatformCatalog'
@@ -26,9 +30,24 @@ const formOpen = ref(false)
 const deleteConfirmOpen = ref(false)
 const deleting = ref(false)
 const autoGenerating = ref(false)
+const runningAction = ref(false)
+const canvasRerunOpen = ref(false)
+const canvasRerunId = ref<string | null>(null)
+const driftReportOpen = ref(false)
+const driftReport = ref<SchemaDriftReport | null>(null)
 
 const feature = computed(() => props.tab.platformFeature ?? 'semantic_metrics')
 const isSemanticMetrics = computed(() => feature.value === 'semantic_metrics')
+const isAnalysisCanvas = computed(() => feature.value === 'analysis_canvas')
+const isSchemaDrift = computed(() => feature.value === 'schema_drift')
+const isScheduledTasks = computed(() => feature.value === 'scheduled_tasks')
+const isFederatedViews = computed(() => feature.value === 'federated_views')
+
+const singleSelectedId = computed(() =>
+    selectedKeys.value.length === 1 ? selectedKeys.value[0] : null,
+)
+
+const canRunAction = computed(() => Boolean(singleSelectedId.value) && !runningAction.value)
 
 const canAutoGenerate = computed(() =>
     Boolean(props.tab.connectionId?.trim() && props.tab.database?.trim()),
@@ -99,6 +118,58 @@ async function autoGenerateMetrics() {
     autoGenerating.value = false
   }
 }
+
+function openCanvasRerun() {
+  const id = singleSelectedId.value
+  if (!id) return
+  canvasRerunId.value = id
+  canvasRerunOpen.value = true
+}
+
+async function runSchemaDriftMonitor() {
+  const id = singleSelectedId.value
+  if (!id || runningAction.value) return
+  runningAction.value = true
+  try {
+    driftReport.value = await platformApi.runSchemaDriftMonitor(id)
+    driftReportOpen.value = true
+    layout.showToast(t('platform.common.runDone'))
+    await reload()
+  } catch (err) {
+    layout.showErrorToast(err instanceof Error ? err.message : String(err))
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function runScheduledTask() {
+  const id = singleSelectedId.value
+  if (!id || runningAction.value) return
+  runningAction.value = true
+  try {
+    await platformApi.runScheduledTask(id)
+    layout.showToast(t('platform.common.runDone'))
+    await reload()
+  } catch (err) {
+    layout.showErrorToast(err instanceof Error ? err.message : String(err))
+  } finally {
+    runningAction.value = false
+  }
+}
+
+async function executeFederatedView() {
+  const id = singleSelectedId.value
+  if (!id || runningAction.value) return
+  runningAction.value = true
+  try {
+    const result = await platformApi.executeFederatedView({viewId: id, maxRows: 100})
+    layout.showToast(t('platform.federated.executeDone', {rows: result.rowCount ?? 0}))
+  } catch (err) {
+    layout.showErrorToast(err instanceof Error ? err.message : String(err))
+  } finally {
+    runningAction.value = false
+  }
+}
 </script>
 
 <template>
@@ -121,6 +192,42 @@ async function autoGenerateMetrics() {
       <button type="button" :disabled="loading || deleting || !canDelete" @click="requestDelete">
         <DwIcon name="delete" size="sm" :stroke-width="1.35"/>
         {{ t('workspace.platformCatalog.delete') }}
+      </button>
+      <button
+          v-if="isAnalysisCanvas"
+          type="button"
+          :disabled="loading || !canRunAction"
+          @click="openCanvasRerun"
+      >
+        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.canvas.rerun') }}
+      </button>
+      <button
+          v-if="isSchemaDrift"
+          type="button"
+          :disabled="loading || !canRunAction"
+          @click="runSchemaDriftMonitor"
+      >
+        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.common.run') }}
+      </button>
+      <button
+          v-if="isScheduledTasks"
+          type="button"
+          :disabled="loading || !canRunAction"
+          @click="runScheduledTask"
+      >
+        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.common.run') }}
+      </button>
+      <button
+          v-if="isFederatedViews"
+          type="button"
+          :disabled="loading || !canRunAction"
+          @click="executeFederatedView"
+      >
+        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.federated.execute') }}
       </button>
       <button
           v-if="isSemanticMetrics"
@@ -148,5 +255,15 @@ async function autoGenerateMetrics() {
       :confirm-label="t('workspace.platformCatalog.delete')"
       :confirm-loading="deleting"
       @confirm="confirmDelete"
+  />
+
+  <AnalysisCanvasRerunDialog
+      v-model:open="canvasRerunOpen"
+      :canvas-id="canvasRerunId"
+  />
+
+  <SchemaDriftReportDialog
+      v-model:open="driftReportOpen"
+      :report="driftReport"
   />
 </template>

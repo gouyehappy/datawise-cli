@@ -13,6 +13,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -114,17 +115,16 @@ public class AppConfigStore {
         if (!XmlConfigSupport.isRegularFile(path)) {
             return Optional.empty();
         }
+        if (!XmlConfigSupport.hasUsableXmlContent(path)) {
+            quarantineCorruptSqlSnippets(path);
+            return Optional.empty();
+        }
         try {
-            Document document = XmlConfigSupport.readDocument(path);
-            Element root = XmlConfigSupport.rootElement(document);
-            String json = XmlConfigSupport.childText(root, "payload");
-            if (json == null || json.isBlank()) {
-                return Optional.empty();
-            }
-            return Optional.of(objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
-            }));
+            return readSnippetPayload(path);
         } catch (Exception ex) {
-            throw new IllegalStateException("Failed to read " + filename, ex);
+            log.warn("Failed to parse {} at {}", filename, path, ex);
+            quarantineCorruptSqlSnippets(path);
+            return Optional.empty();
         }
     }
 
@@ -145,6 +145,10 @@ public class AppConfigStore {
         if (!XmlConfigSupport.isRegularFile(path)) {
             return defaultUpdaterPreferences();
         }
+        if (!XmlConfigSupport.hasUsableXmlContent(path)) {
+            quarantineCorruptConfig(path);
+            return defaultUpdaterPreferences();
+        }
         try {
             Document document = XmlConfigSupport.readDocument(path);
             Element root = XmlConfigSupport.rootElement(document);
@@ -153,7 +157,9 @@ public class AppConfigStore {
             prefs.put("autoDownload", XmlConfigSupport.childBoolean(root, "auto-download", true));
             return prefs;
         } catch (Exception ex) {
-            throw new IllegalStateException("Failed to read " + ConfigPaths.UPDATER, ex);
+            log.warn("Failed to parse updater preferences at {}", path, ex);
+            quarantineCorruptConfig(path);
+            return defaultUpdaterPreferences();
         }
     }
 
@@ -179,6 +185,28 @@ public class AppConfigStore {
         prefs.put("notifyOnUpdate", true);
         prefs.put("autoDownload", true);
         return prefs;
+    }
+
+    private Optional<Map<String, Object>> readSnippetPayload(Path path) throws Exception {
+        Document document = XmlConfigSupport.readDocument(path);
+        Element root = XmlConfigSupport.rootElement(document);
+        String json = XmlConfigSupport.childText(root, "payload");
+        if (json == null || json.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.of(objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+        }));
+    }
+
+    private void quarantineCorruptSqlSnippets(java.nio.file.Path path) {
+        try {
+            java.nio.file.Path backup = XmlConfigSupport.quarantineCorruptFile(path);
+            if (backup != null) {
+                log.warn("Quarantined corrupt sql snippets: {} -> {}", path, backup);
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to quarantine corrupt sql snippets at {}", path, ex);
+        }
     }
 
     private void quarantineCorruptConfig(java.nio.file.Path path) {

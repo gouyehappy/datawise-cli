@@ -1,19 +1,17 @@
 import {computed} from 'vue'
 import {storeToRefs} from 'pinia'
+import {formatTargetLabel} from '@/features/ai/shared/utils/database-targets'
 import {
-    extractDatabaseTargets,
-    formatTargetLabel,
-} from '@/features/ai/shared/utils/database-targets'
+    type AiTaggedScopeContext,
+    useAiTaggedScopeContext,
+} from '@/features/ai/datasource/composables/ai-tagged-scope.context'
 import {useAiChatStore} from '@/features/ai/stores/ai-chat'
-import {useExplorerStore} from '@/features/explorer/stores/explorer'
 
-/** AI 聊天：数据库目标选择与范�?*/
-export function useAiDatabaseScope() {
-    const explorer = useExplorerStore()
+/** AI 聊天：基于已打标表的数据范围选择 */
+export function useAiDatabaseScope(scope?: AiTaggedScopeContext) {
     const aiChat = useAiChatStore()
     const {activeSession} = storeToRefs(aiChat)
-
-    const allTargets = computed(() => extractDatabaseTargets(explorer.tree))
+    const {allTargets} = scope ?? useAiTaggedScopeContext()
 
     const selectedTargetIds = computed({
         get: () => activeSession.value?.selectedTargetIds ?? [],

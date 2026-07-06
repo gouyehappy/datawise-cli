@@ -362,6 +362,9 @@ const productionApprovalDialogOpen = ref(false)
 const productionApprovalSubmitting = ref(false)
 const sqlReviewFindings = ref<SqlReviewFinding[]>([])
 const sqlReviewBlocked = ref(false)
+const sqlReviewSuggestedSql = ref<string | null>(null)
+const sqlReviewRewriteNote = ref<string | null>(null)
+const sqlReviewRewriteLoading = ref(false)
 
 const productionApprovalTeams = computed(() => {
   const pendingSql = dangerousSqlPendingSql.value
@@ -431,23 +434,42 @@ function batchNeedsDangerousConfirmation(resolvedSql: string): boolean {
 async function loadSqlReviewFindings(resolvedSql: string) {
   sqlReviewFindings.value = []
   sqlReviewBlocked.value = false
+  sqlReviewSuggestedSql.value = null
+  sqlReviewRewriteNote.value = null
   const connId = connectionId.value || props.tab.connectionId
   if (!connId) return
+  sqlReviewRewriteLoading.value = true
   try {
     const result = await reviewSql(
         {
           sql: resolvedSql,
           connectionId: connId,
           database: databaseName.value,
+          aiRewrite: true,
         },
         {silent: true},
     )
     sqlReviewFindings.value = result.findings ?? []
     sqlReviewBlocked.value = !result.allowed
+    sqlReviewSuggestedSql.value = result.suggestedSql?.trim() || null
+    sqlReviewRewriteNote.value = result.rewriteNote?.trim() || null
   } catch {
     sqlReviewFindings.value = []
     sqlReviewBlocked.value = false
+    sqlReviewSuggestedSql.value = null
+    sqlReviewRewriteNote.value = null
+  } finally {
+    sqlReviewRewriteLoading.value = false
   }
+}
+
+function applySqlReviewSuggestion() {
+  const suggested = sqlReviewSuggestedSql.value?.trim()
+  if (!suggested) return
+  sql.value = suggested
+  editorRef.value?.layout()
+  layout.showToast(t('platform.sqlReview.appliedRewrite'))
+  void loadSqlReviewFindings(suggested)
 }
 
 async function armDangerousSqlWithReview(resolved: string) {
@@ -472,6 +494,8 @@ function executeSql(executableOverride?: unknown, runOptions?: SqlRunOptions) {
   }
   sqlReviewFindings.value = []
   sqlReviewBlocked.value = false
+  sqlReviewSuggestedSql.value = null
+  sqlReviewRewriteNote.value = null
   runSql(executableOverride, runOptions)
 }
 
@@ -913,6 +937,10 @@ onMounted(() => {
         :production-approval-required="needsProductionApproval"
         :sql-review-findings="sqlReviewFindings"
         :sql-review-blocked="sqlReviewBlocked"
+        :sql-review-suggested-sql="sqlReviewSuggestedSql"
+        :sql-review-rewrite-note="sqlReviewRewriteNote"
+        :sql-review-rewrite-loading="sqlReviewRewriteLoading"
+        @apply-suggested-sql="applySqlReviewSuggestion"
     />
 
     <div ref="splitRef" class="split">

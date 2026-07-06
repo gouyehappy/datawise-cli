@@ -96,4 +96,19 @@ class AppConfigStoreTest {
         Map<String, Object> restoredProfile = (Map<String, Object>) ((java.util.List<?>) restoredAi.get("llmProfiles")).get(0);
         assertEquals("sk-live-key", restoredProfile.get("apiKey"));
     }
+
+    @Test
+    void readSqlSnippets_treatsEmptyFileAsMissing() throws Exception {
+        SecretValueCodec codec = SecretTestSupport.testCodec();
+        ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
+        AppConfigStore store = new AppConfigStore(configDirectory, new ObjectMapper(), codec);
+
+        Path shared = tempDir.resolve(ConfigPaths.SQL_SNIPPETS_SHARED);
+        Files.writeString(shared, "");
+
+        assertTrue(store.readSqlSnippets("shared").isEmpty());
+        assertTrue(Files.list(tempDir).anyMatch(
+                path -> path.getFileName().toString().startsWith("sql-snippets.shared.xml.corrupt-")
+        ));
+    }
 }

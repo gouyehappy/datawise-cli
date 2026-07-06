@@ -1,11 +1,14 @@
 package org.apache.datawise.backend.controller.platform;
 
 import org.apache.datawise.backend.common.ApiResponse;
+import org.apache.datawise.backend.ai.federated.FederatedSqlGeneratorService;
 import org.apache.datawise.backend.database.federated.FederatedQueryService;
 import org.apache.datawise.backend.domain.ExecuteFederatedViewRequest;
 import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.domain.FederatedViewDetailDto;
 import org.apache.datawise.backend.domain.FederatedViewSummaryDto;
+import org.apache.datawise.backend.domain.GenerateFederatedSqlRequest;
+import org.apache.datawise.backend.domain.GenerateFederatedSqlResult;
 import org.apache.datawise.backend.domain.SaveFederatedViewRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,9 +26,14 @@ import java.util.List;
 public class FederatedQueryController {
 
     private final FederatedQueryService federatedQueryService;
+    private final FederatedSqlGeneratorService federatedSqlGeneratorService;
 
-    public FederatedQueryController(FederatedQueryService federatedQueryService) {
+    public FederatedQueryController(
+            FederatedQueryService federatedQueryService,
+            FederatedSqlGeneratorService federatedSqlGeneratorService
+    ) {
         this.federatedQueryService = federatedQueryService;
+        this.federatedSqlGeneratorService = federatedSqlGeneratorService;
     }
 
     @GetMapping
@@ -52,5 +60,10 @@ public class FederatedQueryController {
     @PostMapping("/execute")
     public ApiResponse<ExecuteSqlResult> execute(@RequestBody ExecuteFederatedViewRequest request) {
         return ApiResponse.ok(federatedQueryService.execute(request));
+    }
+
+    @PostMapping("/generate-sql")
+    public ApiResponse<GenerateFederatedSqlResult> generateSql(@RequestBody GenerateFederatedSqlRequest request) {
+        return ApiResponse.ok(federatedSqlGeneratorService.generate(request));
     }
 }

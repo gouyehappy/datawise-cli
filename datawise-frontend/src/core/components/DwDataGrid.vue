@@ -331,8 +331,7 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
               class="dw-data-grid__search-combo"
               :class="{ 'is-active': hasActiveFilter }"
           >
-            <div class="dw-data-grid__search-column">
-              <span class="dw-data-grid__search-column-label">{{ t('dataGrid.filterField') }}</span>
+            <div class="dw-data-grid__search-field dw-data-grid__search-field--column">
               <DwSelect
                   v-model="filterColumn"
                   size="inline"
@@ -340,23 +339,24 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
                   :menu-min-width="filterColumnMenuMinWidth"
               />
             </div>
-            <span class="dw-data-grid__search-divider" aria-hidden="true"/>
-            <DwIcon class="dw-data-grid__search-icon" name="search" size="sm" :stroke-width="1.5"/>
-            <input
-                v-model="filter"
-                class="dw-data-grid__search dw-data-grid__search--combo"
-                type="search"
-                :placeholder="searchPlaceholder"
-            >
-            <button
-                v-if="hasActiveFilter"
-                class="dw-data-grid__search-clear"
-                type="button"
-                :title="t('dataGrid.clearFilterInput')"
-                @click="filter = ''"
-            >
-              <DwIcon name="x" size="xs" :stroke-width="1.6"/>
-            </button>
+            <div class="dw-data-grid__search-field dw-data-grid__search-field--query">
+              <DwIcon class="dw-data-grid__search-icon" name="search" size="sm" :stroke-width="1.5"/>
+              <input
+                  v-model="filter"
+                  class="dw-data-grid__search dw-data-grid__search--combo"
+                  type="search"
+                  :placeholder="searchPlaceholder"
+              >
+              <button
+                  v-if="hasActiveFilter"
+                  class="dw-data-grid__search-clear"
+                  type="button"
+                  :title="t('dataGrid.clearFilterInput')"
+                  @click="filter = ''"
+              >
+                <DwIcon name="x" size="xs" :stroke-width="1.6"/>
+              </button>
+            </div>
           </div>
           <template v-else>
             <DwIcon class="dw-data-grid__search-icon" name="search" size="sm" :stroke-width="1.5"/>
@@ -640,9 +640,9 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
 
 .dw-data-grid__search-combo {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
-  height: 30px;
+  height: 32px;
   border-top: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
   background: color-mix(in srgb, var(--dw-bg-panel) 94%, var(--dw-bg-editor));
 }
@@ -655,59 +655,77 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
   border-top-color: color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border-light));
 }
 
-.dw-data-grid__search-column {
+.dw-data-grid__search-field {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  min-width: 0;
+}
+
+.dw-data-grid__search-field--column {
+  flex: 0 1 auto;
+  max-width: min(220px, 34vw);
+  padding: 0 8px 0 10px;
+  border-right: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
+  background: color-mix(in srgb, var(--dw-bg-muted) 22%, transparent);
+}
+
+.dw-data-grid__search-field--column :deep(.dw-select) {
+  width: auto;
+  min-width: 72px;
+  max-width: 100%;
+  height: 32px;
+}
+
+.dw-data-grid__search-field--column :deep(.dw-select__trigger) {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  flex: 0 1 auto;
-  min-width: 148px;
-  max-width: min(280px, 42vw);
-  height: 100%;
-  padding: 0 4px 0 8px;
-  border-right: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
-  background: color-mix(in srgb, var(--dw-bg-muted) 28%, transparent);
-}
-
-.dw-data-grid__search-column-label {
-  flex-shrink: 0;
-  color: var(--dw-text-muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.dw-data-grid__search-column :deep(.dw-select) {
-  flex: 1;
-  min-width: 0;
-  width: auto;
-  height: 100%;
-}
-
-.dw-data-grid__search-column :deep(.dw-select__trigger) {
   width: 100%;
-  min-width: 96px;
-  max-width: 220px;
-  min-height: 26px;
-  height: 26px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 18px 0 0;
   border: none;
+  border-radius: 0;
   background: transparent;
-  padding: 0 20px 0 4px;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--dw-text-primary);
 }
 
-.dw-data-grid__search-column :deep(.dw-select__value) {
+.dw-data-grid__search-field--column :deep(.dw-select__value) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: inherit;
+  font-weight: 500;
 }
 
-.dw-data-grid__search-column :deep(.dw-select__menu) {
+.dw-data-grid__search-field--column :deep(.dw-select__chevron) {
+  width: 10px;
+  height: 10px;
+}
+
+.dw-data-grid__search-field--column :deep(.dw-select__trigger:hover:not(:disabled)),
+.dw-data-grid__search-field--column :deep(.dw-select.is-open .dw-select__trigger) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.dw-data-grid__search-field--column :deep(.dw-select__menu) {
   z-index: 140;
 }
 
-.dw-data-grid__search-divider {
-  flex-shrink: 0;
-  width: 1px;
-  height: 16px;
-  background: color-mix(in srgb, var(--dw-border-light) 70%, transparent);
+.dw-data-grid__search-field--query {
+  flex: 1;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.dw-data-grid__search-combo.is-active .dw-data-grid__search-icon {
+  color: var(--dw-primary);
 }
 
 .dw-data-grid__search-icon {
@@ -715,39 +733,36 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
   left: 8px;
   top: 50%;
   transform: translateY(-50%);
+  flex-shrink: 0;
   color: var(--dw-text-muted);
   pointer-events: none;
 }
 
 .dw-data-grid__search-wrap.is-column-filter .dw-data-grid__search-icon {
   position: static;
-  flex-shrink: 0;
   transform: none;
-  margin-left: 6px;
-}
-
-.dw-data-grid__search-combo.is-active .dw-data-grid__search-icon {
-  color: var(--dw-primary);
 }
 
 .dw-data-grid__search {
   width: 100%;
-  height: 30px;
+  height: 32px;
   padding: 0 8px 0 28px;
   border: none;
   border-top: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
   background: color-mix(in srgb, var(--dw-bg-panel) 94%, var(--dw-bg-editor));
   color: var(--dw-text-primary);
   font-size: 12px;
+  line-height: 32px;
 }
 
 .dw-data-grid__search--combo {
   flex: 1;
   min-width: 0;
-  height: 100%;
-  padding: 0 6px;
+  height: 32px;
+  padding: 0;
   border-top: none;
   background: transparent;
+  line-height: 32px;
 }
 
 .dw-data-grid__search--combo::-webkit-search-cancel-button {
@@ -783,7 +798,7 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
   border-top-color: color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border-light));
 }
 
-.dw-data-grid :deep(.dw-select__trigger) {
+.dw-data-grid__page-size :deep(.dw-select__trigger) {
   border-radius: 0;
   box-shadow: none;
   min-height: 24px;

@@ -8,6 +8,7 @@ public enum UserResource {
     APP_CONFIG,
     AI_PREFERENCES,
     AI_KNOWLEDGE,
+    AI_TABLE_TAGS,
     AI_ANALYSIS_CANVAS,
     SEMANTIC_METRICS,
     FEDERATED_VIEWS,

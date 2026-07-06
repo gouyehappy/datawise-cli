@@ -66,4 +66,19 @@ public class McpBridgeController {
     public ApiResponse<Object> compareSchema(@RequestBody SchemaDriftCompareRequest request) {
         return ApiResponse.ok(mcpBridgeService.compareSchema(request));
     }
+
+    @GetMapping("/semantic-metrics")
+    public ApiResponse<Object> listSemanticMetrics(
+            @RequestParam String connectionId,
+            @RequestParam String database
+    ) {
+        return ApiResponse.ok(mcpBridgeService.listSemanticMetrics(connectionId, database));
+    }
+
+    @PostMapping("/canvas/rerun")
+    public ApiResponse<Object> rerunCanvas(@RequestBody Map<String, Object> body) {
+        String canvasId = body.get("canvasId") != null ? String.valueOf(body.get("canvasId")) : null;
+        Object parameterValues = body.get("parameterValues");
+        return ApiResponse.ok(mcpBridgeService.rerunCanvas(canvasId, parameterValues));
+    }
 }

@@ -43,6 +43,8 @@ import type {
     ExecuteFederatedViewRequest,
     FederatedViewDetail,
     FederatedViewSummary,
+    GenerateFederatedSqlRequest,
+    GenerateFederatedSqlResult,
     QueryLibraryVersion,
     RerunAnalysisCanvasRequest,
     RerunAnalysisCanvasResult,
@@ -334,6 +336,17 @@ export interface AiApi {
         database?: string,
         options?: HttpRequestOptions,
     ): Promise<string[]>
+
+    fetchAiTableTags(connectionId: string, database?: string): Promise<string[]>
+
+    fetchAiTableTagCatalog(): Promise<import('@/features/ai/tag/types/ai-table-tag.types').AiTableTagCatalogItem[]>
+
+    updateAiTableTags(request: {
+        connectionId: string
+        database: string
+        tableNames: string[]
+        tagged: boolean
+    }): Promise<string[]>
 
     fetchPythonRuntime(): Promise<AiPythonRuntime>
 }
@@ -1276,6 +1289,8 @@ export interface PlatformApi {
     deleteFederatedView(id: string): Promise<void>
 
     executeFederatedView(request: ExecuteFederatedViewRequest): Promise<ExecuteSqlResult>
+
+    generateFederatedSql(request: GenerateFederatedSqlRequest): Promise<GenerateFederatedSqlResult>
 
     listSchemaDriftMonitors(): Promise<SchemaDriftMonitor[]>
 

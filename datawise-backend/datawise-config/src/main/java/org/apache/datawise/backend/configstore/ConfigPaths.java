@@ -62,6 +62,10 @@ public final class ConfigPaths {
         return USERS_DIR + "/" + userId + "/scheduled-tasks.json";
     }
 
+    public static String userAiTableTags(long userId) {
+        return USERS_DIR + "/" + userId + "/ai-table-tags.json";
+    }
+
     public static String userQueryLibraryVersions(long userId) {
         return USERS_DIR + "/" + userId + "/query-library-versions.json";
     }

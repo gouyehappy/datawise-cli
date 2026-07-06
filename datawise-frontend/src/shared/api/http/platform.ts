@@ -6,6 +6,8 @@ import type {
     ExecuteFederatedViewRequest,
     FederatedViewDetail,
     FederatedViewExecuteResult,
+    GenerateFederatedSqlRequest,
+    GenerateFederatedSqlResult,
     FederatedViewSummary,
     QueryLibraryVersion,
     RerunAnalysisCanvasRequest,
@@ -79,6 +81,9 @@ export function createHttpPlatformApi(): PlatformApi {
 
         executeFederatedView: (request) =>
             postJson<FederatedViewExecuteResult>(paths.federatedViewsExecute, request),
+
+        generateFederatedSql: (request) =>
+            postJson<GenerateFederatedSqlResult>(paths.federatedViewsGenerateSql, request),
 
         listSchemaDriftMonitors: () =>
             getJson<SchemaDriftMonitor[]>(paths.schemaDriftMonitors),

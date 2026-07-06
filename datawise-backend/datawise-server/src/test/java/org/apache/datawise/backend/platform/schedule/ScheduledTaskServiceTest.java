@@ -12,6 +12,7 @@ import org.apache.datawise.backend.domain.SqlReviewRequest;
 import org.apache.datawise.backend.domain.SqlReviewResultDto;
 import org.apache.datawise.backend.model.ScheduledTaskEntry;
 import org.apache.datawise.backend.service.TeamService;
+import org.apache.datawise.backend.service.workspace.WorkspaceNotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,6 +47,7 @@ class ScheduledTaskServiceTest {
                 mock(SchemaDriftService.class),
                 mock(AnalysisCanvasService.class),
                 teamService,
+                mock(WorkspaceNotificationService.class),
                 new ObjectMapper()
         );
     }
