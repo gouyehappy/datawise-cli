@@ -228,6 +228,12 @@ export interface WorkspaceTab {
     redisView?: 'keys' | 'command'
     /** Explorer AI 平台能力目录 Tab */
     platformFeature?: import('@/features/platform/types/platform.types').PlatformFeatureId
+    /** v2.0 协同 SQL：该控制台绑定的团队共享 Query */
+    teamSharedQuery?: {
+        teamId: string
+        queryId: string
+        title?: string
+    }
 }
 
 export interface TableColumn {
@@ -495,6 +501,7 @@ export interface ShareTeamSharedQueryPayload {
     database?: string
     sql: string
     tags?: string[]
+    expectedUpdatedAt?: string
 }
 
 export type TeamProductionApprovalStatus = 'pending' | 'executed' | 'failed' | 'rejected'

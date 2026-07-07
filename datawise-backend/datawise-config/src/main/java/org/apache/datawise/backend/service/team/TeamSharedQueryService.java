@@ -89,6 +89,12 @@ public class TeamSharedQueryService {
         if (request.sql() == null || request.sql().isBlank()) {
             throw new IllegalArgumentException("sql is required");
         }
+        if (request.expectedUpdatedAt() != null && !request.expectedUpdatedAt().isBlank()) {
+            String currentUpdatedAt = TeamSupport.formatInstant(entity.getUpdatedAt());
+            if (currentUpdatedAt == null || !request.expectedUpdatedAt().trim().equals(currentUpdatedAt)) {
+                throw new IllegalArgumentException("Shared query has been updated by others; pull latest first");
+            }
+        }
         entity.setTitle(request.title().trim());
         entity.setDescription(TeamSupport.trimToNull(request.description()));
         entity.setConnectionId(TeamSupport.trimToNull(request.connectionId()));

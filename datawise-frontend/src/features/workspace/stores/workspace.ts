@@ -99,6 +99,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         sqlFile?: string
         title?: string
         explorerNodeId?: string
+        teamSharedQuery?: WorkspaceTab['teamSharedQuery']
     }) {
         const explorer = useExplorerStore()
         const sources = extractDataSources(explorer.tree)
@@ -183,6 +184,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         sqlFile?: string
         title?: string
         explorerNodeId?: string
+        teamSharedQuery?: WorkspaceTab['teamSharedQuery']
     }) {
         const explorer = useExplorerStore()
         if (!options?.connectionId) {
@@ -249,6 +251,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             savedSql: resolved.sql ?? '',
             sqlFile,
             explorerNodeId: resolved.explorerNodeId,
+            teamSharedQuery: resolved.teamSharedQuery,
         })
         activeTabId.value = id
         ensureConsoleQueryState(id)
@@ -1510,6 +1513,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
                 dbType: snap.dbType,
                 tableView: snap.tableView ?? (snap.type === 'table' ? 'properties' : undefined),
                 tableSection: snap.tableSection ?? (snap.type === 'table' ? 'columns' : undefined),
+                teamSharedQuery: snap.teamSharedQuery,
             })
             if (snap.type === 'console') ensureConsoleQueryState(id)
         }

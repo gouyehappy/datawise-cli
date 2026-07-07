@@ -9,7 +9,8 @@ public record UpdateTeamSharedQueryRequest(
         String connectionName,
         String database,
         String sql,
-        List<String> tags
+        List<String> tags,
+        String expectedUpdatedAt
 ) {
     public UpdateTeamSharedQueryRequest {
         tags = tags != null ? List.copyOf(tags) : List.of();

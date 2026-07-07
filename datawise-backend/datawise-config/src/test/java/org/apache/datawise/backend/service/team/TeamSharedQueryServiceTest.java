@@ -88,7 +88,48 @@ class TeamSharedQueryServiceTest {
                                 null,
                                 null,
                                 "SELECT 2",
-                                List.of()
+                                List.of(),
+                                null
+                        )
+                )
+        );
+    }
+
+    @Test
+    void updateSharedQuery_rejectsStaleExpectedUpdatedAt() {
+        TeamServiceTestFixtures.stubUser(userAccountService, 2L, "alice");
+        var ctx = TeamServiceTestFixtures.newContext(tempDir, userAccountService);
+        String teamId = TeamServiceTestFixtures.uniqueTeamId();
+        TeamServiceTestFixtures.seedTeam(ctx.teamStore(), teamId, "Ops", 1L);
+        TeamServiceTestFixtures.seedMember(ctx.teamStore(), teamId, 2L, "member");
+
+        var created = ctx.sharedQuery().shareQuery(
+                teamId,
+                new ShareTeamSharedQueryRequest(
+                        "Owner query",
+                        null,
+                        null,
+                        null,
+                        null,
+                        "SELECT 1",
+                        List.of()
+                )
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ctx.sharedQuery().updateSharedQuery(
+                        teamId,
+                        created.id(),
+                        new UpdateTeamSharedQueryRequest(
+                                "Owner query v2",
+                                null,
+                                null,
+                                null,
+                                null,
+                                "SELECT 2",
+                                List.of(),
+                                "1970-01-01T00:00:00Z"
                         )
                 )
         );

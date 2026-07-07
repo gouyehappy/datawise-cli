@@ -57,7 +57,7 @@
 
 | 功能 | 状态 |
 |------|------|
-| 多人协同编辑 SQL 控制台 | todo |
+| 多人协同编辑 SQL 控制台 | in_progress |
 | Connector 社区市场 | todo |
 | 表数据变更审计 / Time-travel | todo |
 | 测试数据生成 | todo |

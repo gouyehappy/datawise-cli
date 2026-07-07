@@ -2,7 +2,7 @@
   SQL 控制台 Tab — 业务逻辑在 composables / services，本组件负责布局与事件绑定。
 -->
 <script setup lang="ts">
-import {computed, nextTick, onMounted, ref, watch} from 'vue'
+import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
 import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
 import {AiPromptBar, ConsoleCtxBar, ConsoleTransactionBar, QueryResultPane} from '@/features/workspace/components'
@@ -358,6 +358,11 @@ function onRequestAiExplain() {
 }
 
 const teamStore = useTeamStore()
+const collabPulling = ref(false)
+const collabPushing = ref(false)
+const collabRemoteChanged = ref(false)
+const collabLastRemoteUpdatedAt = ref<string | null>(null)
+let collabPollTimer: number | null = null
 const productionApprovalDialogOpen = ref(false)
 const productionApprovalSubmitting = ref(false)
 const sqlReviewFindings = ref<SqlReviewFinding[]>([])
@@ -378,6 +383,13 @@ const productionApprovalTeams = computed(() => {
 })
 
 const needsProductionApproval = computed(() => productionApprovalTeams.value.length > 0)
+const teamSharedQueryMeta = computed(() => props.tab.teamSharedQuery ?? null)
+const teamCollabEnabled = computed(() => Boolean(teamSharedQueryMeta.value?.teamId && teamSharedQueryMeta.value?.queryId))
+const teamCollabConflictHint = computed(() =>
+  collabRemoteChanged.value
+      ? t('team.sharedQueries.collabConflictHint')
+      : t('team.sharedQueries.collabSyncedHint'),
+)
 
 const dangerousSqlSubmitTitle = computed(() =>
     needsProductionApproval.value
@@ -571,6 +583,106 @@ async function onSubmitProductionApproval(teamId: string) {
     productionApprovalSubmitting.value = false
   }
 }
+
+async function pullTeamSharedQuery() {
+  const meta = teamSharedQueryMeta.value
+  if (!meta || collabPulling.value) return
+  collabPulling.value = true
+  try {
+    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
+    sql.value = detail.sql ?? ''
+    collabLastRemoteUpdatedAt.value = detail.updatedAt || null
+    collabRemoteChanged.value = false
+    layout.showToast(t('team.sharedQueries.collabPulled'))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
+    layout.showToast(message)
+  } finally {
+    collabPulling.value = false
+  }
+}
+
+async function pushTeamSharedQuery() {
+  const meta = teamSharedQueryMeta.value
+  if (!meta || collabPushing.value) return
+  collabPushing.value = true
+  try {
+    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
+    const updated = await teamStore.updateSharedQuery(meta.teamId, meta.queryId, {
+      title: detail.title,
+      description: detail.description ?? undefined,
+      connectionId: connectionId.value || props.tab.connectionId || detail.connectionId || undefined,
+      connectionName: source.value?.label || detail.connectionName || undefined,
+      database: databaseName.value || detail.database || undefined,
+      sql: sql.value,
+      tags: detail.tags ?? [],
+      expectedUpdatedAt: collabLastRemoteUpdatedAt.value || detail.updatedAt || undefined,
+    })
+    collabLastRemoteUpdatedAt.value = updated.updatedAt || null
+    collabRemoteChanged.value = false
+    layout.showToast(t('team.sharedQueries.collabPushed'))
+  } catch (error) {
+    const fallback = t('team.sharedQueries.collabPushFailed')
+    const message = error instanceof Error ? error.message : fallback
+    if (message.includes('pull latest')) {
+      collabRemoteChanged.value = true
+      layout.showToast(t('team.sharedQueries.collabConflictSave'))
+    } else {
+      layout.showToast(message)
+    }
+  } finally {
+    collabPushing.value = false
+  }
+}
+
+async function pollTeamSharedQuery() {
+  const meta = teamSharedQueryMeta.value
+  if (!meta || collabPulling.value || collabPushing.value) return
+  try {
+    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
+    if (!collabLastRemoteUpdatedAt.value) {
+      collabLastRemoteUpdatedAt.value = detail.updatedAt || null
+      return
+    }
+    const remoteUpdated = (detail.updatedAt || '').trim()
+    const localSeen = (collabLastRemoteUpdatedAt.value || '').trim()
+    if (remoteUpdated && remoteUpdated !== localSeen && (detail.sql ?? '') !== sql.value) {
+      collabRemoteChanged.value = true
+    }
+  } catch {
+    // polling is best-effort; explicit pull/push handles user-facing errors
+  }
+}
+
+function stopCollabPolling() {
+  if (collabPollTimer != null) {
+    window.clearInterval(collabPollTimer)
+    collabPollTimer = null
+  }
+}
+
+function startCollabPolling() {
+  stopCollabPolling()
+  if (!teamCollabEnabled.value) return
+  collabPollTimer = window.setInterval(() => {
+    void pollTeamSharedQuery()
+  }, 15000)
+}
+
+watch(teamCollabEnabled, (enabled) => {
+  if (!enabled) {
+    collabRemoteChanged.value = false
+    collabLastRemoteUpdatedAt.value = null
+    stopCollabPolling()
+    return
+  }
+  void pollTeamSharedQuery()
+  startCollabPolling()
+}, {immediate: true})
+
+onUnmounted(() => {
+  stopCollabPolling()
+})
 
 function rollbackDangerousSql() {
   disarmDangerousSqlPending()
@@ -942,6 +1054,22 @@ onMounted(() => {
         :sql-review-rewrite-loading="sqlReviewRewriteLoading"
         @apply-suggested-sql="applySqlReviewSuggestion"
     />
+    <div v-if="teamCollabEnabled" class="team-collab-banner">
+      <span class="team-collab-banner__text">
+        {{ t('team.sharedQueries.collabBanner', { title: teamSharedQueryMeta?.title || tab.title }) }}
+      </span>
+      <span class="team-collab-banner__hint" :class="{ 'is-warning': collabRemoteChanged }">
+        {{ teamCollabConflictHint }}
+      </span>
+      <div class="team-collab-banner__actions">
+        <button type="button" class="dw-btn dw-btn--ghost" :disabled="collabPulling || collabPushing" @click="pullTeamSharedQuery">
+          {{ collabPulling ? t('common.loading') : t('team.sharedQueries.pullLatest') }}
+        </button>
+        <button type="button" class="dw-btn dw-btn--primary" :disabled="collabPulling || collabPushing" @click="pushTeamSharedQuery">
+          {{ collabPushing ? t('common.saving') : t('team.sharedQueries.pushCurrent') }}
+        </button>
+      </div>
+    </div>
 
     <div ref="splitRef" class="split">
       <div
@@ -1284,5 +1412,36 @@ onMounted(() => {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+}
+
+.team-collab-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dw-border-light);
+  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-panel));
+}
+
+.team-collab-banner__text {
+  font-size: 12px;
+  color: var(--dw-text-secondary);
+}
+
+.team-collab-banner__actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.team-collab-banner__hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--dw-text-muted);
+}
+
+.team-collab-banner__hint.is-warning {
+  color: var(--dw-danger, #c0392b);
+  font-weight: 600;
 }
 </style>

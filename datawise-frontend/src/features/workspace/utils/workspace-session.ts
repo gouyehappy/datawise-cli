@@ -20,6 +20,7 @@ export function captureWorkspaceTabs(tabs: WorkspaceTab[]): WorkspaceTabSnapshot
             dbType: tab.dbType,
             tableView: tab.tableView,
             tableSection: tab.tableSection,
+            teamSharedQuery: tab.teamSharedQuery,
         }))
 }
 

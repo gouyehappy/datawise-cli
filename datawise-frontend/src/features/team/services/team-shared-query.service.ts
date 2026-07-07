@@ -87,6 +87,7 @@ export async function openTeamSharedQueryInConsole(
             database?: string
             sql?: string
             title?: string
+            teamSharedQuery?: { teamId: string; queryId: string; title?: string }
         }) => Promise<string | void> | string | void
         setModule: (module: 'database') => void
     },
@@ -99,5 +100,10 @@ export async function openTeamSharedQueryInConsole(
         database: detail.database || summary.database || undefined,
         sql: detail.sql,
         title: detail.title || summary.title,
+        teamSharedQuery: {
+            teamId,
+            queryId: summary.id,
+            title: detail.title || summary.title,
+        },
     })
 }

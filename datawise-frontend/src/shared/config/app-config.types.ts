@@ -58,6 +58,11 @@ export interface WorkspaceTabSnapshot {
     dbType?: DbType
     tableView?: 'properties' | 'data' | 'ddl' | 'relations' | 'relationGraph'
     tableSection?: 'columns' | 'indexes' | 'foreignKeys'
+    teamSharedQuery?: {
+        teamId: string
+        queryId: string
+        title?: string
+    }
 }
 
 export interface WorkspacePreferences {
