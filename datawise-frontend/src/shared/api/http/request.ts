@@ -9,6 +9,15 @@ export const HTTP_NOT_READY =
 export type HttpRequestOptions = {
     /** 不弹出全局错误 Toast（调用方自行展示） */
     silent?: boolean
+    /** 请求超时（毫秒）；0 表示不限制 */
+    timeoutMs?: number
+}
+
+const DEFAULT_FETCH_TIMEOUT_MS = 60_000
+
+function fetchSignal(timeoutMs = DEFAULT_FETCH_TIMEOUT_MS): AbortSignal | undefined {
+    if (timeoutMs <= 0) return undefined
+    return AbortSignal.timeout(timeoutMs)
 }
 
 /** 带结构化 data 的 API 错误（如 SQL errorLine） */
@@ -52,12 +61,13 @@ async function ensureApiSuccess<T>(
 }
 
 async function runFetch<T>(
-    execute: () => Promise<Response>,
+    execute: (signal?: AbortSignal) => Promise<Response>,
     options?: HttpRequestOptions,
 ): Promise<T> {
+    const signal = fetchSignal(options?.timeoutMs)
     let response: Response
     try {
-        response = await execute()
+        response = await execute(signal)
     } catch {
         const error = new ApiError(HTTP_NOT_READY)
         notifyApiError(error, options)
@@ -102,12 +112,13 @@ export async function postForm<T>(
     options?: HttpRequestOptions,
 ): Promise<T> {
     return runFetch(
-        () =>
+        (signal) =>
             fetch(buildUrl(path), {
                 method: 'POST',
                 headers: mergeHeaders({'Content-Type': 'application/x-www-form-urlencoded'}),
                 body,
                 credentials: 'include',
+                signal,
             }),
         options,
     )
@@ -119,12 +130,13 @@ export async function postJson<T>(
     options?: HttpRequestOptions,
 ): Promise<T> {
     return runFetch(
-        () =>
+        (signal) =>
             fetch(buildUrl(path), {
                 method: 'POST',
                 headers: mergeHeaders({'Content-Type': 'application/json'}),
                 body: JSON.stringify(body),
                 credentials: 'include',
+                signal,
             }),
         options,
     )
@@ -147,11 +159,12 @@ export async function getJson<T>(
         url += path.includes('?') ? `&${qs}` : `?${qs}`
     }
     return runFetch(
-        () =>
+        (signal) =>
             fetch(url, {
                 method: 'GET',
                 headers: sessionHeaders(),
                 credentials: 'include',
+                signal,
             }),
         options,
     )
@@ -163,12 +176,13 @@ export async function putJson<T>(
     options?: HttpRequestOptions,
 ): Promise<T> {
     return runFetch(
-        () =>
+        (signal) =>
             fetch(buildUrl(path), {
                 method: 'PUT',
                 headers: mergeHeaders({'Content-Type': 'application/json'}),
                 body: JSON.stringify(body),
                 credentials: 'include',
+                signal,
             }),
         options,
     )
@@ -176,11 +190,12 @@ export async function putJson<T>(
 
 export async function deleteJson<T>(path: string, options?: HttpRequestOptions): Promise<T> {
     return runFetch(
-        () =>
+        (signal) =>
             fetch(buildUrl(path), {
                 method: 'DELETE',
                 headers: sessionHeaders(),
                 credentials: 'include',
+                signal,
             }),
         options,
     )

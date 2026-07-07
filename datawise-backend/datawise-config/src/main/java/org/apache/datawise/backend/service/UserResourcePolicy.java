@@ -33,8 +33,9 @@ public class UserResourcePolicy {
 
     public ResourceRule rule(UserResource resource) {
         return switch (resource) {
-            case LAYOUT_MENU, APP_CONFIG, AI_PREFERENCES, SQL_SNIPPETS_PERSONAL, WORKSPACE_SCRIPTS,
-                    WORKSPACE_USER_DATA ->
+            case APP_CONFIG, AI_PREFERENCES ->
+                    new ResourceRule(StorageScope.USER, false, false);
+            case LAYOUT_MENU, SQL_SNIPPETS_PERSONAL, WORKSPACE_SCRIPTS, WORKSPACE_USER_DATA ->
                     new ResourceRule(StorageScope.USER, true, false);
             case AI_KNOWLEDGE, AI_TABLE_TAGS, AI_ANALYSIS_CANVAS, SEMANTIC_METRICS, FEDERATED_VIEWS,
                     SCHEMA_DRIFT_MONITORS, SCHEDULED_TASKS ->

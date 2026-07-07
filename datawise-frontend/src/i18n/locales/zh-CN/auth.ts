@@ -37,4 +37,5 @@ export default {
     defaultHint: '演示账号：admin / 123456',
     invalidCredentials: '用户名或密码错误',
     sessionExpired: '登录会话已失效，请重新登录',
+    serviceUnavailable: '登录后可用',
 }

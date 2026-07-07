@@ -9,7 +9,6 @@ import {
     createSqlEditorRuntime,
     setDefaultSqlEditorRuntime,
 } from './runtime/sql-editor-runtime'
-import {ensureSqlEditorSetup} from './setup'
 import type {SqlEditorGlobalConfig, SqlEditorRuntime, SqlEditorRuntimeOptions} from './types'
 
 export interface SqlEditorPluginOptions {
@@ -27,10 +26,8 @@ function isRuntimeInstance(value: unknown): value is SqlEditorRuntime {
     )
 }
 
-/** Vue 插件：注册补全、注入外观配置与 Runtime */
+/** Vue 插件：注册补全、注入外观配置与 Runtime（Monaco 补全延至 SqlEditor 首次挂载，避免 Electron 冷启动卡死） */
 export function installSqlEditorPlugin(app: App, options: SqlEditorPluginOptions = {}) {
-    ensureSqlEditorSetup()
-
     app.provide(SQL_EDITOR_CONFIG_KEY, options.config ?? DEFAULT_SQL_EDITOR_CONFIG)
 
     const runtime = isRuntimeInstance(options.runtime)

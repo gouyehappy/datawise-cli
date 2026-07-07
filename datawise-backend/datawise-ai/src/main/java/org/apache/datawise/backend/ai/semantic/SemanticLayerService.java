@@ -104,15 +104,15 @@ public class SemanticLayerService {
             }
             String tableComment = props.comment();
             if (tableComment != null && !tableComment.isBlank()) {
-                String key = "table:" + table.toLowerCase(Locale.ROOT);
+                String metricName = table + " \u8868";
+                String key = metricKey(metricName);
                 if (!existingKeys.contains(key)) {
                     SemanticMetricEntry entry = buildAutoEntry(
                             request.connectionId(),
                             request.database(),
-                            table + " 表",
+                            metricName,
                             tableComment,
-                            List.of(table),
-                            key
+                            List.of(table)
                     );
                     generated.add(entry);
                     existingKeys.add(key);
@@ -124,17 +124,17 @@ public class SemanticLayerService {
                     if (comment == null || comment.isBlank()) {
                         return;
                     }
-                    String key = "column:" + table.toLowerCase(Locale.ROOT) + "." + column.name().toLowerCase(Locale.ROOT);
+                    String metricName = table + "." + column.name();
+                    String key = metricKey(metricName);
                     if (existingKeys.contains(key)) {
                         return;
                     }
                     generated.add(buildAutoEntry(
                             request.connectionId(),
                             request.database(),
-                            table + "." + column.name(),
+                            metricName,
                             comment,
-                            List.of(table),
-                            key
+                            List.of(table)
                     ));
                     existingKeys.add(key);
                 });
@@ -153,8 +153,7 @@ public class SemanticLayerService {
             String database,
             String name,
             String description,
-            List<String> relatedTables,
-            String keySeed
+            List<String> relatedTables
     ) {
         SemanticMetricEntry entry = new SemanticMetricEntry();
         entry.setId(IdGenerator.shortId("metric-"));
@@ -169,7 +168,12 @@ public class SemanticLayerService {
     }
 
     private static String metricKey(SemanticMetricEntry entry) {
-        return entry.getName() != null ? entry.getName().toLowerCase(Locale.ROOT) : entry.getId();
+        String nameKey = metricKey(entry.getName());
+        return !nameKey.isBlank() ? nameKey : entry.getId();
+    }
+
+    private static String metricKey(String name) {
+        return name != null ? name.toLowerCase(Locale.ROOT) : "";
     }
 
     private SemanticMetricEntry findExisting(String id) {

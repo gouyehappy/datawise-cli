@@ -12,12 +12,21 @@ import {
 } from '@/api'
 import {isDesktopApp} from '@/features/layout/services/desktop-chrome'
 import {clearSession, SESSION_KEY} from '@/shared/auth/session'
+import {
+    finalizeDesktopStartup,
+    initDesktopBackendStartupListener,
+    markDesktopBackendStartupComplete,
+    reportDesktopBootstrapHealthPollProgress,
+    reportDesktopBootstrapSessionProgress,
+    reportDesktopBootstrapSyncProgress,
+} from '@/features/layout/services/desktop-backend-startup.service'
+import {applyBackendHealthResult} from '@/features/layout/services/backend-health.service'
 
 const desktopBoot = isDesktopApp()
 const STEP_MIN_MS = desktopBoot ? 0 : 520
 const MIN_SPLASH_MS = desktopBoot ? 0 : 5000
 const DESKTOP_BACKEND_WAIT_MS = 120_000
-const DESKTOP_BACKEND_POLL_MS = 350
+const DESKTOP_BACKEND_RETRY_MS = 250
 
 export type BootstrapStepId =
     | 'backend'
@@ -56,6 +65,8 @@ const state = reactive({
     progress: 0,
     currentStep: 'backend' as BootstrapStepId,
     steps: createStepStates(),
+    /** 桌面版：后端就绪后即视为启动完成（其余步骤后台加载） */
+    startupComplete: false,
     backend: {
         status: 'idle' as BackendConnectionStatus,
         endpoint: settingsApi.resolveBackendEndpointLabel(),
@@ -79,6 +90,7 @@ function stepIndex(id: BootstrapStepId) {
 }
 
 function applyBackendResult(result: HealthStatus | null, endpoint: string) {
+    applyBackendHealthResult(result, endpoint)
     state.backend.endpoint = endpoint
     if (!result) {
         state.backend.status = 'offline'
@@ -127,23 +139,33 @@ function isBackendSessionId(sessionId: string | null | undefined): boolean {
     return Boolean(sessionId?.startsWith('session-'))
 }
 
-/** 桌面版：等待内嵌后端就绪，避免启动页误报离线 */
+/** 桌面版：主进程已并行启动 JVM，渲染进程按健康检查轮询推进进度 */
 async function waitForDesktopBackendHealth() {
     state.backend.status = 'checking'
     state.backend.endpoint = settingsApi.resolveBackendEndpointLabel()
 
-    const deadline = Date.now() + DESKTOP_BACKEND_WAIT_MS
+    const started = Date.now()
+    const deadline = started + DESKTOP_BACKEND_WAIT_MS
+    let attempt = 0
     while (Date.now() < deadline) {
+        const elapsed = Date.now() - started
+        reportDesktopBootstrapHealthPollProgress(elapsed, DESKTOP_BACKEND_WAIT_MS)
         const snapshot = await settingsApi.pingHealth()
         if (snapshot.result?.ok) {
             applyBackendResult(snapshot.result, snapshot.endpoint)
+            markDesktopBackendStartupComplete()
             return snapshot
         }
-        await delay(DESKTOP_BACKEND_POLL_MS)
+        attempt += 1
+        await delay(attempt < 4 ? 120 : DESKTOP_BACKEND_RETRY_MS)
     }
 
+    reportDesktopBootstrapHealthPollProgress(DESKTOP_BACKEND_WAIT_MS, DESKTOP_BACKEND_WAIT_MS)
     const last = await settingsApi.pingHealth()
     applyBackendResult(last.result, last.endpoint)
+    if (last.result?.ok) {
+        markDesktopBackendStartupComplete()
+    }
     return last
 }
 
@@ -181,12 +203,22 @@ export async function bootstrapApp(): Promise<void> {
     const auth = useAuthStore()
     const explorer = useExplorerStore()
 
+    if (desktopBoot) {
+        initDesktopBackendStartupListener()
+    }
+
     await runStep('backend', async () => {
         if (desktopBoot) {
             const snapshot = await waitForDesktopBackendHealth()
             if (snapshot.result?.ok) {
+                reportDesktopBootstrapSessionProgress()
+                await safeLoad(() => bootstrapDesktopSession(auth, true))
+                reportDesktopBootstrapSyncProgress()
                 await safeLoad(() => useAppConfigStore().syncFromServer())
             }
+            state.progress = 100
+            await finalizeDesktopStartup()
+            state.startupComplete = true
             return
         }
 
@@ -199,12 +231,13 @@ export async function bootstrapApp(): Promise<void> {
         }
     })
 
+    if (desktopBoot) {
+        void bootstrapDesktopDeferredSteps(explorer)
+        return
+    }
+
     await runStep('session', async () => {
         const backendConnected = state.backend.status === 'connected'
-        if (desktopBoot) {
-            await bootstrapDesktopSession(auth, backendConnected)
-            return
-        }
         try {
             await auth.bootstrapAsync(backendConnected)
         } catch {
@@ -220,10 +253,11 @@ export async function bootstrapApp(): Promise<void> {
 
     await runStep('finalize', async () => {
         syncStepVisual('finalize', 96)
-        if (!desktopBoot) await delay(640)
+        await delay(640)
     })
 
     state.progress = 100
+    state.startupComplete = true
     state.steps.forEach((step) => {
         step.done = true
         step.active = false
@@ -231,4 +265,14 @@ export async function bootstrapApp(): Promise<void> {
 
     const remain = MIN_SPLASH_MS - (Date.now() - started)
     if (remain > 0) await delay(remain)
+}
+
+async function bootstrapDesktopDeferredSteps(
+    explorer: ReturnType<typeof useExplorerStore>,
+) {
+    await safeLoad(() => explorer.loadTree())
+    await safeLoad(() => useShortcutPanelStore().load())
+    await safeLoad(() => useNotificationStore().load())
+    await safeLoad(() => usePluginStore().load())
+    await safeLoad(() => useTeamStore().load())
 }

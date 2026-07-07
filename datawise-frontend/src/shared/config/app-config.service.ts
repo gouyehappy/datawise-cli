@@ -106,11 +106,13 @@ import {
     shouldSyncConfigToServer,
 } from '@/shared/config/config-server-sync'
 import {cancelPendingSqlSnippetServerPersists} from '@/features/settings/services/sql-editor-shortcuts.service'
+import {shouldUseBuiltinAppConfig} from '@/shared/config/app-config-read-policy'
 import {configApi} from '@/api'
 
 export {setServerConfigSyncEnabled} from '@/shared/config/config-server-sync'
 
 export {APP_CONFIG_KEY, resolveAppConfigStorageKey, setAppConfigStorageScope} from '@/shared/config/app-config-storage-scope'
+export {shouldUseBuiltinAppConfig} from '@/shared/config/app-config-read-policy'
 
 /** @deprecated 迁移用，新配置统一写入 config/app.xml（经后端 API） */
 export const LEGACY_LAYOUT_CONFIG_KEY = 'dw-layout-config'
@@ -458,11 +460,13 @@ export function normalizeAi(raw: Partial<AiPreferences> | undefined): AiPreferen
 
 export function normalizeWindow(raw: Partial<WindowPreferences> | undefined): WindowPreferences {
     const base = DEFAULT_WINDOW
+    const normalizeCoordinate = (value: unknown): number | null =>
+        typeof value === 'number' && Number.isFinite(value) ? value : null
     return {
         width: clamp(raw?.width, base.width, 900, 3840),
         height: clamp(raw?.height, base.height, 600, 2160),
-        x: typeof raw?.x === 'number' ? raw.x : raw?.x ?? null,
-        y: typeof raw?.y === 'number' ? raw.y : raw?.y ?? null,
+        x: normalizeCoordinate(raw?.x),
+        y: normalizeCoordinate(raw?.y),
         maximized: raw?.maximized ?? base.maximized,
     }
 }
@@ -587,13 +591,9 @@ function readLegacyLayoutOnly(): Partial<LayoutPreferences> | undefined {
 }
 
 export function readAppConfig(): AppConfigFile {
-    if (!canReadResource(UserResource.AppConfig)) {
+    if (shouldUseBuiltinAppConfig()) {
         return attachCanonicalSqlEditorLayers(createDefaultAppConfig())
     }
-    if (!canPersistLocalResource(UserResource.AppConfig)) {
-        return attachCanonicalSqlEditorLayers(createDefaultAppConfig())
-    }
-
     try {
         const raw = localStorage.getItem(resolveAppConfigStorageKey())
         if (raw) {

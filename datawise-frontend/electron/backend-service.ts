@@ -12,7 +12,7 @@ import {touchRecentWorkspace} from './workspace-preferences'
 import {ensureWindowsFirewallRule} from './win-firewall'
 import ports from '../runtime-ports.json' with {type: 'json'}
 
-const BACKEND_PORT = ports.backend
+const BACKEND_PACKAGED_PORT = ports.backendPackaged
 const HEALTH_PATH = '/api/health'
 const STARTUP_TIMEOUT_MS = 120_000
 const HEALTH_POLL_MS = 150
@@ -25,8 +25,54 @@ let runtimeConfigDir = ''
 const backendLogTail: string[] = []
 const BACKEND_LOG_TAIL_MAX = 40
 
+export type BackendStartupPhase = 'idle' | 'config' | 'spawning' | 'warming' | 'ready' | 'failed'
+
+export interface BackendStartupEvent {
+    phase: BackendStartupPhase
+    progress: number
+}
+
+const PHASE_BASE_PROGRESS: Record<BackendStartupPhase, number> = {
+    idle: 0,
+    config: 8,
+    spawning: 22,
+    warming: 38,
+    ready: 78,
+    failed: 0,
+}
+
+/** JVM health OK；渲染进程会话/配置同步后再到 100% */
+const BACKEND_READY_PROGRESS = 78
+const WARMING_PROGRESS_START = 38
+const WARMING_PROGRESS_CAP = BACKEND_READY_PROGRESS - 1
+const TYPICAL_COLD_START_MS = 12_000
+
+let startupProgressListener: ((event: BackendStartupEvent) => void) | null = null
+let latestStartupEvent: BackendStartupEvent = {phase: 'idle', progress: 0}
+
+export function setBackendStartupProgressListener(
+    listener: ((event: BackendStartupEvent) => void) | null,
+): void {
+    startupProgressListener = listener
+    if (listener && latestStartupEvent.phase !== 'idle') {
+        listener(latestStartupEvent)
+    }
+}
+
+export function getBackendStartupState(): BackendStartupEvent {
+    return latestStartupEvent
+}
+
+function emitBackendStartupProgress(phase: BackendStartupPhase, progress?: number) {
+    latestStartupEvent = {
+        phase,
+        progress: progress ?? PHASE_BASE_PROGRESS[phase],
+    }
+    startupProgressListener?.(latestStartupEvent)
+}
+
 export function getBundledApiBaseUrl(): string {
-    return `http://127.0.0.1:${BACKEND_PORT}`
+    return `http://127.0.0.1:${BACKEND_PACKAGED_PORT}`
 }
 
 function sleep(ms: number) {
@@ -235,15 +281,36 @@ async function pingHealth(baseUrl: string): Promise<boolean> {
     })
 }
 
+function warmingProgressFromElapsed(elapsedMs: number): number {
+    const ratio = 1 - Math.exp(-elapsedMs / TYPICAL_COLD_START_MS)
+    return Math.min(
+        WARMING_PROGRESS_CAP,
+        WARMING_PROGRESS_START + Math.round((WARMING_PROGRESS_CAP - WARMING_PROGRESS_START) * ratio),
+    )
+}
+
+function emitBackendReady() {
+    emitBackendStartupProgress('ready', BACKEND_READY_PROGRESS)
+}
+
 async function waitForBackendReady(baseUrl: string): Promise<void> {
     const deadline = Date.now() + STARTUP_TIMEOUT_MS
+    const started = Date.now()
+    emitBackendStartupProgress('warming', WARMING_PROGRESS_START)
+
     while (Date.now() < deadline) {
-        if (await pingHealth(baseUrl)) return
+        if (await pingHealth(baseUrl)) {
+            emitBackendReady()
+            return
+        }
         if (backendProcess && backendProcess.exitCode !== null) {
+            emitBackendStartupProgress('failed')
             throw new Error(`Backend exited with code ${backendProcess.exitCode}`)
         }
+        emitBackendStartupProgress('warming', warmingProgressFromElapsed(Date.now() - started))
         await sleep(HEALTH_POLL_MS)
     }
+    emitBackendStartupProgress('failed')
     throw new Error(`Backend did not become ready within ${STARTUP_TIMEOUT_MS / 1000}s`)
 }
 
@@ -274,7 +341,7 @@ function buildBackendArgs(configDir: string, jar: string): string[] {
         ...buildJvmArgs(),
         '-jar',
         jar,
-        `--server.port=${BACKEND_PORT}`,
+        `--server.port=${BACKEND_PACKAGED_PORT}`,
         '--server.address=127.0.0.1',
         `--datawise.config.dir=${configDir}`,
         '--spring.profiles.active=desktop',
@@ -283,6 +350,10 @@ function buildBackendArgs(configDir: string, jar: string): string[] {
 
 async function tryReuseExistingBackend(apiBase: string): Promise<boolean> {
     if (!(await pingHealth(apiBase))) return false
+    emitBackendStartupProgress('config')
+    emitBackendStartupProgress('spawning', PHASE_BASE_PROGRESS.spawning)
+    emitBackendStartupProgress('warming', 58)
+    emitBackendReady()
     process.env.DATAWISE_API_BASE_URL = apiBase
     return true
 }
@@ -310,6 +381,7 @@ function spawnBundledBackendProcess(java: string, args: string[]): void {
 
 export async function startBundledBackendInBackground(): Promise<boolean> {
     if (!app.isPackaged) {
+        emitBackendReady()
         return true
     }
 
@@ -322,6 +394,7 @@ export async function startBundledBackendInBackground(): Promise<boolean> {
         await startBundledBackend()
         return true
     } catch (error) {
+        emitBackendStartupProgress('failed')
         const message = error instanceof Error ? error.message : String(error)
         console.error('[backend] startup failed:', message)
 
@@ -355,6 +428,7 @@ export async function startBundledBackend(): Promise<string> {
         throw new Error(`Backend JAR not found: ${jar}`)
     }
 
+    emitBackendStartupProgress('config')
     const configDir = ensureRuntimeConfigDir()
     openBackendLog(configDir)
 
@@ -362,6 +436,8 @@ export async function startBundledBackend(): Promise<string> {
     const apiBase = getBundledApiBaseUrl()
     writeStartupDiagnostics(configDir, java, jar)
     ensureWindowsFirewallRule(java)
+
+    emitBackendStartupProgress('spawning')
     spawnBundledBackendProcess(java, buildBackendArgs(configDir, jar))
 
     await waitForBackendReady(apiBase)

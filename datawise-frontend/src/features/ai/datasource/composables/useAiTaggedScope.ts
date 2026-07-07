@@ -12,6 +12,7 @@ import type {AiTableTagCatalogItem, AiTaggedScopeGroup} from '@/features/ai/tag/
 import type {AiDatabaseTarget} from '@/features/ai/shared/utils/database-targets'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
+import {isUnauthorizedApiError} from '@/features/auth/services/auth-session.service'
 
 export function useAiTaggedScope() {
     const explorer = useExplorerStore()
@@ -20,15 +21,21 @@ export function useAiTaggedScope() {
     const catalog = ref<AiTableTagCatalogItem[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
+    const unavailable = ref(false)
 
     async function reload() {
         loading.value = true
         error.value = null
+        unavailable.value = false
         try {
             catalog.value = await fetchAiTableTagCatalog()
         } catch (err) {
             catalog.value = []
-            error.value = err instanceof Error ? err.message : String(err)
+            if (isUnauthorizedApiError(err)) {
+                unavailable.value = true
+            } else {
+                error.value = err instanceof Error ? err.message : String(err)
+            }
         } finally {
             loading.value = false
         }
@@ -79,6 +86,7 @@ export function useAiTaggedScope() {
         allTargets,
         loading,
         error,
+        unavailable,
         reload,
         filterGroups,
         targetForTable,

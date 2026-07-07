@@ -18,13 +18,13 @@ const RESOURCE_RULES: Record<UserResourceType, UserResourceRule> = {
     [UserResource.AppConfig]: {
         localScope: 'user',
         serverScope: 'user',
-        guestRead: true,
+        guestRead: false,
         guestWrite: false,
     },
     [UserResource.AiPreferences]: {
         localScope: 'user',
         serverScope: 'user',
-        guestRead: true,
+        guestRead: false,
         guestWrite: false,
     },
     [UserResource.AiKnowledge]: {

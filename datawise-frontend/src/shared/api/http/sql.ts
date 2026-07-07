@@ -31,7 +31,7 @@ export function createHttpSqlApi(): SqlApi {
                         sessionKey: options?.sessionKey,
                         perfSource: options?.perfSource,
                     },
-                    {silent: true},
+                    {silent: true, timeoutMs: 0},
                 )
                 logPerf(operation, startedAt, {
                     ...details,
@@ -51,7 +51,7 @@ export function createHttpSqlApi(): SqlApi {
                 const result = await postJson<ExecuteSqlResult>(
                     API_PATHS.sql.execute,
                     {cursorId, pageSize},
-                    {silent: true},
+                    {silent: true, timeoutMs: 0},
                 )
                 logPerf('sql.fetchPage', startedAt, {
                     cursorId,

@@ -17,8 +17,9 @@ npm run typecheck
 ## Electron 打包（Windows）
 
 ```powershell
-npm run dist:electron   # 仅前端，需自行启动后端
-npm run dist:desktop    # 一体化：内嵌后端 + JRE，需 JAVA_HOME 与 Maven
+npm run dist:electron   # 仅打包前端 + Electron（不含 JRE/后端 JAR，需本机已有后端在 18421）
+npm run dist:desktop    # 推荐安装包：内嵌后端 + JRE（需 JAVA_HOME 与 Maven）
+npm run dist:electron:full  # 同 dist:desktop
 ```
 
 产物在 `release/`。配置目录：便携版为 exe 同目录 `config/`；安装版为 `%APPDATA%\DataWise CLI\config`。

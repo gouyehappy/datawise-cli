@@ -9,7 +9,7 @@ const selectedIds = defineModel<string[]>('selectedIds', {required: true})
 const search = defineModel<string>('search', {required: true})
 
 const {t} = useI18n()
-const {groups, loading, error, reload, filterGroups} = useAiTaggedScopeContext()
+const {groups, loading, error, unavailable, reload, filterGroups} = useAiTaggedScopeContext()
 
 const visibleGroups = computed(() => filterGroups(search.value))
 
@@ -44,6 +44,9 @@ defineExpose({
       <span class="ai-tagged-scope-tree__spinner" aria-hidden="true"/>
       {{ t('ai.databasePanel.loading') }}
     </div>
+    <p v-else-if="unavailable" class="ai-tagged-scope-tree__state is-unavailable">
+      {{ t('auth.serviceUnavailable') }}
+    </p>
     <p v-else-if="error" class="ai-tagged-scope-tree__state is-error">{{ error }}</p>
     <DataSourceTree
         v-else
@@ -86,6 +89,10 @@ defineExpose({
 
 .ai-tagged-scope-tree__state.is-error {
   color: var(--dw-danger);
+}
+
+.ai-tagged-scope-tree__state.is-unavailable {
+  color: var(--dw-text-muted);
 }
 
 .ai-tagged-scope-tree__spinner {

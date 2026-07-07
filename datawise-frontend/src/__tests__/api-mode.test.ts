@@ -2,9 +2,13 @@ import assert from 'node:assert/strict'
 import {describe, it} from 'node:test'
 
 import {DEFAULT_DESKTOP_API_BASE, readApiBaseUrl} from '@/shared/api/mode'
-import {FRONTEND_DEV_PORT} from '@/shared/config/runtime-ports'
+import {BACKEND_PACKAGED_PORT, FRONTEND_DEV_PORT} from '@/shared/config/runtime-ports'
 
 describe('readApiBaseUrl', () => {
+    it('uses packaged backend port for file protocol default', () => {
+        assert.equal(DEFAULT_DESKTOP_API_BASE, `http://127.0.0.1:${BACKEND_PACKAGED_PORT}`)
+    })
+
     it('uses desktop default when loaded from file protocol', () => {
         const previous = globalThis.window
         ;(globalThis as typeof globalThis & {window: Window}).window = {

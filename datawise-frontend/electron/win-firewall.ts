@@ -1,4 +1,4 @@
-import {spawnSync} from 'node:child_process'
+import {spawn} from 'node:child_process'
 import {existsSync} from 'node:fs'
 import {app} from 'electron'
 
@@ -9,20 +9,30 @@ export function ensureWindowsFirewallRule(javaExe: string): void {
     if (process.platform !== 'win32' || !app.isPackaged) return
     if (!existsSync(javaExe)) return
 
-    const existing = spawnSync('netsh', [
+    const existing = spawn('netsh', [
         'advfirewall', 'firewall', 'show', 'rule',
         `name=${WINDOWS_FIREWALL_RULE_NAME}`,
-    ], {encoding: 'utf8', windowsHide: true})
-
-    if (existing.stdout?.includes(WINDOWS_FIREWALL_RULE_NAME)) return
-
-    spawnSync('netsh', [
-        'advfirewall', 'firewall', 'add', 'rule',
-        `name=${WINDOWS_FIREWALL_RULE_NAME}`,
-        'dir=in',
-        'action=allow',
-        `program=${javaExe}`,
-        'enable=yes',
-        'profile=any',
     ], {windowsHide: true})
+
+    let stdout = ''
+    existing.stdout?.setEncoding('utf8')
+    existing.stdout?.on('data', (chunk: string) => {
+        stdout += chunk
+    })
+
+    existing.on('error', () => undefined)
+    existing.on('close', () => {
+        if (stdout.includes(WINDOWS_FIREWALL_RULE_NAME)) return
+
+        const addRule = spawn('netsh', [
+            'advfirewall', 'firewall', 'add', 'rule',
+            `name=${WINDOWS_FIREWALL_RULE_NAME}`,
+            'dir=in',
+            'action=allow',
+            `program=${javaExe}`,
+            'enable=yes',
+            'profile=any',
+        ], {stdio: 'ignore', windowsHide: true})
+        addRule.on('error', () => undefined)
+    })
 }

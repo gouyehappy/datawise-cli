@@ -13,6 +13,7 @@ import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useAppShortcutListener} from '@/features/layout/composables/useAppShortcutListener'
 import {useConnectionHealthMonitor} from '@/features/explorer/composables/useConnectionHealthMonitor'
+import {useBackendHealthMonitor} from '@/features/layout/composables/useBackendHealthMonitor'
 import {useSessionKeepalive} from '@/features/auth/composables/useSessionKeepalive'
 
 import OnboardingSpotlightTour from '@/features/onboarding/components/OnboardingSpotlightTour.vue'
@@ -28,6 +29,7 @@ const {open: onboardingOpen, showGuide, finishGuide, skipGuide} = useOnboardingG
 
 useAppShortcutListener()
 useConnectionHealthMonitor()
+useBackendHealthMonitor()
 useSessionKeepalive()
 useDeepLinkListener()
 
@@ -67,8 +69,9 @@ const desktopApp = isDesktopApp()
 .shell {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  height: 100%;
 }
 
 .shell-body {

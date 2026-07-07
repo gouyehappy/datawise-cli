@@ -8,6 +8,7 @@ import AppShell from './AppShell.vue'
 import AppSplash from './components/AppSplash.vue'
 import DesktopTitleBar from '@/features/layout/components/DesktopTitleBar.vue'
 import {bootstrapApp} from './services/bootstrap-app.service'
+import {initDesktopBackendStartupListener} from '@/features/layout/services/desktop-backend-startup.service'
 import {currentLocale} from '@/i18n'
 import {isDesktopApp} from '@/features/layout/services/desktop-chrome'
 
@@ -24,7 +25,20 @@ watch(
 )
 
 onMounted(() => {
+  if (desktopApp.value) {
+    initDesktopBackendStartupListener()
+    bootReady.value = true
+    void bootstrapApp()
+    return
+  }
+
+  const BOOTSTRAP_MAX_MS = 90_000
+  const timeout = window.setTimeout(() => {
+    bootReady.value = true
+  }, BOOTSTRAP_MAX_MS)
+
   void bootstrapApp().finally(() => {
+    window.clearTimeout(timeout)
     bootReady.value = true
   })
 })
@@ -64,11 +78,24 @@ onMounted(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.app-body > :deep(.shell),
+.app-body > :deep(.app-splash) {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
 }
 
 .app-boot-enter-active,
 .app-boot-leave-active {
   transition: opacity 0.28s ease;
+}
+
+.app-boot-enter-active :deep(.shell),
+.app-boot-enter-to :deep(.shell) {
+  opacity: 1;
 }
 
 .app-boot-enter-from,

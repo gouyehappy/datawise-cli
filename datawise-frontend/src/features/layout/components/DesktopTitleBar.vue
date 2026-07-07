@@ -67,6 +67,8 @@ const {visible, maximized, isMac, minimize, toggleMaximize, close} = useDesktopT
   min-width: 0;
   height: var(--dw-titlebar-height, 44px);
   background: var(--dw-bg-chrome);
+  position: relative;
+  z-index: 20;
   user-select: none;
 }
 

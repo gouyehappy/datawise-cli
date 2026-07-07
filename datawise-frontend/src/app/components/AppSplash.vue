@@ -29,12 +29,12 @@ const statusText = computed(() => {
 
 <style scoped>
 .app-splash {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   background: var(--dw-bg-muted);
   color: var(--dw-text);
 }

@@ -6,6 +6,7 @@ import {
     shouldRecoverStaleSession,
     shouldValidateBackendSession,
 } from '../../features/auth/services/auth-session.service.ts'
+import {shouldSuppressApiErrorToast} from '../../shared/api/http/api-error-toast-policy.ts'
 
 describe('auth session bootstrap helpers', () => {
     it('shouldValidateBackendSession requires stored session and connected backend', () => {
@@ -23,5 +24,11 @@ describe('auth session bootstrap helpers', () => {
     it('shouldRecoverStaleSession only reacts to UNAUTHORIZED ApiError', () => {
         assert.equal(shouldRecoverStaleSession(new ApiError('UNAUTHORIZED')), true)
         assert.equal(shouldRecoverStaleSession(new ApiError('HTTP API request failed.')), false)
+    })
+
+    it('shouldSuppressApiErrorToast suppresses UNAUTHORIZED toast', () => {
+        const context = {desktopApp: false, desktopStartupComplete: true, backendOnline: true}
+        assert.equal(shouldSuppressApiErrorToast(new ApiError('UNAUTHORIZED'), context), true)
+        assert.equal(shouldSuppressApiErrorToast(new ApiError('Server error'), context), false)
     })
 })

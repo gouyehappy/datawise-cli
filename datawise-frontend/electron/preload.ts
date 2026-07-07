@@ -10,7 +10,18 @@ import type {WindowPreferences} from '../src/shared/config/app-config.types'
 import type {DeepLinkOpenPayload} from '../src/shared/deep-link/deep-link.types'
 import type {NativeTerminalCreateResult} from '../src/features/terminal/services/native-terminal.types'
 
-const DEFAULT_DESKTOP_API_BASE = `http://127.0.0.1:${ports.backend}`
+function resolveDesktopBackendPort(): number {
+    try {
+        if (ipcRenderer.sendSync('get-is-packaged') === true) {
+            return ports.backendPackaged
+        }
+    } catch {
+        // preload 早于主进程注册时回退开发端口
+    }
+    return ports.backend
+}
+
+const DEFAULT_DESKTOP_API_BASE = `http://127.0.0.1:${resolveDesktopBackendPort()}`
 
 contextBridge.exposeInMainWorld('__datawiseDesktopBridge', {
     platform: process.platform,
@@ -114,5 +125,19 @@ contextBridge.exposeInMainWorld('__datawiseDesktopBridge', {
             path?: string
             error?: 'missing' | 'open_failed'
         }> => ipcRenderer.invoke('logs:openRuntime'),
+    },
+    backend: {
+        getStartupState: (): Promise<{
+            phase: string
+            progress: number
+        }> => ipcRenderer.invoke('backend:getStartupState'),
+        onStartupProgress: (callback: (event: { phase: string; progress: number }) => void) => {
+            const listener = (
+                _event: Electron.IpcRendererEvent,
+                payload: { phase: string; progress: number },
+            ) => callback(payload)
+            ipcRenderer.on('backend:startup-progress', listener)
+            return () => ipcRenderer.removeListener('backend:startup-progress', listener)
+        },
     },
 })

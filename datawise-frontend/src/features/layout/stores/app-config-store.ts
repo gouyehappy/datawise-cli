@@ -74,6 +74,7 @@ import {syncSqlEditorLayersFromServer} from '@/features/settings/services/sql-ed
 import {syncUpdatePreferencesFromServer} from '@/features/settings/services/about-settings.service'
 import {useUpdateSettingsStore} from '@/features/settings/stores/update-settings'
 import {setupElectronWindowSync} from '@/features/layout/composables/useElectronWindowSync'
+import {toWindowStatePayload} from '@/features/layout/services/electron-window-state.service'
 
 export const useAppConfigStore = defineStore('app-config', () => {
     migrateLegacyStorageKeysOnce()
@@ -418,7 +419,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
             applyEditor: (settings) => editor.patchSettings(sanitizeEditorSettings(settings)),
             applyWindow: (windowPrefs) => {
                 config.value.window = windowPrefs
-                void globalThis.window.datawise?.window?.setState?.(windowPrefs)
+                void globalThis.window.datawise?.window?.setState?.(toWindowStatePayload(windowPrefs))
             },
             applyLayout: (layoutPrefs) => applyLayoutEffects(layoutPrefs),
             applyExplorer: (explorerPrefs) => {
@@ -599,6 +600,14 @@ export const useAppConfigStore = defineStore('app-config', () => {
     }
 
     async function syncFromServer() {
+        if (readGuestFlag()) {
+            applyFullConfig(createDefaultAppConfig())
+            await syncSqlEditorLayersFromServer()
+            const updaterPrefs = await syncUpdatePreferencesFromServer()
+            useUpdateSettingsStore().$patch({preferences: updaterPrefs})
+            return
+        }
+
         const remote = await fetchAppConfigFromServer()
         if (remote) {
             applyFullConfig(remote)

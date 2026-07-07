@@ -88,6 +88,16 @@ declare global {
                     error?: 'missing' | 'open_failed'
                 }>
             }
+            backend?: {
+                getStartupState: () => Promise<{
+                    phase: string
+                    progress: number
+                }>
+                onStartupProgress: (callback: (event: {
+                    phase: string
+                    progress: number
+                }) => void) => () => void
+            }
             registerPluginHooks?: (pluginId: string, handlers: PluginHookHandlers) => void
             unregisterPluginHooks?: (pluginId: string) => void
         }

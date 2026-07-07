@@ -16,7 +16,7 @@ import {existsSync} from 'node:fs'
 import {fileURLToPath} from 'url'
 import {disposeAllTerminalSessions, disposeTerminalSessionsForWebContents, registerTerminalIpc} from './terminal-service'
 import {registerConfigDirIpc} from './config-dir-ipc'
-import {appendDesktopStartupLog, startBundledBackendInBackground, stopBundledBackend} from './backend-service'
+import {appendDesktopStartupLog, getBackendStartupState, setBackendStartupProgressListener, startBundledBackendInBackground, stopBundledBackend} from './backend-service'
 import {frontendDevOrigin} from '../src/shared/config/runtime-ports'
 import {loadAppIconImage} from './app-icon'
 import {
@@ -134,6 +134,10 @@ function bindWindowStateEvents(win: BrowserWindow) {
     })
 }
 
+function registerBackendStartupIpc() {
+    ipcMain.handle('backend:getStartupState', () => getBackendStartupState())
+}
+
 function registerUpdaterIpc() {
     ipcMain.handle('updater:checkForUpdates', async (): Promise<UpdateCheckResult> => {
         await new Promise<void>((resolve) => {
@@ -172,6 +176,9 @@ function applyWindowBounds(win: BrowserWindow, state: WindowStatePayload): void 
 }
 
 function registerWindowIpc() {
+    ipcMain.on('get-is-packaged', (event) => {
+        event.returnValue = app.isPackaged
+    })
     ipcMain.handle('window:getState', () => (mainWindow ? readWindowState(mainWindow) : null))
     ipcMain.handle('window:setState', (_event, state: WindowStatePayload) => {
         if (!mainWindow || !state) return false
@@ -292,6 +299,22 @@ function createWindow() {
     })
 }
 
+function startPackagedBackendAsync() {
+    setBackendStartupProgressListener((event) => {
+        mainWindow?.webContents.send('backend:startup-progress', event)
+    })
+
+    void startBundledBackendInBackground()
+        .then((ready) => {
+            appendDesktopStartupLog(`backend startup ${ready ? 'ready' : 'failed'}`)
+            if (!ready) app.quit()
+        })
+        .catch((error) => {
+            appendDesktopStartupLog(`backend startup crashed: ${String(error)}`)
+            app.quit()
+        })
+}
+
 function setupApplicationMenu() {
     if (process.platform === 'win32' || process.platform === 'linux') {
         Menu.setApplicationMenu(null)
@@ -371,6 +394,7 @@ app.whenReady().then(async () => {
     if (!gotSingleInstanceLock) return
 
     registerWindowIpc()
+    registerBackendStartupIpc()
     registerUpdaterIpc()
     registerTerminalIpc()
     registerConfigDirIpc()
@@ -380,15 +404,14 @@ app.whenReady().then(async () => {
 
     if (!isDev) {
         registerRendererProtocol()
-        const ready = await startBundledBackendInBackground()
-        if (!ready) {
-            app.quit()
-            return
-        }
     }
 
     createWindow()
     setupSystemTray(() => mainWindow)
+
+    if (!isDev) {
+        startPackagedBackendAsync()
+    }
 
     deepLinkHandlersReady = true
     for (const url of pendingOpenUrls) deliverDeepLink(url)

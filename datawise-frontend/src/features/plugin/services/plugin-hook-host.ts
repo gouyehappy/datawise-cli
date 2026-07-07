@@ -5,6 +5,25 @@ import {
 import {readDesktopBridge} from '@/features/layout/services/desktop-bridge'
 import type {PluginHookHandlers} from '@/features/plugin/types/plugin-hook.types'
 
+function installDatawiseHost(host: NonNullable<Window['datawise']>): void {
+    try {
+        Object.defineProperty(window, 'datawise', {
+            value: host,
+            configurable: true,
+            writable: true,
+        })
+        return
+    } catch {
+        // Older preload builds exposed window.datawise as a read-only bridge.
+    }
+
+    try {
+        window.datawise = host
+    } catch {
+        // Keep the renderer alive even if an installed app has a non-writable bridge.
+    }
+}
+
 export function installPluginHookHost(): void {
     if (typeof window === 'undefined') return
 
@@ -18,16 +37,19 @@ export function installPluginHookHost(): void {
     }
 
     const bridge = readDesktopBridge()
-    if (bridge) {
-        // Preload 经 contextBridge 暴露的对象在页面里只读，不能整体赋值覆盖。
-        window.datawise = {...bridge, ...hooks}
+    const existing = window.datawise
+    if (bridge || existing) {
+        installDatawiseHost({
+            ...bridge,
+            ...existing,
+            ...hooks,
+            platform: bridge?.platform ?? existing?.platform ?? 'web',
+        })
         return
     }
 
-    if (!window.datawise) {
-        window.datawise = {
-            platform: 'web',
-            ...hooks,
-        }
-    }
+    installDatawiseHost({
+        platform: 'web',
+        ...hooks,
+    })
 }

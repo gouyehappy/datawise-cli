@@ -12,6 +12,7 @@
     "build:electron": "cross-env ELECTRON=true vue-tsc --noEmit && cross-env ELECTRON=true vite build",
     "pack:electron": "node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs --dir",
     "dist:electron": "npm run gen:icons && node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs",
+    "dist:electron:full": "npm run dist:desktop",
     "dist:win": "npm run gen:icons && node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs --win",
     "prepare:desktop": "node scripts/prepare-desktop-bundle.mjs",
     "dist:desktop": "npm run gen:icons && npm run stop:desktop && npm run prepare:desktop && node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs --win",

@@ -24,9 +24,27 @@ export function useDatawiseSqlEditorHost(): SqlEditorGlobalConfig {
     useSqlEditorShortcutsStore()
     const {settings} = storeToRefs(editorSettings)
 
+    let monacoThemesReady = false
+    const scheduleThemeSync = () => {
+        const theme = settings.value.theme
+        if (!monacoThemesReady) {
+            monacoThemesReady = true
+            const apply = () => {
+                ensureMonacoThemes()
+                applyEditorTheme(theme)
+            }
+            if (typeof requestIdleCallback === 'function') {
+                requestIdleCallback(apply, {timeout: 4000})
+            } else {
+                window.setTimeout(apply, 0)
+            }
+            return
+        }
+        applyEditorTheme(theme)
+    }
+
     watchEffect(() => {
-        ensureMonacoThemes()
-        applyEditorTheme(settings.value.theme)
+        scheduleThemeSync()
     })
 
     const theme = computed(() => settings.value.theme)

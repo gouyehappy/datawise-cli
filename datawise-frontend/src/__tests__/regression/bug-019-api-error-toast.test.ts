@@ -41,4 +41,16 @@ describe('notifyApiError', () => {
         assert.deepEqual(seen, [])
         registerApiErrorNotifier(null)
     })
+
+    it('skips UNAUTHORIZED when notifier chooses to suppress', () => {
+        const seen: string[] = []
+        registerApiErrorNotifier((message, error) => {
+            if (error.message.trim() === 'UNAUTHORIZED') return
+            seen.push(message)
+        })
+        notifyApiError(new ApiError('UNAUTHORIZED'))
+        notifyApiError(new ApiError('Server error'))
+        assert.deepEqual(seen, ['Server error'])
+        registerApiErrorNotifier(null)
+    })
 })

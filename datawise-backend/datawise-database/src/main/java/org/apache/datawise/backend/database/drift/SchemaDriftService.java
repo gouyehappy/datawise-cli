@@ -229,11 +229,39 @@ public class SchemaDriftService {
         );
     }
 
-    private static Pattern compilePattern(String pattern) {
+    static Pattern compilePattern(String pattern) {
         if (pattern == null || pattern.isBlank()) {
             return null;
         }
-        return Pattern.compile(pattern.trim(), Pattern.CASE_INSENSITIVE);
+        String trimmed = pattern.trim();
+        if ("%".equals(trimmed)) {
+            return null;
+        }
+        if (trimmed.contains("%")) {
+            return Pattern.compile(sqlLikePercentPattern(trimmed), Pattern.CASE_INSENSITIVE);
+        }
+        return Pattern.compile(trimmed, Pattern.CASE_INSENSITIVE);
+    }
+
+    private static String sqlLikePercentPattern(String pattern) {
+        StringBuilder regex = new StringBuilder("^");
+        for (int i = 0; i < pattern.length(); i++) {
+            char ch = pattern.charAt(i);
+            if (ch == '%') {
+                regex.append(".*");
+            } else {
+                appendRegexLiteral(regex, ch);
+            }
+        }
+        regex.append("$");
+        return regex.toString();
+    }
+
+    private static void appendRegexLiteral(StringBuilder regex, char ch) {
+        if ("\\.[]{}()+-^$?|*".indexOf(ch) >= 0) {
+            regex.append('\\');
+        }
+        regex.append(ch);
     }
 
     private static String requireText(String value, String field) {

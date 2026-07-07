@@ -38,4 +38,5 @@ export default {
     defaultHint: 'Demo account: admin / 123456',
     invalidCredentials: 'Invalid username or password',
     sessionExpired: 'Your session has expired. Please sign in again.',
+    serviceUnavailable: 'Sign in to use this feature',
 }

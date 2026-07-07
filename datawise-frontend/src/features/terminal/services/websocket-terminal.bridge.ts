@@ -3,6 +3,7 @@ import type {
     NativeTerminalCreateResult,
 } from '@/features/terminal/services/native-terminal.types'
 import {readApiBaseUrl} from '@/shared/api/mode'
+import {backendDevBaseUrl} from '@/shared/config/runtime-ports'
 
 type OutputHandler = (data: string) => void
 type ExitHandler = (exitCode: number) => void
@@ -30,7 +31,7 @@ function resolveWebSocketUrl(path: string): string {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
         return `${protocol}//${window.location.host}${path}${query}`
     }
-    return `ws://127.0.0.1:18421${path}${query}`
+    return `${backendDevBaseUrl('127.0.0.1').replace(/^http/, 'ws')}${path}${query}`
 }
 
 export function createWebSocketTerminalBridge(path = '/ws/terminal'): NativeTerminalBridge {

@@ -26,7 +26,8 @@ class UserResourcePolicyTest {
         assertTrue(policy.canRead(UserResource.CONNECTION_CATALOG));
         assertTrue(policy.canWrite(UserResource.CONNECTION_CATALOG));
 
-        assertTrue(policy.canRead(UserResource.APP_CONFIG));
+        assertFalse(policy.canRead(UserResource.APP_CONFIG));
+        assertFalse(policy.canRead(UserResource.AI_PREFERENCES));
         assertFalse(policy.canWrite(UserResource.APP_CONFIG));
     }
 

@@ -27,6 +27,8 @@ test('UserResourcePolicy: guest can write connection catalog only', () => {
     setAppConfigStorageScope({isGuest: true})
     assert.equal(canReadResource(UserResource.ConnectionCatalog), true)
     assert.equal(canWriteResource(UserResource.ConnectionCatalog), true)
+    assert.equal(canReadResource(UserResource.AppConfig), false)
+    assert.equal(canReadResource(UserResource.AiPreferences), false)
     assert.equal(canWriteResource(UserResource.AppConfig), false)
     assert.equal(canPersistLocalResource(UserResource.AppConfig), false)
 })

@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 public class FederatedQueryService {
 
     private static final Pattern SOURCE_REF = Pattern.compile("@([a-zA-Z][\\w]*)");
+    private static final Pattern JOIN_REF = Pattern.compile("\\bJOIN\\b", Pattern.CASE_INSENSITIVE);
     private static final String SOURCE_COLUMN = "__dw_source__";
 
     private final FederatedViewStore viewStore;
@@ -98,7 +99,14 @@ public class FederatedQueryService {
             if (source.getAlias() == null || source.getAlias().isBlank()) {
                 throw new IllegalArgumentException("source alias is required");
             }
-            sourceByAlias.put(source.getAlias().trim(), source);
+            String alias = source.getAlias().trim();
+            if (sourceByAlias.put(alias, source) != null) {
+                throw new IllegalArgumentException("duplicate source alias: " + alias);
+            }
+        }
+
+        if (containsFederatedJoin(view.getSql())) {
+            throw new IllegalArgumentException("federated JOIN execution is not supported yet");
         }
 
         Map<String, ExecuteSqlResult> partialResults = new LinkedHashMap<>();
@@ -122,6 +130,10 @@ public class FederatedQueryService {
         }
 
         return mergeResults(view.getSql(), sourceByAlias, partialResults);
+    }
+
+    private static boolean containsFederatedJoin(String sql) {
+        return sql != null && JOIN_REF.matcher(sql).find();
     }
 
     private ExecuteSqlResult mergeResults(

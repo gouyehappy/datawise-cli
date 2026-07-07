@@ -1,9 +1,9 @@
-import {backendBaseUrl} from '@/shared/config/runtime-ports'
+import {backendPackagedBaseUrl} from '@/shared/config/runtime-ports'
 import {isPackagedRenderer} from '@/shared/api/desktop-renderer'
 import {readDatawiseHost} from '@/features/layout/services/desktop-bridge'
 
-/** Electron 打包（file://）下无 Vite 代理时的默认后端地址（与后端 server.address=127.0.0.1 一致） */
-export const DEFAULT_DESKTOP_API_BASE = backendBaseUrl('127.0.0.1')
+/** Electron 打包（file://）下无 Vite 代理时的默认后端地址 */
+export const DEFAULT_DESKTOP_API_BASE = backendPackagedBaseUrl('127.0.0.1')
 
 function normalizeBaseUrl(raw: string): string {
     return raw.trim().replace(/\/$/, '')
