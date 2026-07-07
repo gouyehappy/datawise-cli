@@ -49,4 +49,10 @@ public class UserStore {
                 .filter(user -> normalized.equalsIgnoreCase(user.getUsername()))
                 .findFirst();
     }
+
+    public java.util.List<UserEntity> listRegisteredUsers() {
+        return users.stream()
+                .filter(user -> user != null && !user.isGuest())
+                .toList();
+    }
 }

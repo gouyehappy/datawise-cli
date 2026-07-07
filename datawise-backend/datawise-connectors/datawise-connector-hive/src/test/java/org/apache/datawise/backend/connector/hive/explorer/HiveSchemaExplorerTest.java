@@ -48,7 +48,7 @@ class HiveSchemaExplorerTest {
         HiveSchemaExplorer explorer = new HiveSchemaExplorer();
         var children = explorer.loadDatabaseChildren(connection, "conn-1", "a003");
 
-        assertEquals(7, children.size());
+        assertEquals(8, children.size());
         TreeNode tablesFolder = children.stream()
                 .filter(node -> "tables".equals(node.getLabel()))
                 .findFirst()

@@ -51,7 +51,18 @@ public final class AiAnalysisGraphStreamSupport {
                 /* drain until graph completes or interrupts again */
             }
             return resolveLatestConfig(graph, threadConfig);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            ExceptionLogging.error(log, "Analysis StateGraph stream interrupted", ex);
+            throw new AiException(
+                    AiAnalysisErrorCodes.STREAM_FAILED,
+                    "Analysis StateGraph stream interrupted",
+                    ex
+            );
         } catch (Exception ex) {
+            if (isInterrupted(ex)) {
+                Thread.currentThread().interrupt();
+            }
             ExceptionLogging.error(log, "Analysis StateGraph stream failed", ex);
             throw new AiException(
                     AiAnalysisErrorCodes.STREAM_FAILED,
@@ -59,6 +70,17 @@ public final class AiAnalysisGraphStreamSupport {
                     ex
             );
         }
+    }
+
+    private static boolean isInterrupted(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof InterruptedException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     /**

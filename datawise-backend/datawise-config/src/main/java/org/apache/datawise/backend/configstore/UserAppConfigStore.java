@@ -5,6 +5,7 @@ import org.apache.datawise.backend.configstore.app.AppConfigSections;
 import org.apache.datawise.backend.security.AppConfigSecrets;
 import org.apache.datawise.backend.security.SecretValueCodec;
 import org.apache.datawise.backend.common.support.XmlConfigSupport;
+import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -170,7 +171,7 @@ public class UserAppConfigStore {
             AppConfigSecrets.decryptAiSection(config, secretValueCodec);
             return Optional.of(config);
         } catch (Exception ex) {
-            log.warn("Failed to parse user app config at {}", path, ex);
+            ExceptionLogging.warn(log, "config.userApp.parse path=" + path, ex);
             return Optional.empty();
         }
     }
@@ -189,7 +190,7 @@ public class UserAppConfigStore {
             return Optional.of(objectMapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<>() {
             }));
         } catch (Exception ex) {
-            log.warn("Failed to parse personal sql snippets at {}", path, ex);
+            ExceptionLogging.warn(log, "config.userSqlSnippets.parse path=" + path, ex);
             return Optional.empty();
         }
     }
@@ -201,7 +202,7 @@ public class UserAppConfigStore {
                 log.warn("Quarantined corrupt user config for user {}: {} -> {}", userId, path, backup);
             }
         } catch (Exception ex) {
-            log.warn("Failed to quarantine corrupt user config for user {} at {}", userId, path, ex);
+            ExceptionLogging.warn(log, "config.userApp.quarantine userId=" + userId + " path=" + path, ex);
         }
     }
 

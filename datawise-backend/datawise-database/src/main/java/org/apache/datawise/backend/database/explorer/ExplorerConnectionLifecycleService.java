@@ -44,8 +44,8 @@ public class ExplorerConnectionLifecycleService {
 
     public void disconnect(String connectionId) {
         requireAvailableConnection(connectionId);
-        jdbcDriverConnectionFactory.evictPool(connectionId);
         schemaSessionPool.invalidate(connectionId);
+        jdbcDriverConnectionFactory.evictPool(connectionId);
         treeBuilder.saveSchemaChildren(connectionId, List.of());
     }
 

@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /** 分页读取源表并批量 INSERT 到目标表。 */
 @Component
@@ -183,6 +184,7 @@ public class TableMigrationBatchCopier {
                     return thread;
                 }
         );
+        CompletableFuture<ExecuteSqlResult> nextPageFuture = null;
         try {
             long rowsMigrated = command.resumeState().priorRowsMigrated();
             int batches = command.resumeState().priorBatches();
@@ -190,7 +192,7 @@ public class TableMigrationBatchCopier {
             boolean keysetMode = useKeysetMode(command);
             List<String> seekKey = keysetMode ? command.resumeState().seekKey() : List.of();
             checkExecutionControl(command.executionControl());
-            CompletableFuture<ExecuteSqlResult> nextPageFuture = supplyPageFetch(
+            nextPageFuture = supplyPageFetch(
                     prefetchConnection,
                     endpoints.source(),
                     command.selectSql(),
@@ -261,7 +263,19 @@ public class TableMigrationBatchCopier {
             }
             return new BatchCopyResult(rowsMigrated, batches);
         } finally {
-            prefetchExecutor.shutdownNow();
+            if (nextPageFuture != null && !nextPageFuture.isDone()) {
+                nextPageFuture.cancel(true);
+            }
+            prefetchExecutor.shutdown();
+            try {
+                if (!prefetchExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                    prefetchExecutor.shutdownNow();
+                    prefetchExecutor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                prefetchExecutor.shutdownNow();
+            }
             closeQuietly(prefetchConnection);
         }
     }

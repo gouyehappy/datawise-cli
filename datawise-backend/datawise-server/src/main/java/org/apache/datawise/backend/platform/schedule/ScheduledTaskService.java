@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.datawise.backend.ai.canvas.AnalysisCanvasService;
 import org.apache.datawise.backend.common.support.IdGenerator;
+import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.apache.datawise.backend.configstore.ScheduledTaskStore;
 import org.apache.datawise.backend.database.drift.SchemaDriftService;
 import org.apache.datawise.backend.database.sql.SqlReviewService;
@@ -168,7 +169,7 @@ public class ScheduledTaskService {
                     )
             ));
         } catch (RuntimeException ex) {
-            log.warn("Scheduled task notification failed taskId={}", entry.getId(), ex);
+            ExceptionLogging.warn(log, "scheduledTask.notification taskId=" + entry.getId(), ex);
         }
     }
 
@@ -201,8 +202,8 @@ public class ScheduledTaskService {
         try {
             teamService.recordSqlExecutionAudit(action, request.connectionId(), request.database(), sql);
         } catch (RuntimeException ex) {
-            log.warn("Scheduled task SQL audit failed connectionId={} database={}",
-                    request.connectionId(), request.database(), ex);
+            ExceptionLogging.warn(log, "scheduledTask.sqlAudit connectionId=" + request.connectionId()
+                    + " database=" + request.database(), ex);
         }
     }
 

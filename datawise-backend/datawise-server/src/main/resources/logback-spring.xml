@@ -4,8 +4,12 @@
 
     <springProperty scope="context" name="LOG_DIR" source="datawise.logging.dir" defaultValue="config/logs"/>
 
-    <property name="FILE_PATTERN"
-              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{56} - %msg%n"/>
+    <property name="CLIENT_LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %-24logger{0} | %msg%n%nopex"/>
+    <property name="EXCEPTION_LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %-24logger{0} | %msg%n%wEx"/>
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%d{HH:mm:ss.SSS} %-5level %-24logger{0} | %msg%n%nopex"/>
 
     <!-- ── 同步文件 appender（由 async 包装）──────────────────────────── -->
     <appender name="MAIN_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -17,7 +21,7 @@
             <totalSizeCap>2GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>${FILE_PATTERN}</pattern>
+            <pattern>${CLIENT_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
@@ -33,7 +37,7 @@
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>${FILE_PATTERN}</pattern>
+            <pattern>${CLIENT_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
@@ -46,7 +50,7 @@
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>${FILE_PATTERN}</pattern>
+            <pattern>${EXCEPTION_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
@@ -59,7 +63,7 @@
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>${FILE_PATTERN}</pattern>
+            <pattern>${CLIENT_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
@@ -72,7 +76,7 @@
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>${FILE_PATTERN}</pattern>
+            <pattern>${CLIENT_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
@@ -85,7 +89,7 @@
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>${FILE_PATTERN}</pattern>
+            <pattern>${CLIENT_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
@@ -134,21 +138,20 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}</pattern>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
     <!-- 分类 logger：additivity=false，避免同一行写多份文件 -->
-    <logger name="org.apache.datawise.backend.perf" level="INFO" additivity="true">
+    <logger name="datawise.perf" level="INFO" additivity="true">
         <appender-ref ref="ASYNC_CONNECTION"/>
     </logger>
 
-    <logger name="datawise.exception" level="WARN" additivity="true">
+    <logger name="datawise.exception" level="WARN" additivity="false">
         <appender-ref ref="ASYNC_EXCEPTION"/>
-        <appender-ref ref="ASYNC_ERROR"/>
     </logger>
 
-    <logger name="org.apache.datawise.backend.server.web.RequestLoggingFilter" level="INFO" additivity="false">
+    <logger name="datawise.api" level="INFO" additivity="false">
         <appender-ref ref="ASYNC_API"/>
     </logger>
 

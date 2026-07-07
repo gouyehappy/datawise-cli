@@ -118,6 +118,13 @@ public class JdbcConnectionPoolWarmupService {
         return new WarmupResult(warmed, target);
     }
 
+    public void warmupInBackground(ConnectionEntity entity) {
+        if (!usesJdbcPool(entity)) {
+            return;
+        }
+        warmupRemainingInBackground(entity, targetWarmupConnections());
+    }
+
     private int targetWarmupConnections() {
         return Math.max(1, poolProperties.getMinimumIdle());
     }

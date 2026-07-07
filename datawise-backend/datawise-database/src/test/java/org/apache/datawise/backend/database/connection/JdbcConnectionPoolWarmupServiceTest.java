@@ -71,6 +71,18 @@ class JdbcConnectionPoolWarmupServiceTest {
     }
 
     @Test
+    void warmupInBackground_borrowsUpToMinimumIdleAsync() throws SQLException {
+        ConnectionEntity entity = entity("conn-mysql", "mysql");
+        when(connectionFactory.open(entity)).thenReturn(connection);
+        when(connection.isValid(3)).thenReturn(true);
+
+        service.warmupInBackground(entity);
+
+        verify(connectionFactory, timeout(1_000).times(2)).open(entity);
+        verify(connection, timeout(1_000).times(2)).close();
+    }
+
+    @Test
     void warmupForConnect_returnsAfterFirstBorrowAndCompletesRemainingInBackground() throws Exception {
         ConnectionEntity entity = entity("conn-mysql", "mysql");
         CountDownLatch secondBorrowStarted = new CountDownLatch(1);

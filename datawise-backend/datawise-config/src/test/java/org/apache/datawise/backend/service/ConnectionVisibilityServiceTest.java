@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.configstore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.ConnectionGroupEntity;
 import org.apache.datawise.backend.model.TeamEntity;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConnectionVisibilityServiceTest {
@@ -76,6 +78,64 @@ class ConnectionVisibilityServiceTest {
     }
 
     @Test
+    void legacyConnectionsAreVisibleButNotMutableByRegisteredUsers() {
+        ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ConnectionStore store = new ConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec());
+        ConnectionVisibilityService service = new ConnectionVisibilityService(
+                store,
+                new SessionEphemeralCatalogStore(),
+                new TeamStore(configDirectory, objectMapper)
+        );
+        saveDefaultGroup(store);
+
+        ConnectionEntity legacy = connection("conn-legacy", null);
+        store.saveConnection(legacy);
+
+        UserContext.set(2L, false, "session-user");
+        assertTrue(service.visibleCatalogForCurrentUser().connections().stream()
+                .anyMatch(item -> "conn-legacy".equals(item.getId())));
+        assertFalse(service.canMutateConnection(2L, "conn-legacy"));
+    }
+
+    @Test
+    void ownedConnectionsRemainMutableByOwner() {
+        ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ConnectionStore store = new ConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec());
+        ConnectionVisibilityService service = new ConnectionVisibilityService(
+                store,
+                new SessionEphemeralCatalogStore(),
+                new TeamStore(configDirectory, objectMapper)
+        );
+        saveDefaultGroup(store);
+
+        ConnectionEntity owned = connection("conn-owned", 2L);
+        store.saveConnection(owned);
+
+        UserContext.set(2L, false, "session-user");
+        assertTrue(service.canMutateConnection(2L, "conn-owned"));
+    }
+
+    @Test
+    void guestDefaultGroupIdRequiresSessionId() {
+        ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
+        ConnectionVisibilityService service = new ConnectionVisibilityService(
+                new ConnectionStore(configDirectory, new ObjectMapper(), SecretTestSupport.testCodec()),
+                new SessionEphemeralCatalogStore(),
+                new TeamStore(configDirectory, new ObjectMapper())
+        );
+
+        UserContext.set(3L, true, null);
+
+        UnauthorizedException ex = assertThrows(
+                UnauthorizedException.class,
+                service::defaultGroupIdForCurrentUser
+        );
+        assertEquals(UnauthorizedException.CODE, ex.getMessage());
+    }
+
+    @Test
     void guestUsesEphemeralCatalogOnly(@TempDir Path guestDir) {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(guestDir);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -95,6 +155,15 @@ class ConnectionVisibilityServiceTest {
         ConnectionVisibilityService.VisibleCatalog visible = service.visibleCatalogForCurrentUser();
         assertEquals(1, visible.connections().size());
         assertEquals("conn-guest", visible.connections().get(0).getId());
+    }
+
+    private static void saveDefaultGroup(ConnectionStore store) {
+        ConnectionGroupEntity group = new ConnectionGroupEntity();
+        group.setId("group-1");
+        group.setLabel("Default");
+        group.setSortOrder(0);
+        group.setExpanded(true);
+        store.saveGroup(group);
     }
 
     private static ConnectionEntity connection(String id, Long userId) {

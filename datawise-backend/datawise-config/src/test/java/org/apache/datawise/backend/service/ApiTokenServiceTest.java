@@ -15,8 +15,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class ApiTokenServiceTest {
@@ -38,7 +37,7 @@ class ApiTokenServiceTest {
         token.setId("ci-migration");
         token.setName("CI");
         token.setUserId(1L);
-        token.setTokenHash(apiTokenService.hashToken("dw_test_migration_token"));
+        apiTokenService.assignTokenSecret(token, "dw_test_migration_token");
         token.setScopes(List.of(ApiTokenScopes.MIGRATION));
         token.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
         store.save(token);
@@ -54,6 +53,60 @@ class ApiTokenServiceTest {
     @Test
     void rejectsInvalidToken() {
         assertFalse(apiTokenService.authenticate("wrong-token").isPresent());
+    }
+
+    @Test
+    void authenticatesUsingLookupIndexWithManyTokens() throws Exception {
+        var configDirectory = new org.apache.datawise.backend.configstore.ConfigDirectoryService(tempDir);
+        var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+        ApiTokenStore store = new ApiTokenStore(configDirectory, objectMapper);
+        ApiTokenService service = new ApiTokenService(store, new BCryptPasswordEncoder());
+
+        for (int index = 0; index < 20; index++) {
+            ApiTokenEntity decoy = new ApiTokenEntity();
+            decoy.setId("token-" + index);
+            decoy.setUserId(2L);
+            service.assignTokenSecret(decoy, "dw_decoy_token_" + index);
+            decoy.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+            store.save(decoy);
+        }
+
+        ApiTokenEntity target = new ApiTokenEntity();
+        target.setId("token-target");
+        target.setUserId(9L);
+        service.assignTokenSecret(target, "dw_target_token_value");
+        target.setCreatedAt(Instant.parse("2026-01-02T00:00:00Z"));
+        store.save(target);
+
+        Optional<ApiTokenEntity> found = service.authenticate("dw_target_token_value");
+        assertTrue(found.isPresent());
+        assertEqualsUser(9L, found.get());
+        assertEquals(
+                ApiTokenService.tokenLookupDigest("dw_target_token_value"),
+                found.get().getTokenLookup()
+        );
+    }
+
+    @Test
+    void backfillsLookupForLegacyTokenWithoutIndex() throws Exception {
+        var configDirectory = new org.apache.datawise.backend.configstore.ConfigDirectoryService(tempDir);
+        var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+        ApiTokenStore store = new ApiTokenStore(configDirectory, objectMapper);
+        ApiTokenService service = new ApiTokenService(store, new BCryptPasswordEncoder());
+
+        ApiTokenEntity legacy = new ApiTokenEntity();
+        legacy.setId("legacy-token");
+        legacy.setUserId(4L);
+        legacy.setTokenHash(service.hashToken("dw_legacy_plain"));
+        legacy.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        store.save(legacy);
+
+        Optional<ApiTokenEntity> found = service.authenticate("dw_legacy_plain");
+        assertTrue(found.isPresent());
+        assertEquals(
+                ApiTokenService.tokenLookupDigest("dw_legacy_plain"),
+                store.findById("legacy-token").orElseThrow().getTokenLookup()
+        );
     }
 
     private static void assertEqualsUser(long expected, ApiTokenEntity entity) {

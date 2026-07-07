@@ -8,6 +8,7 @@ import org.apache.datawise.backend.ai.analysis.AiAnalysisErrorCodes;
 import org.apache.datawise.backend.ai.AiException;
 import org.apache.datawise.backend.ai.analysis.AiAnalysisSteps;
 import org.apache.datawise.backend.common.UnauthorizedException;
+import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.apache.datawise.backend.ai.analysis.graph.runtime.AiAnalysisStepContext;
 import org.apache.datawise.backend.ai.analysis.graph.state.AiAnalysisGraphKeys;
 import org.apache.datawise.backend.ai.analysis.graph.state.AiAnalysisGraphReplyExtractor;
@@ -72,7 +73,7 @@ public class AiAnalysisGraphRunner {
                 logPipelineDone(pipelineStart);
                 return AiAnalysisRunOutcome.completed(reply);
             } catch (RuntimeException ex) {
-                log.error("Analysis graph invoke failed threadId={}", threadId, ex);
+                ExceptionLogging.error(log, "ai.analysis.graph.invoke threadId=" + threadId, ex);
                 throw wrapGraphFailure(ex);
             }
         });
@@ -94,7 +95,7 @@ public class AiAnalysisGraphRunner {
                 AiChatReply reply = resumeConfirmed(interrupt, pipelineStart).reply();
                 return AiAnalysisRunOutcome.completed(reply);
             } catch (RuntimeException ex) {
-                log.error("Analysis graph resume failed threadId={}", request.threadId(), ex);
+                ExceptionLogging.error(log, "ai.analysis.graph.resume threadId=" + request.threadId(), ex);
                 throw wrapGraphFailure(ex, AiAnalysisErrorCodes.GRAPH_RESUME_FAILED, "数据分析恢复失败");
             }
         });
@@ -105,10 +106,16 @@ public class AiAnalysisGraphRunner {
             long pipelineStart
     ) {
         RunnableConfig config = resolveResumeConfig(interrupt.threadId());
+        Map<String, Object> resumeUpdates = new HashMap<>();
+        resumeUpdates.put(AiAnalysisGraphKeys.SQL_APPROVED, true);
+        String runId = AiAnalysisStepContext.currentRunId();
+        if (runId != null) {
+            resumeUpdates.put(AiAnalysisGraphKeys.RUN_ID, runId);
+        }
         RunnableConfig latestConfig = AiAnalysisGraphStreamSupport.runToCompletion(
                 compiledGraph,
                 config,
-                Map.of(AiAnalysisGraphKeys.SQL_APPROVED, true)
+                resumeUpdates
         );
 
         Optional<AiAnalysisInterruptPayload> stillWaiting = detectInterrupt(latestConfig);
@@ -190,6 +197,10 @@ public class AiAnalysisGraphRunner {
             if (snapshot.sessionId() != null) {
                 inputs.put(AiAnalysisGraphKeys.SESSION_ID, snapshot.sessionId());
             }
+        }
+        String runId = AiAnalysisStepContext.currentRunId();
+        if (runId != null) {
+            inputs.put(AiAnalysisGraphKeys.RUN_ID, runId);
         }
         return inputs;
     }

@@ -38,7 +38,7 @@ public class PostgresqlConnectorAutoConfiguration {
     @Bean
     TableMetadataIntrospection postgresqlTableIntrospection(
             PostgresqlSchemaDialect postgresqlSchemaDialect,
-            PostgresqlDdlRenderer postgresqlDdlRenderer
+            @Qualifier("postgresqlDdlRenderer") PostgresqlDdlRenderer postgresqlDdlRenderer
     ) {
         return new PostgresqlTableIntrospector(postgresqlSchemaDialect, postgresqlDdlRenderer);
     }
@@ -46,7 +46,7 @@ public class PostgresqlConnectorAutoConfiguration {
     @Bean
     PostgresqlConnectorOperations postgresqlConnectorOperations(
             @Qualifier("postgresqlTableIntrospection") TableMetadataIntrospection introspection,
-            PostgresqlDdlRenderer ddlRenderer
+            @Qualifier("postgresqlDdlRenderer") PostgresqlDdlRenderer ddlRenderer
     ) {
         return new PostgresqlConnectorOperations(introspection, ddlRenderer);
     }
@@ -64,7 +64,7 @@ public class PostgresqlConnectorAutoConfiguration {
     @Bean
     PostgresqlDataSourceConnector postgresqlDataSourceConnector(
             JdbcConnectorOperations jdbc,
-            PostgresqlConnectorOperations postgresql
+            @Qualifier("postgresqlConnectorOperations") PostgresqlConnectorOperations postgresql
     ) {
         return new PostgresqlDataSourceConnector(jdbc, postgresql);
     }

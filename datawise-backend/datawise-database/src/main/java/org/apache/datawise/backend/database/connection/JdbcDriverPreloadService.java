@@ -50,7 +50,7 @@ public class JdbcDriverPreloadService {
                 } else {
                     skipped++;
                 }
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 failed++;
                 ExceptionLogging.recoverable(
                         log,

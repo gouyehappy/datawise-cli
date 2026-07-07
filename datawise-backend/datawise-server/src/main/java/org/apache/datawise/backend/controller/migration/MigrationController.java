@@ -50,6 +50,7 @@ public class MigrationController {
 
     @PostMapping("/jobs")
     public ApiResponse<MigrationJobView> startMigrationJob(@RequestBody TableMigrationBatchRequest request) {
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(
                 log,
                 "POST /api/migration/jobs",
@@ -69,6 +70,7 @@ public class MigrationController {
 
     @PostMapping("/jobs/{id}/pause")
     public ApiResponse<MigrationJobView> pauseMigrationJob(@PathVariable("id") String jobId) {
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(log, "POST /api/migration/jobs/{id}/pause", "jobId", jobId);
         try {
             MigrationJobView view = tableMigrationService.pauseJob(jobId);
@@ -82,6 +84,7 @@ public class MigrationController {
 
     @PostMapping("/jobs/{id}/resume")
     public ApiResponse<MigrationJobView> resumeMigrationJob(@PathVariable("id") String jobId) {
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(log, "POST /api/migration/jobs/{id}/resume", "jobId", jobId);
         try {
             MigrationJobView view = tableMigrationService.resumeJobAsync(jobId);
@@ -95,6 +98,7 @@ public class MigrationController {
 
     @GetMapping("/jobs/{id}")
     public ApiResponse<MigrationJobView> getMigrationJob(@PathVariable("id") String jobId) {
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(log, "GET /api/migration/jobs/{id}", "jobId", jobId);
         try {
             MigrationJobView view = tableMigrationService.getJob(jobId);
@@ -108,6 +112,7 @@ public class MigrationController {
 
     @GetMapping(value = "/jobs/{id}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamMigrationJob(@PathVariable("id") String jobId) {
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(log, "GET /api/migration/jobs/{id}/stream", "jobId", jobId);
         SseEmitter emitter = TableMigrationStreamEmitter.createEmitter();
         UserContext.Snapshot userSnapshot = UserContext.snapshotOrNull();
@@ -127,6 +132,7 @@ public class MigrationController {
     public ApiResponse<TableMigrationPreflightResult> preflightMigration(
             @RequestBody TableMigrationPreflightRequest request
     ) {
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(
                 log,
                 "POST /api/migration/preflight",
@@ -157,7 +163,7 @@ public class MigrationController {
 
     @PostMapping("/batch")
     public ApiResponse<MigrationBatchReport> migrateBatchHeadless(@RequestBody TableMigrationBatchRequest request) {
-        HeadlessMigrationAuth.requireMigrationAccess();
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(
                 log,
                 "POST /api/migration/batch",
@@ -192,6 +198,7 @@ public class MigrationController {
     public ApiResponse<TableMigrationBatchResult> migrateTablesBatch(
             @RequestBody TableMigrationBatchRequest request
     ) {
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(
                 log,
                 "POST /api/migration/tables/batch",
@@ -220,6 +227,7 @@ public class MigrationController {
 
     @PostMapping(value = "/tables/batch/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter migrateTablesBatchStream(@RequestBody TableMigrationBatchRequest request) {
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(
                 log,
                 "POST /api/migration/tables/batch/stream",
@@ -235,6 +243,7 @@ public class MigrationController {
 
     @PostMapping("/table")
     public ApiResponse<TableMigrationResult> migrateTable(@RequestBody TableMigrationRequest request) {
+        requireMigrationAccess();
         ApiRequestLogger.logEntry(
                 log,
                 "POST /api/migration/table",
@@ -317,5 +326,9 @@ public class MigrationController {
             );
             TableMigrationStreamEmitter.completeFailure(emitter, ex, log);
         }
+    }
+
+    private static void requireMigrationAccess() {
+        HeadlessMigrationAuth.requireMigrationAccess();
     }
 }

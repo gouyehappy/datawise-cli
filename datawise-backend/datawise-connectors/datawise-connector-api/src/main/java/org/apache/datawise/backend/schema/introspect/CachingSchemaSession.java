@@ -159,6 +159,11 @@ public final class CachingSchemaSession implements SchemaSession {
     }
 
     @Override
+    public boolean isConnectionUsable() {
+        return delegate.isConnectionUsable();
+    }
+
+    @Override
     public void close() throws SQLException {
         nodeCache.clear();
         delegate.close();

@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 /** Structured duration logs for connection / explorer / table / SQL latency diagnosis. */
 public final class PerfLogger {
 
-    private static final Logger PERF = LoggerFactory.getLogger("org.apache.datawise.backend.perf");
+    private static final Logger PERF = LoggerFactory.getLogger("datawise.perf");
 
     private PerfLogger() {
     }
@@ -15,10 +15,11 @@ public final class PerfLogger {
         if (!PERF.isInfoEnabled()) {
             return;
         }
-        StringBuilder message = new StringBuilder("PERF ")
+        StringBuilder message = new StringBuilder("perf event=")
                 .append(operation)
-                .append(" durationMs=")
-                .append(Math.max(0, System.currentTimeMillis() - startedAtMs));
+                .append(" took=")
+                .append(Math.max(0, System.currentTimeMillis() - startedAtMs))
+                .append("ms");
         appendKeyValues(message, keyValues);
         PERF.info("{}", message);
     }

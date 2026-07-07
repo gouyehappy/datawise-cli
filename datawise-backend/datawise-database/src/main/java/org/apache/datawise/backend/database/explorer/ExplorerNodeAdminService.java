@@ -2,6 +2,7 @@ package org.apache.datawise.backend.database.explorer;
 
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
 import org.apache.datawise.backend.database.connection.DatasourceCatalogService;
+import org.apache.datawise.backend.database.connection.JdbcConnectionPoolWarmupService;
 import org.apache.datawise.backend.connector.api.support.ConnectionMapper;
 import org.apache.datawise.backend.domain.ConnectionConfig;
 import org.apache.datawise.backend.domain.ConnectionResult;
@@ -34,6 +35,7 @@ public class ExplorerNodeAdminService {
     private final ConnectionWritePolicy connectionWritePolicy;
     private final ExplorerCatalogPersistence catalogPersistence;
     private final UserResourcePolicy resourcePolicy;
+    private final JdbcConnectionPoolWarmupService poolWarmupService;
 
     public ExplorerNodeAdminService(
             ExplorerTreeBuilder treeBuilder,
@@ -45,7 +47,8 @@ public class ExplorerNodeAdminService {
             ConnectionVisibilityService connectionVisibilityService,
             ConnectionWritePolicy connectionWritePolicy,
             ExplorerCatalogPersistence catalogPersistence,
-            UserResourcePolicy resourcePolicy
+            UserResourcePolicy resourcePolicy,
+            JdbcConnectionPoolWarmupService poolWarmupService
     ) {
         this.treeBuilder = treeBuilder;
         this.connectionContext = connectionContext;
@@ -57,6 +60,7 @@ public class ExplorerNodeAdminService {
         this.connectionWritePolicy = connectionWritePolicy;
         this.catalogPersistence = catalogPersistence;
         this.resourcePolicy = resourcePolicy;
+        this.poolWarmupService = poolWarmupService;
     }
 
     public ConnectionResult createConnection(ConnectionConfig config, String groupId) {
@@ -71,6 +75,7 @@ public class ExplorerNodeAdminService {
         entity.setSortOrder(connectionVisibilityService.connectionsForGroup(group.getId()).size());
         persistConnection(entity);
         treeBuilder.saveSchemaChildren(connectionId, List.of());
+        poolWarmupService.warmupInBackground(entity);
         return new ConnectionResult(connectionId, groupService.buildGroupTree());
     }
 
@@ -84,17 +89,18 @@ public class ExplorerNodeAdminService {
         ).entity();
         ConnectionMapper.applyDto(entity, config);
         persistConnection(entity);
-        jdbcDriverConnectionFactory.evictPool(connectionId);
         schemaSessionPool.invalidate(connectionId);
+        jdbcDriverConnectionFactory.evictPool(connectionId);
         treeBuilder.saveSchemaChildren(connectionId, List.of());
+        poolWarmupService.warmupInBackground(entity);
         return groupService.buildGroupTree();
     }
 
     public List<TreeNode> deleteConnection(String connectionId) {
         connectionWritePolicy.requireConnectionWritable(connectionId);
         catalogPersistence.deleteConnection(connectionId);
-        jdbcDriverConnectionFactory.evictPool(connectionId);
         schemaSessionPool.invalidate(connectionId);
+        jdbcDriverConnectionFactory.evictPool(connectionId);
         return groupService.buildGroupTree();
     }
 

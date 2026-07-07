@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.sync;
 
 import org.apache.datawise.backend.config.TableMigrationProperties;
+import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.apache.datawise.backend.configstore.migration.MigrationJobEntity;
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
 import org.apache.datawise.backend.sync.api.MigrationExecutionControl;
@@ -156,7 +157,7 @@ public class TableMigrationService {
                 MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
                 jobStreamHub.publishPaused(jobId, view);
             } catch (RuntimeException ex) {
-                log.error("Migration job {} failed", jobId, ex);
+                ExceptionLogging.error(log, "migration.job.failed jobId=" + jobId, ex);
                 flushCheckpoint(execution);
                 jobCoordinator.finalizeJobAfterFailure(execution.job(), ex);
                 MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
@@ -226,7 +227,7 @@ public class TableMigrationService {
             jobCoordinator.markJobPaused(execution.job());
             throw ex;
         } catch (RuntimeException ex) {
-            log.error("Migration job {} failed", execution.jobId(), ex);
+            ExceptionLogging.error(log, "migration.job.failed jobId=" + execution.jobId(), ex);
             flushCheckpoint(execution);
             jobCoordinator.finalizeJobAfterFailure(execution.job(), ex);
             throw ex;

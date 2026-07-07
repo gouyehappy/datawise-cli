@@ -9,6 +9,7 @@ public final class AiAnalysisGraphKeys {
     public static final String USER_ID = "userId";
     public static final String USER_GUEST = "userGuest";
     public static final String SESSION_ID = "sessionId";
+    public static final String RUN_ID = "runId";
     public static final String PROMPT = "prompt";
     public static final String CONNECTION_ID = "connectionId";
     public static final String DATABASE = "database";

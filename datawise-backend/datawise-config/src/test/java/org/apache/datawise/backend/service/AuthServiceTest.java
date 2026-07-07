@@ -4,6 +4,7 @@ import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.configstore.AuthSessionPolicyService;
 import org.apache.datawise.backend.configstore.SessionStore;
 import org.apache.datawise.backend.configstore.UserStore;
+import org.apache.datawise.backend.domain.AuthSessionPolicyDto;
 import org.apache.datawise.backend.model.SessionEntity;
 import org.apache.datawise.backend.model.UserEntity;
 import org.apache.datawise.backend.security.UserContext;
@@ -38,6 +39,8 @@ class AuthServiceTest {
     private GuestSessionCleanupService guestSessionCleanupService;
     @Mock
     private UserAccessPolicy userAccessPolicy;
+    @Mock
+    private UserAdminPolicy userAdminPolicy;
 
     @InjectMocks
     private AuthService authService;
@@ -92,5 +95,65 @@ class AuthServiceTest {
     void getCurrentSession_unauthorizedWhenNoUserInContext() {
         UnauthorizedException ex = assertThrows(UnauthorizedException.class, authService::getCurrentSession);
         assertEquals(UnauthorizedException.CODE, ex.getMessage());
+    }
+
+    @Test
+    void changePassword_rejectsApiTokenAuth() {
+        UserContext.setApiToken(7L, "token-abc", java.util.Set.of());
+
+        UnauthorizedException ex = assertThrows(
+                UnauthorizedException.class,
+                () -> authService.changePassword("old-pass", "new-pass-123")
+        );
+        assertEquals(UnauthorizedException.CODE, ex.getMessage());
+        verifyNoInteractions(userStore);
+    }
+
+    @Test
+    void signOut_noOpForApiTokenAuth() {
+        UserContext.setApiToken(7L, "token-abc", java.util.Set.of());
+
+        authService.signOut();
+
+        verifyNoInteractions(sessionStore);
+        verifyNoInteractions(guestSessionCleanupService);
+    }
+
+    @Test
+    void getCurrentSession_returnsSyntheticInfoForApiTokenAuth() {
+        UserEntity user = new UserEntity();
+        user.setId(7L);
+        user.setUsername("automation");
+        UserContext.setApiToken(7L, "token-abc", java.util.Set.of());
+        when(userStore.findById(7L)).thenReturn(Optional.of(user));
+
+        var info = authService.getCurrentSession();
+
+        assertEquals("api-token:token-abc", info.sessionId());
+        assertEquals("automation", info.userName());
+        assertEquals(false, info.guest());
+        assertEquals(7L, info.userId());
+        verifyNoInteractions(sessionStore);
+    }
+
+    @Test
+    void getSessionPolicy_requiresAuthenticatedUser() {
+        when(userAccessPolicy.requireUserId()).thenThrow(new UnauthorizedException());
+
+        UnauthorizedException ex = assertThrows(UnauthorizedException.class, authService::getSessionPolicy);
+        assertEquals(UnauthorizedException.CODE, ex.getMessage());
+        verifyNoInteractions(sessionPolicy);
+    }
+
+    @Test
+    void updateSessionPolicy_requiresAdminUser() {
+        AuthSessionPolicyDto policy = new AuthSessionPolicyDto(120, true);
+        when(sessionPolicy.updatePolicy(policy)).thenReturn(policy);
+
+        AuthSessionPolicyDto updated = authService.updateSessionPolicy(policy);
+
+        assertEquals(policy, updated);
+        verify(userAdminPolicy).requireAdminUser();
+        verify(sessionPolicy).updatePolicy(policy);
     }
 }

@@ -27,13 +27,10 @@ public final class ApiRequestLogger {
     }
 
     public static void logFailure(Logger log, String action, Exception ex, Object... keyValues) {
-        if (!log.isErrorEnabled()) {
-            return;
-        }
         StringBuilder message = new StringBuilder(action).append(" failed");
         for (int i = 0; i + 1 < keyValues.length; i += 2) {
             message.append(' ').append(keyValues[i]).append('=').append(keyValues[i + 1]);
         }
-        log.error("{}", message, ex);
+        ExceptionLogging.error(log, message.toString(), ex);
     }
 }

@@ -2,6 +2,7 @@ package org.apache.datawise.backend.ai.support;
 
 import org.apache.datawise.backend.ai.domain.AiChatReply;
 import org.apache.datawise.backend.ai.domain.AiLlmProfileDto;
+import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.slf4j.Logger;
 
 /**
@@ -59,7 +60,7 @@ public final class AiCallLogger {
     }
 
     public static void logLlmFailure(Logger log, String phase, long durationMs, Exception ex) {
-        log.warn("AI LLM failed phase={} durationMs={} error={}", phase, durationMs, ex.getMessage(), ex);
+        ExceptionLogging.warn(log, "ai.llm.failed phase=" + phase + " took=" + durationMs + "ms", ex);
     }
 
     public static void logAnalysisStep(Logger log, String step, Object... keyValues) {
@@ -98,7 +99,7 @@ public final class AiCallLogger {
     }
 
     public static void logChatFailure(Logger log, long durationMs, Exception ex) {
-        log.error("AI chat failed durationMs={} error={}", durationMs, ex.getMessage(), ex);
+        ExceptionLogging.error(log, "ai.chat.failed took=" + durationMs + "ms", ex);
     }
 
     public static void logSqlGenerateEntry(Logger log, String prompt, String connectionId, String database, AiLlmProfileDto llm) {

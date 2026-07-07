@@ -111,4 +111,17 @@ class AppConfigStoreTest {
                 path -> path.getFileName().toString().startsWith("sql-snippets.shared.xml.corrupt-")
         ));
     }
+
+    @Test
+    void migratePlaintextSecretsIfNeeded_quarantinesCorruptAppConfig() throws Exception {
+        SecretValueCodec codec = SecretTestSupport.testCodec();
+        ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
+        AppConfigStore store = new AppConfigStore(configDirectory, new ObjectMapper(), codec);
+
+        Path appXml = tempDir.resolve(ConfigPaths.APP);
+        Files.writeString(appXml, "<not-valid-xml");
+
+        assertEquals(0, store.migratePlaintextSecretsIfNeeded());
+        assertTrue(Files.list(tempDir).anyMatch(path -> path.getFileName().toString().startsWith("app.xml.corrupt-")));
+    }
 }

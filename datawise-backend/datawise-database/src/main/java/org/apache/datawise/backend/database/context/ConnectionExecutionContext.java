@@ -7,6 +7,7 @@ import org.apache.datawise.backend.database.connection.DatasourceCatalogService;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.service.ConnectionVisibilityService;
 import org.apache.datawise.backend.service.UserAccountService;
+import org.apache.datawise.backend.common.UnauthorizedException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -44,6 +45,10 @@ public class ConnectionExecutionContext {
     public ResolvedConnection requireConnection(long userId, String connectionId, String notFoundMessage) {
         if (connectionId == null || connectionId.isBlank()) {
             throw new IllegalArgumentException("connectionId is required");
+        }
+        long currentUserId = requireUserId();
+        if (userId != currentUserId) {
+            throw new UnauthorizedException();
         }
         ConnectionEntity entity = connectionVisibilityService.resolveConnectionEntity(connectionId)
                 .orElseThrow(() -> new IllegalArgumentException(notFoundMessage));

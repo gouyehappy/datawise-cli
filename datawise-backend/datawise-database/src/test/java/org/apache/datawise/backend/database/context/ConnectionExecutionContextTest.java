@@ -77,6 +77,7 @@ class ConnectionExecutionContextTest {
 
     @Test
     void requireAvailableWithDatabase_resolvesEffectiveDatabaseWithoutMutatingEntity() {
+        when(userAccountService.requireUserId()).thenReturn(3L);
         ConnectionEntity entity = connectionEntity("conn-2", "postgresql");
         when(connectionVisibilityService.resolveConnectionEntity("conn-2")).thenReturn(Optional.of(entity));
 
@@ -88,7 +89,19 @@ class ConnectionExecutionContextTest {
     }
 
     @Test
+    void requireConnection_rejectsMismatchedUserId() {
+        when(userAccountService.requireUserId()).thenReturn(7L);
+
+        UnauthorizedException ex = assertThrows(
+                UnauthorizedException.class,
+                () -> context.requireConnection(99L, "conn-1", "missing")
+        );
+        assertEquals(UnauthorizedException.CODE, ex.getMessage());
+    }
+
+    @Test
     void requireAvailableWithConnector_resolvesConnectorFromRegistry() {
+        when(userAccountService.requireUserId()).thenReturn(1L);
         ConnectionEntity entity = connectionEntity("conn-3", "mysql");
         when(connectionVisibilityService.resolveConnectionEntity("conn-3")).thenReturn(Optional.of(entity));
         when(connectorFacade.catalog()).thenReturn(catalogAccess);

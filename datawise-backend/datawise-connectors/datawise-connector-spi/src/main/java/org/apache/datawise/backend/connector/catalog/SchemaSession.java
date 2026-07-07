@@ -81,4 +81,9 @@ public interface SchemaSession extends AutoCloseable {
     }
 
     String connectionId();
+
+    /** JDBC 会话是否仍可安全复用；非 JDBC 实现默认可用。 */
+    default boolean isConnectionUsable() {
+        return true;
+    }
 }

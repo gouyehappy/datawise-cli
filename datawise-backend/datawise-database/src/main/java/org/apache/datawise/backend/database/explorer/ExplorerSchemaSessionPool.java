@@ -14,8 +14,10 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -55,9 +57,14 @@ public class ExplorerSchemaSessionPool {
             evictExpiredSession(connectionId);
             evictExpiredSessionsIfNeeded();
             PooledSession pooled = openOrReuse(connection);
+            pooled.enterUse();
             try {
                 return callback.apply(pooled.session());
+            } catch (SQLException ex) {
+                removeAndClose(connectionId, pooled);
+                throw ex;
             } finally {
+                pooled.exitUse();
                 pooled.touch();
             }
         } finally {
@@ -69,16 +76,22 @@ public class ExplorerSchemaSessionPool {
         if (connectionId == null || connectionId.isBlank()) {
             return;
         }
-        PooledSession removed = sessions.remove(connectionId);
-        if (removed != null) {
-            removed.closeQuietly();
+        ReentrantLock lock = locks.computeIfAbsent(connectionId, ignored -> new ReentrantLock());
+        lock.lock();
+        try {
+            PooledSession removed = sessions.remove(connectionId);
+            if (removed != null) {
+                removed.closeQuietly();
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
     private PooledSession openOrReuse(ConnectionEntity connection) throws SQLException {
         String connectionId = connection.getId();
         PooledSession existing = sessions.get(connectionId);
-        if (existing != null && !existing.isExpired()) {
+        if (existing != null && !existing.isExpired() && existing.isConnectionUsable()) {
             return existing;
         }
         if (existing != null) {
@@ -111,27 +124,67 @@ public class ExplorerSchemaSessionPool {
 
     private void evictExpiredSessions() {
         for (var entry : sessions.entrySet()) {
-            PooledSession pooled = entry.getValue();
-            if (pooled.isExpired()) {
-                if (sessions.remove(entry.getKey(), pooled)) {
-                    pooled.closeQuietly();
+            evictIfExpired(entry.getKey(), entry.getValue());
+        }
+    }
+
+    private void evictIfExpired(String connectionId, PooledSession pooled) {
+        if (!pooled.isExpired() || pooled.isInUse()) {
+            return;
+        }
+        ReentrantLock lock = locks.computeIfAbsent(connectionId, ignored -> new ReentrantLock());
+        if (!lock.tryLock()) {
+            return;
+        }
+        try {
+            PooledSession current = sessions.get(connectionId);
+            if (current == pooled && current.isExpired() && !current.isInUse()) {
+                if (sessions.remove(connectionId, current)) {
+                    current.closeQuietly();
                 }
             }
+        } finally {
+            lock.unlock();
         }
     }
 
     private void enforceMaxEntries() {
-        if (sessions.size() < properties.getMaxEntries()) {
-            return;
+        while (sessions.size() >= properties.getMaxEntries()) {
+            boolean evicted = sessions.entrySet().stream()
+                    .sorted(Comparator.comparingLong(entry -> entry.getValue().lastAccessMs()))
+                    .anyMatch(entry -> tryEvictEntry(entry.getKey(), entry.getValue()));
+            if (!evicted) {
+                break;
+            }
         }
-        sessions.entrySet().stream()
-                .min((left, right) -> Long.compare(left.getValue().lastAccessMs(), right.getValue().lastAccessMs()))
-                .ifPresent(oldest -> {
-                    PooledSession removed = sessions.remove(oldest.getKey());
-                    if (removed != null) {
-                        removed.closeQuietly();
-                    }
-                });
+    }
+
+    private boolean tryEvictEntry(String connectionId, PooledSession candidate) {
+        if (candidate.isInUse()) {
+            return false;
+        }
+        ReentrantLock lock = locks.computeIfAbsent(connectionId, ignored -> new ReentrantLock());
+        if (!lock.tryLock()) {
+            return false;
+        }
+        try {
+            PooledSession current = sessions.get(connectionId);
+            if (current == candidate && !current.isInUse()) {
+                if (sessions.remove(connectionId, current)) {
+                    current.closeQuietly();
+                    return true;
+                }
+            }
+            return false;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void removeAndClose(String connectionId, PooledSession pooled) {
+        if (sessions.remove(connectionId, pooled)) {
+            pooled.closeQuietly();
+        }
     }
 
     @FunctionalInterface
@@ -142,6 +195,7 @@ public class ExplorerSchemaSessionPool {
     private static final class PooledSession {
         private final SchemaSession session;
         private final long idleTimeoutMs;
+        private final AtomicInteger activeUses = new AtomicInteger();
         private volatile long lastAccessMs;
 
         private PooledSession(SchemaSession session, long idleTimeoutMs) {
@@ -154,6 +208,18 @@ public class ExplorerSchemaSessionPool {
             return session;
         }
 
+        private void enterUse() {
+            activeUses.incrementAndGet();
+        }
+
+        private void exitUse() {
+            activeUses.decrementAndGet();
+        }
+
+        private boolean isInUse() {
+            return activeUses.get() > 0;
+        }
+
         private void touch() {
             lastAccessMs = System.currentTimeMillis();
         }
@@ -164,6 +230,10 @@ public class ExplorerSchemaSessionPool {
 
         private boolean isExpired() {
             return System.currentTimeMillis() - lastAccessMs > idleTimeoutMs;
+        }
+
+        private boolean isConnectionUsable() {
+            return session.isConnectionUsable();
         }
 
         private void closeQuietly() {

@@ -4,12 +4,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 统一异常日志：所有 catch 块应通过本类输出，确保堆栈可追溯。
- * 同时写入业务 logger（控制台 / datawise.log）与 {@code datawise.exception}（exception.log）。
+ * Unified exception logging for client troubleshooting.
+ *
+ * <p>Business logs stay as one-line summaries; {@code datawise.exception}
+ * keeps the full stack trace for deeper diagnosis.</p>
  */
 public final class ExceptionLogging {
 
     private static final Logger EXCEPTION = LoggerFactory.getLogger("datawise.exception");
+    private static final int MAX_ERROR_MESSAGE_CHARS = 800;
 
     private ExceptionLogging() {
     }
@@ -18,20 +21,66 @@ public final class ExceptionLogging {
         if (ex == null) {
             return;
         }
-        log.warn("{}: {}", context, ex.getMessage(), ex);
-        EXCEPTION.warn("[{}] {}: {}", log.getName(), context, ex.getMessage(), ex);
+        String errorType = errorType(ex);
+        String errorMessage = errorMessage(ex);
+        log.warn("{} | level=warn | errorType={} | error={}", context, errorType, errorMessage);
+        EXCEPTION.warn(
+                "{} | source={} | level=warn | errorType={} | error={}",
+                context,
+                sourceName(log),
+                errorType,
+                errorMessage,
+                ex
+        );
     }
 
     public static void error(Logger log, String context, Throwable ex) {
         if (ex == null) {
             return;
         }
-        log.error("{}: {}", context, ex.getMessage(), ex);
-        EXCEPTION.error("[{}] {}: {}", log.getName(), context, ex.getMessage(), ex);
+        String errorType = errorType(ex);
+        String errorMessage = errorMessage(ex);
+        log.error("{} | level=error | errorType={} | error={}", context, errorType, errorMessage);
+        EXCEPTION.error(
+                "{} | source={} | level=error | errorType={} | error={}",
+                context,
+                sourceName(log),
+                errorType,
+                errorMessage,
+                ex
+        );
     }
 
-    /** 可降级继续执行的异常（仍打印完整堆栈）。 */
+    /** Recoverable exception; callers can continue after logging it. */
     public static void recoverable(Logger log, String context, Throwable ex) {
         warn(log, context, ex);
+    }
+
+    private static String errorType(Throwable ex) {
+        return ex.getClass().getSimpleName();
+    }
+
+    private static String errorMessage(Throwable ex) {
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            return errorType(ex);
+        }
+        return truncate(message.replaceAll("\\s+", " ").trim(), MAX_ERROR_MESSAGE_CHARS);
+    }
+
+    private static String sourceName(Logger log) {
+        String name = log.getName();
+        int lastDot = name.lastIndexOf('.');
+        if (lastDot < 0 || lastDot == name.length() - 1) {
+            return name;
+        }
+        return name.substring(lastDot + 1);
+    }
+
+    private static String truncate(String value, int maxLen) {
+        if (value.length() <= maxLen) {
+            return value;
+        }
+        return value.substring(0, maxLen) + "...";
     }
 }

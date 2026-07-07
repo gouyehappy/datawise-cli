@@ -1,0 +1,1 @@
+mvn -f datawise-backend/pom.xml -gs datawise-backend/.mvn/global-settings.xml -s datawise-backend/.mvn/settings.xml clean install

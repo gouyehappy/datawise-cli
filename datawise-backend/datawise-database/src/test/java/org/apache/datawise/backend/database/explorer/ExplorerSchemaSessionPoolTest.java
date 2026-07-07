@@ -14,6 +14,7 @@ import org.springframework.beans.factory.ObjectProvider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,6 +38,7 @@ class ExplorerSchemaSessionPoolTest {
         when(connectorFacade.catalog()).thenReturn(catalogAccess);
         when(catalogAccess.openSchemaSession(any())).thenReturn(schemaSession);
         when(schemaSession.connectionId()).thenReturn("conn-1");
+        lenient().when(schemaSession.isConnectionUsable()).thenReturn(true);
 
         ExplorerSchemaProperties properties = new ExplorerSchemaProperties();
         properties.setIdleTimeoutMs(120_000);
@@ -68,6 +70,15 @@ class ExplorerSchemaSessionPoolTest {
     void invalidate_forcesNewSessionOnNextAccess() throws Exception {
         pool.withSession(entity, SchemaSession::connectionId);
         pool.invalidate("conn-1");
+        pool.withSession(entity, SchemaSession::connectionId);
+
+        verify(catalogAccess, times(2)).openSchemaSession(entity);
+    }
+
+    @Test
+    void withSession_reopensWhenCachedSessionIsNoLongerUsable() throws Exception {
+        pool.withSession(entity, SchemaSession::connectionId);
+        when(schemaSession.isConnectionUsable()).thenReturn(false);
         pool.withSession(entity, SchemaSession::connectionId);
 
         verify(catalogAccess, times(2)).openSchemaSession(entity);

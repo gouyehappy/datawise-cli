@@ -101,7 +101,7 @@ public class JdbcDriverLoader {
             LoadedDriver loaded = loadDriver(jarPath, driverClass.trim(), false, true);
             cache.put(cacheKey, loaded);
             return Optional.of(loaded);
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             ExceptionLogging.warn(
                     log,
                     "Failed to preload JDBC driver " + mavenCoordinates + " " + driverClass,

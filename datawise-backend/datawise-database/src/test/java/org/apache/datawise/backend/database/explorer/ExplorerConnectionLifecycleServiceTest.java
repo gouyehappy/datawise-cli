@@ -18,6 +18,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,13 +56,14 @@ class ExplorerConnectionLifecycleServiceTest {
     }
 
     @Test
-    void disconnect_evictsPoolAndInvalidatesSchemaSession() {
+    void disconnect_invalidatesSchemaSessionBeforeEvictingPool() {
         stubConnection("conn-1");
 
         service.disconnect("conn-1");
 
-        verify(jdbcDriverConnectionFactory).evictPool("conn-1");
-        verify(schemaSessionPool).invalidate("conn-1");
+        var order = inOrder(schemaSessionPool, jdbcDriverConnectionFactory);
+        order.verify(schemaSessionPool).invalidate("conn-1");
+        order.verify(jdbcDriverConnectionFactory).evictPool("conn-1");
         verify(treeBuilder).saveSchemaChildren("conn-1", List.of());
     }
 

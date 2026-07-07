@@ -11,6 +11,7 @@ public class ApiTokenEntity {
     private String name;
     private Long userId;
     private String tokenHash;
+    private String tokenLookup;
     private List<String> scopes = new ArrayList<>();
     private Instant createdAt;
     private Instant lastUsedAt;
@@ -45,6 +46,14 @@ public class ApiTokenEntity {
 
     public void setTokenHash(String tokenHash) {
         this.tokenHash = tokenHash;
+    }
+
+    public String getTokenLookup() {
+        return tokenLookup;
+    }
+
+    public void setTokenLookup(String tokenLookup) {
+        this.tokenLookup = tokenLookup;
     }
 
     public List<String> getScopes() {

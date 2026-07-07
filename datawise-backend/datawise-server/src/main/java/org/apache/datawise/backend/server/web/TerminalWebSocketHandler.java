@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.datawise.backend.service.TeamService;
+import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.apache.datawise.backend.terminal.TerminalPtySession;
 import org.apache.datawise.backend.terminal.TerminalPtySessionManager;
 import org.slf4j.Logger;
@@ -97,7 +98,7 @@ public class TerminalWebSocketHandler extends TextWebSocketHandler {
             );
             send(socketSession, message("created", sessionId).put("ok", true));
         } catch (Exception ex) {
-            log.warn("Failed to create PTY session {}", sessionId, ex);
+            ExceptionLogging.warn(log, "terminal.pty.create sessionId=" + sessionId, ex);
             send(socketSession, message("created", sessionId).put("ok", false).put("error", ex.getMessage()));
         }
     }

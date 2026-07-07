@@ -17,12 +17,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * 打印每次 HTTP 请求：方法、URL、查询/表单参数；JSON 请求体在响应后输出摘要。
- */
+/** Logs each HTTP request in a compact troubleshooting format. */
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(RequestLoggingFilter.class);
+    private static final Logger log = LoggerFactory.getLogger("datawise.api");
     private static final int MAX_BODY_LOG_CHARS = 2048;
     private static final Set<String> SENSITIVE_KEYS = Set.of(
             "password",
@@ -48,7 +46,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(wrapped, response);
         } catch (Exception ex) {
-            ExceptionLogging.error(log, "Request failed " + request.getMethod() + " " + request.getRequestURI()
+            ExceptionLogging.error(log, "request.failed method=" + request.getMethod()
+                    + " path=" + requestPath(request)
                     + " status=" + response.getStatus(), ex);
             throw ex;
         } finally {
@@ -65,14 +64,13 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             return;
         }
         String method = request.getMethod();
-        String uri = request.getRequestURI();
-        String query = request.getQueryString();
-        String url = query == null || query.isBlank() ? uri : uri + "?" + query;
+        String url = requestPath(request);
 
         StringBuilder message = new StringBuilder();
-        message.append(method).append(' ').append(url);
+        message.append("request method=").append(method);
+        message.append(" path=").append(url);
         message.append(" status=").append(response.getStatus());
-        message.append(" durationMs=").append(System.currentTimeMillis() - startedAt);
+        message.append(" took=").append(System.currentTimeMillis() - startedAt).append("ms");
 
         String sessionId = request.getHeader(SessionAuthFilter.SESSION_HEADER);
         if (sessionId != null && !sessionId.isBlank()) {
@@ -90,6 +88,12 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         }
 
         log.info("{}", message);
+    }
+
+    private static String requestPath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String query = request.getQueryString();
+        return query == null || query.isBlank() ? uri : uri + "?" + query;
     }
 
     private static String formatParams(Map<String, String[]> params) {

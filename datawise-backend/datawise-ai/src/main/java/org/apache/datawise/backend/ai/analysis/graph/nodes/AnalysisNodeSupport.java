@@ -31,7 +31,11 @@ public final class AnalysisNodeSupport {
             OverAllState state,
             Supplier<Map<String, Object>> task
     ) {
-        return UserContext.runAs(resolveUserSnapshot(state), task);
+        String runId = state.value(AiAnalysisGraphKeys.RUN_ID, String.class).orElse(null);
+        return UserContext.runAs(
+                resolveUserSnapshot(state),
+                () -> AiAnalysisStepContext.runForRun(runId, task)
+        );
     }
 
     static UserContext.Snapshot resolveUserSnapshot(OverAllState state) {
@@ -41,6 +45,13 @@ public final class AnalysisNodeSupport {
         }
         boolean guest = state.value(AiAnalysisGraphKeys.USER_GUEST, Boolean.class).orElse(false);
         String sessionId = state.value(AiAnalysisGraphKeys.SESSION_ID, "");
+        UserContext.Snapshot current = UserContext.snapshotOrNull();
+        if (current != null
+                && userId.equals(current.userId())
+                && guest == current.guest()
+                && sessionId.equals(current.sessionId())) {
+            return current;
+        }
         return new UserContext.Snapshot(userId, guest, sessionId);
     }
 

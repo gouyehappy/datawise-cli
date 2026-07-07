@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.database.explorer;
 
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
+import org.apache.datawise.backend.database.connection.JdbcConnectionPoolWarmupService;
 
 
 
@@ -18,6 +19,7 @@ import org.apache.datawise.backend.connector.facade.catalog.ConnectorCatalogAcce
 import org.apache.datawise.backend.domain.TreeNode;
 
 import org.apache.datawise.backend.model.ConnectionEntity;
+import org.apache.datawise.backend.model.ConnectionGroupEntity;
 
 import org.apache.datawise.backend.schema.GenericSchemaDialect;
 
@@ -116,6 +118,9 @@ class ExplorerSchemaServiceTest {
     private ConnectionVisibilityService connectionVisibilityService;
 
     @Mock
+    private JdbcConnectionPoolWarmupService poolWarmupService;
+
+    @Mock
     private SchemaSession schemaSession;
 
     private final ExplorerSchemaProperties schemaProperties = new ExplorerSchemaProperties();
@@ -152,6 +157,8 @@ class ExplorerSchemaServiceTest {
 
                 cacheHydrator,
 
+                poolWarmupService,
+
                 connectionVisibilityService,
 
                 schemaProperties
@@ -164,6 +171,32 @@ class ExplorerSchemaServiceTest {
 
         lenient().when(treeBuilder.schemaCacheVersion(any())).thenReturn(0L);
 
+    }
+
+    @Test
+    void fetchTree_prewarmJdbcConnectionsInExpandedGroups() {
+        ConnectionGroupEntity expanded = group("group-open", true);
+        ConnectionGroupEntity collapsed = group("group-closed", false);
+        ConnectionEntity warm = connectionEntity("conn-warm", "mysql");
+        warm.setGroupId(expanded.getId());
+        ConnectionEntity redis = connectionEntity("conn-redis", "redis");
+        redis.setGroupId(expanded.getId());
+        ConnectionEntity cold = connectionEntity("conn-cold", "mysql");
+        cold.setGroupId(collapsed.getId());
+        List<ConnectionGroupEntity> groups = List.of(expanded, collapsed);
+        List<ConnectionEntity> connections = List.of(warm, redis, cold);
+        List<TreeNode> tree = List.of(treeNode("group-open", "group", "Default"));
+
+        when(connectionContext.requireUserId()).thenReturn(1L);
+        when(connectionVisibilityService.visibleCatalogForCurrentUser())
+                .thenReturn(new ConnectionVisibilityService.VisibleCatalog(groups, connections));
+        when(treeBuilder.buildGroups(groups)).thenReturn(tree);
+
+        assertEquals(tree, service.fetchTree(false));
+
+        verify(poolWarmupService).warmupInBackground(warm);
+        verify(poolWarmupService, never()).warmupInBackground(redis);
+        verify(poolWarmupService, never()).warmupInBackground(cold);
     }
 
     @Test
@@ -460,8 +493,15 @@ class ExplorerSchemaServiceTest {
         verify(schemaSessionPool, never()).withSession(eq(entity), any());
     }
 
-    private static ConnectionEntity connectionEntity(String id, String dbType) {
+    private static ConnectionGroupEntity group(String id, boolean expanded) {
+        ConnectionGroupEntity group = new ConnectionGroupEntity();
+        group.setId(id);
+        group.setLabel(id);
+        group.setExpanded(expanded);
+        return group;
+    }
 
+    private static ConnectionEntity connectionEntity(String id, String dbType) {
         ConnectionEntity entity = new ConnectionEntity();
 
         entity.setId(id);
@@ -499,4 +539,3 @@ class ExplorerSchemaServiceTest {
     }
 
 }
-

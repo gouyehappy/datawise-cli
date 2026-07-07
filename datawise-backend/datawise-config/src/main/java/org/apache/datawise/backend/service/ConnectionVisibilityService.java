@@ -8,6 +8,7 @@ import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.ConnectionGroupEntity;
 import org.apache.datawise.backend.model.TeamEntity;
 import org.apache.datawise.backend.model.TeamMemberEntity;
+import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.security.UserContext;
 import org.springframework.stereotype.Service;
 
@@ -124,7 +125,11 @@ public class ConnectionVisibilityService {
 
     public String defaultGroupIdForCurrentUser() {
         if (UserContext.isGuest()) {
-            return ephemeralCatalogStore.ensureDefaultGroupId(UserContext.getSessionId());
+            String sessionId = UserContext.getSessionId();
+            if (sessionId == null || sessionId.isBlank()) {
+                throw new UnauthorizedException();
+            }
+            return ephemeralCatalogStore.ensureDefaultGroupId(sessionId);
         }
         List<ConnectionGroupEntity> roots = visibleCatalogForCurrentUser().groups().stream()
                 .filter(group -> group.getParentId() == null)
@@ -155,7 +160,7 @@ public class ConnectionVisibilityService {
         }
         ConnectionEntity connection = entity.get();
         if (connection.getUserId() == null) {
-            return isConnectionVisible(connection, userId, teamSharedConnectionIds(userId));
+            return false;
         }
         return userId == connection.getUserId();
     }

@@ -134,6 +134,15 @@ public class SchemaIntrospectionSession implements SchemaSession {
     }
 
     @Override
+    public boolean isConnectionUsable() {
+        try {
+            return connection != null && !connection.isClosed() && connection.isValid(2);
+        } catch (SQLException ex) {
+            return false;
+        }
+    }
+
+    @Override
     public void close() throws SQLException {
         connection.close();
     }

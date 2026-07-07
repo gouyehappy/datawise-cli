@@ -277,8 +277,10 @@ public class TableMigrationExecutor {
                 throw ex;
             } catch (SQLException ex) {
                 lastFailure = ex;
-                markTableFailed(checkpointSink, tableName, signatureSql, policy.batchSize());
                 boolean retryable = attempt < maxAttempts && JdbcConnectionErrors.isTransientConnectionFailure(ex);
+                if (!retryable) {
+                    markTableFailed(checkpointSink, tableName, signatureSql, policy.batchSize());
+                }
                 if (retryable) {
                     log.warn(
                             "Retrying table migration after transient failure table={} attempt={}/{} message={}",
@@ -410,7 +412,7 @@ public class TableMigrationExecutor {
         Optional<Long> targetRowCountAfter = rowCounter.tryCountRows(
                 endpoints.target(),
                 endpoints.targetDatabase(),
-                tableName,
+                physicalTargetTable,
                 null
         );
         int rowsMigrated = toIntRows(copyResult.rowsMigrated());

@@ -8,6 +8,7 @@ import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.ddl.DdlException;
 import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.apache.datawise.backend.security.HeadlessMigrationAuth;
+import org.apache.datawise.backend.service.UserAdminPolicy;
 import org.apache.datawise.backend.jdbc.error.JdbcConnectionErrors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +88,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
         ExceptionLogging.warn(log, "IllegalArgumentException", ex);
-        if (HeadlessMigrationAuth.API_TOKEN_FORBIDDEN.equals(ex.getMessage())) {
+        if (HeadlessMigrationAuth.API_TOKEN_FORBIDDEN.equals(ex.getMessage())
+                || UserAdminPolicy.ADMIN_REQUIRED.equals(ex.getMessage())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.fail(ex.getMessage()));
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.fail(ex.getMessage()));

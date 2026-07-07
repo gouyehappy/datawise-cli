@@ -38,6 +38,16 @@ public class ApiTokenStore {
                 .findFirst();
     }
 
+    public Optional<ApiTokenEntity> findByTokenLookup(String tokenLookup) {
+        if (tokenLookup == null || tokenLookup.isBlank()) {
+            return Optional.empty();
+        }
+        String normalized = tokenLookup.trim();
+        return tokens.stream()
+                .filter(token -> normalized.equals(token.getTokenLookup()))
+                .findFirst();
+    }
+
     public ApiTokenEntity save(ApiTokenEntity token) {
         return tokens.upsert(token, existing -> existing.getId().equals(token.getId()));
     }

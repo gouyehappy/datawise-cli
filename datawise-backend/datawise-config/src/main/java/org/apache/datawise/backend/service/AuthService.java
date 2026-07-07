@@ -25,6 +25,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final GuestSessionCleanupService guestSessionCleanupService;
     private final UserAccessPolicy userAccessPolicy;
+    private final UserAdminPolicy userAdminPolicy;
 
     public AuthService(
             UserStore userStore,
@@ -32,7 +33,8 @@ public class AuthService {
             AuthSessionPolicyService sessionPolicy,
             PasswordEncoder passwordEncoder,
             GuestSessionCleanupService guestSessionCleanupService,
-            UserAccessPolicy userAccessPolicy
+            UserAccessPolicy userAccessPolicy,
+            UserAdminPolicy userAdminPolicy
     ) {
         this.userStore = userStore;
         this.sessionStore = sessionStore;
@@ -40,6 +42,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.guestSessionCleanupService = guestSessionCleanupService;
         this.userAccessPolicy = userAccessPolicy;
+        this.userAdminPolicy = userAdminPolicy;
     }
 
     public LoginResult login(String userName, String password) {
@@ -61,6 +64,9 @@ public class AuthService {
     }
 
     public void signOut() {
+        if (UserContext.isApiTokenAuth()) {
+            return;
+        }
         String sessionId = UserContext.getSessionId();
         boolean guest = userAccessPolicy.isGuestSession();
         if (sessionId != null) {
@@ -73,22 +79,34 @@ public class AuthService {
         Long userId = UserContext.requireUserId();
         UserEntity user = userStore.findById(userId)
                 .orElseThrow(() -> new UnauthorizedException());
+        if (UserContext.isApiTokenAuth()) {
+            return new SessionInfo(
+                    UserContext.getSessionId(),
+                    user.getUsername(),
+                    false,
+                    null,
+                    userId
+            );
+        }
         SessionEntity session = sessionStore.findById(UserContext.getSessionId())
                 .orElseThrow(() -> new UnauthorizedException());
         return toSessionInfo(session, user);
     }
 
     public AuthSessionPolicyDto getSessionPolicy() {
+        userAccessPolicy.requireUserId();
         return sessionPolicy.currentPolicy();
     }
 
     public AuthSessionPolicyDto updateSessionPolicy(AuthSessionPolicyDto policy) {
-        userAccessPolicy.requireRegisteredUser();
-        userAccessPolicy.requireUserId();
+        userAdminPolicy.requireAdminUser();
         return sessionPolicy.updatePolicy(policy);
     }
 
     public void changePassword(String currentPassword, String newPassword) {
+        if (UserContext.isApiTokenAuth()) {
+            throw new UnauthorizedException();
+        }
         userAccessPolicy.requireRegisteredUser();
         Long userId = userAccessPolicy.requireUserId();
         UserEntity user = userStore.findById(userId)
@@ -107,7 +125,7 @@ public class AuthService {
 
     private void invalidateCurrentSessionIfPresent() {
         String sessionId = UserContext.getSessionId();
-        if (sessionId == null || sessionId.isBlank()) {
+        if (sessionId == null || sessionId.isBlank() || UserContext.isApiTokenAuth()) {
             return;
         }
         guestSessionCleanupService.cleanupSession(sessionId, userAccessPolicy.isGuestSession());

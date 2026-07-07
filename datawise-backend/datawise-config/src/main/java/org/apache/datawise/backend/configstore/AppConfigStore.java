@@ -6,6 +6,7 @@ import org.apache.datawise.backend.configstore.app.AppConfigSections;
 import org.apache.datawise.backend.security.AppConfigSecrets;
 import org.apache.datawise.backend.security.SecretValueCodec;
 import org.apache.datawise.backend.common.support.XmlConfigSupport;
+import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -52,13 +53,13 @@ public class AppConfigStore {
             AppConfigSecrets.decryptAiSection(config, secretValueCodec);
             return Optional.of(config);
         } catch (Exception ex) {
-            log.warn("Failed to parse app config at {}", path, ex);
+            ExceptionLogging.warn(log, "config.app.parse path=" + path, ex);
             quarantineCorruptConfig(path);
             return Optional.empty();
         }
     }
 
-    public void writeAppConfig(Map<String, Object> config) throws Exception {
+    public synchronized void writeAppConfig(Map<String, Object> config) throws Exception {
         configDirectory.ensureExists();
         var path = configDirectory.resolve(ConfigPaths.APP);
         Map<String, Object> toWrite = AppConfigSections.deepCopy(config);
@@ -94,19 +95,29 @@ public class AppConfigStore {
         writeAppConfig(config);
     }
 
-    public int migratePlaintextSecretsIfNeeded() throws Exception {
+    public synchronized int migratePlaintextSecretsIfNeeded() throws Exception {
         var path = configDirectory.resolve(ConfigPaths.APP);
         if (!XmlConfigSupport.isRegularFile(path)) {
             return 0;
         }
-        Document document = XmlConfigSupport.readDocument(path);
-        Map<String, Object> config = AppConfigSections.mapFromDocument(objectMapper, document);
-        int plaintextKeys = AppConfigSecrets.countPlaintextApiKeys(config, secretValueCodec);
-        if (plaintextKeys == 0) {
+        if (!XmlConfigSupport.hasUsableXmlContent(path)) {
+            quarantineCorruptConfig(path);
             return 0;
         }
-        writeAppConfig(config);
-        return plaintextKeys;
+        try {
+            Document document = XmlConfigSupport.readDocument(path);
+            Map<String, Object> config = AppConfigSections.mapFromDocument(objectMapper, document);
+            int plaintextKeys = AppConfigSecrets.countPlaintextApiKeys(config, secretValueCodec);
+            if (plaintextKeys == 0) {
+                return 0;
+            }
+            writeAppConfig(config);
+            return plaintextKeys;
+        } catch (Exception ex) {
+            ExceptionLogging.warn(log, "config.app.migrateSecrets path=" + path, ex);
+            quarantineCorruptConfig(path);
+            return 0;
+        }
     }
 
     public Optional<Map<String, Object>> readSqlSnippets(String layer) {
@@ -122,7 +133,7 @@ public class AppConfigStore {
         try {
             return readSnippetPayload(path);
         } catch (Exception ex) {
-            log.warn("Failed to parse {} at {}", filename, path, ex);
+            ExceptionLogging.warn(log, "config.sqlSnippets.parse file=" + filename + " path=" + path, ex);
             quarantineCorruptSqlSnippets(path);
             return Optional.empty();
         }
@@ -157,7 +168,7 @@ public class AppConfigStore {
             prefs.put("autoDownload", XmlConfigSupport.childBoolean(root, "auto-download", true));
             return prefs;
         } catch (Exception ex) {
-            log.warn("Failed to parse updater preferences at {}", path, ex);
+            ExceptionLogging.warn(log, "config.updater.parse path=" + path, ex);
             quarantineCorruptConfig(path);
             return defaultUpdaterPreferences();
         }
@@ -205,7 +216,7 @@ public class AppConfigStore {
                 log.warn("Quarantined corrupt sql snippets: {} -> {}", path, backup);
             }
         } catch (Exception ex) {
-            log.warn("Failed to quarantine corrupt sql snippets at {}", path, ex);
+            ExceptionLogging.warn(log, "config.sqlSnippets.quarantine path=" + path, ex);
         }
     }
 
@@ -216,7 +227,7 @@ public class AppConfigStore {
                 log.warn("Quarantined corrupt app config: {} -> {}", path, backup);
             }
         } catch (Exception ex) {
-            log.warn("Failed to quarantine corrupt app config at {}", path, ex);
+            ExceptionLogging.warn(log, "config.app.quarantine path=" + path, ex);
         }
     }
 }

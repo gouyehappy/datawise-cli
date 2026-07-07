@@ -207,6 +207,8 @@ public class SqlExecuteService {
 
                 }
 
+                throw new IllegalStateException("SQL session not found or already closed");
+
             }
 
 
