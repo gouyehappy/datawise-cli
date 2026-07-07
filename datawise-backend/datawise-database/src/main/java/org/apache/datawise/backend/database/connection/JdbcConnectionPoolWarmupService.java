@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.database.connection;
 
+import jakarta.annotation.PreDestroy;
 import org.apache.datawise.backend.config.JdbcPoolProperties;
 import org.apache.datawise.backend.jdbc.support.JdbcDriverConnectionFactory;
 import org.apache.datawise.backend.model.ConnectionEntity;
@@ -12,11 +13,15 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * After a successful connect probe, borrows connections up to {@link JdbcPoolProperties#getMinimumIdle()}
@@ -30,6 +35,19 @@ public class JdbcConnectionPoolWarmupService {
 
     private final JdbcDriverConnectionFactory connectionFactory;
     private final JdbcPoolProperties poolProperties;
+    private final AtomicInteger backgroundThreadId = new AtomicInteger();
+    private final ExecutorService backgroundExecutor = Executors.newFixedThreadPool(
+            MAX_WARMUP_PARALLELISM,
+            runnable -> {
+                Thread thread = new Thread(
+                        runnable,
+                        "jdbc-pool-warmup-" + backgroundThreadId.incrementAndGet()
+                );
+                thread.setDaemon(true);
+                return thread;
+            }
+    );
+    private final Set<String> backgroundWarmups = ConcurrentHashMap.newKeySet();
 
     public JdbcConnectionPoolWarmupService(
             JdbcDriverConnectionFactory connectionFactory,
@@ -43,7 +61,7 @@ public class JdbcConnectionPoolWarmupService {
         if (!usesJdbcPool(entity)) {
             return WarmupResult.skip();
         }
-        int target = Math.max(1, poolProperties.getMinimumIdle());
+        int target = targetWarmupConnections();
         int parallelism = Math.min(MAX_WARMUP_PARALLELISM, target);
         ExecutorService executor = Executors.newFixedThreadPool(parallelism);
         try {
@@ -87,10 +105,70 @@ public class JdbcConnectionPoolWarmupService {
         }
     }
 
+    public WarmupResult warmupForConnect(ConnectionEntity entity) {
+        if (!usesJdbcPool(entity)) {
+            return WarmupResult.skip();
+        }
+        int target = targetWarmupConnections();
+        int warmed = borrowAndValidateSafely(entity, "JDBC initial pool warmup failed connectionId=") ? 1 : 0;
+        if (warmed > 0) {
+            log.debug("Warmed initial JDBC pool connectionId={} connections={}/{}", entity.getId(), warmed, target);
+            warmupRemainingInBackground(entity, target - warmed);
+        }
+        return new WarmupResult(warmed, target);
+    }
+
+    private int targetWarmupConnections() {
+        return Math.max(1, poolProperties.getMinimumIdle());
+    }
+
+    private void warmupRemainingInBackground(ConnectionEntity entity, int remaining) {
+        if (remaining <= 0) {
+            return;
+        }
+        String connectionId = entity.getId();
+        if (!backgroundWarmups.add(connectionId)) {
+            return;
+        }
+        try {
+            backgroundExecutor.submit(() -> {
+                int warmed = 0;
+                try {
+                    for (int attempt = 0; attempt < remaining; attempt++) {
+                        if (borrowAndValidateSafely(entity, "JDBC background pool warmup failed connectionId=")) {
+                            warmed++;
+                        }
+                    }
+                    if (warmed > 0) {
+                        log.debug("Warmed JDBC pool in background connectionId={} connections={}", connectionId, warmed);
+                    }
+                } finally {
+                    backgroundWarmups.remove(connectionId);
+                }
+            });
+        } catch (RejectedExecutionException ex) {
+            backgroundWarmups.remove(connectionId);
+        }
+    }
+
+    private boolean borrowAndValidateSafely(ConnectionEntity entity, String messagePrefix) {
+        try {
+            return borrowAndValidate(entity);
+        } catch (SQLException ex) {
+            ExceptionLogging.warn(log, messagePrefix + entity.getId(), ex);
+            return false;
+        }
+    }
+
     private boolean borrowAndValidate(ConnectionEntity entity) throws SQLException {
         try (Connection connection = connectionFactory.open(entity)) {
             return connection.isValid(3);
         }
+    }
+
+    @PreDestroy
+    void shutdown() {
+        backgroundExecutor.shutdownNow();
     }
 
     public static boolean usesJdbcPool(ConnectionEntity entity) {

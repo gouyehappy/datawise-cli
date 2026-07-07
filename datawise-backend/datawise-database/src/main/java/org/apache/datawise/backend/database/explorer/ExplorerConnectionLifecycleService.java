@@ -68,7 +68,7 @@ public class ExplorerConnectionLifecycleService {
         ConnectionEntity entity = requireAvailableConnection(connectionId);
         long startedAt = System.currentTimeMillis();
         if (JdbcConnectionPoolWarmupService.usesJdbcPool(entity)) {
-            JdbcConnectionPoolWarmupService.WarmupResult warmup = poolWarmupService.warmup(entity);
+            JdbcConnectionPoolWarmupService.WarmupResult warmup = poolWarmupService.warmupForConnect(entity);
             long latency = System.currentTimeMillis() - startedAt;
             if (warmup.warmed() > 0) {
                 ConnectionTestResult result = new ConnectionTestResult(
@@ -98,7 +98,7 @@ public class ExplorerConnectionLifecycleService {
         ConnectionTestResult result = connectorFacade.catalog().pingConnection(entity);
         JdbcConnectionPoolWarmupService.WarmupResult warmup = JdbcConnectionPoolWarmupService.WarmupResult.skip();
         if (result.ok() && JdbcConnectionPoolWarmupService.usesJdbcPool(entity)) {
-            warmup = poolWarmupService.warmup(entity);
+            warmup = poolWarmupService.warmupForConnect(entity);
         }
         PerfLogger.log(
                 log,

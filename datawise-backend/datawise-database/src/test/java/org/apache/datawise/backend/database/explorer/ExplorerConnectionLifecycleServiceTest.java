@@ -68,13 +68,13 @@ class ExplorerConnectionLifecycleServiceTest {
     @Test
     void connect_warmupSuccessSkipsSeparateProbe() {
         ConnectionEntity entity = stubConnection("conn-2");
-        when(poolWarmupService.warmup(entity)).thenReturn(new JdbcConnectionPoolWarmupService.WarmupResult(2, 2));
+        when(poolWarmupService.warmupForConnect(entity)).thenReturn(new JdbcConnectionPoolWarmupService.WarmupResult(1, 2));
 
         ConnectionTestResult result = service.connect("conn-2");
 
         assertTrue(result.ok());
         assertTrue(result.message().contains("pool warmed"));
-        verify(poolWarmupService).warmup(entity);
+        verify(poolWarmupService).warmupForConnect(entity);
         verify(catalogAccess, never()).pingConnection(entity);
         verify(catalogAccess, never()).testConnection(entity);
     }
@@ -83,13 +83,13 @@ class ExplorerConnectionLifecycleServiceTest {
     void connect_fallsBackToPingWhenWarmupFails() {
         ConnectionEntity entity = stubConnection("conn-4");
         when(connectorFacade.catalog()).thenReturn(catalogAccess);
-        when(poolWarmupService.warmup(entity)).thenReturn(new JdbcConnectionPoolWarmupService.WarmupResult(0, 2));
+        when(poolWarmupService.warmupForConnect(entity)).thenReturn(new JdbcConnectionPoolWarmupService.WarmupResult(0, 2));
         when(catalogAccess.pingConnection(entity)).thenReturn(new ConnectionTestResult(false, "fail", 3));
 
         ConnectionTestResult result = service.connect("conn-4");
 
         assertFalse(result.ok());
-        verify(poolWarmupService).warmup(entity);
+        verify(poolWarmupService).warmupForConnect(entity);
         verify(catalogAccess).pingConnection(entity);
     }
 
@@ -108,7 +108,7 @@ class ExplorerConnectionLifecycleServiceTest {
     @Test
     void reconnect_disconnectsBeforeTesting() {
         ConnectionEntity entity = stubConnection("conn-3");
-        when(poolWarmupService.warmup(entity)).thenReturn(new JdbcConnectionPoolWarmupService.WarmupResult(1, 1));
+        when(poolWarmupService.warmupForConnect(entity)).thenReturn(new JdbcConnectionPoolWarmupService.WarmupResult(1, 1));
 
         ConnectionTestResult result = service.reconnect("conn-3");
 
@@ -116,7 +116,7 @@ class ExplorerConnectionLifecycleServiceTest {
         verify(jdbcDriverConnectionFactory).evictPool("conn-3");
         verify(schemaSessionPool).invalidate("conn-3");
         verify(treeBuilder).saveSchemaChildren("conn-3", List.of());
-        verify(poolWarmupService).warmup(entity);
+        verify(poolWarmupService).warmupForConnect(entity);
         verify(catalogAccess, never()).testConnection(entity);
     }
 
