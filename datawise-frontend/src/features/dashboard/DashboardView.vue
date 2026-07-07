@@ -4,6 +4,7 @@ import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
 import type {NavModule} from '@/core/types'
 import DashboardLayoutDialog from '@/features/dashboard/components/DashboardLayoutDialog.vue'
+import DashboardAiWidgetDialog from '@/features/dashboard/components/DashboardAiWidgetDialog.vue'
 import {DwIcon} from '@/core/icons'
 import type {DwIconName} from '@/core/icons'
 import DashboardWidgetById from '@/features/dashboard/components/DashboardWidgetById.vue'
@@ -38,6 +39,10 @@ import {usePluginPresetSummary} from '@/features/plugin/composables/usePluginPre
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useTeamStore} from '@/features/team/stores/team-store'
 import {DwButton} from '@/core/components'
+import ReleaseHighlightsCards from '@/features/layout/components/ReleaseHighlightsCards.vue'
+import {extractConnectionsFromTree} from '@/features/explorer/utils/tree-targets'
+import type {ReleaseHighlightAction} from '@/features/layout/services/release-highlights.service'
+import {applySuggestedDashboardWidget} from '@/features/dashboard/services/dashboard-widget-ai.service'
 
 const STAT_META: Record<DashboardStatKey, { tone: string; icon: 'db' | 'sql' | 'save' | 'plugin' }> = {
   connections: {tone: 'sky', icon: 'db'},
@@ -65,6 +70,7 @@ const notifications = useNotificationStore()
 const {hasOpenTabs, tabs, activeTabId} = storeToRefs(workspace)
 
 const layoutDialogOpen = ref(false)
+const aiWidgetDialogOpen = ref(false)
 
 const {
     layoutEditMode,
@@ -280,6 +286,43 @@ async function openOnCallConnection(connectionId: string) {
     layout.showToast(t('explorer.teamSharedMissing', {id: connectionId}))
   }
 }
+
+function runReleaseAction(action: ReleaseHighlightAction) {
+  if (action === 'open_ai') {
+    openAi()
+    return
+  }
+  if (action === 'open_sql_console') {
+    openNewConsole()
+    return
+  }
+  if (action === 'open_federated_wizard') {
+    const connections = extractConnectionsFromTree(explorer.tree)
+    const scoped = connections.find((item) => item.databases.length > 0)
+    if (!scoped) {
+      openDatabase()
+      layout.showToast(t('platform.release.needScope'))
+      return
+    }
+    openDatabase()
+    workspace.openPlatformCatalog({
+      feature: 'federated_views',
+      connectionId: scoped.id,
+      database: scoped.databases[0].label,
+      instanceId: scoped.databases[0].id,
+    })
+  }
+}
+
+function openAiWidgetDialog() {
+  aiWidgetDialogOpen.value = true
+}
+
+function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; column: DashboardWidgetColumn }) {
+  const next = applySuggestedDashboardWidget(appConfig.dashboardPreferences, payload.widgetId, payload.column)
+  appConfig.patchDashboardPreferences(next)
+  layout.showToast(t('dashboard.aiWidget.applied', {widget: t(`dashboard.widgets.${payload.widgetId}`)}))
+}
 </script>
 
 <template>
@@ -322,6 +365,9 @@ async function openOnCallConnection(connectionId: string) {
             <DwButton variant="secondary" class="mp-btn" @click="layoutDialogOpen = true">
               {{ t('dashboard.customizeWidgets') }}
             </DwButton>
+            <DwButton variant="secondary" class="mp-btn" @click="openAiWidgetDialog">
+              {{ t('dashboard.aiWidget.open') }}
+            </DwButton>
           </div>
         </div>
       </header>
@@ -329,6 +375,8 @@ async function openOnCallConnection(connectionId: string) {
       <p v-if="layoutEditMode" class="mp-hint-banner" role="status">
         {{ t('dashboard.layoutEditHint') }}
       </p>
+
+      <ReleaseHighlightsCards scope="dashboard" @action="runReleaseAction"/>
 
       <section class="mp-grid-4 dash-stats" :aria-label="t('dashboard.metrics')">
         <button
@@ -520,6 +568,10 @@ async function openOnCallConnection(connectionId: string) {
     </div>
 
     <DashboardLayoutDialog v-model:open="layoutDialogOpen"/>
+    <DashboardAiWidgetDialog
+        v-model:open="aiWidgetDialogOpen"
+        @apply="applyAiWidget"
+    />
   </div>
 </template>
 

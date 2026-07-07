@@ -71,4 +71,45 @@ export const ONBOARDING_TOUR_STEPS: OnboardingTourStep[] = [
     },
 ]
 
-export const ONBOARDING_STEP_IDS = ONBOARDING_TOUR_STEPS.map((step) => step.id)
+export const ONBOARDING_FIRST_INSIGHT_STEPS: OnboardingTourStep[] = [
+    {
+        id: 'insightWelcome',
+        placement: 'center',
+        prepare({layout, appConfig}) {
+            appConfig.setShowExplorerPanel(true)
+            layout.setModule('database')
+        },
+    },
+    {
+        id: 'insightExplorer',
+        target: 'explorer-panel',
+        placement: 'right',
+        prepare({layout, appConfig}) {
+            appConfig.setShowExplorerPanel(true)
+            layout.setModule('database')
+        },
+    },
+    {
+        id: 'insightAi',
+        target: 'nav-ai',
+        placement: 'right',
+        prepare({layout}) {
+            layout.setModule('ai')
+        },
+    },
+    {
+        id: 'insightDone',
+        placement: 'center',
+    },
+]
+
+export type OnboardingTourPreset = 'default' | 'first-insight'
+
+export function resolveOnboardingTourSteps(preset: OnboardingTourPreset): OnboardingTourStep[] {
+    return preset === 'first-insight' ? ONBOARDING_FIRST_INSIGHT_STEPS : ONBOARDING_TOUR_STEPS
+}
+
+export const ONBOARDING_STEP_IDS = [
+    ...ONBOARDING_TOUR_STEPS.map((step) => step.id),
+    ...ONBOARDING_FIRST_INSIGHT_STEPS.map((step) => step.id),
+]

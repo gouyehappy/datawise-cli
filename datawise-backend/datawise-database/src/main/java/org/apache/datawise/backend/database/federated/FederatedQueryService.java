@@ -106,12 +106,19 @@ public class FederatedQueryService {
         }
 
         if (containsFederatedJoin(view.getSql())) {
-            throw new IllegalArgumentException("federated JOIN execution is not supported yet");
+            FederatedJoinSqlParser.FederatedJoinPlan plan = FederatedJoinSqlParser.parse(view.getSql());
+            return FederatedJoinExecutor.execute(
+                    view.getSql(),
+                    plan,
+                    sourceByAlias,
+                    sqlService,
+                    maxRows
+            );
         }
 
         Map<String, ExecuteSqlResult> partialResults = new LinkedHashMap<>();
         for (FederatedViewSource source : view.getSources()) {
-            String subSql = extractSubQuery(view.getSql(), source.getAlias());
+            String subSql = FederatedSqlSubquerySupport.extractSubQuery(view.getSql(), source.getAlias());
             if (subSql == null || subSql.isBlank()) {
                 subSql = "SELECT * FROM " + source.getAlias();
             }
@@ -184,20 +191,6 @@ public class FederatedQueryService {
                 null,
                 null
         );
-    }
-
-    private static String extractSubQuery(String viewSql, String alias) {
-        String marker = "@" + alias;
-        int idx = viewSql.indexOf(marker);
-        if (idx < 0) {
-            return null;
-        }
-        int start = viewSql.lastIndexOf('(', idx);
-        int end = viewSql.indexOf(')', idx);
-        if (start >= 0 && end > start) {
-            return viewSql.substring(start + 1, end).trim();
-        }
-        return null;
     }
 
     private static String formatSourceLabel(FederatedViewSource source) {

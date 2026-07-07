@@ -17,16 +17,22 @@ import AnalysisCanvasRerunDialog from '@/features/platform/components/AnalysisCa
 import SchemaDriftReportDialog from '@/features/platform/components/SchemaDriftReportDialog.vue'
 import type {SchemaDriftReport} from '@/features/platform/types/platform.types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import FederatedViewWizardDialog from '@/features/platform/components/FederatedViewWizardDialog.vue'
 import PlatformCatalogFormDialog from '@/features/workspace/components/PlatformCatalogFormDialog.vue'
 import {usePlatformCatalog} from '@/features/workspace/composables/usePlatformCatalog'
+import ReleaseHighlightsCards from '@/features/layout/components/ReleaseHighlightsCards.vue'
+import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import type {ReleaseHighlightAction} from '@/features/layout/services/release-highlights.service'
 
 const props = defineProps<{ tab: WorkspaceTab }>()
 const {t} = useI18n()
 const layout = useLayoutStore()
+const workspace = useWorkspaceStore()
 
 const {rows, loading, error, reload} = usePlatformCatalog(props.tab)
 const selectedKeys = ref<string[]>([])
 const formOpen = ref(false)
+const federatedWizardOpen = ref(false)
 const deleteConfirmOpen = ref(false)
 const deleting = ref(false)
 const autoGenerating = ref(false)
@@ -74,6 +80,10 @@ const deleteConfirmMessage = computed(() => {
 })
 
 function openAdd() {
+  if (isFederatedViews.value) {
+    federatedWizardOpen.value = true
+    return
+  }
   formOpen.value = true
 }
 
@@ -170,9 +180,26 @@ async function executeFederatedView() {
     runningAction.value = false
   }
 }
+
+function runReleaseAction(action: ReleaseHighlightAction) {
+  if (action === 'open_federated_wizard') {
+    federatedWizardOpen.value = true
+    return
+  }
+  if (action === 'open_sql_console') {
+    layout.setModule('database')
+    workspace.openConsole()
+    return
+  }
+  if (action === 'open_ai') {
+    layout.setModule('ai')
+  }
+}
 </script>
 
 <template>
+  <ReleaseHighlightsCards scope="platform" @action="runReleaseAction"/>
+
   <DwDataGrid
       v-model:selected-keys="selectedKeys"
       :rows="rows"
@@ -242,8 +269,15 @@ async function executeFederatedView() {
   </DwDataGrid>
 
   <PlatformCatalogFormDialog
+      v-if="!isFederatedViews"
       v-model:open="formOpen"
       :feature="feature"
+      :tab="tab"
+      @saved="onSaved"
+  />
+
+  <FederatedViewWizardDialog
+      v-model:open="federatedWizardOpen"
       :tab="tab"
       @saved="onSaved"
   />

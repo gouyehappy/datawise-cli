@@ -1,4 +1,5 @@
 export const ONBOARDING_COMPLETED_KEY = 'dw-cli-onboarding-completed'
+export const ONBOARDING_FIRST_INSIGHT_COMPLETED_KEY = 'dw-cli-onboarding-first-insight-completed'
 
 export {
     ONBOARDING_STEP_IDS,
@@ -24,4 +25,12 @@ export function clearOnboardingCompleted(storage: Storage = localStorage): void 
 
 export function shouldShowOnboardingOnBoot(storage: Storage = localStorage): boolean {
     return !isOnboardingCompleted(storage)
+}
+
+export function isFirstInsightGuideCompleted(storage: Storage = localStorage): boolean {
+    return storage.getItem(ONBOARDING_FIRST_INSIGHT_COMPLETED_KEY) === '1'
+}
+
+export function markFirstInsightGuideCompleted(storage: Storage = localStorage): void {
+    storage.setItem(ONBOARDING_FIRST_INSIGHT_COMPLETED_KEY, '1')
 }

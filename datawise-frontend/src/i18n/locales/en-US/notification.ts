@@ -82,6 +82,10 @@ export default {
             title: 'Scheduled task failed',
             body: '"{name}" failed: {message}',
         },
+        metricDefinitionChanged: {
+            title: 'Metric definition updated',
+            body: '"{name}" changed and lineage impact should be re-checked.',
+        },
     },
     time: {
         justNow: 'Just now',

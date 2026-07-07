@@ -4,6 +4,7 @@ import org.apache.datawise.backend.ai.tag.AiTableTagService;
 import org.apache.datawise.backend.configstore.SemanticMetricStore;
 import org.apache.datawise.backend.database.table.TableDetailService;
 import org.apache.datawise.backend.domain.AutoGenerateSemanticMetricsRequest;
+import org.apache.datawise.backend.domain.SaveSemanticMetricRequest;
 import org.apache.datawise.backend.domain.SemanticMetricDto;
 import org.apache.datawise.backend.domain.TableColumnDetail;
 import org.apache.datawise.backend.domain.TablePropertiesResult;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -72,6 +74,62 @@ class SemanticLayerServiceTest {
 
         assertEquals(2, result.size());
         verify(metricStore, never()).upsert(any(SemanticMetricEntry.class));
+    }
+
+    @Test
+    void saveIncrementsDefinitionVersionWhenExpressionChanges() {
+        SemanticMetricEntry existing = new SemanticMetricEntry();
+        existing.setId("metric-1");
+        existing.setName("gmv");
+        existing.setExpression("sum(amount)");
+        existing.setDefinitionVersion(2);
+        existing.setDefinitionUpdatedAt(1000L);
+        when(metricStore.listAll()).thenReturn(List.of(existing));
+        when(metricStore.upsert(any(SemanticMetricEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SemanticMetricDto saved = service.save(new SaveSemanticMetricRequest(
+                "metric-1",
+                "conn-1",
+                "shop",
+                "gmv",
+                "sum(paid_amount)",
+                "gross merchandise value",
+                "CNY",
+                List.of("orders"),
+                List.of("order_amount"),
+                "switch to paid amount"
+        ));
+
+        assertEquals(3, saved.definitionVersion());
+        assertEquals("switch to paid amount", saved.latestChangeNote());
+        assertTrue(saved.definitionUpdatedAt() != null && saved.definitionUpdatedAt() > 1000L);
+    }
+
+    @Test
+    void saveKeepsDefinitionVersionWhenExpressionUnchanged() {
+        SemanticMetricEntry existing = new SemanticMetricEntry();
+        existing.setId("metric-1");
+        existing.setName("gmv");
+        existing.setExpression("sum(amount)");
+        existing.setDefinitionVersion(2);
+        existing.setDefinitionUpdatedAt(1000L);
+        when(metricStore.listAll()).thenReturn(List.of(existing));
+        when(metricStore.upsert(any(SemanticMetricEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SemanticMetricDto saved = service.save(new SaveSemanticMetricRequest(
+                "metric-1",
+                "conn-1",
+                "shop",
+                "gmv",
+                "sum(amount)",
+                "gross merchandise value",
+                "CNY",
+                List.of("orders"),
+                List.of("order_amount"),
+                "text tweak only"
+        ));
+
+        assertEquals(2, saved.definitionVersion());
     }
 
     private static ConnectionEntity connection(String id) {

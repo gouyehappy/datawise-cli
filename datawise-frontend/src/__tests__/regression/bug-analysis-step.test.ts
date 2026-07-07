@@ -11,6 +11,7 @@ import {
     isStepEventStale,
     isStepHiddenFromProgress,
     normalizeAnalysisMode,
+    reconcileTerminalAnalysisSteps,
     stripDisabledAnalysisArtifacts,
     visibleAnalysisStepOrder,
 } from '@/features/ai/analysis/services/analysis-step.service'
@@ -152,5 +153,31 @@ describe('analysis-step.service', () => {
         assert.equal(isStepEventStale('sql_validate', steps, order), true)
         assert.equal(isStepEventStale('sql_execute', steps, order), true)
         assert.equal(isStepEventStale('sql_generate', steps, order), false)
+    })
+
+    it('reconciles missing terminal steps from final analysis result', () => {
+        const steps: AiAnalysisStepEvent[] = [
+            {step: 'step_route', status: 'ok', message: 'route', detail: {disabledSteps: []}},
+            {step: 'sql_execute', status: 'ok', message: 'done'},
+        ]
+        const result: AiChatReplyPayload = {
+            reply: '分析完成',
+            mode: 'analysis',
+            sql: 'select 1',
+            chart: {
+                type: 'bar',
+                title: 't',
+                xField: 'x',
+                yFields: ['y'],
+                seriesNames: ['y'],
+            },
+            report: {markdown: '# report'},
+        }
+
+        const reconciled = reconcileTerminalAnalysisSteps(steps, result)
+
+        assert.equal(reconciled.some((s) => s.step === 'chart' && s.status === 'ok'), true)
+        assert.equal(reconciled.some((s) => s.step === 'summary' && s.status === 'ok'), true)
+        assert.equal(reconciled.some((s) => s.step === 'report' && s.status === 'ok'), true)
     })
 })

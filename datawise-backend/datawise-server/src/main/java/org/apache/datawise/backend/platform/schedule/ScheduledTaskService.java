@@ -2,6 +2,7 @@ package org.apache.datawise.backend.platform.schedule;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.datawise.backend.ai.canvas.AnalysisCanvasPipelineService;
 import org.apache.datawise.backend.ai.canvas.AnalysisCanvasService;
 import org.apache.datawise.backend.common.support.IdGenerator;
 import org.apache.datawise.backend.common.support.ExceptionLogging;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +46,7 @@ public class ScheduledTaskService {
     private final SqlService sqlService;
     private final SqlReviewService sqlReviewService;
     private final SchemaDriftService schemaDriftService;
-    private final AnalysisCanvasService analysisCanvasService;
+    private final AnalysisCanvasPipelineService analysisCanvasPipelineService;
     private final TeamService teamService;
     private final WorkspaceNotificationService notificationService;
     private final ObjectMapper objectMapper;
@@ -54,7 +56,7 @@ public class ScheduledTaskService {
             SqlService sqlService,
             SqlReviewService sqlReviewService,
             SchemaDriftService schemaDriftService,
-            AnalysisCanvasService analysisCanvasService,
+            AnalysisCanvasPipelineService analysisCanvasPipelineService,
             TeamService teamService,
             WorkspaceNotificationService notificationService,
             ObjectMapper objectMapper
@@ -63,7 +65,7 @@ public class ScheduledTaskService {
         this.sqlService = sqlService;
         this.sqlReviewService = sqlReviewService;
         this.schemaDriftService = schemaDriftService;
-        this.analysisCanvasService = analysisCanvasService;
+        this.analysisCanvasPipelineService = analysisCanvasPipelineService;
         this.teamService = teamService;
         this.notificationService = notificationService;
         this.objectMapper = objectMapper;
@@ -137,14 +139,20 @@ public class ScheduledTaskService {
         Instant started = Instant.now();
         entry.setLastRunAt(started);
         try {
-            switch (entry.getType()) {
-                case ScheduledTaskEntry.TYPE_SQL -> runSqlTask(entry);
+            String successMessage = switch (entry.getType()) {
+                case ScheduledTaskEntry.TYPE_SQL -> {
+                    runSqlTask(entry);
+                    yield "completed";
+                }
                 case ScheduledTaskEntry.TYPE_CANVAS -> runCanvasTask(entry);
-                case ScheduledTaskEntry.TYPE_SCHEMA_DRIFT -> runSchemaDriftTask(entry);
+                case ScheduledTaskEntry.TYPE_SCHEMA_DRIFT -> {
+                    runSchemaDriftTask(entry);
+                    yield "completed";
+                }
                 default -> throw new IllegalArgumentException("unsupported task type: " + entry.getType());
-            }
+            };
             entry.setLastRunStatus("ok");
-            entry.setLastRunMessage("completed");
+            entry.setLastRunMessage(successMessage);
             pushTaskNotification(entry, true, null);
         } catch (Exception ex) {
             entry.setLastRunStatus("failed");
@@ -207,10 +215,27 @@ public class ScheduledTaskService {
         }
     }
 
-    private void runCanvasTask(ScheduledTaskEntry entry) throws Exception {
+    private String runCanvasTask(ScheduledTaskEntry entry) throws Exception {
         JsonNode payload = parsePayload(entry.getPayloadJson());
         String canvasId = text(payload, "canvasId");
-        analysisCanvasService.rerun(new RerunAnalysisCanvasRequest(canvasId, null));
+        Map<String, String> parameterValues = readStringMap(payload.get("parameterValues"));
+        AnalysisCanvasPipelineService.PipelineRerunResult result = analysisCanvasPipelineService.rerunPipeline(
+                new RerunAnalysisCanvasRequest(canvasId, parameterValues.isEmpty() ? null : parameterValues)
+        );
+        return result.statusMessage();
+    }
+
+    private static Map<String, String> readStringMap(JsonNode node) {
+        if (node == null || !node.isObject()) {
+            return Map.of();
+        }
+        Map<String, String> values = new LinkedHashMap<>();
+        node.fields().forEachRemaining(field -> {
+            if (field.getValue() != null && !field.getValue().isNull()) {
+                values.put(field.getKey(), field.getValue().asText(""));
+            }
+        });
+        return values;
     }
 
     private void runSchemaDriftTask(ScheduledTaskEntry entry) throws Exception {

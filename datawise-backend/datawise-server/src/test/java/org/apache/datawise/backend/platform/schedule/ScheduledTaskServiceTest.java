@@ -1,12 +1,13 @@
 package org.apache.datawise.backend.platform.schedule;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.datawise.backend.ai.canvas.AnalysisCanvasService;
+import org.apache.datawise.backend.ai.canvas.AnalysisCanvasPipelineService;
 import org.apache.datawise.backend.configstore.ScheduledTaskStore;
 import org.apache.datawise.backend.database.drift.SchemaDriftService;
 import org.apache.datawise.backend.database.sql.SqlReviewService;
 import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
+import org.apache.datawise.backend.domain.RerunAnalysisCanvasRequest;
 import org.apache.datawise.backend.domain.ScheduledTaskDto;
 import org.apache.datawise.backend.domain.SqlReviewRequest;
 import org.apache.datawise.backend.domain.SqlReviewResultDto;
@@ -32,6 +33,7 @@ class ScheduledTaskServiceTest {
     private SqlService sqlService;
     private SqlReviewService sqlReviewService;
     private TeamService teamService;
+    private AnalysisCanvasPipelineService analysisCanvasPipelineService;
     private ScheduledTaskService service;
 
     @BeforeEach
@@ -40,12 +42,13 @@ class ScheduledTaskServiceTest {
         sqlService = mock(SqlService.class);
         sqlReviewService = mock(SqlReviewService.class);
         teamService = mock(TeamService.class);
+        analysisCanvasPipelineService = mock(AnalysisCanvasPipelineService.class);
         service = new ScheduledTaskService(
                 taskStore,
                 sqlService,
                 sqlReviewService,
                 mock(SchemaDriftService.class),
-                mock(AnalysisCanvasService.class),
+                analysisCanvasPipelineService,
                 teamService,
                 mock(WorkspaceNotificationService.class),
                 new ObjectMapper()
@@ -83,6 +86,39 @@ class ScheduledTaskServiceTest {
         verify(sqlService).execute(any(ExecuteSqlRequest.class));
         verify(teamService).recordSqlExecutionAudit("sql.write", "conn-1", "app", sql);
         verify(taskStore).upsert(entry);
+    }
+
+    @Test
+    void runNowExecutesCanvasPipelineAndStoresSummary() {
+        ScheduledTaskEntry entry = canvasTask("canvas-1");
+        when(taskStore.findById("task-canvas")).thenReturn(entry);
+        when(analysisCanvasPipelineService.rerunPipeline(any(RerunAnalysisCanvasRequest.class)))
+                .thenReturn(new AnalysisCanvasPipelineService.PipelineRerunResult(
+                        "canvas-1",
+                        "Weekly GMV",
+                        "Revenue increased",
+                        "SELECT 1",
+                        "analysis",
+                        12
+                ));
+
+        ScheduledTaskDto result = service.runNow("task-canvas");
+
+        assertEquals("ok", result.lastRunStatus());
+        assertEquals("Weekly GMV · 12 rows · Revenue increased", result.lastRunMessage());
+        verify(analysisCanvasPipelineService).rerunPipeline(new RerunAnalysisCanvasRequest("canvas-1", null));
+        verify(taskStore).upsert(entry);
+    }
+
+    private static ScheduledTaskEntry canvasTask(String canvasId) {
+        ScheduledTaskEntry entry = new ScheduledTaskEntry();
+        entry.setId("task-canvas");
+        entry.setName("Weekly analysis");
+        entry.setType(ScheduledTaskEntry.TYPE_CANVAS);
+        entry.setCronExpression("0 0 * * MON");
+        entry.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        entry.setPayloadJson("{\"canvasId\":\"" + canvasId + "\"}");
+        return entry;
     }
 
     private static ScheduledTaskEntry sqlTask(String sql) {

@@ -192,3 +192,46 @@ export function stripDisabledAnalysisArtifacts(
     }
     return {...result, chart: null}
 }
+
+function hasRenderableReport(result: AiChatReplyPayload): boolean {
+    return Boolean(result.report?.markdown?.trim() || result.report?.html?.trim())
+}
+
+function hasStepEvent(steps: AiAnalysisStepEvent[], stepId: AiAnalysisStepId): boolean {
+    return steps.some((step) => step.step === stepId)
+}
+
+function fallbackOkEvent(stepId: AiAnalysisStepId, message: string): AiAnalysisStepEvent {
+    return {
+        step: stepId,
+        status: 'ok',
+        message,
+        durationMs: 0,
+        detail: {fallback: true},
+    }
+}
+
+/**
+ * 修复「结果已返回但尾部步骤仍显示等待」：
+ * 若最终结果已包含产物，而 step 事件缺失，则补一个兜底 ok 事件。
+ */
+export function reconcileTerminalAnalysisSteps(
+    steps: AiAnalysisStepEvent[],
+    result: AiChatReplyPayload,
+): AiAnalysisStepEvent[] {
+    const next = [...steps]
+
+    if (result.mode !== 'analysis') return next
+
+    if (result.chart && !isAnalysisStepSkipped(next, 'chart') && !hasStepEvent(next, 'chart')) {
+        next.push(fallbackOkEvent('chart', '图表已生成（结果兜底）'))
+    }
+    if (result.reply?.trim() && !isAnalysisStepSkipped(next, 'summary') && !hasStepEvent(next, 'summary')) {
+        next.push(fallbackOkEvent('summary', '摘要已生成（结果兜底）'))
+    }
+    if (hasRenderableReport(result) && !isAnalysisStepSkipped(next, 'report') && !hasStepEvent(next, 'report')) {
+        next.push(fallbackOkEvent('report', '报告已生成（结果兜底）'))
+    }
+
+    return next
+}

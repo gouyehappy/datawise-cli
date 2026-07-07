@@ -9,7 +9,10 @@ import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext.ResolvedConnectionWithDatabase;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class AiSchemaContextService {
@@ -90,10 +93,10 @@ public class AiSchemaContextService {
                 entity.getName(),
                 resolvedDatabase,
                 entity.getDbType(),
-                allTables,
+                resolvedNames,
                 ddls,
                 tableRelationService.loadRelations(entity.getId(), resolvedDatabase, resolvedNames),
-                loadSemanticMetrics(connectionId, resolvedDatabase)
+                loadSemanticMetrics(connectionId, resolvedDatabase, resolvedNames)
         );
     }
 
@@ -104,6 +107,51 @@ public class AiSchemaContextService {
         return semanticMetricStore.listScoped(connectionId, database).stream()
                 .map(this::toMetricHint)
                 .toList();
+    }
+
+    private List<AiSemanticMetricHint> loadSemanticMetrics(
+            String connectionId,
+            String database,
+            List<String> selectedTables
+    ) {
+        if (connectionId == null || connectionId.isBlank() || database == null || database.isBlank()) {
+            return List.of();
+        }
+        if (selectedTables == null || selectedTables.isEmpty()) {
+            return loadSemanticMetrics(connectionId, database);
+        }
+        Set<String> picked = new HashSet<>();
+        for (String table : selectedTables) {
+            if (table != null && !table.isBlank()) {
+                picked.add(table.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        if (picked.isEmpty()) {
+            return List.of();
+        }
+        return semanticMetricStore.listScoped(connectionId, database).stream()
+                .filter(entry -> hasRelatedTableInScope(entry, picked))
+                .map(this::toMetricHint)
+                .toList();
+    }
+
+    private boolean hasRelatedTableInScope(SemanticMetricEntry entry, Set<String> picked) {
+        if (entry == null) {
+            return false;
+        }
+        // Keep global metrics (without relatedTables) available in selected-table mode.
+        if (entry.getRelatedTables() == null || entry.getRelatedTables().isEmpty()) {
+            return true;
+        }
+        if (picked.isEmpty()) {
+            return false;
+        }
+        for (String table : entry.getRelatedTables()) {
+            if (table != null && picked.contains(table.trim().toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private AiSemanticMetricHint toMetricHint(SemanticMetricEntry entry) {

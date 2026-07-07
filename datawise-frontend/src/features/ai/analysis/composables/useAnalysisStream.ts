@@ -1,7 +1,10 @@
 import {ref, type Ref} from 'vue'
 import {createAssistantMessage} from '@/features/ai/chat/services/ai-chat.service'
 import {buildAnalysisResult} from '@/features/ai/analysis/services/analysis-result.service'
-import {stripDisabledAnalysisArtifacts} from '@/features/ai/analysis/services/analysis-step.service'
+import {
+    reconcileTerminalAnalysisSteps,
+    stripDisabledAnalysisArtifacts,
+} from '@/features/ai/analysis/services/analysis-step.service'
 import {useAiChatStore} from '@/features/ai/stores/ai-chat'
 import type {AiSqlConfirmPending} from '@/features/ai/types/chat'
 import type {
@@ -116,6 +119,7 @@ export function useAnalysisStream(options: UseAnalysisStreamOptions) {
                 }
             },
             onResult: (result: AiChatReplyPayload) => {
+                analysisSteps.value = reconcileTerminalAnalysisSteps(analysisSteps.value, result)
                 if (result.mode === 'chat' && result.reply?.includes('数据分析失败')) {
                     appendFailureReply(result.reply, sessionId)
                     return

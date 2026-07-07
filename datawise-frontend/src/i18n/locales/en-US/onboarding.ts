@@ -45,5 +45,23 @@ export default {
             title: 'Pro tip',
             body: 'Press Ctrl+K for the command palette — jump modules or create a console instantly. Customize shortcuts in Settings.',
         },
+        insightWelcome: {
+            title: 'Connection ready — get insight in 30 seconds',
+            body: 'Great, your first connection is live. Follow this 3-step path: pick scope, ask AI, and get a result fast.',
+        },
+        insightExplorer: {
+            title: 'Pick your core table in Explorer',
+            body: 'Start with one business table (orders, users, payments). AI SQL quality improves with focused context.',
+            hint: 'Choose data scope first',
+        },
+        insightAi: {
+            title: 'Ask AI a business question',
+            body: 'Try: "Show order trend and anomalies for the last 7 days." You get SQL, summary, and chart in one flow.',
+            hint: 'Ask one business question',
+        },
+        insightDone: {
+            title: 'You completed the first insight loop',
+            body: 'Next best step: save as analysis canvas and schedule rerun for automatic weekly insights.',
+        },
     },
 }

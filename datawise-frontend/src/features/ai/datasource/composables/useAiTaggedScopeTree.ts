@@ -9,6 +9,29 @@ export function useAiTaggedScopeTree(
     selectedIds: Ref<string[]>,
 ) {
     const collapsedIds = ref<Set<string>>(new Set())
+    const databaseTableMap = computed(() => {
+        const map = new Map<string, string[]>()
+        for (const group of groups.value) {
+            const dbNodeId = `aitag-d:${group.connectionId}:${group.database}`
+            map.set(
+                dbNodeId,
+                group.tables.map((tableName) => `${group.connectionId}:${group.database}:${tableName}`),
+            )
+        }
+        return map
+    })
+    const connectionTableMap = computed(() => {
+        const map = new Map<string, string[]>()
+        for (const group of groups.value) {
+            const connNodeId = `aitag-c:${group.connectionId}`
+            const existing = map.get(connNodeId) ?? []
+            existing.push(
+                ...group.tables.map((tableName) => `${group.connectionId}:${group.database}:${tableName}`),
+            )
+            map.set(connNodeId, existing)
+        }
+        return map
+    })
 
     const flatNodes = computed(() =>
         buildAiTaggedScopeFlatNodes(groups.value, search.value, collapsedIds.value),
@@ -33,20 +56,38 @@ export function useAiTaggedScopeTree(
     }
 
     function isCheckable(node: TreeNode) {
-        return node.type === 'table'
+        return node.type === 'table' || node.type === 'database' || node.type === 'connection'
     }
 
     function isChecked(node: TreeNode) {
+        if (node.type === 'connection') {
+            const ids = connectionTableMap.value.get(node.id) ?? []
+            return ids.length > 0 && ids.every((id) => selectedIds.value.includes(id))
+        }
+        if (node.type === 'database') {
+            const ids = databaseTableMap.value.get(node.id) ?? []
+            return ids.length > 0 && ids.every((id) => selectedIds.value.includes(id))
+        }
         return selectedIds.value.includes(node.id)
     }
 
+    function resolveNodeTableIds(node: TreeNode): string[] {
+        if (node.type === 'table') return [node.id]
+        if (node.type === 'database') return databaseTableMap.value.get(node.id) ?? []
+        if (node.type === 'connection') return connectionTableMap.value.get(node.id) ?? []
+        return []
+    }
+
     function toggleCheck(node: TreeNode) {
-        if (node.type !== 'table') return
-        if (selectedIds.value.includes(node.id)) {
-            selectedIds.value = selectedIds.value.filter((id) => id !== node.id)
+        const tableIds = resolveNodeTableIds(node)
+        if (!tableIds.length) return
+        const checked = tableIds.every((id) => selectedIds.value.includes(id))
+        if (checked) {
+            const removeSet = new Set(tableIds)
+            selectedIds.value = selectedIds.value.filter((id) => !removeSet.has(id))
             return
         }
-        selectedIds.value = [...selectedIds.value, node.id]
+        selectedIds.value = Array.from(new Set([...selectedIds.value, ...tableIds]))
     }
 
     function selectAllVisible() {

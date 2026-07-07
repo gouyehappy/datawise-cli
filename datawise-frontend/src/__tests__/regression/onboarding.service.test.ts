@@ -2,7 +2,9 @@ import {describe, it} from 'node:test'
 import assert from 'node:assert/strict'
 import {
     clearOnboardingCompleted,
+    isFirstInsightGuideCompleted,
     isOnboardingCompleted,
+    markFirstInsightGuideCompleted,
     markOnboardingCompleted,
     shouldShowOnboardingOnBoot,
 } from '../../features/onboarding/services/onboarding.service.ts'
@@ -25,6 +27,24 @@ describe('onboarding.service', () => {
         assert.equal(isOnboardingCompleted(mockStorage), true)
         assert.equal(shouldShowOnboardingOnBoot(mockStorage), false)
         clearOnboardingCompleted(mockStorage)
+        assert.equal(isOnboardingCompleted(mockStorage), false)
+    })
+
+    it('tracks first-insight guide completion independently', () => {
+        const storage = new Map<string, string>()
+        const mockStorage = {
+            getItem: (key: string) => storage.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                storage.set(key, value)
+            },
+            removeItem: (key: string) => {
+                storage.delete(key)
+            },
+        } as Storage
+
+        assert.equal(isFirstInsightGuideCompleted(mockStorage), false)
+        markFirstInsightGuideCompleted(mockStorage)
+        assert.equal(isFirstInsightGuideCompleted(mockStorage), true)
         assert.equal(isOnboardingCompleted(mockStorage), false)
     })
 })

@@ -10,6 +10,8 @@ public record SaveSemanticMetricRequest(
         String expression,
         String description,
         String unit,
-        List<String> relatedTables
+        List<String> relatedTables,
+        List<String> upstreamMetrics,
+        String changeNote
 ) {
 }

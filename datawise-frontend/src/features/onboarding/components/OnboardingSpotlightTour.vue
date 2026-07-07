@@ -6,6 +6,8 @@ import {DwIcon} from '@/core/icons'
 import type {DwIconName} from '@/core/icons'
 import {
     ONBOARDING_TOUR_STEPS,
+    resolveOnboardingTourSteps,
+    type OnboardingTourPreset,
     type OnboardingTourStep,
 } from '@/features/onboarding/services/onboarding-tour.config'
 import {
@@ -38,7 +40,7 @@ function stepIcon(stepId: string): DwIconName {
   return STEP_ICON[stepId] ?? 'star'
 }
 
-const props = defineProps<{ open: boolean }>()
+const props = defineProps<{ open: boolean; preset?: OnboardingTourPreset }>()
 const emit = defineEmits<{
     'update:open': [value: boolean]
     finish: []
@@ -54,11 +56,12 @@ const stepIndex = ref(0)
 const layoutTick = ref(0)
 const cardRef = ref<HTMLElement | null>(null)
 const measuredCardHeight = ref(0)
+const steps = computed(() => resolveOnboardingTourSteps(props.preset ?? 'default'))
 
-const currentStep = computed(() => ONBOARDING_TOUR_STEPS[stepIndex.value])
+const currentStep = computed(() => steps.value[stepIndex.value] ?? ONBOARDING_TOUR_STEPS[0])
 const stepId = computed(() => currentStep.value.id)
 const isFirstStep = computed(() => stepIndex.value === 0)
-const isLastStep = computed(() => stepIndex.value === ONBOARDING_TOUR_STEPS.length - 1)
+const isLastStep = computed(() => stepIndex.value === steps.value.length - 1)
 const isCenterStep = computed(() => !currentStep.value.target || currentStep.value.placement === 'center')
 
 const layoutCardHeight = computed(() => {
@@ -137,14 +140,14 @@ watch(
         if (!isOpen) return
         stepIndex.value = 0
         measuredCardHeight.value = 0
-        await applyStepPrepare(ONBOARDING_TOUR_STEPS[0])
+        await applyStepPrepare(steps.value[0])
     },
 )
 
 watch(stepIndex, async (index) => {
     if (!props.open) return
     measuredCardHeight.value = 0
-    await applyStepPrepare(ONBOARDING_TOUR_STEPS[index])
+    await applyStepPrepare(steps.value[index] ?? steps.value[0])
 })
 
 let resizeObserver: ResizeObserver | null = null
@@ -259,7 +262,7 @@ async function onFinish() {
                   <DwIcon :name="stepIcon(stepId)" :stroke-width="1.8"/>
                 </span>
                 <span class="onboarding-tour__badge">
-                  {{ stepIndex + 1 }} / {{ ONBOARDING_TOUR_STEPS.length }}
+                  {{ stepIndex + 1 }} / {{ steps.length }}
                 </span>
               </div>
               <IconButton size="sm" :title="t('onboarding.skip')" @click="onSkip">×</IconButton>
@@ -285,9 +288,9 @@ async function onFinish() {
               {{ stepHint }}
             </p>
 
-            <div class="onboarding-tour__progress" role="progressbar" :aria-valuenow="stepIndex + 1" :aria-valuemax="ONBOARDING_TOUR_STEPS.length">
+            <div class="onboarding-tour__progress" role="progressbar" :aria-valuenow="stepIndex + 1" :aria-valuemax="steps.length">
               <span
-                  v-for="(_, index) in ONBOARDING_TOUR_STEPS"
+                  v-for="(_, index) in steps"
                   :key="index"
                   class="onboarding-tour__dot"
                   :class="{ 'is-active': index === stepIndex, 'is-done': index < stepIndex }"

@@ -47,7 +47,16 @@ async function deletePlatformCatalogItem(feature: PlatformFeatureId, id: string)
 }
 
 export type PlatformCatalogFormPayload =
-    | {feature: 'semantic_metrics'; name: string; expression: string; description: string; unit: string}
+    | {
+    feature: 'semantic_metrics'
+    id?: string
+    name: string
+    expression: string
+    description: string
+    unit: string
+    upstreamMetrics: string
+    changeNote: string
+}
     | {feature: 'analysis_canvas'; title: string; description: string; promptTemplate: string; sql: string}
     | {feature: 'federated_views'; name: string; description: string; sql: string; sourcesJson: string}
     | {
@@ -70,33 +79,52 @@ export type PlatformCatalogFormPayload =
 export async function savePlatformCatalogItem(
     payload: PlatformCatalogFormPayload,
     context: {connectionId?: string; database?: string},
-): Promise<void> {
+): Promise<{definitionChanged?: boolean; metricName?: string}> {
     switch (payload.feature) {
         case 'semantic_metrics': {
             const connectionId = context.connectionId?.trim()
             const database = context.database?.trim()
-            if (!connectionId || !database || !payload.name.trim()) return
+            if (!connectionId || !database || !payload.name.trim()) return {}
+            const scopedMetrics = await platformApi.listSemanticMetrics(connectionId, database)
+            const existing = payload.id?.trim()
+                ? payload.id.trim()
+                : scopedMetrics
+                    .find((item) => item.name.trim().toLowerCase() === payload.name.trim().toLowerCase())
+                    ?.id
+            const previous = existing
+                ? scopedMetrics.find((item) => item.id === existing)?.expression?.trim()
+                : undefined
+            const nextExpression = payload.expression.trim()
             await platformApi.saveSemanticMetric({
+                id: existing,
                 connectionId,
                 database,
                 name: payload.name.trim(),
-                expression: payload.expression.trim(),
+                expression: nextExpression,
                 description: payload.description.trim() || undefined,
                 unit: payload.unit.trim() || undefined,
+                upstreamMetrics: payload.upstreamMetrics
+                    .split(',')
+                    .map((item) => item.trim())
+                    .filter(Boolean),
+                changeNote: payload.changeNote.trim() || undefined,
             })
-            break
+            return {
+                definitionChanged: Boolean(existing && previous !== undefined && previous !== nextExpression),
+                metricName: payload.name.trim(),
+            }
         }
         case 'analysis_canvas':
-            if (!payload.title.trim()) return
+            if (!payload.title.trim()) return {}
             await platformApi.saveAnalysisCanvas({
                 title: payload.title.trim(),
                 description: payload.description.trim() || undefined,
                 promptTemplate: payload.promptTemplate.trim() || undefined,
                 sql: payload.sql.trim() || undefined,
             })
-            break
+            return {}
         case 'federated_views': {
-            if (!payload.name.trim()) return
+            if (!payload.name.trim()) return {}
             let sources: FederatedViewSource[] = []
             if (payload.sourcesJson.trim()) {
                 sources = JSON.parse(payload.sourcesJson) as FederatedViewSource[]
@@ -107,12 +135,12 @@ export async function savePlatformCatalogItem(
                 sql: payload.sql.trim() || undefined,
                 sources,
             })
-            break
+            return {}
         }
         case 'schema_drift': {
             const sourceConnectionId = context.connectionId?.trim()
             const sourceDatabase = context.database?.trim()
-            if (!sourceConnectionId || !sourceDatabase || !payload.name.trim()) return
+            if (!sourceConnectionId || !sourceDatabase || !payload.name.trim()) return {}
             await platformApi.saveSchemaDriftMonitor({
                 name: payload.name.trim(),
                 sourceConnectionId,
@@ -122,10 +150,10 @@ export async function savePlatformCatalogItem(
                 tablePattern: payload.tablePattern.trim() || '%',
                 enabled: payload.enabled,
             })
-            break
+            return {}
         }
         case 'scheduled_tasks':
-            if (!payload.name.trim() || !payload.type.trim()) return
+            if (!payload.name.trim() || !payload.type.trim()) return {}
             await platformApi.saveScheduledTask({
                 name: payload.name.trim(),
                 type: payload.type.trim(),
@@ -133,6 +161,7 @@ export async function savePlatformCatalogItem(
                 payloadJson: payload.payloadJson.trim() || undefined,
                 enabled: payload.enabled,
             })
-            break
+            return {}
     }
+    return {}
 }

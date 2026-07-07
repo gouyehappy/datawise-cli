@@ -31,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 public class AiController {
 
     private static final Logger log = LoggerFactory.getLogger(AiController.class);
+    private static final Logger auditLog = LoggerFactory.getLogger("datawise.ai.audit");
 
     private final AiService aiService;
     private final AiDataAgentService aiDataAgentService;
@@ -44,13 +45,16 @@ public class AiController {
     public ApiResponse<AiChatReply> chat(@RequestBody AiChatRequest request) {
         int targetCount = request.targets() != null ? request.targets().size() : 0;
         AiCallLogger.logChatEntry(log, request.prompt(), targetCount, request.llm());
+        AiCallLogger.logChatEntry(auditLog, request.prompt(), targetCount, request.llm());
         long started = System.currentTimeMillis();
         try {
             AiChatReply reply = aiService.chat(request);
             AiCallLogger.logChatSuccess(log, reply, System.currentTimeMillis() - started);
+            AiCallLogger.logChatSuccess(auditLog, reply, System.currentTimeMillis() - started);
             return ApiResponse.ok(reply);
         } catch (RuntimeException ex) {
             AiCallLogger.logChatFailure(log, System.currentTimeMillis() - started, ex);
+            AiCallLogger.logChatFailure(auditLog, System.currentTimeMillis() - started, ex);
             throw ex;
         }
     }
@@ -59,7 +63,9 @@ public class AiController {
     public SseEmitter analyzeStream(@RequestBody AiChatRequest request) {
         int targetCount = request.targets() != null ? request.targets().size() : 0;
         AiCallLogger.logChatEntry(log, request.prompt(), targetCount, request.llm());
+        AiCallLogger.logChatEntry(auditLog, request.prompt(), targetCount, request.llm());
         log.info("AI analyze/stream started targets={}", targetCount);
+        auditLog.info("AI analyze/stream started targets={}", targetCount);
 
         SseEmitter emitter = AiAnalysisStreamEmitter.createEmitter();
         UserContext.Snapshot userSnapshot = UserContext.snapshotOrNull();
@@ -70,6 +76,7 @@ public class AiController {
     @PostMapping(value = "/analyze/resume", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter analyzeResume(@RequestBody AiAnalysisResumeRequest request) {
         log.info("AI analyze/resume threadId={} approved={}", request.threadId(), request.approved());
+        auditLog.info("AI analyze/resume threadId={} approved={}", request.threadId(), request.approved());
         SseEmitter emitter = AiAnalysisStreamEmitter.createEmitter();
         UserContext.Snapshot userSnapshot = UserContext.snapshotOrNull();
         CompletableFuture.runAsync(() -> UserContext.runAs(userSnapshot, () -> streamResume(request, emitter)));
@@ -90,9 +97,11 @@ public class AiController {
             }
             AiAnalysisStreamEmitter.sendResult(emitter, outcome.reply());
             AiCallLogger.logChatSuccess(log, outcome.reply(), System.currentTimeMillis() - started);
+            AiCallLogger.logChatSuccess(auditLog, outcome.reply(), System.currentTimeMillis() - started);
             AiAnalysisStreamEmitter.completeSuccess(emitter);
         } catch (RuntimeException ex) {
             AiCallLogger.logChatFailure(log, System.currentTimeMillis() - started, ex);
+            AiCallLogger.logChatFailure(auditLog, System.currentTimeMillis() - started, ex);
             AiAnalysisStreamEmitter.completeFailure(emitter, ex, log);
         }
     }
@@ -106,9 +115,11 @@ public class AiController {
             );
             AiAnalysisStreamEmitter.sendResult(emitter, outcome.reply());
             AiCallLogger.logChatSuccess(log, outcome.reply(), System.currentTimeMillis() - started);
+            AiCallLogger.logChatSuccess(auditLog, outcome.reply(), System.currentTimeMillis() - started);
             AiAnalysisStreamEmitter.completeSuccess(emitter);
         } catch (RuntimeException ex) {
             AiCallLogger.logChatFailure(log, System.currentTimeMillis() - started, ex);
+            AiCallLogger.logChatFailure(auditLog, System.currentTimeMillis() - started, ex);
             AiAnalysisStreamEmitter.completeFailure(emitter, ex, log);
         }
     }
@@ -122,13 +133,22 @@ public class AiController {
                 request.database(),
                 request.llm()
         );
+        AiCallLogger.logSqlGenerateEntry(
+                auditLog,
+                request.prompt(),
+                request.connectionId(),
+                request.database(),
+                request.llm()
+        );
         long started = System.currentTimeMillis();
         try {
             AiSqlGenerateReply reply = aiService.generateSql(request);
             AiCallLogger.logSqlGenerateSuccess(log, reply.sql(), System.currentTimeMillis() - started);
+            AiCallLogger.logSqlGenerateSuccess(auditLog, reply.sql(), System.currentTimeMillis() - started);
             return ApiResponse.ok(reply);
         } catch (RuntimeException ex) {
             AiCallLogger.logChatFailure(log, System.currentTimeMillis() - started, ex);
+            AiCallLogger.logChatFailure(auditLog, System.currentTimeMillis() - started, ex);
             throw ex;
         }
     }

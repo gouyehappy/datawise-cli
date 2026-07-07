@@ -82,6 +82,10 @@ export default {
             title: '定时任务失败',
             body: '「{name}」执行失败：{message}',
         },
+        metricDefinitionChanged: {
+            title: '指标口径已更新',
+            body: '「{name}」发生口径变更，请重新检查相关血缘影响。',
+        },
     },
     time: {
         justNow: '刚刚',

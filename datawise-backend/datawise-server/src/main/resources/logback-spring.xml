@@ -213,6 +213,27 @@
     <logger name="org.apache.datawise.backend.ai" level="INFO" additivity="false">
         <appender-ref ref="ASYNC_AI"/>
     </logger>
+    <logger name="org.apache.datawise.backend.controller.ai" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_AI"/>
+    </logger>
+    <logger name="datawise.ai.audit" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_AI"/>
+    </logger>
+
+    <!-- 降噪：屏蔽 Hive/Thrift SASL 连接层 DEBUG 刷屏日志 -->
+    <logger name="org.apache.thrift" level="WARN"/>
+    <logger name="org.apache.thrift.transport" level="WARN"/>
+    <logger name="org.apache.thrift.transport.TSaslTransport" level="WARN"/>
+    <logger name="org.apache.hive" level="WARN"/>
+    <logger name="org.apache.hive.service.auth" level="WARN"/>
+    <logger name="org.apache.hive.jdbc" level="WARN"/>
+
+    <!-- 开发环境：全部日志同时打印到控制台，便于联调排错 -->
+    <springProfile name="dev,local">
+        <logger name="org.apache.datawise.backend.ai" level="DEBUG" additivity="true"/>
+        <logger name="org.apache.datawise.backend.controller.ai" level="DEBUG" additivity="true"/>
+        <logger name="datawise.ai.audit" level="DEBUG" additivity="true"/>
+    </springProfile>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

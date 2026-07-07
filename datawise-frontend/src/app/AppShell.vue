@@ -25,7 +25,7 @@ const layout = useLayoutStore()
 const appConfig = useAppConfigStore()
 const auth = useAuthStore()
 const {loginDialogOpen} = storeToRefs(auth)
-const {open: onboardingOpen, showGuide, finishGuide, skipGuide} = useOnboardingGuide()
+const {open: onboardingOpen, preset: onboardingPreset, showGuide, finishGuide, skipGuide} = useOnboardingGuide()
 
 useAppShortcutListener()
 useConnectionHealthMonitor()
@@ -57,6 +57,7 @@ const desktopApp = isDesktopApp()
     <LoginDialog v-model:open="loginDialogOpen"/>
     <OnboardingSpotlightTour
         v-model:open="onboardingOpen"
+        :preset="onboardingPreset"
         @finish="finishGuide"
         @skip="skipGuide"
     />
