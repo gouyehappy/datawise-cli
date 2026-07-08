@@ -1365,4 +1365,5 @@ export interface ApiClient {
     datasources: DatasourcesApi
     migration: MigrationApi
     platform: PlatformApi
+    lineage: import('@/shared/api/http/lineage').LineageApi
 }

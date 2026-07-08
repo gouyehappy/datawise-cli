@@ -160,6 +160,7 @@ export type WorkspaceTabType =
     | 'cross-env-compare'
     | 'table-migration'
     | 'view_model'
+    | 'view_model_lineage'
     | 'view_model_editor'
     | 'redis-key'
     | 'redis-console'

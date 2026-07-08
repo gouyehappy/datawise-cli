@@ -30,6 +30,7 @@ import CrossEnvCompareTab from './components/tabs/CrossEnvCompareTab.vue'
 import TableMigrationTab from './components/tabs/TableMigrationTab.vue'
 import ViewModelDataTab from './components/tabs/ViewModelDataTab.vue'
 import ViewModelEditorTab from './components/tabs/ViewModelEditorTab.vue'
+import ViewModelLineageTab from './components/tabs/ViewModelLineageTab.vue'
 import RedisKeyTab from './components/tabs/RedisKeyTab.vue'
 import RedisConsoleTab from './components/tabs/RedisConsoleTab.vue'
 import KafkaTopicsTab from './components/tabs/KafkaTopicsTab.vue'
@@ -63,6 +64,8 @@ const definitions = [
     {key: 'view_model' as const, component: ViewModelDataTab},
 
     {key: 'view_model_editor' as const, component: ViewModelEditorTab},
+
+    {key: 'view_model_lineage' as const, component: ViewModelLineageTab},
 
     {key: 'redis-key' as const, component: RedisKeyTab},
 

@@ -3,12 +3,16 @@ package org.apache.datawise.backend.controller.workspace;
 import org.apache.datawise.backend.common.ApiResponse;
 import org.apache.datawise.backend.controller.workspace.support.ViewModelTreeSyncSupport;
 import org.apache.datawise.backend.database.explorer.ExplorerSchemaService;
+import org.apache.datawise.backend.domain.PushNotificationRequest;
 import org.apache.datawise.backend.domain.ReadViewModelResult;
 import org.apache.datawise.backend.domain.RenameViewModelRequest;
 import org.apache.datawise.backend.domain.SaveViewModelRequest;
 import org.apache.datawise.backend.domain.SaveViewModelResult;
 import org.apache.datawise.backend.domain.ViewModelFileDto;
+import org.apache.datawise.backend.lineage.service.LineageService;
+import org.apache.datawise.backend.lineage.support.LineageSqlHash;
 import org.apache.datawise.backend.service.ViewModelService;
+import org.apache.datawise.backend.service.workspace.WorkspaceNotificationService;
 import org.apache.datawise.backend.common.support.ApiRequestLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +26,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/workspace/view-models")
@@ -31,10 +37,19 @@ public class ViewModelController {
 
     private final ViewModelService viewModelService;
     private final ExplorerSchemaService schemaService;
+    private final LineageService lineageService;
+    private final WorkspaceNotificationService notificationService;
 
-    public ViewModelController(ViewModelService viewModelService, ExplorerSchemaService schemaService) {
+    public ViewModelController(
+            ViewModelService viewModelService,
+            ExplorerSchemaService schemaService,
+            LineageService lineageService,
+            WorkspaceNotificationService notificationService
+    ) {
         this.viewModelService = viewModelService;
         this.schemaService = schemaService;
+        this.lineageService = lineageService;
+        this.notificationService = notificationService;
     }
 
     @PostMapping("/draft")
@@ -61,7 +76,18 @@ public class ViewModelController {
                 "name", request.name()
         );
         try {
+            String instanceName = ViewModelTreeSyncSupport.resolveInstanceName(request);
+            String previousSql = readExistingSqlQuietly(request.connectionId(), instanceName, request.name());
             SaveViewModelResult result = viewModelService.save(request);
+            lineageService.parseAndPersist(
+                    request.connectionId(),
+                    instanceName,
+                    result.fileName(),
+                    result.name(),
+                    request.sql(),
+                    null
+            );
+            notifyDownstreamIfSqlChanged(request.connectionId(), instanceName, result.name(), previousSql, request.sql());
             ViewModelTreeSyncSupport.syncExplorerTree(
                     schemaService,
                     log,
@@ -120,6 +146,7 @@ public class ViewModelController {
             @RequestParam String name
     ) throws java.io.IOException {
         viewModelService.delete(connectionId, instanceName, name);
+        lineageService.deleteSidecar(connectionId, instanceName, name);
         ViewModelTreeSyncSupport.syncExplorerTree(
                 schemaService,
                 log,
@@ -128,5 +155,56 @@ public class ViewModelController {
                 "DELETE /api/workspace/view-models"
         );
         return ApiResponse.ok(null);
+    }
+
+    private String readExistingSqlQuietly(String connectionId, String instanceName, String name) {
+        try {
+            return viewModelService.read(connectionId, instanceName, name).sql();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private void notifyDownstreamIfSqlChanged(
+            String connectionId,
+            String instanceName,
+            String modelName,
+            String previousSql,
+            String currentSql
+    ) {
+        if (previousSql == null || currentSql == null) {
+            return;
+        }
+        if (LineageSqlHash.sha256(previousSql).equals(LineageSqlHash.sha256(currentSql))) {
+            return;
+        }
+        try {
+            var impact = lineageService.findDownstreamImpact(connectionId, instanceName, modelName);
+            if (impact.downstream().isEmpty()) {
+                return;
+            }
+            String downstream = impact.downstream().stream()
+                    .map(item -> item.modelName())
+                    .collect(Collectors.joining(", "));
+            notificationService.pushNotification(new PushNotificationRequest(
+                    "workspace",
+                    "viewModelLineageChanged",
+                    "viewModelLineageChanged",
+                    Map.of(
+                            "name", modelName,
+                            "downstream", downstream,
+                            "count", impact.downstream().size()
+                    )
+            ));
+        } catch (Exception ex) {
+            ApiRequestLogger.logFailure(
+                    log,
+                    "view-model lineage impact notification",
+                    ex,
+                    "connectionId", connectionId,
+                    "instanceName", instanceName,
+                    "name", modelName
+            );
+        }
     }
 }

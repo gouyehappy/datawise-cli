@@ -826,6 +826,41 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         return id
     }
 
+    function openViewModelLineage(options: {
+        viewModelName: string
+        connectionId: string
+        instanceId?: string | null
+        database?: string
+        explorerNodeId?: string
+    }) {
+        const existing = tabs.value.find(
+            (tab) =>
+                tab.type === 'view_model_lineage'
+                && tab.viewModelName === options.viewModelName
+                && tab.connectionId === options.connectionId
+                && (options.database ? tab.database === options.database : tab.instanceId === options.instanceId),
+        )
+        if (existing) {
+            if (options.explorerNodeId) existing.explorerNodeId = options.explorerNodeId
+            activeTabId.value = existing.id
+            return existing.id
+        }
+        const id = nextTabId('lineage')
+        tabs.value.push({
+            id,
+            title: t('lineage.tabTitle', {name: options.viewModelName}),
+            type: 'view_model_lineage',
+            closable: true,
+            viewModelName: options.viewModelName,
+            connectionId: options.connectionId,
+            instanceId: options.instanceId,
+            database: options.database,
+            explorerNodeId: options.explorerNodeId,
+        })
+        activeTabId.value = id
+        return id
+    }
+
     async function openViewModelConsole(options: {
         viewModelName: string
         sql: string
@@ -1490,6 +1525,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (type === 'kafka-topic') return 'kafka-topic'
         if (type === 'kafka-consumer-groups') return 'kafka-consumer-groups'
         if (type === 'platform_catalog') return 'platform-catalog'
+        if (type === 'view_model_lineage') return 'lineage'
         return 'tab'
     }
 
@@ -1567,6 +1603,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         openCrossEnvCompare,
         openTableMigration,
         openViewModelData,
+        openViewModelLineage,
         openViewModelEditor,
         openViewModelConsole,
         openViewModelMigration,

@@ -409,6 +409,7 @@ export default {
         deleteSqlFile: '删除',
         newViewModel: '新建视图模型',
         openViewModelData: '打开数据',
+        viewLineage: '血缘',
         editViewModelSql: '编辑 SQL',
         renameViewModel: '重命名',
         deleteViewModel: '删除',

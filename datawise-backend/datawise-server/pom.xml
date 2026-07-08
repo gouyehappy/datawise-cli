@@ -39,6 +39,11 @@
             <groupId>org.apache.datawise</groupId>
             <artifactId>datawise-ai</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.datawise</groupId>
+            <artifactId>datawise-lineage</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- 数据源引擎；具体 connector 插件由 config/plugins/*.jar 提供 -->
         <dependency>
             <groupId>org.apache.datawise</groupId>

@@ -26,11 +26,13 @@
         <module>datawise-sync</module>
         <module>datawise-workspace</module>
         <module>datawise-ai</module>
+        <module>datawise-lineage</module>
         <module>datawise-server</module>
     </modules>
 
     <properties>
         <java.version>17</java.version>
+        <jsqlparser.version>5.3</jsqlparser.version>
         <spring-ai.version>1.0.0</spring-ai.version>
         <spring-ai-alibaba.version>1.0.0.2</spring-ai-alibaba.version>
         <archunit.version>1.3.0</archunit.version>
@@ -262,8 +264,18 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.datawise</groupId>
+                <artifactId>datawise-lineage</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.datawise</groupId>
                 <artifactId>datawise-server</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.jsqlparser</groupId>
+                <artifactId>jsqlparser</artifactId>
+                <version>${jsqlparser.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.ai</groupId>

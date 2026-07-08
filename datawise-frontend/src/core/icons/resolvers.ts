@@ -46,6 +46,8 @@ export function workspaceTabDwIcon(type: WorkspaceTabType): DwIconName {
             return 'tab-view-model'
         case 'view_model_editor':
             return 'tab-view-model-editor'
+        case 'view_model_lineage':
+            return 'tab-view-model'
         case 'redis-key':
             return 'tab-redis-key'
         case 'redis-console':

@@ -1,0 +1,236 @@
+<script setup lang="ts">
+import {computed, ref, watch} from 'vue'
+import {useI18n} from 'vue-i18n'
+import {EmptyState} from '@/core/components'
+import type {WorkspaceTab} from '@/core/types'
+import {lineageApi} from '@/api/modules/lineage'
+import LineageColumnMapView from '@/features/lineage/components/LineageColumnMapView.vue'
+import type {LineageGraph, LineageImpact} from '@/features/lineage/types/lineage.types'
+import {hasColumnLineage, buildColumnLineageMap} from '@/features/lineage/services/lineage-column-map.service'
+
+const props = defineProps<{ tab: WorkspaceTab }>()
+
+const {t} = useI18n()
+
+const graph = ref<LineageGraph | null>(null)
+const impact = ref<LineageImpact | null>(null)
+const loading = ref(false)
+const impactLoading = ref(false)
+const error = ref<string | null>(null)
+const mapViewRef = ref<InstanceType<typeof LineageColumnMapView> | null>(null)
+
+const status = computed(() => graph.value?.meta?.status ?? 'failed')
+const statusLabel = computed(() => t(`lineage.status.${status.value}`))
+const warnings = computed(() => graph.value?.meta?.warnings ?? [])
+const columnMap = computed(() => buildColumnLineageMap(graph.value))
+const hasContent = computed(() => hasColumnLineage(columnMap.value))
+
+async function loadImpact() {
+    const connectionId = props.tab.connectionId
+    const instanceName = props.tab.database ?? props.tab.instanceId ?? undefined
+    const name = props.tab.viewModelName
+    if (!connectionId || !instanceName || !name) {
+        impact.value = null
+        return
+    }
+    impactLoading.value = true
+    try {
+        impact.value = await lineageApi.getImpact({
+            connectionId,
+            instanceName: String(instanceName),
+            name,
+        })
+    } catch {
+        impact.value = null
+    } finally {
+        impactLoading.value = false
+    }
+}
+
+async function load(forceRefresh = false) {
+    const connectionId = props.tab.connectionId
+    const instanceName = props.tab.database ?? props.tab.instanceId ?? undefined
+    const name = props.tab.viewModelName
+    if (!connectionId || !instanceName || !name) {
+        error.value = t('lineage.missingContext')
+        return
+    }
+    loading.value = true
+    error.value = null
+    try {
+        graph.value = await lineageApi.getViewModelLineage({
+            connectionId,
+            instanceName: String(instanceName),
+            name,
+            forceRefresh,
+        })
+    } catch (ex) {
+        error.value = ex instanceof Error ? ex.message : t('lineage.loadFailed')
+        graph.value = null
+    } finally {
+        loading.value = false
+    }
+}
+
+function fitView() {
+    mapViewRef.value?.fitView()
+}
+
+watch(
+    () => [props.tab.connectionId, props.tab.database, props.tab.instanceId, props.tab.viewModelName],
+    () => {
+        void load(false)
+        void loadImpact()
+    },
+    {immediate: true},
+)
+</script>
+
+<template>
+  <div class="lineage-panel">
+    <header class="lineage-panel__toolbar">
+      <div class="lineage-panel__title">
+        <h2>{{ tab.viewModelName }}</h2>
+        <p class="lineage-panel__subtitle">{{ t('lineage.columnMapHint') }}</p>
+        <span v-if="graph?.meta?.parser" class="lineage-panel__meta">
+          {{ graph.meta.parser }} · {{ statusLabel }}
+        </span>
+      </div>
+      <div class="lineage-panel__actions">
+        <button type="button" class="dw-btn dw-btn--sm" :disabled="loading || !hasContent" @click="fitView">
+          {{ t('lineage.fitView') }}
+        </button>
+        <button type="button" class="dw-btn dw-btn--sm" :disabled="loading" @click="load(true)">
+          {{ t('lineage.refresh') }}
+        </button>
+      </div>
+    </header>
+
+    <div v-if="warnings.length" class="lineage-panel__warnings">
+      <p v-for="(warning, index) in warnings" :key="`${warning.code}-${index}`">
+        {{ warning.message }}
+      </p>
+    </div>
+
+    <section v-if="impactLoading || impact" class="lineage-panel__impact">
+      <h3>{{ t('lineage.downstreamTitle') }}</h3>
+      <p v-if="impactLoading" class="lineage-panel__impact-state">{{ t('lineage.loading') }}</p>
+      <p v-else-if="!impact?.downstream?.length" class="lineage-panel__impact-state">
+        {{ t('lineage.downstreamEmpty') }}
+      </p>
+      <ul v-else class="lineage-panel__impact-list">
+        <li v-for="item in impact.downstream" :key="item.fileName">
+          <span>{{ item.modelName }}</span>
+          <span v-if="item.staleSidecar" class="lineage-panel__impact-stale">
+            {{ t('lineage.downstreamStale') }}
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <div v-if="loading" class="lineage-panel__state">{{ t('lineage.loading') }}</div>
+    <EmptyState
+        v-else-if="error"
+        :title="t('lineage.loadFailed')"
+        :description="error"
+    />
+    <EmptyState
+        v-else-if="!hasContent"
+        :title="t('lineage.emptyTitle')"
+        :description="t('lineage.emptyHint')"
+    />
+    <LineageColumnMapView
+        v-else
+        ref="mapViewRef"
+        :graph="graph"
+    />
+  </div>
+</template>
+
+<style scoped>
+.lineage-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--dw-bg-base);
+}
+
+.lineage-panel__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--dw-border-subtle);
+}
+
+.lineage-panel__title h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.lineage-panel__subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--dw-text-muted);
+}
+
+.lineage-panel__meta {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--dw-text-muted);
+  font-size: 12px;
+}
+
+.lineage-panel__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.lineage-panel__warnings {
+  padding: 8px 16px;
+  background: color-mix(in srgb, var(--dw-warning) 12%, transparent);
+  color: var(--dw-text-secondary);
+  font-size: 12px;
+}
+
+.lineage-panel__impact {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--dw-border-subtle);
+}
+
+.lineage-panel__impact h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.lineage-panel__impact-state {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dw-text-muted);
+}
+
+.lineage-panel__impact-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.lineage-panel__impact-list li {
+  margin-bottom: 4px;
+}
+
+.lineage-panel__impact-stale {
+  margin-left: 8px;
+  color: var(--dw-warning);
+  font-size: 11px;
+}
+
+.lineage-panel__state {
+  padding: 24px;
+  color: var(--dw-text-muted);
+}
+</style>

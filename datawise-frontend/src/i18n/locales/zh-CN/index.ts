@@ -28,6 +28,7 @@ import schemaCompare from './schemaCompare'
 import crossEnvCompare from './crossEnvCompare'
 import tableMigration from './tableMigration'
 import viewModel from './viewModel'
+import lineage from './lineage'
 import commandPalette from './commandPalette'
 import globalObjectSearch from './globalObjectSearch'
 import capabilities from './capabilities'
@@ -64,6 +65,7 @@ export default {
     crossEnvCompare,
     tableMigration,
     viewModel,
+    lineage,
     commandPalette,
     globalObjectSearch,
     capabilities,

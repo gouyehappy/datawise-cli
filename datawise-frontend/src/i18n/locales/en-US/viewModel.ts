@@ -32,6 +32,12 @@ export default {
 
     toggleResults: 'Results panel',
 
+    toggleLineagePreview: 'Lineage preview',
+
+    lineagePreviewTitle: 'Field lineage preview',
+
+    lineagePreviewHint: 'Field lineage is parsed automatically after you edit SQL (~800ms debounce).',
+
     scopeMissing: 'Missing connection or database context',
 
     publishFallbackDraft: 'Validation failed; saved as draft',

@@ -409,6 +409,7 @@ export default {
         deleteSqlFile: 'Delete',
         newViewModel: 'New view model',
         openViewModelData: 'Open data',
+        viewLineage: 'Lineage',
         editViewModelSql: 'Edit SQL',
         renameViewModel: 'Rename',
         deleteViewModel: 'Delete',

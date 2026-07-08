@@ -86,6 +86,10 @@ export default {
             title: 'Metric definition updated',
             body: '"{name}" changed and lineage impact should be re-checked.',
         },
+        viewModelLineageChanged: {
+            title: 'View model SQL changed',
+            body: '"{name}" was updated; {count} downstream model(s) may be affected: {downstream}',
+        },
     },
     time: {
         justNow: 'Just now',

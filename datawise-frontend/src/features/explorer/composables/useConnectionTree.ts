@@ -1174,6 +1174,26 @@ export function useConnectionTree() {
             return
         }
 
+        if (id === 'view-lineage' && node.type === 'view_model') {
+            const connectionId = findConnectionId(node)
+            const scope = resolveViewModelScope(explorer.tree, node.id)
+            if (!connectionId || !scope) {
+                layout.showToast(t('lineage.missingContext'))
+                closeMenu()
+                return
+            }
+            layout.setModule('database')
+            workspace.openViewModelLineage({
+                viewModelName: node.label,
+                connectionId,
+                instanceId: scope.scopeNode.id,
+                database: scope.instanceLabel,
+                explorerNodeId: node.id,
+            })
+            closeMenu()
+            return
+        }
+
         if (id === 'rename' && node.type === 'view_model') {
             pendingViewModelNode.value = node
             renameViewModelDefaultName.value = node.label

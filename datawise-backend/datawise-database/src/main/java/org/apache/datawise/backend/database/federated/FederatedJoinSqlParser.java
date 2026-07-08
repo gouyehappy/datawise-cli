@@ -6,7 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** 解析带 {@code JOIN} 的联邦视图 SQL（{@code @alias} 占位符 + 表别名）。 */
-final class FederatedJoinSqlParser {
+public final class FederatedJoinSqlParser {
 
     private static final Pattern SELECT_FROM = Pattern.compile(
             "(?is)\\bSELECT\\s+(.+?)\\s+FROM\\s+(.+)"
@@ -21,7 +21,7 @@ final class FederatedJoinSqlParser {
     private FederatedJoinSqlParser() {
     }
 
-    static FederatedJoinPlan parse(String sql) {
+    public static FederatedJoinPlan parse(String sql) {
         if (sql == null || sql.isBlank()) {
             throw new IllegalArgumentException("federated SQL is required");
         }
@@ -152,7 +152,7 @@ final class FederatedJoinSqlParser {
     record FederatedSourceRef(String sourceAlias, String tableAlias) {
     }
 
-    record FederatedJoinStep(
+    public record FederatedJoinStep(
             String sourceAlias,
             String tableAlias,
             String subQuery,
@@ -160,7 +160,7 @@ final class FederatedJoinSqlParser {
     ) {
     }
 
-    record FederatedJoinPlan(
+    public record FederatedJoinPlan(
             List<String> selectItems,
             List<FederatedJoinStep> steps
     ) {

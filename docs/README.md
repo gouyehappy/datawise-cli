@@ -79,6 +79,13 @@ node scripts/pre-commit-check.mjs
 
 勿提交：`connections.xml`、`users/*/app.xml`（含 AI 密钥）、`config/` 下运行时 JSON/XML、非 example 的 `.env`。
 
+## 设计文档
+
+| 文档 | 说明 |
+|------|------|
+| [PLATFORM_ROADMAP.md](./PLATFORM_ROADMAP.md) | 平台功能路线图与完成度 |
+| [VIEW_MODEL_LINEAGE_DESIGN.md](./VIEW_MODEL_LINEAGE_DESIGN.md) | ViewModel 字段级血缘详细设计方案（v2） |
+
 ## 子项目 README
 
 | 目录 | 说明 |

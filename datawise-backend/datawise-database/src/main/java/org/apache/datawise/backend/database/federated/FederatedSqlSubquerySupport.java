@@ -3,12 +3,12 @@ package org.apache.datawise.backend.database.federated;
 /**
  * 从联邦 SQL 中提取 {@code (subquery) @alias} 子查询文本。
  */
-final class FederatedSqlSubquerySupport {
+public final class FederatedSqlSubquerySupport {
 
     private FederatedSqlSubquerySupport() {
     }
 
-    static String extractSubQuery(String viewSql, String alias) {
+    public static String extractSubQuery(String viewSql, String alias) {
         if (viewSql == null || alias == null || alias.isBlank()) {
             return null;
         }

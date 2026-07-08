@@ -121,6 +121,7 @@ export function getContextMenuForNodeType(type: string, t: ComposerTranslation):
         case 'view_model':
             return [
                 {id: 'open', label: c('openViewModelData'), icon: 'open', shortcut: 'F4'},
+                {id: 'view-lineage', label: c('viewLineage'), icon: 'explain'},
                 {id: 'edit-view-model', label: c('editViewModelSql'), icon: 'console'},
                 {id: 'divider-1', label: '', divider: true},
                 {id: 'rename', label: c('renameViewModel'), icon: 'edit'},

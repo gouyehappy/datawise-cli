@@ -17,6 +17,7 @@ import {DwButton} from '@/core/components'
 import type {WorkspaceTab} from '@/core/types'
 import {shortcutTooltip} from '@/features/layout/composables/useAppShortcutListener'
 import {useViewModelEditor} from '@/features/workspace/composables/useViewModelEditor'
+import {useViewModelLineagePreview} from '@/features/workspace/composables/useViewModelLineagePreview'
 import {useExplorerSqlSchemaProvider} from '@/features/workspace/adapters/explorer-sql-schema-provider'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -41,6 +42,7 @@ import {
     findDataSource,
     includePinnedDataSource,
 } from '@/features/explorer/utils/data-sources'
+import ViewModelLineagePreviewPanel from '@/features/workspace/components/tabs/ViewModelLineagePreviewPanel.vue'
 import {
     CONSOLE_EDITOR_HEIGHT_MAX,
     CONSOLE_EDITOR_HEIGHT_MIN,
@@ -63,6 +65,7 @@ const editorRef = ref<SqlEditorExpose>()
 const splitRef = ref<HTMLElement>()
 const aiSelectionSql = ref('')
 const showPreview = ref(false)
+const showLineagePreview = ref(false)
 const editorHeight = ref(280)
 const {isFullscreen: isEditorFullscreen, toggle: toggleEditorFullscreen, exit: exitEditorFullscreen} = useEditorFullscreen()
 
@@ -123,6 +126,19 @@ const {
 } = useViewModelEditor(props.tab, {
     getInstanceName: () => databaseName.value,
     resolvePreviewSql: () => resolvePreviewSql(),
+})
+
+const {
+    graph: lineageGraph,
+    loading: lineageLoading,
+    error: lineageError,
+    refresh: refreshLineagePreview,
+} = useViewModelLineagePreview(sql, {
+    connectionId: computed(() => connectionId.value || props.tab.connectionId || ''),
+    instanceName: computed(() => databaseName.value || null),
+    modelName: computed(() => viewModelTitle.value),
+    dbType: computed(() => dbDialect.value),
+    enabled: showLineagePreview,
 })
 
 const sqlFormatEnabled = computed(() => pluginStore.isEnabled('p-sql-format'))
@@ -258,6 +274,11 @@ watch(isEditorFullscreen, async () => {
     editorRef.value?.layout()
 })
 
+watch(showLineagePreview, async () => {
+    await nextTick()
+    editorRef.value?.layout()
+})
+
 watch(showPreview, async () => {
     await nextTick()
     editorRef.value?.layout()
@@ -283,6 +304,10 @@ async function onPreview() {
     }
     await preview()
     showPreview.value = true
+}
+
+function toggleLineagePreviewPanel() {
+    showLineagePreview.value = !showLineagePreview.value
 }
 
 function togglePreviewPanel() {
@@ -381,9 +406,19 @@ onMounted(() => {
           <span class="vm-editor-chip vm-editor-chip--accent">{{ viewModelTitle }}</span>
         </div>
         <p v-if="!scopeReady" class="vm-editor-status__hint">{{ t('viewModel.scopeMissing') }}</p>
+        <p v-else-if="showLineagePreview" class="vm-editor-status__hint">{{ t('viewModel.lineagePreviewHint') }}</p>
         <p v-else class="vm-editor-status__hint">{{ t('viewModel.previewHint') }}</p>
       </div>
       <div class="vm-editor-status__actions">
+        <DwButton
+            :variant="showLineagePreview ? 'secondary' : 'ghost'"
+            size="sm"
+            type="button"
+            :disabled="!scopeReady"
+            @click="toggleLineagePreviewPanel"
+        >
+          {{ t('viewModel.toggleLineagePreview') }}
+        </DwButton>
         <DwButton
             :variant="showPreview ? 'secondary' : 'ghost'"
             size="sm"
@@ -466,9 +501,9 @@ onMounted(() => {
           class="editor-pane"
           :class="{
             'editor-pane--fullscreen': isEditorFullscreen,
-            'editor-pane--expanded': !isEditorFullscreen && !showPreview,
+            'editor-pane--expanded': !isEditorFullscreen && !showPreview && !showLineagePreview,
           }"
-          :style="!isEditorFullscreen && showPreview ? { height: `${editorHeight}px` } : undefined"
+          :style="!isEditorFullscreen && (showPreview || showLineagePreview) ? { height: `${editorHeight}px` } : undefined"
       >
         <AiPromptBar
             v-if="showAiInput && consoleAiEnabled"
@@ -492,6 +527,15 @@ onMounted(() => {
               show-hint-bar
           />
         </div>
+        <ViewModelLineagePreviewPanel
+            v-if="!isEditorFullscreen && showLineagePreview"
+            class="vm-lineage-preview-pane"
+            :graph="lineageGraph"
+            :loading="lineageLoading"
+            :error="lineageError"
+            :model-name="viewModelTitle"
+            @refresh="refreshLineagePreview"
+        />
       </div>
       <SplitHandle
           v-if="!isEditorFullscreen && showPreview"
@@ -671,6 +715,12 @@ onMounted(() => {
 .result-pane {
   flex: 1;
   min-height: 120px;
+}
+
+.vm-lineage-preview-pane {
+  flex-shrink: 0;
+  height: 220px;
+  min-height: 160px;
 }
 
 .vm-editor-tab__error {

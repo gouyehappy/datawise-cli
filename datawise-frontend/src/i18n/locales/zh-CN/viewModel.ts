@@ -32,6 +32,12 @@ export default {
 
     toggleResults: '结果面板',
 
+    toggleLineagePreview: '血缘预览',
+
+    lineagePreviewTitle: '字段血缘预览',
+
+    lineagePreviewHint: '编辑 SQL 后自动解析字段血缘（约 800ms）',
+
     scopeMissing: '缺少连接或数据库上下文',
 
     publishFallbackDraft: '校验未通过，已保存为草稿',

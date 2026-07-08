@@ -223,6 +223,11 @@ export const API_PATHS = {
     },
     health: '/api/health',
     metrics: '/api/system/metrics',
+    lineage: {
+        viewModels: '/api/lineage/view-models',
+        parse: '/api/lineage/view-models/parse',
+        impact: '/api/lineage/view-models/impact',
+    },
     config: {
         app: '/api/config/app',
         appXml: '/api/config/app.xml',

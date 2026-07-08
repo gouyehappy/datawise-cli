@@ -86,6 +86,10 @@ export default {
             title: '指标口径已更新',
             body: '「{name}」发生口径变更，请重新检查相关血缘影响。',
         },
+        viewModelLineageChanged: {
+            title: '视图模型 SQL 已变更',
+            body: '「{name}」的 SQL 已更新，{count} 个下游模型可能受影响：{downstream}',
+        },
     },
     time: {
         justNow: '刚刚',
