@@ -345,6 +345,10 @@ export const usePluginStore = defineStore('plugin', () => {
         useLayoutStore().setModule('plugin')
     }
 
+    function openConnectorMarket() {
+        useLayoutStore().setModule('connectorMarket')
+    }
+
     function openPluginDevTools(tab?: PluginDevTab) {
         if (!isDevToolsVisible.value) {
             toast.show(i18n.global.t('plugin.devTools.hiddenHint'))
@@ -404,6 +408,7 @@ export const usePluginStore = defineStore('plugin', () => {
         focusPlugin,
         openPluginPresetDiff,
         openPluginCenter,
+        openConnectorMarket,
         openPluginDevTools,
         navigateDevToolsTab,
         consumeDevToolsTab,

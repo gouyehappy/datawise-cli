@@ -14,6 +14,7 @@ export const SIDE_RAIL_NAV_DEFS: SideRailNavDef[] = [
     {id: 'dashboard', labelKey: 'nav.dashboard', caption: 'Dashboard', section: 'main'},
     {id: 'ai', labelKey: 'nav.ai', caption: 'AI', section: 'main'},
     {id: 'plugin', labelKey: 'nav.plugin', caption: 'Plugins', section: 'main'},
+    {id: 'connectorMarket', labelKey: 'nav.connectorMarket', caption: 'Connectors', section: 'main'},
     {id: 'pluginDev', labelKey: 'nav.pluginDev', caption: 'Dev', section: 'main'},
     {id: 'refresh', labelKey: 'nav.refresh', caption: 'Refresh', section: 'util'},
     {id: 'notify', labelKey: 'nav.notify', caption: 'Notify', section: 'util'},

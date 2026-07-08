@@ -38,6 +38,15 @@ public class DatasourceController {
         ));
     }
 
+    @GetMapping("/market")
+    public ApiResponse<Map<String, Object>> listConnectorMarket() {
+        return ApiResponse.ok(Map.of(
+                "connectors", datasourceCatalogService.listMarket(),
+                "loadedPluginJars", datasourceCatalogService.loadedPluginJarNames(),
+                "pluginLoadFailures", datasourceCatalogService.pluginLoadFailures()
+        ));
+    }
+
     @PostMapping("/drivers/resolve")
     public ApiResponse<JdbcDriverResolveResult> resolveDriver(@RequestBody JdbcDriverResolveRequest request)
             throws SQLException {

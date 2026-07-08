@@ -11,6 +11,7 @@ import org.apache.datawise.backend.connector.jdbc.PostgresqlConnectorOperations;
 import org.apache.datawise.backend.connector.jdbc.PostgresqlDataSourceConnector;
 import org.apache.datawise.backend.connector.redis.RedisConnectorOperations;
 import org.apache.datawise.backend.connector.redis.RedisDataSourceConnector;
+import org.apache.datawise.backend.domain.ConnectorMarketEntryDto;
 import org.apache.datawise.backend.domain.DatasourceDefinitionDto;
 import org.apache.datawise.backend.ops.DatabaseOpsRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,6 +56,25 @@ class DatasourceCatalogServiceTest {
                 new GenericJdbcDataSourceConnector(jdbcConnectorOperations)
         ));
         service = new DatasourceCatalogService(connectorFacade(registry), opsRegistry);
+    }
+
+    @Test
+    void listMarket_marksUnavailableCatalogTypes() {
+        List<ConnectorMarketEntryDto> market = service.listMarket();
+        assertFalse(market.isEmpty());
+
+        ConnectorMarketEntryDto mysql = market.stream()
+                .filter(entry -> "mysql".equals(entry.id()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(mysql.available());
+
+        ConnectorMarketEntryDto oracle = market.stream()
+                .filter(entry -> "oracle".equals(entry.id()))
+                .findFirst()
+                .orElseThrow();
+        assertFalse(oracle.available());
+        assertNotNull(oracle.installHint());
     }
 
     @Test

@@ -16,4 +16,13 @@ export const tableDataApi = {
         tableName: string,
         request: Parameters<typeof api.tableData.deleteRow>[1],
     ) => api.tableData.deleteRow(tableName, request),
+    listAudit: (
+        tableName: string,
+        options: Parameters<typeof api.tableData.listAudit>[1],
+    ) => api.tableData.listAudit(tableName, options),
+    restoreAudit: (
+        tableName: string,
+        auditId: string,
+        request: Parameters<typeof api.tableData.restoreAudit>[2],
+    ) => api.tableData.restoreAudit(tableName, auditId, request),
 }

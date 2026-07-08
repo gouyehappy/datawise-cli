@@ -62,6 +62,9 @@ import {splitSqlStatements} from '@/features/workspace/services/split-sql-statem
 import {resolveExecutableSql} from '@/features/workspace/services/resolve-executable-sql'
 import {useConsoleSqlCancel} from '@/features/workspace/composables/useConsoleSqlCancel'
 import {useTeamStore} from '@/features/team/stores/team-store'
+import {subscribeTeamSharedQueryStream, type TeamSharedQueryViewer} from '@/features/team/services/team-shared-query-stream'
+import TeamSharedQueryConflictDialog from '@/features/team/components/TeamSharedQueryConflictDialog.vue'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {resolveProductionApprovalTeams} from '@/features/team/services/production-approval-policy.service'
 import SubmitProductionApprovalDialog from '@/features/workspace/components/SubmitProductionApprovalDialog.vue'
 import {canDmlConnection} from '@/features/team/services/connection-access.service'
@@ -358,11 +361,20 @@ function onRequestAiExplain() {
 }
 
 const teamStore = useTeamStore()
+const authStore = useAuthStore()
 const collabPulling = ref(false)
 const collabPushing = ref(false)
 const collabRemoteChanged = ref(false)
 const collabLastRemoteUpdatedAt = ref<string | null>(null)
+const collabStreamLive = ref(false)
+const collabViewers = ref<TeamSharedQueryViewer[]>([])
+const collabBaseSql = ref('')
+const collabRemoteSqlPreview = ref<string | null>(null)
+const collabConflictDialogOpen = ref(false)
+const collabConflictLoading = ref(false)
 let collabPollTimer: number | null = null
+let collabStreamStop: (() => void) | null = null
+let collabStreamReconnectTimer: number | null = null
 const productionApprovalDialogOpen = ref(false)
 const productionApprovalSubmitting = ref(false)
 const sqlReviewFindings = ref<SqlReviewFinding[]>([])
@@ -385,11 +397,26 @@ const productionApprovalTeams = computed(() => {
 const needsProductionApproval = computed(() => productionApprovalTeams.value.length > 0)
 const teamSharedQueryMeta = computed(() => props.tab.teamSharedQuery ?? null)
 const teamCollabEnabled = computed(() => Boolean(teamSharedQueryMeta.value?.teamId && teamSharedQueryMeta.value?.queryId))
-const teamCollabConflictHint = computed(() =>
-  collabRemoteChanged.value
-      ? t('team.sharedQueries.collabConflictHint')
-      : t('team.sharedQueries.collabSyncedHint'),
-)
+const teamCollabConflictHint = computed(() => {
+  if (collabRemoteChanged.value) {
+    return t('team.sharedQueries.collabConflictHint')
+  }
+  if (collabStreamLive.value) {
+    return t('team.sharedQueries.collabLiveHint')
+  }
+  return t('team.sharedQueries.collabSyncedHint')
+})
+
+function collabViewerInitial(name: string) {
+  const trimmed = name.trim()
+  return (trimmed.charAt(0) || '?').toUpperCase()
+}
+
+const collabViewerTooltip = computed(() => {
+  if (!collabViewers.value.length) return ''
+  const names = collabViewers.value.map((viewer) => viewer.userName).join(', ')
+  return t('team.sharedQueries.collabViewers', {names})
+})
 
 const dangerousSqlSubmitTitle = computed(() =>
     needsProductionApproval.value
@@ -587,12 +614,18 @@ async function onSubmitProductionApproval(teamId: string) {
 async function pullTeamSharedQuery() {
   const meta = teamSharedQueryMeta.value
   if (!meta || collabPulling.value) return
+  if (collabRemoteChanged.value) {
+    await openCollabConflictReview()
+    return
+  }
   collabPulling.value = true
   try {
     const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
     sql.value = detail.sql ?? ''
     collabLastRemoteUpdatedAt.value = detail.updatedAt || null
+    collabBaseSql.value = detail.sql ?? ''
     collabRemoteChanged.value = false
+    collabRemoteSqlPreview.value = null
     layout.showToast(t('team.sharedQueries.collabPulled'))
   } catch (error) {
     const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
@@ -600,6 +633,61 @@ async function pullTeamSharedQuery() {
   } finally {
     collabPulling.value = false
   }
+}
+
+async function prefetchCollabRemoteSql() {
+  const meta = teamSharedQueryMeta.value
+  if (!meta) return
+  collabConflictLoading.value = true
+  try {
+    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
+    collabRemoteSqlPreview.value = detail.sql ?? ''
+    if (!collabBaseSql.value) {
+      collabBaseSql.value = sql.value
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
+    layout.showToast(message)
+  } finally {
+    collabConflictLoading.value = false
+  }
+}
+
+async function openCollabConflictReview() {
+  if (!collabRemoteSqlPreview.value) {
+    await prefetchCollabRemoteSql()
+  }
+  if (!collabBaseSql.value) {
+    collabBaseSql.value = sql.value
+  }
+  if (collabRemoteSqlPreview.value != null) {
+    collabConflictDialogOpen.value = true
+  }
+}
+
+async function acceptCollabRemote() {
+  const meta = teamSharedQueryMeta.value
+  if (!meta || collabPulling.value) return
+  collabPulling.value = true
+  try {
+    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
+    sql.value = detail.sql ?? ''
+    collabLastRemoteUpdatedAt.value = detail.updatedAt || null
+    collabBaseSql.value = detail.sql ?? ''
+    collabRemoteChanged.value = false
+    collabRemoteSqlPreview.value = null
+    collabConflictDialogOpen.value = false
+    layout.showToast(t('team.sharedQueries.collabPulled'))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
+    layout.showToast(message)
+  } finally {
+    collabPulling.value = false
+  }
+}
+
+function keepCollabLocal() {
+  collabConflictDialogOpen.value = false
 }
 
 async function pushTeamSharedQuery() {
@@ -619,6 +707,7 @@ async function pushTeamSharedQuery() {
       expectedUpdatedAt: collabLastRemoteUpdatedAt.value || detail.updatedAt || undefined,
     })
     collabLastRemoteUpdatedAt.value = updated.updatedAt || null
+    collabBaseSql.value = sql.value
     collabRemoteChanged.value = false
     layout.showToast(t('team.sharedQueries.collabPushed'))
   } catch (error) {
@@ -640,18 +729,92 @@ async function pollTeamSharedQuery() {
   if (!meta || collabPulling.value || collabPushing.value) return
   try {
     const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
-    if (!collabLastRemoteUpdatedAt.value) {
-      collabLastRemoteUpdatedAt.value = detail.updatedAt || null
-      return
-    }
-    const remoteUpdated = (detail.updatedAt || '').trim()
-    const localSeen = (collabLastRemoteUpdatedAt.value || '').trim()
-    if (remoteUpdated && remoteUpdated !== localSeen && (detail.sql ?? '') !== sql.value) {
-      collabRemoteChanged.value = true
-    }
+    applyRemoteSharedQueryState(detail.updatedAt, detail.sql ?? '')
   } catch {
     // polling is best-effort; explicit pull/push handles user-facing errors
   }
+}
+
+function applyRemoteSharedQueryState(updatedAt: string | null | undefined, remoteSql: string) {
+  if (!collabLastRemoteUpdatedAt.value) {
+    collabLastRemoteUpdatedAt.value = updatedAt || null
+    return
+  }
+  const remoteUpdated = (updatedAt || '').trim()
+  const localSeen = (collabLastRemoteUpdatedAt.value || '').trim()
+  if (remoteUpdated && remoteUpdated !== localSeen && remoteSql !== sql.value) {
+    collabRemoteChanged.value = true
+    collabRemoteSqlPreview.value = remoteSql
+    if (!collabBaseSql.value) {
+      collabBaseSql.value = sql.value
+    }
+  }
+}
+
+function handleRemoteSharedQueryUpdated(
+    updatedAt: string | null | undefined,
+    updatedByUserId?: number | null,
+) {
+  if (updatedByUserId != null && updatedByUserId === authStore.user?.userId) {
+    collabLastRemoteUpdatedAt.value = updatedAt || collabLastRemoteUpdatedAt.value
+    return
+  }
+  const remoteUpdated = (updatedAt || '').trim()
+  const localSeen = (collabLastRemoteUpdatedAt.value || '').trim()
+  if (!remoteUpdated || remoteUpdated === localSeen) {
+    return
+  }
+  collabRemoteChanged.value = true
+  void prefetchCollabRemoteSql()
+}
+
+function stopCollabStreamReconnect() {
+  if (collabStreamReconnectTimer != null) {
+    window.clearTimeout(collabStreamReconnectTimer)
+    collabStreamReconnectTimer = null
+  }
+}
+
+function stopCollabStream() {
+  stopCollabStreamReconnect()
+  if (collabStreamStop != null) {
+    collabStreamStop()
+    collabStreamStop = null
+  }
+  collabStreamLive.value = false
+  collabViewers.value = []
+}
+
+function scheduleCollabStreamReconnect() {
+  if (!teamCollabEnabled.value || collabStreamReconnectTimer != null) return
+  collabStreamReconnectTimer = window.setTimeout(() => {
+    collabStreamReconnectTimer = null
+    startCollabStream()
+  }, 5000)
+}
+
+function startCollabStream() {
+  stopCollabStream()
+  const meta = teamSharedQueryMeta.value
+  if (!meta) return
+  collabStreamStop = subscribeTeamSharedQueryStream(meta.teamId, meta.queryId, {
+    onConnected: (event) => {
+      collabStreamLive.value = true
+      if (!collabLastRemoteUpdatedAt.value && event.updatedAt) {
+        collabLastRemoteUpdatedAt.value = event.updatedAt
+      }
+    },
+    onUpdated: (event) => {
+      handleRemoteSharedQueryUpdated(event.updatedAt, event.updatedByUserId)
+    },
+    onPresence: (event) => {
+      collabViewers.value = event.viewers ?? []
+    },
+    onDisconnected: () => {
+      collabStreamLive.value = false
+      scheduleCollabStreamReconnect()
+    },
+  })
 }
 
 function stopCollabPolling() {
@@ -666,22 +829,34 @@ function startCollabPolling() {
   if (!teamCollabEnabled.value) return
   collabPollTimer = window.setInterval(() => {
     void pollTeamSharedQuery()
-  }, 15000)
+  }, collabStreamLive.value ? 60000 : 15000)
 }
+
+watch(collabStreamLive, () => {
+  if (!teamCollabEnabled.value) return
+  startCollabPolling()
+})
 
 watch(teamCollabEnabled, (enabled) => {
   if (!enabled) {
     collabRemoteChanged.value = false
     collabLastRemoteUpdatedAt.value = null
+    collabViewers.value = []
+    collabBaseSql.value = ''
+    collabRemoteSqlPreview.value = null
+    collabConflictDialogOpen.value = false
     stopCollabPolling()
+    stopCollabStream()
     return
   }
   void pollTeamSharedQuery()
+  startCollabStream()
   startCollabPolling()
 }, {immediate: true})
 
 onUnmounted(() => {
   stopCollabPolling()
+  stopCollabStream()
 })
 
 function rollbackDangerousSql() {
@@ -1058,10 +1233,33 @@ onMounted(() => {
       <span class="team-collab-banner__text">
         {{ t('team.sharedQueries.collabBanner', { title: teamSharedQueryMeta?.title || tab.title }) }}
       </span>
+      <div
+          v-if="collabViewers.length"
+          class="team-collab-banner__viewers"
+          :title="collabViewerTooltip"
+      >
+        <span
+            v-for="viewer in collabViewers"
+            :key="viewer.userId"
+            class="team-collab-banner__avatar"
+            :class="{'is-self': viewer.userId === authStore.user?.userId}"
+        >
+          {{ collabViewerInitial(viewer.userName) }}
+        </span>
+      </div>
       <span class="team-collab-banner__hint" :class="{ 'is-warning': collabRemoteChanged }">
         {{ teamCollabConflictHint }}
       </span>
       <div class="team-collab-banner__actions">
+        <button
+            v-if="collabRemoteChanged"
+            type="button"
+            class="dw-btn dw-btn--ghost"
+            :disabled="collabPulling || collabPushing || collabConflictLoading"
+            @click="openCollabConflictReview"
+        >
+          {{ collabConflictLoading ? t('common.loading') : t('team.sharedQueries.reviewChanges') }}
+        </button>
         <button type="button" class="dw-btn dw-btn--ghost" :disabled="collabPulling || collabPushing" @click="pullTeamSharedQuery">
           {{ collabPulling ? t('common.loading') : t('team.sharedQueries.pullLatest') }}
         </button>
@@ -1211,6 +1409,17 @@ onMounted(() => {
         :database="databaseName"
         :teams="productionApprovalTeams"
         @submit="onSubmitProductionApproval"
+    />
+
+    <TeamSharedQueryConflictDialog
+        v-model:open="collabConflictDialogOpen"
+        :base-sql="collabBaseSql"
+        :local-sql="sql"
+        :remote-sql="collabRemoteSqlPreview ?? ''"
+        :loading="collabConflictLoading"
+        :applying="collabPulling"
+        @accept-remote="acceptCollabRemote"
+        @keep-local="keepCollabLocal"
     />
 
     <ConsoleSqlCancelDialog
@@ -1427,6 +1636,30 @@ onMounted(() => {
 .team-collab-banner__text {
   font-size: 12px;
   color: var(--dw-text-secondary);
+}
+
+.team-collab-banner__viewers {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.team-collab-banner__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dw-text-on-primary, #fff);
+  background: color-mix(in srgb, var(--dw-primary) 72%, #334155);
+  border: 1px solid var(--dw-border-light);
+}
+
+.team-collab-banner__avatar.is-self {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dw-primary) 35%, transparent);
 }
 
 .team-collab-banner__actions {

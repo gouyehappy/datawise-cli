@@ -47,6 +47,8 @@ export default {
             enterWorkbench: '进入工作台',
             plugins: '插件',
             enterPlugins: '插件中心',
+            connectorMarket: '连接器',
+            enterConnectorMarket: '打开连接器市场',
             devTools: '开发',
             enterDevTools: '打开开发者工具',
             dashboard: '仪表盘',

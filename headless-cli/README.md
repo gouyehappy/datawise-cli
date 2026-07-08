@@ -47,6 +47,26 @@ datawise --token "$DATAWISE_API_TOKEN" sql exec \
 
 Add `--json` on either command for machine-readable output.
 
+### query-library validate
+
+Validate a Git-managed `query-library.json` and referenced SQL files (no server required):
+
+```bash
+datawise query-library validate -m ./examples/query-library/query-library.json
+datawise query-library validate -m ./query-library/query-library.json --strict
+```
+
+### query-library run
+
+Execute CI-enabled queries from the manifest:
+
+```bash
+datawise --token "$DATAWISE_API_TOKEN" query-library run \
+  -m ./query-library/query-library.json
+```
+
+Optional: `--id health-check` to run one query. `run` always validates with `--strict` semantics. See `examples/query-library/README.md`.
+
 ## Development
 
 ```bash

@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.controller.table;
 
 import org.apache.datawise.backend.common.ApiResponse;
+import org.apache.datawise.backend.domain.TableDataChangeAuditEntry;
 import org.apache.datawise.backend.domain.TableDataResult;
 import org.apache.datawise.backend.domain.TableRowMutateRequest;
 import org.apache.datawise.backend.domain.TableRowMutateResult;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/tables")
@@ -154,6 +157,56 @@ public class TableDataController {
                     ex,
                     "connectionId", request.connectionId(),
                     "database", request.database()
+            );
+            throw ex;
+        }
+    }
+
+    @GetMapping("/{tableName}/data/audit")
+    public ApiResponse<List<TableDataChangeAuditEntry>> listTableDataAudit(
+            @PathVariable String tableName,
+            @RequestParam(required = false) String connectionId,
+            @RequestParam(required = false) String database,
+            @RequestParam(required = false, defaultValue = "50") int limit
+    ) {
+        return ApiResponse.ok(tableDataService.listAudit(tableName, connectionId, database, limit));
+    }
+
+    @PostMapping("/{tableName}/data/audit/{auditId}/restore")
+    public ApiResponse<TableRowMutateResult> restoreTableDataAudit(
+            @PathVariable String tableName,
+            @PathVariable String auditId,
+            @RequestBody TableRowMutateRequest request
+    ) {
+        ApiRequestLogger.logEntry(
+                log,
+                "POST /api/tables/{}/data/audit/{}/restore",
+                "connectionId", request.connectionId(),
+                "database", request.database(),
+                "auditId", auditId
+        );
+        try {
+            TableRowMutateResult result = tableDataService.restoreAudit(
+                    tableName,
+                    request.connectionId(),
+                    request.database(),
+                    auditId
+            );
+            ApiRequestLogger.logSuccess(
+                    log,
+                    "POST /api/tables/{}/data/audit/{}/restore",
+                    "affectedRows",
+                    result.affectedRows()
+            );
+            return ApiResponse.ok(result);
+        } catch (RuntimeException ex) {
+            ApiRequestLogger.logFailure(
+                    log,
+                    "POST /api/tables/{}/data/audit/{}/restore",
+                    ex,
+                    "connectionId", request.connectionId(),
+                    "database", request.database(),
+                    "auditId", auditId
             );
             throw ex;
         }

@@ -32,6 +32,7 @@ import org.apache.datawise.backend.service.team.TeamSharedQueryService;
 import org.apache.datawise.backend.service.team.TeamSharingService;
 import org.apache.datawise.backend.service.team.TeamSupport;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Instant;
 import java.util.List;
@@ -178,6 +179,10 @@ public class TeamService {
 
     public TeamSharedQueryDetailDto getSharedQuery(String teamId, String queryId) {
         return sharedQueryService.getSharedQuery(teamId, queryId);
+    }
+
+    public SseEmitter openSharedQueryStream(String teamId, String queryId) {
+        return sharedQueryService.openSharedQueryStream(teamId, queryId);
     }
 
     public TeamSharedQuerySummaryDto updateSharedQuery(

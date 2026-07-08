@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {ContextMenuHost} from '@/core/context-menu'
 import TabAddButton from '@/core/components/TabAddButton.vue'
@@ -25,15 +25,8 @@ import {isWorkspaceTabProduction} from '@/features/workspace/services/workspace-
 import {openGeneratedTableCode} from '@/features/workspace/services/table-codegen.actions'
 import type {TableCodeTemplate} from '@/features/workspace/services/table-codegen.types'
 import FakeDataDialog from '@/features/workspace/components/FakeDataDialog.vue'
-import {
-    executeFakeDataForTab,
-    exportFakeDataForTab,
-    fetchFakeDataProperties,
-} from '@/features/workspace/services/fake-data.actions'
-import {canDmlConnection} from '@/features/team/services/connection-access.service'
-import {useTeamStore} from '@/features/team/stores/team-store'
+import {useFakeDataDialog} from '@/features/workspace/composables/useFakeDataDialog'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
-import type {TablePropertiesResult} from '@/shared/api/types'
 import type {WorkspaceTab} from '@/core/types'
 
 const {t} = useI18n()
@@ -41,7 +34,6 @@ const workspace = useWorkspaceStore()
 const layout = useLayoutStore()
 const explorer = useExplorerStore()
 const auth = useAuthStore()
-const teamStore = useTeamStore()
 const pluginStore = usePluginStore()
 const tabBarRef = ref<InstanceType<typeof TabBar>>()
 const renameTabId = ref<string | null>(null)
@@ -51,11 +43,33 @@ const unsavedDialogMessage = ref('')
 const migrationDialogOpen = ref(false)
 const migrationDialogDefault = ref('')
 const migrationTabId = ref<string | null>(null)
-const fakeDataDialogOpen = ref(false)
-const fakeDataLoading = ref(false)
-const fakeDataExecuting = ref(false)
-const fakeDataTab = ref<WorkspaceTab | null>(null)
-const fakeDataProperties = ref<TablePropertiesResult | null>(null)
+
+const fakeData = useFakeDataDialog(async (target) => {
+  workspace.bumpTableDataRefresh(target.id)
+})
+const {
+  open: fakeDataDialogOpen,
+  loading: fakeDataLoading,
+  executing: fakeDataExecuting,
+  tab: fakeDataTab,
+  properties: fakeDataProperties,
+  canExecute: fakeDataCanExecute,
+  executeDisabledHint: fakeDataExecuteHint,
+  openForTable,
+  execute: onFakeDataExecute,
+  exportSql: onFakeDataExport,
+} = fakeData
+
+watch(
+    () => workspace.fakeDataDialogRequest?.nonce,
+    () => {
+      const request = workspace.fakeDataDialogRequest
+      if (!request) return
+      const tab = workspace.tabs.find((item) => item.id === request.tabId)
+      if (tab) void openForTable(tab)
+    },
+)
+
 let unsavedDialogResolver: ((action: 'save' | 'discard' | 'cancel') => void) | null = null
 
 function promptUnsavedClose(dirtyTabIds: string[]): Promise<'save' | 'discard' | 'cancel'> {
@@ -204,75 +218,8 @@ function runTableCodegen(tabId: string, template: TableCodeTemplate) {
 
 async function openFakeDataDialog(tabId: string) {
   const tab = workspace.tabs.find((item) => item.id === tabId)
-  if (!tab || tab.type !== 'table' || !tab.tableName?.trim()) {
-    layout.showToast(t('workspace.fakeData.failed'))
-    return
-  }
-  fakeDataTab.value = tab
-  fakeDataProperties.value = null
-  fakeDataDialogOpen.value = true
-  fakeDataLoading.value = true
-  try {
-    fakeDataProperties.value = await fetchFakeDataProperties(tab, explorer.tree)
-  } catch (error) {
-    fakeDataDialogOpen.value = false
-    fakeDataTab.value = null
-    const message = error instanceof Error ? error.message : String(error)
-    layout.showToast(t('workspace.fakeData.failedWithDetail', {message}))
-  } finally {
-    fakeDataLoading.value = false
-  }
-}
-
-const fakeDataCanExecute = computed(() => {
-  const tab = fakeDataTab.value
-  if (!tab?.connectionId || auth.isGuest) return false
-  return canDmlConnection(tab.connectionId, teamStore.teams)
-})
-
-const fakeDataExecuteHint = computed(() => {
-  if (auth.isGuest) return t('auth.guestReadOnlyHint')
-  if (!fakeDataCanExecute.value) return t('workspace.fakeData.writeDenied')
-  return undefined
-})
-
-async function onFakeDataExecute(rowCount: number) {
-  const tab = fakeDataTab.value
-  const properties = fakeDataProperties.value
-  if (!tab || !properties) return
-  fakeDataExecuting.value = true
-  try {
-    const ok = await executeFakeDataForTab({
-      tab,
-      tree: explorer.tree,
-      properties,
-      rowCount,
-      teams: teamStore.teams,
-      isGuest: auth.isGuest,
-      showToast: (message) => layout.showToast(message),
-      t,
-    })
-    if (ok) fakeDataDialogOpen.value = false
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    layout.showToast(t('workspace.fakeData.failedWithDetail', {message}))
-  } finally {
-    fakeDataExecuting.value = false
-  }
-}
-
-function onFakeDataExport(rowCount: number) {
-  const tab = fakeDataTab.value
-  const properties = fakeDataProperties.value
-  if (!tab || !properties) return
-  exportFakeDataForTab({
-    tab,
-    tree: explorer.tree,
-    properties,
-    rowCount,
-    showToast: (message) => layout.showToast(message),
-    t,
-  })
+  if (!tab) return
+  await openForTable(tab)
 }
 
 const {

@@ -16,6 +16,7 @@ import {
 } from '@/features/workspace/services/table-row-mutate.service'
 import {useConnectionCapabilities} from '@/shared/capabilities/useConnectionCapabilities'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
+import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useI18n} from 'vue-i18n'
 
 const EMPTY: TableDataResult = {columns: [], rows: []}
@@ -39,6 +40,7 @@ export function useTableDataView(tab: WorkspaceTab) {
     const explorer = useExplorerStore()
     const teamStore = useTeamStore()
     const pluginStore = usePluginStore()
+    const workspace = useWorkspaceStore()
     const {t} = useI18n()
     const tableData = ref<TableDataResult>(EMPTY)
     const tableProperties = ref<TablePropertiesResult>(EMPTY_PROPERTIES)
@@ -46,6 +48,7 @@ export function useTableDataView(tab: WorkspaceTab) {
     const cursorLoading = ref(false)
     const mutating = ref(false)
     const loadError = ref<string | null>(null)
+    const changeRevision = ref(0)
 
     const databaseName = computed(() => resolveDatabaseName(tab, explorer.tree))
     const connectionDbType = computed(() => {
@@ -173,6 +176,7 @@ export function useTableDataView(tab: WorkspaceTab) {
                 })
             }
             await load()
+            changeRevision.value += 1
             return true
         } finally {
             mutating.value = false
@@ -187,6 +191,15 @@ export function useTableDataView(tab: WorkspaceTab) {
             void load()
         },
         {immediate: true, deep: true},
+    )
+
+    watch(
+        () => workspace.tableDataRefreshSeq[tab.id],
+        (next, prev) => {
+            if (next == null || next === prev) return
+            void load()
+            changeRevision.value += 1
+        },
     )
 
     async function loadMore() {
@@ -236,5 +249,7 @@ export function useTableDataView(tab: WorkspaceTab) {
         primaryKeyColumns,
         submitChanges,
         refresh: load,
+        databaseName,
+        changeRevision,
     }
 }

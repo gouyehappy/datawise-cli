@@ -19,6 +19,7 @@ export default {
         team: 'Team',
         plugin: 'Plugins',
         pluginDev: 'Plugin developer tools',
+        connectorMarket: 'Connector marketplace',
         settings: 'Settings',
     },
     actions: {
@@ -26,6 +27,7 @@ export default {
         openBookmarks: 'Open query bookmarks panel',
         openPluginCenter: 'Open plugin center',
         openPluginDevTools: 'Open plugin developer tools',
+        openConnectorMarket: 'Open connector marketplace',
         openPluginSettings: 'Open plugin settings',
     },
     plugins: {

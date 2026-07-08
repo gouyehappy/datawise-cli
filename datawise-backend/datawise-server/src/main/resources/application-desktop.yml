@@ -22,6 +22,8 @@ logging:
     root: WARN
     org.apache.datawise.backend: INFO
     org.springframework: WARN
+    org.apache.thrift: WARN
+    org.apache.hive: WARN
 
 datawise:
   jdbc:

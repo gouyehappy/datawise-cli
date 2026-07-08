@@ -24,13 +24,14 @@ final class TeamServiceTestFixtures {
         TeamStore teamStore = new TeamStore(new ConfigDirectoryService(tempDir), objectMapper);
         TeamSupport support = new TeamSupport(teamStore, userAccountService);
         TeamAuditService auditService = new TeamAuditService(teamStore, support);
+        TeamSharedQueryStreamHub streamHub = new TeamSharedQueryStreamHub();
         return new TeamContext(
                 teamStore,
                 support,
                 auditService,
                 new TeamMembershipService(support, auditService),
                 new TeamSharingService(support, auditService, objectMapper),
-                new TeamSharedQueryService(support, auditService),
+                new TeamSharedQueryService(support, auditService, streamHub),
                 new TeamProductionApprovalService(support, auditService)
         );
     }

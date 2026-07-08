@@ -5,6 +5,7 @@ export default {
     ai: 'AI Chat',
     plugin: 'Plugins',
     pluginDev: 'Plugin dev tools',
+    connectorMarket: 'Connector market',
     refresh: 'Refresh all',
     notify: 'Notifications',
     feedback: 'Feedback',

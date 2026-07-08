@@ -57,11 +57,11 @@
 
 | 功能 | 状态 |
 |------|------|
-| 多人协同编辑 SQL 控制台 | in_progress |
-| Connector 社区市场 | todo |
-| 表数据变更审计 / Time-travel | todo |
-| 测试数据生成 | todo |
-| Git 集成 Query Library CI | todo |
+| 多人协同编辑 SQL 控制台 | done | 拉取/推送 + 轮询冲突 + 乐观锁 + SSE + presence + 冲突 diff |
+| Connector 社区市场 | done | 独立页面浏览 catalog 连接器，区分可用/待安装 |
+| 表数据变更审计 / Time-travel | done | 网格 DML 本地审计 + 一键回滚 |
+| 测试数据生成 | done | 表 Tab 工具栏 + 右键菜单；列名启发式 + 预览/执行/导出 SQL |
+| Git 集成 Query Library CI | done | query-library.json 清单 + headless CLI validate/run + GitHub Actions + 书签导出 |
 
 ---
 

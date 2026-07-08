@@ -19,6 +19,7 @@ export default {
         team: '团队',
         plugin: '插件',
         pluginDev: '插件开发者工具',
+        connectorMarket: '连接器市场',
         settings: '设置',
     },
     actions: {
@@ -26,6 +27,7 @@ export default {
         openBookmarks: '打开查询书签面板',
         openPluginCenter: '打开插件中心',
         openPluginDevTools: '打开插件开发者工具',
+        openConnectorMarket: '打开连接器市场',
         openPluginSettings: '打开插件设置',
     },
     plugins: {

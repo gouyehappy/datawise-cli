@@ -58,6 +58,21 @@ describe('fake-data.service', () => {
         assert.equal(generateFakeCellValue(sampleProperties.columns[2], 0), 1000)
     })
 
+    it('generates heuristic values from column names', () => {
+        assert.equal(
+            generateFakeCellValue({name: 'status', dataType: 'varchar(32)', nullable: true, autoIncrement: false, ordinal: 1, keyType: null}, 0),
+            'active',
+        )
+        assert.equal(
+            generateFakeCellValue({name: 'order_code', dataType: 'varchar(32)', nullable: true, autoIncrement: false, ordinal: 1, keyType: null}, 1),
+            'CODE-1002',
+        )
+        assert.equal(
+            generateFakeCellValue({name: 'unit_price', dataType: 'decimal(10,2)', nullable: true, autoIncrement: false, ordinal: 1, keyType: null}, 2),
+            29.97,
+        )
+    })
+
     it('builds requested number of rows', () => {
         const rows = buildFakeDataRows(sampleProperties, 3)
         assert.equal(rows.length, 3)

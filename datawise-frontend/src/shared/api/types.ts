@@ -387,6 +387,19 @@ export interface TableRowUpdateRequest {
     values: Record<string, string | number | boolean | null>
 }
 
+export type TableDataChangeOperation = 'INSERT' | 'UPDATE' | 'DELETE' | 'RESTORE'
+
+export interface TableDataChangeAuditEntry {
+    id: string
+    createdAtMs: number
+    operation: TableDataChangeOperation
+    beforeRow?: Record<string, string | number | boolean | null> | null
+    afterRow?: Record<string, string | number | boolean | null> | null
+    primaryKey?: Record<string, string | number | boolean | null> | null
+    reverted: boolean
+    restoredFromId?: string | null
+}
+
 export interface TableDataApi {
     fetch(tableName?: string, options?: TableDataFetchOptions): Promise<TableDataResult>
 
@@ -403,6 +416,17 @@ export interface TableDataApi {
     deleteRow(
         tableName: string,
         request: TableRowMutateRequest,
+    ): Promise<TableRowMutateResult>
+
+    listAudit(
+        tableName: string,
+        options: { connectionId: string; database?: string; limit?: number },
+    ): Promise<TableDataChangeAuditEntry[]>
+
+    restoreAudit(
+        tableName: string,
+        auditId: string,
+        request: Pick<TableRowMutateRequest, 'connectionId' | 'database'>,
     ): Promise<TableRowMutateResult>
 }
 
@@ -1050,6 +1074,12 @@ export interface JdbcDriverResolveRequest {
 export interface DatasourcesApi {
     list(): Promise<{
         datasources: DatasourceDefinition[]
+        loadedPluginJars?: string[]
+        pluginLoadFailures?: Array<{jarName: string; reason: string}>
+    }>
+
+    market(): Promise<{
+        connectors: import('@/features/datasource/types/datasource.types').ConnectorMarketEntry[]
         loadedPluginJars?: string[]
         pluginLoadFailures?: Array<{jarName: string; reason: string}>
     }>

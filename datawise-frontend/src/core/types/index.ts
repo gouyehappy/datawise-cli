@@ -45,7 +45,7 @@ export type DbType =
     | 'flink'
 
 /** 主导航模块，对应 Chat2DB Navigation Bar */
-export type NavModule = 'profile' | 'database' | 'dashboard' | 'ai' | 'plugin' | 'pluginDev' | 'team' | 'settings'
+export type NavModule = 'profile' | 'database' | 'dashboard' | 'ai' | 'plugin' | 'pluginDev' | 'connectorMarket' | 'team' | 'settings'
 
 /** 设置页左侧分区 */
 export type SettingsSection =

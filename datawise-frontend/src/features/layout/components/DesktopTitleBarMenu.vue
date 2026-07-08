@@ -39,6 +39,7 @@ const menus = computed(() =>
             setModule: (module) => layout.setModule(module),
             openSettings: (section) => layout.openSettingsModule(section ?? 'basic'),
             openPluginDevTools: () => pluginStore.openPluginDevTools(),
+            openConnectorMarket: () => pluginStore.openConnectorMarket(),
         },
     ),
 )

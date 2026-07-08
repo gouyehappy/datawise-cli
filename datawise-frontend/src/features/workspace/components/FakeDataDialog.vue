@@ -111,7 +111,13 @@ function onExport() {
       </FormField>
       <p v-if="rowCountError" class="dw-form-error" role="alert">{{ rowCountError }}</p>
       <p class="modal-body-hint">
+        {{ t('workspace.fakeData.columnHint', {count: insertColumns.length}) }}
+      </p>
+      <p class="modal-body-hint">
         {{ t('workspace.fakeData.previewHint', {preview: FAKE_DATA_PREVIEW_ROWS, max: FAKE_DATA_MAX_ROWS}) }}
+      </p>
+      <p class="modal-body-hint">
+        {{ t('workspace.fakeData.auditHint') }}
       </p>
 
       <div>

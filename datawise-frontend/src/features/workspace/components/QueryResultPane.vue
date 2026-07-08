@@ -80,6 +80,7 @@ const props = withDefaults(
       /** SQL 控制台：结果 Tab 可发起跨环境抽样对比 */
       enableCrossEnvCompare?: boolean
       showExport?: boolean
+      enableFakeData?: boolean
     }>(),
     {
       showFilter: true,
@@ -112,6 +113,7 @@ const emit = defineEmits<{
   'request-ai-explain': []
   'close-ai-explain': []
   'open-cross-env-compare': [index: number]
+  'generate-fake-data': []
 }>()
 
 const layout = useLayoutStore()
@@ -267,6 +269,13 @@ const canGenerateDml = computed(() => {
       && activeResult.value.columns.length > 0
       && activeResult.value.rows.length > 0
       && !activeResult.value.explainPlan?.length
+})
+
+const canShowFakeData = computed(() => {
+  if (!props.enableFakeData) return false
+  if (!pluginStore.isEnabled('p-fake-data')) return false
+  const columns = props.columnDetails?.length ? props.columnDetails : activeResult.value?.columns
+  return Boolean(columns?.length)
 })
 
 function onGenerateDml(rows: TableRow[]) {
@@ -725,10 +734,19 @@ function onRequestAiExplain() {
           @load-more="onLoadMoreRows"
           @generate-dml="onGenerateDml"
       >
-        <template v-if="canRequestAiSummary" #toolbar-extra>
+        <template v-if="canShowFakeData || canRequestAiSummary" #toolbar-extra>
           <button
+              v-if="canShowFakeData"
               type="button"
-              class="result-ai-summary-btn"
+              class="result-toolbar-btn"
+              @click="emit('generate-fake-data')"
+          >
+            {{ t('workspace.fakeData.toolbar') }}
+          </button>
+          <button
+              v-if="canRequestAiSummary"
+              type="button"
+              class="result-toolbar-btn result-toolbar-btn--ai"
               :disabled="aiSummaryLoading"
               @click="onRequestAiSummary"
           >
@@ -819,29 +837,39 @@ function onRequestAiExplain() {
   margin: 8px 12px 0;
 }
 
-.result-ai-summary-btn {
+.result-toolbar-btn {
   display: inline-flex;
   align-items: center;
   height: 28px;
   padding: 0 10px;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--dw-primary) 14%, var(--dw-border));
+  border: 1px solid var(--dw-border);
   border-radius: 6px;
-  background: var(--dw-primary-softer);
+  background: var(--dw-bg-subtle);
   color: var(--dw-text);
   font-size: 12px;
   white-space: nowrap;
 }
 
-.result-ai-summary-btn:hover:not(:disabled) {
+.result-toolbar-btn:hover:not(:disabled) {
+  background: var(--dw-bg-hover);
+  border-color: var(--dw-border-strong);
+}
+
+.result-toolbar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.result-toolbar-btn--ai {
+  border-color: color-mix(in srgb, var(--dw-primary) 14%, var(--dw-border));
+  background: var(--dw-primary-softer);
+}
+
+.result-toolbar-btn--ai:hover:not(:disabled) {
   background: var(--dw-primary-soft);
   border-color: var(--dw-primary-ring);
   color: var(--dw-primary);
-}
-
-.result-ai-summary-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .result-grid-pane :deep(.data-grid),

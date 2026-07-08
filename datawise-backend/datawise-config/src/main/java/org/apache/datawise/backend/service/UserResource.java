@@ -18,6 +18,8 @@ public enum UserResource {
     WORKSPACE_SCRIPTS,
     /** SQL 历史、收藏控制台、导出任务等用户产出数据 */
     WORKSPACE_USER_DATA,
+    /** 表数据网格 DML 本地审计（time-travel 回滚） */
+    TABLE_DATA_AUDIT,
     SQL_SNIPPETS_PERSONAL,
     SQL_SNIPPETS_SHARED,
     UPDATER_PREFERENCES,

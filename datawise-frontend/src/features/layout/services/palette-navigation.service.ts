@@ -31,6 +31,7 @@ export interface BuildPaletteNavigationParams {
     openConsole: (options?: {connectionName?: string; sql?: string}) => void
     toggleShortcutPanel: (panel: 'console') => void
     openPluginDevTools: () => void
+    openConnectorMarket: () => void
     openSettingsModule: (section: SettingsSection, anchor?: string) => void
     isPluginDevToolsVisible: () => boolean
     bookmarksEnabled: boolean
@@ -75,6 +76,7 @@ export function buildPaletteNavigationEntries(params: BuildPaletteNavigationPara
         {id: 'ai', label: t('commandPalette.modules.ai')},
         {id: 'team', label: t('commandPalette.modules.team')},
         {id: 'plugin', label: t('commandPalette.modules.plugin')},
+        {id: 'connectorMarket', label: t('commandPalette.modules.connectorMarket')},
         ...(params.isPluginDevToolsVisible()
             ? [{id: 'pluginDev' as const, label: t('commandPalette.modules.pluginDev')}]
             : []),
@@ -154,6 +156,13 @@ export function buildPaletteNavigationEntries(params: BuildPaletteNavigationPara
         label: t('commandPalette.actions.openPluginCenter'),
         group: t('commandPalette.groups.plugins'),
         run: () => params.setModule('plugin'),
+    })
+
+    list.push({
+        id: 'action:connector-market',
+        label: t('commandPalette.actions.openConnectorMarket'),
+        group: t('commandPalette.groups.plugins'),
+        run: () => params.openConnectorMarket(),
     })
 
     if (params.isPluginDevToolsVisible()) {

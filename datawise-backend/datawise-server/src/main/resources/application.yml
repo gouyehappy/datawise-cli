@@ -26,6 +26,9 @@ logging:
   level:
     org.apache.datawise.backend: INFO
     datawise.exception: WARN
+    # Hive JDBC 连接池 keepalive 会触发 Thrift SASL 读写；默认压到 WARN 避免控制台刷屏
+    org.apache.thrift: WARN
+    org.apache.hive: WARN
 
 datawise:
   config:

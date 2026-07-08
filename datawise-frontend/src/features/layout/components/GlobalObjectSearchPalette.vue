@@ -78,6 +78,7 @@ const navigationEntries = computed(() =>
             openConsole: (options) => workspace.openConsole(options),
             toggleShortcutPanel: (panel) => layout.toggleShortcutPanel(panel),
             openPluginDevTools: () => pluginStore.openPluginDevTools(),
+            openConnectorMarket: () => pluginStore.openConnectorMarket(),
             openSettingsModule: (module, anchor) => layout.openSettingsModule(module, anchor),
             isPluginDevToolsVisible: () => appConfig.isPluginDevToolsVisible(),
             bookmarksEnabled: bookmarksEnabled.value,

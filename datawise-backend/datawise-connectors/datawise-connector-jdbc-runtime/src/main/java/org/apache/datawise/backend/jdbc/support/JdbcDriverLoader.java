@@ -62,6 +62,7 @@ public class JdbcDriverLoader {
         }
         if (HiveJdbcDriverBundle.isHiveDriver(driverClass) || HiveJdbcDriverBundle.isHiveMavenArtifact(coordinate)) {
             ensureHiveDriverBundle(coordinate.version());
+            ThriftTransportLogLevels.applyQuietly();
         }
         Path jarPath = jarLocator.findLocalJar(coordinate, driverClass)
                 .orElseGet(() -> resolveMissingJarPath(coordinate));

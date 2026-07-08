@@ -38,7 +38,7 @@ public class UserResourcePolicy {
             case LAYOUT_MENU, SQL_SNIPPETS_PERSONAL, WORKSPACE_SCRIPTS, WORKSPACE_USER_DATA ->
                     new ResourceRule(StorageScope.USER, true, false);
             case AI_KNOWLEDGE, AI_TABLE_TAGS, AI_ANALYSIS_CANVAS, SEMANTIC_METRICS, FEDERATED_VIEWS,
-                    SCHEMA_DRIFT_MONITORS, SCHEDULED_TASKS ->
+                    SCHEMA_DRIFT_MONITORS, SCHEDULED_TASKS, TABLE_DATA_AUDIT ->
                     new ResourceRule(StorageScope.USER, true, false);
             case CONNECTION_CATALOG ->
                     new ResourceRule(StorageScope.SESSION_EPHEMERAL, true, true);

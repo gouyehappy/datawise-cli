@@ -12,7 +12,7 @@ export type {DashboardPreferences}
 
 export const APP_CONFIG_VERSION = 2 as const
 
-export type RestorableNavModule = 'database' | 'dashboard' | 'ai' | 'plugin' | 'pluginDev'
+export type RestorableNavModule = 'database' | 'dashboard' | 'ai' | 'plugin' | 'pluginDev' | 'connectorMarket'
 
 export interface WindowPreferences {
     width: number

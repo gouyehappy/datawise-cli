@@ -67,6 +67,10 @@ const configImportInputRef = ref<HTMLInputElement>()
 
 const {highlightPluginId, pageNavigateIntent} = storeToRefs(pluginStore)
 
+const showConnectorMarketCta = computed(
+    () => category.value === 'all' || category.value === 'datasource',
+)
+
 const surfaceOptions = listPluginSurfaceIds()
 const presetIds: PluginPresetId[] = ['dba', 'readOnlyAnalysis', 'teamViewer', 'developer', 'minimal']
 const referencePresetId = computed<PluginPresetId>({
@@ -416,6 +420,10 @@ function openPluginDevTools() {
   pluginStore.openPluginDevTools()
 }
 
+function openConnectorMarket() {
+  pluginStore.openConnectorMarket()
+}
+
 async function onPluginToggle(plugin: PluginItem) {
   pluginStore.toggle(plugin.id)
   bumpUsageRevision()
@@ -469,6 +477,14 @@ async function onPluginToggle(plugin: PluginItem) {
           <div class="mp-hero__actions">
             <button class="mp-segment__btn is-active" type="button" @click="openPluginSettings">
               {{ t('plugin.openSettings') }}
+            </button>
+            <button
+                v-if="showConnectorMarketCta"
+                class="mp-segment__btn"
+                type="button"
+                @click="openConnectorMarket"
+            >
+              {{ t('plugin.connectorMarket.open') }}
             </button>
             <button
                 v-if="pluginStore.isDevToolsVisible"
@@ -576,6 +592,21 @@ async function onPluginToggle(plugin: PluginItem) {
           </div>
         </div>
       </div>
+
+      <section v-if="showConnectorMarketCta" class="plugin-market-cta">
+        <div class="plugin-market-cta__visual" aria-hidden="true">
+          <span class="plugin-market-cta__orb plugin-market-cta__orb--a"/>
+          <span class="plugin-market-cta__orb plugin-market-cta__orb--b"/>
+          <span class="plugin-market-cta__orb plugin-market-cta__orb--c"/>
+        </div>
+        <div class="plugin-market-cta__copy">
+          <h2 class="plugin-market-cta__title">{{ t('plugin.connectorMarket.title') }}</h2>
+          <p class="plugin-market-cta__sub">{{ t('plugin.connectorMarket.ctaHint') }}</p>
+        </div>
+        <button class="mp-segment__btn is-active plugin-market-cta__btn" type="button" @click="openConnectorMarket">
+          {{ t('plugin.connectorMarket.open') }}
+        </button>
+      </section>
 
       <div class="plugin-layout">
         <aside class="plugin-sidebar">

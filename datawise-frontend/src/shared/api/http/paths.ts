@@ -43,6 +43,20 @@ export const API_PATHS = {
     tableRows: (tableName: string) => `/api/tables/${encodeURIComponent(tableName)}/rows`,
     tableRowsDelete: (tableName: string) => `/api/tables/${encodeURIComponent(tableName)}/rows/delete`,
     tableRowsUpdate: (tableName: string) => `/api/tables/${encodeURIComponent(tableName)}/rows/update`,
+    tableDataAudit: (
+        tableName: string,
+        options?: { connectionId?: string; database?: string; limit?: number },
+    ) => {
+        const base = `/api/tables/${encodeURIComponent(tableName)}/data/audit`
+        const params = new URLSearchParams()
+        if (options?.connectionId) params.set('connectionId', options.connectionId)
+        if (options?.database) params.set('database', options.database)
+        if (options?.limit != null && options.limit > 0) params.set('limit', String(options.limit))
+        const qs = params.toString()
+        return qs ? `${base}?${qs}` : base
+    },
+    tableDataAuditRestore: (tableName: string, auditId: string) =>
+        `/api/tables/${encodeURIComponent(tableName)}/data/audit/${encodeURIComponent(auditId)}/restore`,
     tableProperties: (tableName: string, options?: { connectionId?: string; database?: string; kind?: 'table' | 'view' }) => {
         const base = `/api/tables/${encodeURIComponent(tableName)}/properties`
         const params = new URLSearchParams()
@@ -204,6 +218,7 @@ export const API_PATHS = {
     plugins: '/api/plugins',
     datasources: {
         list: '/api/datasources',
+        market: '/api/datasources/market',
         resolveDriver: '/api/datasources/drivers/resolve',
     },
     health: '/api/health',
@@ -247,6 +262,8 @@ export const API_PATHS = {
             `/api/teams/${encodeURIComponent(teamId)}/shared-queries`,
         sharedQuery: (teamId: string, queryId: string) =>
             `/api/teams/${encodeURIComponent(teamId)}/shared-queries/${encodeURIComponent(queryId)}`,
+        sharedQueryStream: (teamId: string, queryId: string) =>
+            `/api/teams/${encodeURIComponent(teamId)}/shared-queries/${encodeURIComponent(queryId)}/stream`,
         sharedQueryComment: (teamId: string, queryId: string) =>
             `/api/teams/${encodeURIComponent(teamId)}/shared-queries/${encodeURIComponent(queryId)}/comments`,
         sharedQueryCommentById: (teamId: string, queryId: string, commentId: string) =>

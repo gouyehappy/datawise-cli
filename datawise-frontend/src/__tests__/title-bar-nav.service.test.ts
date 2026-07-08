@@ -9,6 +9,7 @@ const noopHandlers = {
     setModule: () => {},
     openSettings: () => {},
     openPluginDevTools: () => {},
+    openConnectorMarket: () => {},
 }
 
 describe('title-bar-nav.service', () => {
@@ -29,7 +30,7 @@ describe('title-bar-nav.service', () => {
             },
         )
 
-        assert.equal(menus.length, 6)
+        assert.equal(menus.length, 7)
         assert.ok(menus.every((item) => item.id !== 'tools'))
         assert.ok(!menus.some((item) => item.menuMode === 'linked'))
 
@@ -76,7 +77,7 @@ describe('title-bar-nav.service', () => {
             noopHandlers,
         )
 
-        assert.equal(menus.length, 4)
+        assert.equal(menus.length, 5)
         assert.ok(!menus.some((item) => item.id === 'devTools'))
         assert.ok(!menus.some((item) => item.id === 'ai'))
     })

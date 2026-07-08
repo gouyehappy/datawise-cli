@@ -2,6 +2,25 @@
 
 All notable product-level changes for DataWise are documented in this file.
 
+## v2.0.0 - Team real-time collaboration (polish)
+
+### Highlights
+- Collaborative SQL console with SSE presence, conflict diff, and optimistic locking.
+- Standalone Connector Market page with catalog browsing and install guidance.
+- Table data change audit with one-click time-travel restore.
+- Fake data generation from table toolbar and tab context menu.
+- Git-managed Query Library CI via `headless-cli query-library validate|run` and bookmark export.
+
+### Headless CLI
+- Added `query-library validate` and `query-library run` for `query-library.json` manifests.
+- Added `--strict` validation (missing `connection` id fails CI checks).
+- Example manifest and GitHub Actions workflow under `examples/query-library/`.
+
+### Frontend
+- Query bookmark export for Git CI (SQL + manifest downloads).
+- Connector Market standalone navigation and redesigned cards.
+- Table data toolbar fake-data action with post-insert grid refresh.
+
 ## v1.3.0 - Analysis automation
 
 ### Highlights

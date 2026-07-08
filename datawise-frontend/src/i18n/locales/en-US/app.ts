@@ -47,6 +47,8 @@ export default {
             enterWorkbench: 'Open workbench',
             plugins: 'Plugins',
             enterPlugins: 'Plugin center',
+            connectorMarket: 'Connectors',
+            enterConnectorMarket: 'Open connector marketplace',
             devTools: 'Dev tools',
             enterDevTools: 'Open developer tools',
             dashboard: 'Dashboard',

@@ -161,5 +161,8 @@ export default {
         historyTitle: '版本历史 · {name}',
         empty: '暂无版本记录',
         viewHistory: '版本历史',
+        exportForGitCi: '导出 Git CI 包',
+        exportSuccess: '正在下载 SQL 与 query-library.json — 请在 CI 前填写 connection id',
+        exportFailed: '无法导出此书签',
     },
 }

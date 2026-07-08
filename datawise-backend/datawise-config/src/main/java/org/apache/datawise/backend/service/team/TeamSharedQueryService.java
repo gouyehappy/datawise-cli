@@ -7,11 +7,13 @@ import org.apache.datawise.backend.domain.ShareTeamSharedQueryRequest;
 import org.apache.datawise.backend.domain.TeamSharedQueryCommentDto;
 import org.apache.datawise.backend.domain.TeamSharedQueryDetailDto;
 import org.apache.datawise.backend.domain.TeamSharedQuerySummaryDto;
+import org.apache.datawise.backend.domain.TeamSharedQueryUpdatedEvent;
 import org.apache.datawise.backend.domain.UpdateTeamSharedQueryRequest;
 import org.apache.datawise.backend.model.TeamMemberEntity;
 import org.apache.datawise.backend.model.TeamSharedQueryCommentEntity;
 import org.apache.datawise.backend.model.TeamSharedQueryEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -23,10 +25,16 @@ public class TeamSharedQueryService {
 
     private final TeamSupport support;
     private final TeamAuditService auditService;
+    private final TeamSharedQueryStreamHub streamHub;
 
-    public TeamSharedQueryService(TeamSupport support, TeamAuditService auditService) {
+    public TeamSharedQueryService(
+            TeamSupport support,
+            TeamAuditService auditService,
+            TeamSharedQueryStreamHub streamHub
+    ) {
         this.support = support;
         this.auditService = auditService;
+        this.streamHub = streamHub;
     }
 
     public TeamSharedQuerySummaryDto shareQuery(String teamId, ShareTeamSharedQueryRequest request) {
@@ -73,6 +81,28 @@ public class TeamSharedQueryService {
         return toSharedQueryDetailDto(entity, userId);
     }
 
+    public SseEmitter openSharedQueryStream(String teamId, String queryId) {
+        Long userId = support.requireUserId();
+        support.requireMember(teamId, userId);
+        TeamSharedQueryEntity entity = support.teamStore().findSharedQueryById(teamId, queryId)
+                .orElseThrow(() -> new IllegalArgumentException("Shared query not found"));
+        SseEmitter emitter = streamHub.createEmitter();
+        streamHub.subscribe(
+                teamId,
+                queryId,
+                emitter,
+                userId,
+                support.resolveUserName(userId)
+        );
+        streamHub.sendConnected(
+                emitter,
+                teamId,
+                queryId,
+                TeamSupport.formatInstant(entity.getUpdatedAt())
+        );
+        return emitter;
+    }
+
     public TeamSharedQuerySummaryDto updateSharedQuery(
             String teamId,
             String queryId,
@@ -105,6 +135,13 @@ public class TeamSharedQueryService {
         entity.setUpdatedAt(Instant.now());
         support.teamStore().saveSharedQuery(entity);
         auditService.audit(teamId, userId, "query.update", "Updated query \"" + entity.getTitle() + "\"");
+        streamHub.publishUpdated(new TeamSharedQueryUpdatedEvent(
+                teamId,
+                queryId,
+                TeamSupport.formatInstant(entity.getUpdatedAt()),
+                userId,
+                support.resolveUserName(userId)
+        ));
         return toSharedQuerySummaryDto(entity, userId);
     }
 

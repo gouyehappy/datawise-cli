@@ -33,7 +33,7 @@ export const useLayoutStore = defineStore('layout', () => {
     const isDatabaseModule = computed(() => activeModule.value === 'database')
 
     const isWorkbenchModule = computed(() =>
-        ['database', 'ai', 'dashboard', 'plugin', 'pluginDev', 'team', 'settings'].includes(activeModule.value),
+        ['database', 'ai', 'dashboard', 'plugin', 'pluginDev', 'connectorMarket', 'team', 'settings'].includes(activeModule.value),
     )
 
     function setModule(module: NavModule) {

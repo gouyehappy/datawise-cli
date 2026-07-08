@@ -69,4 +69,12 @@ public final class ConfigPaths {
     public static String userQueryLibraryVersions(long userId) {
         return USERS_DIR + "/" + userId + "/query-library-versions.json";
     }
+
+    public static String userTableDataAuditDir(long userId) {
+        return USERS_DIR + "/" + userId + "/table-data-audit";
+    }
+
+    public static String userTableDataAuditScope(long userId, String scopeKey) {
+        return userTableDataAuditDir(userId) + "/" + scopeKey + ".json";
+    }
 }

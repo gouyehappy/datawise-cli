@@ -6,6 +6,7 @@ import org.apache.datawise.backend.connector.ConnectorCapability;
 import org.apache.datawise.backend.connector.DataSourceConnector;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
 import org.apache.datawise.backend.connector.support.ConnectorCapabilityCatalog;
+import org.apache.datawise.backend.domain.ConnectorMarketEntryDto;
 import org.apache.datawise.backend.domain.ConnectorPluginLoadFailure;
 import org.apache.datawise.backend.domain.DatasourceDefinitionDto;
 import org.apache.datawise.backend.ops.DatabaseOpsRegistry;
@@ -34,6 +35,36 @@ public class DatasourceCatalogService {
     /** Lists catalog-visible datasource types that have a loaded connector plugin. */
     public List<DatasourceDefinitionDto> listAvailable() {
         return snapshot().available();
+    }
+
+    /** Full connector market: every catalog-listed type with runtime availability. */
+    public List<ConnectorMarketEntryDto> listMarket() {
+        CatalogSnapshot snap = snapshot();
+        List<ConnectorMarketEntryDto> market = new ArrayList<>();
+        for (DbType type : DbType.catalogListed()) {
+            DbTypeCatalogEntry catalog = type.catalogEntry().orElseThrow();
+            DatasourceDefinitionDto available = snap.byId().get(type.id());
+            if (available != null) {
+                market.add(new ConnectorMarketEntryDto(
+                        available.id(),
+                        available.label(),
+                        available.primary(),
+                        true,
+                        available.capabilities(),
+                        null
+                ));
+                continue;
+            }
+            market.add(new ConnectorMarketEntryDto(
+                    type.id(),
+                    type.getDisplayName(),
+                    catalog.primary(),
+                    false,
+                    List.of(),
+                    "Install connector plugin JAR under config/plugins and restart the backend."
+            ));
+        }
+        return List.copyOf(market);
     }
 
     public Optional<DatasourceDefinitionDto> findById(String id) {

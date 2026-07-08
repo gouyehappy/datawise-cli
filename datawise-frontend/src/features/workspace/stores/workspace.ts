@@ -71,6 +71,10 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         rowCount: '-',
     })
     const consoleQueryByTabId = ref<Record<string, ConsoleQueryState>>({})
+    /** 表数据 Tab 假数据插入成功后递增，触发网格刷新 */
+    const tableDataRefreshSeq = ref<Record<string, number>>({})
+    /** 从表数据工具栏请求打开假数据对话框（WorkspaceTabs 监听） */
+    const fakeDataDialogRequest = ref<{ tabId: string; nonce: number } | null>(null)
 
     const activeTab = computed(() =>
         activeTabId.value ? tabs.value.find((t) => t.id === activeTabId.value) ?? null : null,
@@ -1529,6 +1533,17 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         }
     }
 
+    function bumpTableDataRefresh(tabId: string) {
+        tableDataRefreshSeq.value = {
+            ...tableDataRefreshSeq.value,
+            [tabId]: (tableDataRefreshSeq.value[tabId] ?? 0) + 1,
+        }
+    }
+
+    function requestFakeDataDialog(tabId: string) {
+        fakeDataDialogRequest.value = {tabId, nonce: Date.now()}
+    }
+
     return {
         tabs,
         activeTabId,
@@ -1536,6 +1551,10 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         hasOpenTabs,
         status,
         consoleQueryByTabId,
+        tableDataRefreshSeq,
+        fakeDataDialogRequest,
+        bumpTableDataRefresh,
+        requestFakeDataDialog,
         activateTab,
         openConsole,
         openTable,

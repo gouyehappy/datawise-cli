@@ -50,6 +50,8 @@ class TableDataMutationServiceTest {
     @Mock
     private ConnectionAccessService connectionAccessService;
     @Mock
+    private TableDataChangeAuditService auditService;
+    @Mock
     private ConnectorCatalogAccess catalogAccess;
     @Mock
     private ConnectorOpsAccess opsAccess;
@@ -66,7 +68,8 @@ class TableDataMutationServiceTest {
                 connectionContext,
                 connectorFacade,
                 tableDetailService,
-                connectionAccessService
+                connectionAccessService,
+                auditService
         );
     }
 

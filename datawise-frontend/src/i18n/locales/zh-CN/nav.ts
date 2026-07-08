@@ -5,6 +5,7 @@ export default {
     ai: 'AI 聊天',
     plugin: '插件',
     pluginDev: '插件开发',
+    connectorMarket: '连接器市场',
     refresh: '全局刷新',
     notify: '通知',
     feedback: '反馈',

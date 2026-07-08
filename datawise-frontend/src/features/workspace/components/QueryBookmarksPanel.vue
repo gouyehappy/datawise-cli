@@ -16,6 +16,7 @@ import {
     type QueryBookmarkItem,
 } from '@/features/workspace/services/query-bookmark.service'
 import QueryLibraryVersionsDialog from '@/features/platform/components/QueryLibraryVersionsDialog.vue'
+import {exportQueryBookmarkForGitCi} from '@/features/workspace/services/query-library-git.service'
 import {useTeamStore} from '@/features/team/stores/team-store'
 import {
     REPORT_TEMPLATE_CATEGORIES,
@@ -85,6 +86,16 @@ function openQueryLibraryHistory(item: QueryBookmarkItem, event: Event) {
     libraryQueryId.value = item.id
     libraryQueryTitle.value = item.name
     libraryDialogOpen.value = true
+}
+
+function exportForGitCi(item: QueryBookmarkItem, event: Event) {
+    event.stopPropagation()
+    if (item.source !== 'console' || !item.sql.trim()) {
+        layout.showToast(t('platform.queryLibrary.exportFailed'))
+        return
+    }
+    exportQueryBookmarkForGitCi(item)
+    layout.showToast(t('platform.queryLibrary.exportSuccess'))
 }
 </script>
 
@@ -163,8 +174,8 @@ function openQueryLibraryHistory(item: QueryBookmarkItem, event: Event) {
           <span class="bookmarks-group__count">{{ items.length }}</span>
         </header>
         <ul class="bookmarks-group__list">
-          <li v-for="item in items" :key="item.id">
-            <button class="bookmark-card" type="button" @click="openBookmark(item)">
+          <li v-for="item in items" :key="item.id" class="bookmark-card">
+            <button class="bookmark-card__main" type="button" @click="openBookmark(item)">
               <span class="bookmark-card__icon" aria-hidden="true">
                 <DwIcon name="console" size="sm" :stroke-width="1.6"/>
               </span>
@@ -180,16 +191,26 @@ function openQueryLibraryHistory(item: QueryBookmarkItem, event: Event) {
                 <span v-else-if="displayTags(item).length" class="bookmark-card__meta">{{ displayTags(item).join(' · ') }}</span>
               </span>
               <span class="bookmark-card__chevron" aria-hidden="true">›</span>
+            </button>
+            <div v-if="item.source === 'console'" class="bookmark-card__actions">
               <button
-                  v-if="item.source === 'console' && teamStore.activeTeamId"
-                  class="bookmark-card__history"
+                  class="bookmark-card__action"
+                  type="button"
+                  :title="t('platform.queryLibrary.exportForGitCi')"
+                  @click="exportForGitCi(item, $event)"
+              >
+                <DwIcon name="export" size="sm" :stroke-width="1.35"/>
+              </button>
+              <button
+                  v-if="teamStore.activeTeamId"
+                  class="bookmark-card__action"
                   type="button"
                   :title="t('platform.queryLibrary.viewHistory')"
                   @click="openQueryLibraryHistory(item, $event)"
               >
                 <DwIcon name="history" size="sm" :stroke-width="1.35"/>
               </button>
-            </button>
+            </div>
           </li>
         </ul>
       </section>
@@ -331,15 +352,13 @@ function openQueryLibraryHistory(item: QueryBookmarkItem, event: Event) {
 
 .bookmark-card {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: stretch;
+  gap: 0;
   width: 100%;
-  padding: 10px 11px;
   border: 1px solid var(--dw-border-light);
   border-radius: 10px;
   background: var(--dw-bg);
-  text-align: left;
-  cursor: pointer;
+  overflow: hidden;
   transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
 }
 
@@ -347,6 +366,28 @@ function openQueryLibraryHistory(item: QueryBookmarkItem, event: Event) {
   border-color: color-mix(in srgb, var(--dw-primary) 22%, var(--dw-border-light));
   background: color-mix(in srgb, var(--dw-primary) 4%, var(--dw-bg));
   box-shadow: 0 2px 8px color-mix(in srgb, var(--dw-text) 5%, transparent);
+}
+
+.bookmark-card__main {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bookmark-card__actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 6px 4px 0;
+  flex-shrink: 0;
 }
 
 .bookmark-card__icon {
@@ -406,7 +447,7 @@ function openQueryLibraryHistory(item: QueryBookmarkItem, event: Event) {
   opacity: 0.45;
 }
 
-.bookmark-card__history {
+.bookmark-card__action {
   flex-shrink: 0;
   align-self: center;
   border: none;
@@ -417,7 +458,7 @@ function openQueryLibraryHistory(item: QueryBookmarkItem, event: Event) {
   border-radius: 6px;
 }
 
-.bookmark-card__history:hover {
+.bookmark-card__action:hover {
   color: var(--dw-primary);
   background: var(--dw-bg-subtle);
 }

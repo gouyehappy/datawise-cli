@@ -329,6 +329,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
                     || layout.activeModule === 'ai'
                     || layout.activeModule === 'plugin'
                     || layout.activeModule === 'pluginDev'
+                    || layout.activeModule === 'connectorMarket'
                         ? layout.activeModule
                         : config.value.layout.lastModule,
                 lastShortcutPanel: layout.activeShortcutPanel,
@@ -557,7 +558,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
             if (id === 'terminal') layout.closeTerminalPanel()
             if (id === 'notify') layout.showNotificationDrawer = false
             if (
-                (id === 'database' || id === 'dashboard' || id === 'ai' || id === 'plugin' || id === 'pluginDev')
+                (id === 'database' || id === 'dashboard' || id === 'ai' || id === 'plugin' || id === 'pluginDev' || id === 'connectorMarket')
                 && layout.activeModule === id
             ) {
                 layout.setModule(pickRestorableModule(next))

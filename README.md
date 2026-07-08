@@ -105,6 +105,15 @@ npm install && npm run dev
 Configure `config/connections.xml` (see example) and place connector JARs under `config/plugins/`.  
 Details: [docs/README.md](./docs/README.md).
 
+**Query Library CI** (validate SQL manifests in Git without a running server):
+
+```bash
+cd headless-cli && npm install && npm run build
+node dist/main.js query-library validate -m ../examples/query-library/query-library.json
+```
+
+See [examples/query-library/README.md](./examples/query-library/README.md).
+
 **Desktop (Windows)**:
 
 ```bash
@@ -123,7 +132,7 @@ npm run dist:desktop    # needs JAVA_HOME + Maven; output in release/
 | [datawise-mcp/](./datawise-mcp/) | MCP server for IDE agents |
 | [sql-editor/](./sql-editor/) | Embeddable SQL editor (MIT) |
 | [datawise-vscode/](./datawise-vscode/) | VS Code deep link to desktop |
-| [headless-cli/](./headless-cli/) | CLI for migration & SQL |
+| [headless-cli/](./headless-cli/) | CLI for migration, SQL, and Query Library CI |
 | [docs/](./docs/) | Setup & plugin notes |
 
 ---

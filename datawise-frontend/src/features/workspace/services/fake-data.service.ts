@@ -41,9 +41,27 @@ export function generateFakeCellValue(column: TableColumnDetail, rowIndex: numbe
 
     if (name.includes('email')) return `user${seq}@example.com`
     if (name.includes('phone') || name.includes('mobile')) return `138000${String(10000 + seq).slice(-5)}`
+    if (name.includes('password') || name.includes('passwd')) return `Passw0rd!${seq}`
+    if (name.includes('status')) return seq % 3 === 0 ? 'inactive' : 'active'
+    if (name.includes('code') || name.endsWith('_no') || name.endsWith('_num')) return `CODE-${String(1000 + seq)}`
+    if (name.includes('sku')) return `SKU-${String(10000 + seq)}`
+    if (name.includes('ip')) return `192.168.${(seq % 250) + 1}.${(seq % 200) + 10}`
+    if (name.includes('address') || name.includes('street')) return `${seq} Example Street`
+    if (name.includes('city')) return ['Shanghai', 'Beijing', 'Shenzhen', 'Hangzhou'][seq % 4]
+    if (name.includes('country')) return seq % 2 === 0 ? 'CN' : 'US'
+    if (name.includes('title') && !name.includes('job')) return `Sample title ${seq}`
+    if (name.includes('description') || name.includes('remark') || name.includes('comment')) {
+        return `Auto-generated note ${seq}`
+    }
+    if (name.includes('amount') || name.includes('price') || name.includes('salary')) {
+        return Number((seq * 9.99).toFixed(2))
+    }
     if (name.includes('name') && !name.includes('table') && !name.includes('schema')) return `User ${seq}`
     if (name.includes('url') || name.includes('link')) return `https://example.com/item/${seq}`
     if (name.includes('uuid') || type.includes('uuid')) return pseudoUuid(rowIndex)
+    if (name.includes('created') || name.includes('updated') || name.includes('modified')) {
+        return `2024-01-15 ${String(10 + (seq % 10)).padStart(2, '0')}:${String(seq % 60).padStart(2, '0')}:00`
+    }
 
     if (type.includes('bool') || type === 'bit(1)' || type === 'bit') return rowIndex % 2 === 0
     if (type.includes('bigint') || type.includes('int') || type.includes('serial')) return 1000 + rowIndex

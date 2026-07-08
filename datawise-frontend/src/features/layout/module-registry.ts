@@ -9,6 +9,7 @@ import type {NavModule} from '@/core/types'
 import DashboardView from '@/features/dashboard/DashboardView.vue'
 import PluginView from '@/features/plugin/PluginView.vue'
 import PluginDevToolsView from '@/features/plugin/PluginDevToolsView.vue'
+import ConnectorMarketView from '@/features/plugin/ConnectorMarketView.vue'
 import TeamView from '@/features/team/TeamView.vue'
 import SettingsView from '@/features/settings/SettingsView.vue'
 import {createRegistry, resolveRegistryComponent} from '@/core/registry/create-registry'
@@ -17,6 +18,7 @@ const definitions = [
     {key: 'dashboard' as const, component: DashboardView},
     {key: 'plugin' as const, component: PluginView},
     {key: 'pluginDev' as const, component: PluginDevToolsView},
+    {key: 'connectorMarket' as const, component: ConnectorMarketView},
     {key: 'team' as const, component: TeamView},
     {key: 'settings' as const, component: SettingsView},
 ]

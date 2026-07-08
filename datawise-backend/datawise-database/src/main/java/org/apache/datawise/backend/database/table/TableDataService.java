@@ -2,6 +2,7 @@ package org.apache.datawise.backend.database.table;
 
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
 import org.apache.datawise.backend.domain.ExecuteSqlResult;
+import org.apache.datawise.backend.domain.TableDataChangeAuditEntry;
 import org.apache.datawise.backend.domain.TableDataResult;
 import org.apache.datawise.backend.domain.TableRowMutateResult;
 import org.springframework.stereotype.Service;
@@ -17,13 +18,16 @@ public class TableDataService {
 
     private final TableDataQueryService queryService;
     private final TableDataMutationService mutationService;
+    private final TableDataChangeAuditService auditService;
 
     public TableDataService(
             TableDataQueryService queryService,
-            TableDataMutationService mutationService
+            TableDataMutationService mutationService,
+            TableDataChangeAuditService auditService
     ) {
         this.queryService = queryService;
         this.mutationService = mutationService;
+        this.auditService = auditService;
     }
 
     public TableDataResult fetch(String tableName, String connectionId, String database, Integer maxRows) {
@@ -66,5 +70,23 @@ public class TableDataService {
             Map<String, Object> values
     ) {
         return mutationService.updateRow(tableName, connectionId, database, keyValues, values);
+    }
+
+    public List<TableDataChangeAuditEntry> listAudit(
+            String tableName,
+            String connectionId,
+            String database,
+            int limit
+    ) {
+        return auditService.listForCurrentUser(connectionId, database, tableName, limit);
+    }
+
+    public TableRowMutateResult restoreAudit(
+            String tableName,
+            String connectionId,
+            String database,
+            String auditId
+    ) {
+        return auditService.restoreForCurrentUser(tableName, connectionId, database, auditId);
     }
 }

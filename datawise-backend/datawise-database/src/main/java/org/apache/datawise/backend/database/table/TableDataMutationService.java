@@ -21,21 +21,40 @@ import java.util.Map;
 @Service
 public class TableDataMutationService {
 
+    private static final ThreadLocal<Boolean> AUDIT_SUPPRESSED = ThreadLocal.withInitial(() -> false);
+
     private final ConnectionExecutionContext connectionContext;
     private final ConnectorFacade connectorFacade;
     private final TableDetailService tableDetailService;
     private final ConnectionAccessService connectionAccessService;
+    private final TableDataChangeAuditService auditService;
 
     public TableDataMutationService(
             ConnectionExecutionContext connectionContext,
             ConnectorFacade connectorFacade,
             TableDetailService tableDetailService,
-            ConnectionAccessService connectionAccessService
+            ConnectionAccessService connectionAccessService,
+            TableDataChangeAuditService auditService
     ) {
         this.connectionContext = connectionContext;
         this.connectorFacade = connectorFacade;
         this.tableDetailService = tableDetailService;
         this.connectionAccessService = connectionAccessService;
+        this.auditService = auditService;
+    }
+
+    /** Skips audit capture for inverse DML during time-travel restore. */
+    public static <T> T runWithoutAudit(java.util.function.Supplier<T> action) {
+        AUDIT_SUPPRESSED.set(true);
+        try {
+            return action.get();
+        } finally {
+            AUDIT_SUPPRESSED.remove();
+        }
+    }
+
+    private static boolean shouldRecordAudit() {
+        return !Boolean.TRUE.equals(AUDIT_SUPPRESSED.get());
     }
 
     public TableRowMutateResult insertRow(
@@ -67,7 +86,18 @@ public class TableDataMutationService {
                 tableName,
                 insertValues
         );
-        return executeUpdate(context, sql);
+        TableRowMutateResult result = executeUpdate(context, sql);
+        if (result.affectedRows() > 0 && shouldRecordAudit()) {
+            auditService.recordInsert(
+                    connectionContext.requireUserId(),
+                    tableName,
+                    connectionId,
+                    context.database(),
+                    properties,
+                    insertValues
+            );
+        }
+        return result;
     }
 
     public TableRowMutateResult deleteRow(
@@ -98,13 +128,30 @@ public class TableDataMutationService {
                 TableDataSupport.columnNames(properties)
         );
         Map<String, Object> pkValues = requirePrimaryKeyValues(primaryKeys, filtered);
+        var beforeRow = auditService.captureBeforeRow(
+                context.entity(),
+                context.database(),
+                tableName,
+                pkValues
+        );
         String sql = connectorFacade.dml().buildDeleteByPrimaryKey(
                 context.entity().getDbType(),
                 context.database(),
                 tableName,
                 pkValues
         );
-        return executeUpdate(context, sql);
+        TableRowMutateResult result = executeUpdate(context, sql);
+        if (result.affectedRows() > 0 && beforeRow.isPresent() && shouldRecordAudit()) {
+            auditService.recordDelete(
+                    connectionContext.requireUserId(),
+                    tableName,
+                    connectionId,
+                    context.database(),
+                    pkValues,
+                    beforeRow.get()
+            );
+        }
+        return result;
     }
 
     public TableRowMutateResult updateRow(
@@ -138,6 +185,12 @@ public class TableDataMutationService {
             throw new IllegalArgumentException("Update requires at least one column value");
         }
         Map<String, Object> pkValues = requirePrimaryKeyValues(primaryKeys, filteredKeys);
+        var beforeRow = auditService.captureBeforeRow(
+                context.entity(),
+                context.database(),
+                tableName,
+                pkValues
+        );
         String sql = connectorFacade.dml().buildUpdate(
                 context.entity().getDbType(),
                 context.database(),
@@ -145,7 +198,19 @@ public class TableDataMutationService {
                 filteredValues,
                 pkValues
         );
-        return executeUpdate(context, sql);
+        TableRowMutateResult result = executeUpdate(context, sql);
+        if (result.affectedRows() > 0 && beforeRow.isPresent() && shouldRecordAudit()) {
+            auditService.recordUpdate(
+                    connectionContext.requireUserId(),
+                    tableName,
+                    connectionId,
+                    context.database(),
+                    pkValues,
+                    beforeRow.get(),
+                    filteredValues
+            );
+        }
+        return result;
     }
 
     private TableRowMutateResult executeUpdate(ConnectionContext context, String sql) {

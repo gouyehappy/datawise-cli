@@ -23,6 +23,7 @@ export interface TitleBarNavHandlers {
     setModule: (module: NavModule) => void
     openSettings: (section?: SettingsSection) => void
     openPluginDevTools: () => void
+    openConnectorMarket: () => void
 }
 
 export interface TitleBarNavContext {
@@ -91,9 +92,13 @@ export function buildTitleBarNav(ctx: TitleBarNavContext, handlers: TitleBarNavH
             icon: 'database',
         }),
         leaf('plugins', 'app.titleBar.menu.plugins', () => handlers.setModule('plugin'), {
-            active: ctx.activeModule === 'plugin' || ctx.activeModule === 'pluginDev',
+            active: ctx.activeModule === 'plugin',
             icon: 'plugins',
             badge: ctx.presetConflictCount > 0 ? ctx.presetConflictCount : undefined,
+        }),
+        leaf('connectorMarket', 'app.titleBar.menu.connectorMarket', () => handlers.openConnectorMarket(), {
+            active: ctx.activeModule === 'connectorMarket',
+            icon: 'connectors',
         }),
     ]
 

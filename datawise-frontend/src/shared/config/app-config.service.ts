@@ -118,7 +118,7 @@ export {shouldUseBuiltinAppConfig} from '@/shared/config/app-config-read-policy'
 export const LEGACY_LAYOUT_CONFIG_KEY = 'dw-layout-config'
 export const APP_CONFIG_FILENAME = 'datawise-config.xml'
 
-const RESTORABLE_MODULES: RestorableNavModule[] = ['database', 'dashboard', 'ai', 'plugin', 'pluginDev']
+const RESTORABLE_MODULES: RestorableNavModule[] = ['database', 'dashboard', 'ai', 'plugin', 'pluginDev', 'connectorMarket']
 const SIDE_RAIL_IDS = new Set<SideRailItemId>(SIDE_RAIL_NAV_DEFS.map((item) => item.id))
 const SHORTCUT_IDS = new Set<ShortcutPanel>(SHORTCUT_RAIL_NAV_DEFS.map((item) => item.id))
 

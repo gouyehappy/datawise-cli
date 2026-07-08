@@ -29,3 +29,18 @@ export interface DatasourceCatalogBundle {
     loadedPluginJars: string[]
     pluginLoadFailures: ConnectorPluginLoadFailure[]
 }
+
+export interface ConnectorMarketEntry {
+    id: string
+    label: string
+    primary: boolean
+    available: boolean
+    capabilities: string[]
+    installHint?: string | null
+}
+
+export interface ConnectorMarketBundle {
+    connectors: ConnectorMarketEntry[]
+    loadedPluginJars: string[]
+    pluginLoadFailures: ConnectorPluginLoadFailure[]
+}

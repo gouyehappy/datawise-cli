@@ -87,6 +87,7 @@ export function sideRailDwIcon(id: SideRailItemId): DwIconName {
         dashboard: 'dashboard',
         ai: 'ai',
         plugin: 'plugins',
+        connectorMarket: 'connectors',
         pluginDev: 'dev-tools',
         profile: 'user',
         team: 'users',

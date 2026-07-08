@@ -161,5 +161,8 @@ export default {
         historyTitle: 'Version history · {name}',
         empty: 'No versions yet',
         viewHistory: 'Version history',
+        exportForGitCi: 'Export for Git CI',
+        exportSuccess: 'Downloading SQL and query-library.json — set connection id before CI run',
+        exportFailed: 'Cannot export this bookmark',
     },
 }
