@@ -1,5 +1,7 @@
 package org.apache.datawise.backend.jdbc.support;
 
+import org.apache.datawise.sqlparser.SqlTransformOps;
+
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -30,7 +32,7 @@ public final class MigrationWhereSupport {
             return baseSelectSql;
         }
         validate(whereClause);
-        return baseSelectSql + " WHERE " + whereClause.trim();
+        return SqlTransformOps.appendWhere(baseSelectSql, whereClause.trim());
     }
 
     public static boolean scopesEqual(

@@ -5,6 +5,7 @@ import org.apache.datawise.backend.ai.schema.AiSchemaContextService;
 import org.apache.datawise.backend.ai.schema.AiSqlSchemaContext;
 import org.apache.datawise.backend.ai.support.AiLlmGateway;
 import org.apache.datawise.backend.ai.support.AiSqlSafetyChecker;
+import org.apache.datawise.sqlparser.SqlTransformOps;
 import org.apache.datawise.backend.ai.support.UserAiLlmResolver;
 import org.apache.datawise.backend.ai.support.prompt.SqlReviewPromptTemplates;
 import org.apache.datawise.backend.domain.SqlReviewFindingDto;
@@ -109,7 +110,7 @@ public class SqlReviewAiRewriteService {
                 if (upper.contains("SELECT *")) {
                     String cols = firstTableColumns(schema);
                     if (cols != null) {
-                        yield sql.replaceFirst("(?i)SELECT\\s+\\*", "SELECT " + cols);
+                        yield SqlTransformOps.replaceSelectStar(sql, cols.split(",\\s*"));
                     }
                 }
                 yield sql;
@@ -117,7 +118,7 @@ public class SqlReviewAiRewriteService {
             case "FULL_SCAN" -> {
                 if ((upper.startsWith("SELECT ") || upper.startsWith("WITH "))
                         && !upper.contains(" LIMIT ") && !upper.contains(" WHERE ")) {
-                    yield sql.trim() + " LIMIT 1000 -- AI: cap result set";
+                    yield SqlTransformOps.limitIfAbsent(sql.trim(), 1000) + " -- AI: cap result set";
                 }
                 yield sql;
             }

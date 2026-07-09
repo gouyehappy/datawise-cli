@@ -10,6 +10,7 @@ import org.apache.datawise.backend.domain.SaveFederatedViewRequest;
 import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.model.FederatedViewEntry;
 import org.apache.datawise.backend.model.FederatedViewSource;
+import org.apache.datawise.sqlparser.SqlTransformOps;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -120,7 +121,7 @@ public class FederatedQueryService {
         for (FederatedViewSource source : view.getSources()) {
             String subSql = FederatedSqlSubquerySupport.extractSubQuery(view.getSql(), source.getAlias());
             if (subSql == null || subSql.isBlank()) {
-                subSql = "SELECT * FROM " + source.getAlias();
+                subSql = SqlTransformOps.selectAllFrom(source.getAlias());
             }
             ExecuteSqlResult partial = sqlService.execute(
                     subSql,

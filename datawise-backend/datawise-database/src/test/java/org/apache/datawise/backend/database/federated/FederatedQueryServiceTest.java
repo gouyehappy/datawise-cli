@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.datawise.backend.configstore.FederatedViewStore;
 import org.apache.datawise.backend.database.sql.SqlService;
+import org.apache.datawise.sqlparser.SqlTransformOps;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,12 +40,12 @@ class FederatedQueryServiceTest {
         view.setSources(List.of(source("orders"), source("users")));
         view.setSql("SELECT o.id, u.name FROM @orders o JOIN @users u ON o.user_id = u.id");
 
-        when(sqlService.execute(eq("SELECT * FROM orders"), eq("conn-orders"), eq("shop"), eq(100), isNull()))
+        when(sqlService.execute(eq(SqlTransformOps.selectAllFrom("orders")), eq("conn-orders"), eq("shop"), eq(100), isNull()))
                 .thenReturn(sqlResult(
                         List.of(col("id"), col("user_id")),
                         List.of(row("id", 10, "user_id", 1), row("id", 20, "user_id", 2))
                 ));
-        when(sqlService.execute(eq("SELECT * FROM users"), eq("conn-users"), eq("shop"), eq(100), isNull()))
+        when(sqlService.execute(eq(SqlTransformOps.selectAllFrom("users")), eq("conn-users"), eq("shop"), eq(100), isNull()))
                 .thenReturn(sqlResult(
                         List.of(col("id"), col("name")),
                         List.of(row("id", 1, "name", "Alice"), row("id", 2, "name", "Bob"))

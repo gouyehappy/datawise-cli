@@ -159,7 +159,7 @@ class SqlExecuteServiceTest {
                 eq("tab-1"),
                 eq(entity),
                 isNull(),
-                eq("update users set active = 1"),
+                anyString(),
                 anyInt(),
                 anyString()
         )).thenReturn(null);

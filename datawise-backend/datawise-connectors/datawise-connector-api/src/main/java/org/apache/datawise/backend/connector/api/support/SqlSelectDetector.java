@@ -1,11 +1,11 @@
 package org.apache.datawise.backend.connector.api.support;
 
-import java.util.Locale;
+import org.apache.datawise.sqlparser.support.SqlTextSupport;
+
 import java.util.regex.Pattern;
 
 public final class SqlSelectDetector {
 
-    private static final Pattern TRAILING_SEMICOLON = Pattern.compile(";\\s*$");
     private static final Pattern PAGED_SELECT_PREFIX = Pattern.compile("^(WITH\\b|SELECT\\b)");
 
     private SqlSelectDetector() {
@@ -24,10 +24,6 @@ public final class SqlSelectDetector {
     }
 
     static String normalize(String sql) {
-        if (sql == null) {
-            return "";
-        }
-        String trimmed = TRAILING_SEMICOLON.matcher(sql.trim()).replaceAll("").trim();
-        return trimmed.toUpperCase(Locale.ROOT);
+        return SqlTextSupport.normalizeForClassification(sql);
     }
 }

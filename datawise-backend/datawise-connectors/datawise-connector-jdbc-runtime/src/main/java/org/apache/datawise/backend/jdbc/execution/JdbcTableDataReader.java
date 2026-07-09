@@ -2,8 +2,9 @@ package org.apache.datawise.backend.jdbc.execution;
 
 import org.apache.datawise.backend.common.DbType;
 import org.apache.datawise.backend.config.JdbcPoolProperties;
-import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.domain.TableDataResult;
+import org.apache.datawise.backend.domain.ExecuteSqlResult;
+import org.apache.datawise.sqlparser.SqlTransformOps;
 import org.apache.datawise.backend.jdbc.connection.JdbcConnectionAccessor;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.sql.spi.SqlPaginationService;
@@ -43,8 +44,7 @@ public class JdbcTableDataReader {
     /** Builds dialect-aware {@code SELECT *} for table browsing and migration source reads. */
     public String buildTableSelectSql(ConnectionEntity entity, String tableName, String database) {
         String dbType = DbType.normalizeId(entity.getDbType());
-        String qualified = DbType.quoteQualifiedTable(dbType, database, tableName);
-        return "SELECT * FROM " + qualified;
+        return SqlTransformOps.buildSelectAll(dbType, database, tableName);
     }
 
     /** Fetches table rows with optional limit/offset pagination. */
@@ -97,7 +97,7 @@ public class JdbcTableDataReader {
             String whereClause
     ) throws SQLException {
         String selectSql = buildTableSelectSql(entity, tableName, database);
-        String countSql = selectSql.replaceFirst("(?i)SELECT\\s+\\*", "SELECT COUNT(*)");
+        String countSql = SqlTransformOps.wrapCount(selectSql);
         countSql = MigrationWhereSupport.appendWhere(countSql, whereClause);
         final String query = countSql;
         return connectionAccessor.withConnection(entity, database, connection -> {

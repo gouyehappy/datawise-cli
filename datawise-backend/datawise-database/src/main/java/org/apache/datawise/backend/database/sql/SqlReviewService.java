@@ -1,6 +1,8 @@
 package org.apache.datawise.backend.database.sql;
 
 import org.apache.datawise.backend.connector.api.support.SqlWriteClassifier;
+import org.apache.datawise.sqlparser.ExplainSqlSupport;
+import org.apache.datawise.sqlparser.analysis.SqlAnalysisSupport;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
 import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.domain.SqlReviewFindingDto;
@@ -23,10 +25,6 @@ import java.util.regex.Pattern;
 @Service
 public class SqlReviewService {
 
-    private static final Pattern SELECT_STAR = Pattern.compile(
-            "\\bSELECT\\s+\\*\\s+FROM\\b",
-            Pattern.CASE_INSENSITIVE
-    );
     private static final Pattern MISSING_WHERE = Pattern.compile(
             "\\b(DELETE|UPDATE)\\b[\\s\\S]*?(;|$)",
             Pattern.CASE_INSENSITIVE
@@ -72,7 +70,7 @@ public class SqlReviewService {
             ));
         }
 
-        if (SELECT_STAR.matcher(sql).find()) {
+        if (SqlAnalysisSupport.containsSelectStar(sql)) {
             findings.add(finding(
                     "warn",
                     "SELECT_STAR",
@@ -140,7 +138,7 @@ public class SqlReviewService {
             return;
         }
         ConnectionEntity connection = connectionOpt.get();
-        String explainSql = wrapExplainSql(sql, connection.getDbType());
+        String explainSql = ExplainSqlSupport.wrapExplain(sql, connection.getDbType());
         if (explainSql == null) {
             return;
         }
@@ -178,25 +176,6 @@ public class SqlReviewService {
             return false;
         }
         return upper.startsWith("SELECT ") || upper.startsWith("WITH ");
-    }
-
-    private static String wrapExplainSql(String sql, String dbType) {
-        String normalized = dbType == null ? "" : dbType.trim().toLowerCase(Locale.ROOT);
-        String trimmed = sql.trim();
-        switch (normalized) {
-            case "postgresql", "kingbase", "greenplum", "opengauss" -> {
-                return "EXPLAIN (FORMAT JSON) " + trimmed;
-            }
-            case "sqlite" -> {
-                return "EXPLAIN QUERY PLAN " + trimmed;
-            }
-            case "mysql", "mariadb" -> {
-                return "EXPLAIN " + trimmed;
-            }
-            default -> {
-                return null;
-            }
-        }
     }
 
     private static List<SqlReviewFindingDto> analyzeExplainResult(String dbType, ExecuteSqlResult explain) {

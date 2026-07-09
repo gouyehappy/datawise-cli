@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.apache.datawise</groupId>
         <artifactId>datawise-backend</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>1.3.0</version>
     </parent>
 
     <artifactId>datawise-database</artifactId>
@@ -30,6 +30,10 @@
         <dependency>
             <groupId>org.apache.datawise</groupId>
             <artifactId>datawise-workspace</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.datawise</groupId>
+            <artifactId>datawise-sqlparser</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

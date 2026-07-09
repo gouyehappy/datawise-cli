@@ -60,8 +60,6 @@ public class SqlExecuteService {
 
     private final SqlExecutionHookRunner sqlExecutionHookRunner;
 
-
-
     public SqlExecuteService(
 
             ConnectionExecutionContext connectionContext,

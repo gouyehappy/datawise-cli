@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.ai.support;
 
 import org.apache.datawise.backend.ai.schema.AiSqlSchemaContext;
+import org.apache.datawise.sqlparser.SqlTransformOps;
 
 import java.util.List;
 import java.util.Locale;
@@ -28,9 +29,22 @@ public final class AnalysisMockSql {
                             + "ORDER BY month;";
                 }
                 if (lower.contains("user") || lower.contains("用户") || lower.contains("标签")) {
-                    return "-- AI: " + prompt + "\nSELECT id, username, email, status\nFROM " + table + "\nLIMIT 100;";
+                    return "-- AI: " + prompt + "\n"
+                            + SqlTransformOps.limitIfAbsent(
+                                    "SELECT id, username, email, status\nFROM " + table, 100)
+                            + ";";
                 }
-                return "-- AI: " + prompt + "\nSELECT *\nFROM " + table + "\nLIMIT 100;";
+                try {
+                    return "-- AI: " + prompt + "\n"
+                            + SqlTransformOps.limitIfAbsent(
+                                    SqlTransformOps.selectAllFrom(table), 100)
+                            + ";";
+                } catch (Exception ignored) {
+                    return "-- AI: " + prompt + "\n"
+                            + SqlTransformOps.limitIfAbsent(
+                                    "SELECT * FROM " + table, 100)
+                            + ";";
+                }
             }
         }
         return "-- AI: " + prompt + "\n"

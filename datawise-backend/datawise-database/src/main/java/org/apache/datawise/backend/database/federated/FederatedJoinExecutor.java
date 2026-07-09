@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.database.federated;
 
+import org.apache.datawise.sqlparser.SqlTransformOps;
 import org.apache.datawise.backend.database.federated.FederatedJoinSqlParser.FederatedJoinPlan;
 import org.apache.datawise.backend.database.federated.FederatedJoinSqlParser.FederatedJoinStep;
 import org.apache.datawise.backend.database.sql.SqlService;
@@ -37,7 +38,7 @@ final class FederatedJoinExecutor {
             FederatedViewSource source = requireSource(sourceByAlias, step.sourceAlias());
             String subSql = step.subQuery();
             if (subSql == null || subSql.isBlank()) {
-                subSql = "SELECT * FROM " + step.sourceAlias();
+                subSql = SqlTransformOps.selectAllFrom(step.sourceAlias());
             }
             ExecuteSqlResult partial = sqlService.execute(
                     subSql,

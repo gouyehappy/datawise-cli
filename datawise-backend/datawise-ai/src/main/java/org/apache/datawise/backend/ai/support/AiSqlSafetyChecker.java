@@ -1,5 +1,7 @@
 package org.apache.datawise.backend.ai.support;
 
+import org.apache.datawise.sqlparser.SqlTransformOps;
+
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -30,7 +32,7 @@ public final class AiSqlSafetyChecker {
             throw new IllegalArgumentException("Generated SQL is empty after normalization");
         }
 
-        String stripped = stripSqlComments(normalized).trim();
+        String stripped = SqlTransformOps.stripComments(normalized).trim();
         if (stripped.isEmpty()) {
             throw new IllegalArgumentException("Generated SQL is empty after removing comments");
         }
@@ -43,15 +45,5 @@ public final class AiSqlSafetyChecker {
             throw new IllegalArgumentException("Only read-only SELECT queries are allowed for data analysis");
         }
         return normalized;
-    }
-
-    private static String stripSqlComments(String sql) {
-        String noBlock = sql.replaceAll("/\\*[\\s\\S]*?\\*/", " ");
-        return noBlock.lines()
-                .map(line -> {
-                    int idx = line.indexOf("--");
-                    return idx >= 0 ? line.substring(0, idx) : line;
-                })
-                .reduce("", (a, b) -> a + b + "\n");
     }
 }

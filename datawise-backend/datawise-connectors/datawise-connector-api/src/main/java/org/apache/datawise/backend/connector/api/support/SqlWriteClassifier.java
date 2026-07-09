@@ -1,5 +1,7 @@
 package org.apache.datawise.backend.connector.api.support;
 
+import org.apache.datawise.sqlparser.SqlTransformOps;
+
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -81,12 +83,6 @@ public final class SqlWriteClassifier {
     }
 
     private static String stripSqlComments(String sql) {
-        String noBlock = sql.replaceAll("/\\*[\\s\\S]*?\\*/", " ");
-        return noBlock.lines()
-                .map(line -> {
-                    int idx = line.indexOf("--");
-                    return idx >= 0 ? line.substring(0, idx) : line;
-                })
-                .reduce("", (a, b) -> a + b + "\n");
+        return SqlTransformOps.stripComments(sql);
     }
 }

@@ -4,6 +4,7 @@ import org.apache.datawise.backend.config.AuthSessionProperties;
 import org.apache.datawise.backend.config.DatawiseConfigProperties;
 import org.apache.datawise.backend.config.DatawiseQueryProperties;
 import org.apache.datawise.backend.config.DatawiseWorkspaceProperties;
+import org.apache.datawise.backend.config.SqlRewriteProperties;
 import org.apache.datawise.backend.ai.config.AiAnalysisProperties;
 import org.apache.datawise.backend.ai.config.AiPythonProperties;
 import org.apache.datawise.backend.ai.config.AiRagProperties;
@@ -19,6 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableConfigurationProperties({
         DatawiseQueryProperties.class,
+        SqlRewriteProperties.class,
         DatawiseWorkspaceProperties.class,
         DatawiseConfigProperties.class,
         AuthSessionProperties.class,

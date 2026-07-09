@@ -2,6 +2,10 @@ package org.apache.datawise.backend.database.table;
 
 import org.apache.datawise.backend.common.DbType;
 import org.apache.datawise.backend.dml.render.DmlSqlSupport;
+import org.apache.datawise.sqlparser.SqlTransform;
+import org.apache.datawise.sqlparser.SqlTransformOps;
+
+import net.sf.jsqlparser.JSQLParserException;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,6 +30,11 @@ final class TableDataAuditSql {
                         + " = "
                         + DmlSqlSupport.sqlLiteral(entry.getValue()))
                 .collect(Collectors.joining(" AND "));
-        return "SELECT * FROM " + table + " WHERE " + where + " LIMIT 1";
+        String sql = SqlTransformOps.appendWhere(SqlTransformOps.selectAllFrom(table, dbTypeId), where);
+        try {
+            return SqlTransform.of(sql, dbTypeId).limit(1).toSql();
+        } catch (JSQLParserException ignored) {
+            return sql + " LIMIT 1";
+        }
     }
 }

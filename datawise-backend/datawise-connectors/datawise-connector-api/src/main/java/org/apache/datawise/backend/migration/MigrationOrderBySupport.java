@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.migration;
 
 import org.apache.datawise.backend.jdbc.support.MigrationWhereSupport;
+import org.apache.datawise.sqlparser.SqlTransformOps;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -102,8 +103,7 @@ public final class MigrationOrderBySupport {
             if (lastWatermark != null && !lastWatermark.isBlank()) {
                 predicate += " AND " + watermarkColumn.trim() + " > " + sqlLiteral(lastWatermark);
             }
-            String separator = base.toLowerCase(Locale.ROOT).contains(" where ") ? " AND " : " WHERE ";
-            return appendOrderByAsc(base + separator + predicate, orderByColumns);
+            return appendOrderByAsc(SqlTransformOps.appendWhere(base, predicate), orderByColumns);
         }
         return appendOrderByAsc(signatureSql, orderByColumns);
     }
@@ -119,8 +119,7 @@ public final class MigrationOrderBySupport {
         if (orderByColumns.size() != lastValues.size()) {
             throw new IllegalArgumentException("orderByColumns size mismatch with seek key");
         }
-        String predicate = buildLexicographicGreaterPredicate(orderByColumns, lastValues);
-        return appendAndPredicate(sql, predicate);
+        return SqlTransformOps.appendKeysetSeek(sql, orderByColumns, lastValues);
     }
 
     public static List<String> extractSeekKey(List<Map<String, Object>> rows, List<String> orderByColumns) {
@@ -206,28 +205,6 @@ public final class MigrationOrderBySupport {
         return List.copyOf(values);
     }
 
-    private static String buildLexicographicGreaterPredicate(List<String> columns, List<String> values) {
-        List<String> disjuncts = new ArrayList<>(columns.size());
-        for (int i = 0; i < columns.size(); i++) {
-            List<String> conjuncts = new ArrayList<>(i + 1);
-            for (int j = 0; j < i; j++) {
-                conjuncts.add(columns.get(j).trim() + " = " + formatSeekLiteral(values.get(j)));
-            }
-            conjuncts.add(columns.get(i).trim() + " > " + formatSeekLiteral(values.get(i)));
-            disjuncts.add(conjuncts.size() == 1 ? conjuncts.get(0) : "(" + String.join(" AND ", conjuncts) + ")");
-        }
-        return "(" + String.join(" OR ", disjuncts) + ")";
-    }
-
-    private static String appendAndPredicate(String sql, String predicate) {
-        String lower = sql.toLowerCase(Locale.ROOT);
-        int orderByIndex = lower.lastIndexOf(" order by ");
-        String head = orderByIndex >= 0 ? sql.substring(0, orderByIndex) : sql;
-        String tail = orderByIndex >= 0 ? sql.substring(orderByIndex) : "";
-        String separator = head.toLowerCase(Locale.ROOT).contains(" where ") ? " AND " : " WHERE ";
-        return head + separator + predicate + tail;
-    }
-
     private static Object columnValue(
             Map<String, Object> row,
             String column,
@@ -268,19 +245,6 @@ public final class MigrationOrderBySupport {
         return null;
     }
 
-    private static String formatSeekLiteral(String value) {
-        if (value == null || value.isBlank()) {
-            return "NULL";
-        }
-        if (value.matches("-?\\d+")) {
-            return value;
-        }
-        if (value.matches("-?\\d+\\.\\d+")) {
-            return value;
-        }
-        return sqlLiteral(value);
-    }
-
     private static String escapeJson(String value) {
         if (value == null) {
             return "";
@@ -291,22 +255,7 @@ public final class MigrationOrderBySupport {
     }
 
     public static String appendOrderByAsc(String sql, List<String> columns) {
-        if (columns == null || columns.isEmpty()) {
-            return sql;
-        }
-        if (containsOrderByClause(sql)) {
-            return sql;
-        }
-        List<String> parts = new ArrayList<>(columns.size());
-        for (String column : columns) {
-            if (column != null && !column.isBlank()) {
-                parts.add(column.trim() + " ASC");
-            }
-        }
-        if (parts.isEmpty()) {
-            return sql;
-        }
-        return sql + " ORDER BY " + String.join(", ", parts);
+        return SqlTransformOps.appendOrderByAsc(sql, columns);
     }
 
     private static String orderBySignatureSuffix(List<String> orderByColumns) {
@@ -314,10 +263,6 @@ public final class MigrationOrderBySupport {
             return "";
         }
         return " ORDER BY=" + String.join(",", orderByColumns);
-    }
-
-    private static boolean containsOrderByClause(String sql) {
-        return sql != null && sql.toLowerCase(Locale.ROOT).contains(" order by ");
     }
 
     private static String normalizeMode(String mode) {

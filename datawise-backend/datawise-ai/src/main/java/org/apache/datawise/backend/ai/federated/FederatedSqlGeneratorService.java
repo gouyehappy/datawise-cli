@@ -13,6 +13,7 @@ import org.apache.datawise.backend.domain.GenerateFederatedSqlResult;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.FederatedViewSource;
 import org.apache.datawise.backend.service.ConnectionVisibilityService;
+import org.apache.datawise.sqlparser.SqlTransformOps;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -124,8 +125,8 @@ public class FederatedSqlGeneratorService {
         return String.join("\n",
                 "-- AI federated: " + prompt,
                 "SELECT a.*, b.*",
-                "FROM (SELECT * FROM " + tableA + " LIMIT 100) @" + a + " a",
-                "JOIN (SELECT * FROM " + tableB + " LIMIT 100) @" + b + " b ON 1 = 1"
+                "FROM (" + SqlTransformOps.limitIfAbsent(SqlTransformOps.selectAllFrom(tableA), 100) + ") @" + a + " a",
+                "JOIN (" + SqlTransformOps.limitIfAbsent(SqlTransformOps.selectAllFrom(tableB), 100) + ") @" + b + " b ON 1 = 1"
         );
     }
 
