@@ -56,5 +56,5 @@ export function formatConnectorCapabilityLabel(
     te: (key: string) => boolean,
 ): string {
     const key = `plugin.connectorMarket.capabilities.${capability}`
-    return te(key) ? t(key) : capability.replaceAll('_', ' ').toLowerCase()
+    return te(key) ? t(key) : capability.split('_').join(' ').toLowerCase()
 }

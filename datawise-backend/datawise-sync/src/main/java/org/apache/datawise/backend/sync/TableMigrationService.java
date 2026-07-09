@@ -15,12 +15,14 @@ import org.apache.datawise.backend.sync.engine.TableMigrationJobHooks;
 import org.apache.datawise.backend.sync.engine.TableMigrationRequestPolicy;
 import org.apache.datawise.backend.sync.job.MigrationJobCoordinator;
 import org.apache.datawise.backend.sync.job.MigrationJobRuntime;
+import org.apache.datawise.backend.sync.job.MigrationTaskAdmissionService;
 import org.apache.datawise.backend.sync.stream.MigrationJobStreamHub;
 import org.apache.datawise.backend.sync.stream.TableMigrationStreamEmitter;
 import org.apache.datawise.backend.sync.support.MigrationSupport;
 import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.ConnectionAccessService;
 import org.apache.datawise.backend.service.UserAccountService;
+import org.apache.datawise.taskconcurrency.api.TaskConcurrencyController;
 
 import org.apache.datawise.backend.domain.MigrationJobView;
 import org.apache.datawise.backend.domain.TableMigrationBatchRequest;
@@ -32,11 +34,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 /** 表迁移门面：校验上下文后委托 {@link TableMigrationExecutor}。 */
@@ -54,6 +58,9 @@ public class TableMigrationService {
     private final MigrationJobStreamHub jobStreamHub;
     private final TableMigrationProperties migrationProperties;
     private final Executor migrationJobTaskExecutor;
+    private final TaskConcurrencyController taskConcurrencyController;
+    private final MigrationTaskAdmissionService migrationTaskAdmission;
+    private final boolean taskConcurrencyEnabled;
 
     public TableMigrationService(
             ConnectionExecutionContext connectionContext,
@@ -64,7 +71,10 @@ public class TableMigrationService {
             MigrationJobRuntime jobRuntime,
             MigrationJobStreamHub jobStreamHub,
             TableMigrationProperties migrationProperties,
-            @Qualifier("migrationJobTaskExecutor") Executor migrationJobTaskExecutor
+            @Qualifier("migrationJobTaskExecutor") Executor migrationJobTaskExecutor,
+            ObjectProvider<TaskConcurrencyController> taskConcurrencyController,
+            MigrationTaskAdmissionService migrationTaskAdmission,
+            @Value("${datawise.migration.task-concurrency-enabled:true}") boolean taskConcurrencyEnabled
     ) {
         this.connectionContext = connectionContext;
         this.userAccountService = userAccountService;
@@ -74,7 +84,10 @@ public class TableMigrationService {
         this.jobRuntime = jobRuntime;
         this.jobStreamHub = jobStreamHub;
         this.migrationProperties = migrationProperties != null ? migrationProperties : new TableMigrationProperties();
-        this.migrationJobTaskExecutor = migrationJobTaskExecutor != null ? migrationJobTaskExecutor : Runnable::run;
+        this.migrationJobTaskExecutor = migrationJobTaskExecutor != null ? migrationJobTaskExecutor : runnable -> runnable.run();
+        this.taskConcurrencyController = taskConcurrencyController.getIfAvailable();
+        this.migrationTaskAdmission = migrationTaskAdmission;
+        this.taskConcurrencyEnabled = taskConcurrencyEnabled;
     }
 
     public TableMigrationResult migrateTable(TableMigrationRequest request) {
@@ -141,14 +154,14 @@ public class TableMigrationService {
         if (!jobRuntime.tryRegisterRunning(jobId)) {
             throw new IllegalStateException("Migration job already running: " + jobId);
         }
+        if (useTaskConcurrencyPool()) {
+            migrationTaskAdmission.enqueue(userId, jobId, request, taskConcurrencyController);
+            return jobCoordinator.viewFor(userId, jobId);
+        }
         UserContext.Snapshot snapshot = UserContext.snapshotOrNull();
-        TableMigrationProgressListener streamListener = jobStreamHub.progressListener(
-                jobId,
-                () -> jobCoordinator.viewFor(userId, jobId)
-        );
         CompletableFuture.runAsync(() -> UserContext.runAs(snapshot, () -> {
             try {
-                executePreparedBatch(execution, request, streamListener, jobRuntime.controlFor(jobId));
+                executeRunningJob(jobId, null);
                 MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
                 jobStreamHub.publishDone(jobId, view);
             } catch (MigrationPausedException ex) {
@@ -168,6 +181,87 @@ public class TableMigrationService {
             return null;
         }), migrationJobTaskExecutor);
         return jobCoordinator.viewFor(userId, jobId);
+    }
+
+    /**
+     * Executes a prepared migration job (used by task-concurrency handler and legacy async executor).
+     */
+    public void executeRunningJob(String jobId, Runnable heartbeat) {
+        MigrationJobEntity job = jobCoordinator.findJob(jobId)
+                .orElseThrow(() -> new IllegalStateException("Migration job not found: " + jobId));
+        long userId = job.getUserId();
+        TableMigrationBatchRequest request = job.getRequest();
+        if (request == null) {
+            throw new IllegalStateException("Migration job request snapshot missing: " + jobId);
+        }
+        UserContext.Snapshot snapshot = new UserContext.Snapshot(userId, false, null);
+        MigrationJobCoordinator.ExecutionContext execution = jobCoordinator.executionContextFor(job);
+        TableMigrationProgressListener streamListener = wrapHeartbeat(
+                jobStreamHub.progressListener(jobId, () -> jobCoordinator.viewFor(userId, jobId)),
+                heartbeat
+        );
+        UserContext.runAs(snapshot, () -> {
+            try {
+                executePreparedBatch(execution, request, streamListener, jobRuntime.controlFor(jobId));
+                MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
+                jobStreamHub.publishDone(jobId, view);
+            } catch (MigrationPausedException ex) {
+                flushCheckpoint(execution);
+                jobCoordinator.markJobPaused(execution.job());
+                MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
+                jobStreamHub.publishPaused(jobId, view);
+                throw ex;
+            } catch (RuntimeException ex) {
+                ExceptionLogging.error(log, "migration.job.failed jobId=" + jobId, ex);
+                flushCheckpoint(execution);
+                jobCoordinator.finalizeJobAfterFailure(execution.job(), ex);
+                MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
+                jobStreamHub.publishDone(jobId, view);
+                throw ex;
+            } finally {
+                jobRuntime.unregister(jobId);
+            }
+            return null;
+        });
+    }
+
+    private boolean useTaskConcurrencyPool() {
+        return taskConcurrencyEnabled && taskConcurrencyController != null;
+    }
+
+    private static TableMigrationProgressListener wrapHeartbeat(
+            TableMigrationProgressListener delegate,
+            Runnable heartbeat
+    ) {
+        if (delegate == null || heartbeat == null) {
+            return delegate;
+        }
+        return new TableMigrationProgressListener() {
+            @Override
+            public void onTableStart(int tableIndex, int tableTotal, String tableName) {
+                heartbeat.run();
+                delegate.onTableStart(tableIndex, tableTotal, tableName);
+            }
+
+            @Override
+            public void onTableResult(int tableIndex, int tableTotal, TableMigrationResult result) {
+                heartbeat.run();
+                delegate.onTableResult(tableIndex, tableTotal, result);
+            }
+
+            @Override
+            public void onBatchProgress(
+                    int tableIndex,
+                    int tableTotal,
+                    String tableName,
+                    long offset,
+                    long rowsMigrated,
+                    int batches
+            ) {
+                heartbeat.run();
+                delegate.onBatchProgress(tableIndex, tableTotal, tableName, offset, rowsMigrated, batches);
+            }
+        };
     }
 
     public MigrationJobView pauseJob(String jobId) {

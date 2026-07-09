@@ -45,6 +45,7 @@ export type {AiAnalysisStreamRequest, AiAnalysisStreamHandlers} from '@/api/modu
 export {connectionApi} from '@/api/modules/connection'
 export {tableDataApi} from '@/api/modules/table-data'
 export {tableDetailApi} from '@/api/modules/table-detail'
+export {datagenApi} from '@/api/modules/datagen'
 export {migrationApi} from '@/api/modules/migration'
 export {terminalApi} from '@/api/modules/terminal'
 export {notificationsApi} from '@/api/modules/notifications'

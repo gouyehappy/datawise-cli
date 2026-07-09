@@ -511,6 +511,47 @@ export interface TableSqlExportResult {
     fileName: string
 }
 
+// ── Datagen ──────────────────────────────────────────────────────────────────
+
+export interface DatagenPreviewRequest {
+    connectionId: string
+    database?: string | null
+    tableName: string
+    rowCount?: number | null
+    seed?: number | null
+}
+
+export interface DatagenPreviewResult {
+    connectionId: string
+    database: string
+    tableName: string
+    rowCount: number
+    seed: number
+    previewRows: TableRow[]
+    insertSql: string
+}
+
+export interface DatagenApi {
+    previewTableDatagen(request: DatagenPreviewRequest): Promise<DatagenPreviewResult>
+    executeTableDatagen(request: DatagenPreviewRequest): Promise<ExecuteSqlResult>
+}
+
+export interface MetadataDocPreviewOptions {
+    connectionId?: string
+    database?: string
+    format?: 'md' | 'markdown' | 'html'
+    includeDetails?: boolean
+}
+
+export interface MetadataDocPreviewResult {
+    database: string
+    connectionId?: string | null
+    format: string
+    fileName: string
+    markdown: string
+    html: string
+}
+
 export interface TableMigrationRequest {
     sourceConnectionId: string
     sourceDatabase: string
@@ -636,6 +677,8 @@ export interface TableDetailApi {
     exportTableSql(tableName: string, options?: TableSqlExportOptions): Promise<TableSqlExportResult>
 
     exportDatabaseSql(options: TableSqlExportOptions): Promise<TableSqlExportResult>
+
+    previewDatabaseMetadoc(options: MetadataDocPreviewOptions): Promise<MetadataDocPreviewResult>
 }
 
 // ── Connection ──────────────────────────────────────────────────────────────
@@ -1351,6 +1394,7 @@ export interface ApiClient {
     auth: AuthApi
     sql: SqlApi
     ai: AiApi
+    datagen: DatagenApi
     tableData: TableDataApi
     tableDetail: TableDetailApi
     connection: ConnectionApi

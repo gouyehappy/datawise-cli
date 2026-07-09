@@ -23,11 +23,14 @@
         <module>datawise-connectors</module>
         <module>datawise-config</module>
         <module>datawise-database</module>
+        <module>datawise-datagen</module>
         <module>datawise-sqlparser</module>
         <module>datawise-sync</module>
         <module>datawise-workspace</module>
         <module>datawise-ai</module>
         <module>datawise-lineage</module>
+        <module>datawise-taskconcurrency</module>
+        <module>datawise-metadoc</module>
         <module>datawise-server</module>
     </modules>
 
@@ -271,6 +274,21 @@
             <dependency>
                 <groupId>org.apache.datawise</groupId>
                 <artifactId>datawise-sqlparser</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.datawise</groupId>
+                <artifactId>datawise-taskconcurrency</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.datawise</groupId>
+                <artifactId>datawise-metadoc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.datawise</groupId>
+                <artifactId>datawise-datagen</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

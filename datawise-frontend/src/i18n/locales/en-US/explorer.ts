@@ -377,6 +377,8 @@ export default {
     importDataEmpty: 'CSV/Excel file is empty or invalid',
     importDataCancelled: 'Import cancelled',
     tableActionContextMissing: 'Cannot resolve table connection context',
+    metadocContextMissing: 'Cannot resolve the connection or database for metadata docs',
+    metadocFailed: 'Failed to generate metadata docs',
     context: {
         openTable: 'Open table',
         console: 'Query console',
@@ -396,6 +398,7 @@ export default {
         editTable: 'View properties',
         viewProperties: 'View properties',
         exportSql: 'Export SQL',
+        exportMetadoc: 'Metadata docs',
         exportWizard: 'Export wizard…',
         exportStructure: 'Structure only',
         exportAll: 'Structure + data',

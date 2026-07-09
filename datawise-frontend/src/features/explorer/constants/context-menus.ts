@@ -72,6 +72,7 @@ export function getContextMenuForNodeType(type: string, t: ComposerTranslation):
                 {id: 'export-all', label: c('exportAll'), icon: 'export'},
             ],
         },
+        {id: 'export-metadoc', label: c('exportMetadoc'), icon: 'edit'},
         {id: 'schema-compare', label: c('schemaCompare'), icon: 'ddl'},
         {id: 'cross-env-compare', label: c('crossEnvCompare'), icon: 'table'},
         {id: 'migrate-data', label: c('migrateData'), icon: 'import'},

@@ -1,7 +1,7 @@
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {TablePropertiesResult} from '@/shared/api/types'
-import type {WorkspaceTab} from '@/core/types'
+import type {TableRow, WorkspaceTab} from '@/core/types'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -11,7 +11,9 @@ import {
     executeFakeDataForTab,
     exportFakeDataForTab,
     fetchFakeDataProperties,
+    previewFakeDataForTab,
 } from '@/features/workspace/services/fake-data.actions'
+import {FAKE_DATA_DEFAULT_ROWS} from '@/features/workspace/services/fake-data.service'
 
 export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Promise<void>) {
     const {t} = useI18n()
@@ -25,6 +27,22 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
     const executing = ref(false)
     const tab = ref<WorkspaceTab | null>(null)
     const properties = ref<TablePropertiesResult | null>(null)
+    const previewRows = ref<TableRow[] | null>(null)
+    const previewSql = ref<string | null>(null)
+    const previewLoading = ref(false)
+    const executeError = ref('')
+    const seed = ref<number | null>(null)
+
+    function resetDialog() {
+        open.value = false
+        loading.value = false
+        executing.value = false
+        tab.value = null
+        properties.value = null
+        previewRows.value = null
+        previewSql.value = null
+        executeError.value = ''
+    }
 
     const canExecute = computed(() => {
         const current = tab.value
@@ -45,13 +63,24 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
         }
         tab.value = target
         properties.value = null
+        previewRows.value = null
+        previewSql.value = null
+        seed.value = Date.now()
+        executeError.value = ''
         open.value = true
         loading.value = true
         try {
             properties.value = await fetchFakeDataProperties(target, explorer.tree)
+            const preview = await previewFakeDataForTab({
+                tab: target,
+                tree: explorer.tree,
+                rowCount: FAKE_DATA_DEFAULT_ROWS,
+                seed: seed.value ?? undefined,
+            })
+            previewRows.value = preview.previewRows
+            previewSql.value = preview.insertSql
         } catch (error) {
-            open.value = false
-            tab.value = null
+            resetDialog()
             const message = error instanceof Error ? error.message : String(error)
             layout.showToast(t('workspace.fakeData.failedWithDetail', {message}))
         } finally {
@@ -59,10 +88,34 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
         }
     }
 
+    async function refreshPreview(rowCount: number) {
+        const current = tab.value
+        if (!current) return
+        executeError.value = ''
+        previewLoading.value = true
+        try {
+            const preview = await previewFakeDataForTab({
+                tab: current,
+                tree: explorer.tree,
+                rowCount,
+                seed: seed.value ?? undefined,
+            })
+            previewRows.value = preview.previewRows
+            previewSql.value = preview.insertSql
+        } finally {
+            previewLoading.value = false
+        }
+    }
+
     async function execute(rowCount: number) {
         const current = tab.value
         const props = properties.value
-        if (!current || !props) return
+        if (!current || !props) {
+            executeError.value = t('workspace.fakeData.failed')
+            layout.showToast(executeError.value)
+            return
+        }
+        executeError.value = ''
         executing.value = true
         try {
             const ok = await executeFakeDataForTab({
@@ -70,18 +123,23 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
                 tree: explorer.tree,
                 properties: props,
                 rowCount,
+                seed: seed.value ?? undefined,
                 teams: teamStore.teams,
                 isGuest: auth.isGuest,
                 showToast: (message) => layout.showToast(message),
                 t,
             })
             if (ok) {
-                open.value = false
+                resetDialog()
                 await onExecuted?.(current)
+            } else {
+                executeError.value = t('workspace.fakeData.failed')
+                layout.showToast(executeError.value)
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
-            layout.showToast(t('workspace.fakeData.failedWithDetail', {message}))
+            executeError.value = t('workspace.fakeData.failedWithDetail', {message})
+            layout.showToast(executeError.value)
         } finally {
             executing.value = false
         }
@@ -91,26 +149,32 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
         const current = tab.value
         const props = properties.value
         if (!current || !props) return
-        exportFakeDataForTab({
-            tab: current,
-            tree: explorer.tree,
-            properties: props,
-            rowCount,
-            showToast: (message) => layout.showToast(message),
-            t,
-        })
+        void exportFakeDataForTab({
+                tab: current,
+                tree: explorer.tree,
+                properties: props,
+                rowCount,
+                seed: seed.value ?? undefined,
+                showToast: (message) => layout.showToast(message),
+                t,
+            })
     }
 
     return {
         open,
         loading,
         executing,
+        previewLoading,
+        executeError,
         tab,
         properties,
+        previewRows,
+        previewSql,
         canExecute,
         executeDisabledHint,
         openForTable,
         execute,
         exportSql,
+        refreshPreview,
     }
 }

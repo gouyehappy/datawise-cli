@@ -127,7 +127,7 @@ function toSourceColumn(source: LineageColumnMappingDto['sources'][number]): Lin
         table,
         column: source.column,
         qualifiedName: source.qualifiedName,
-        kind: source.kind,
+        kind: source.kind ?? undefined,
     }
 }
 

@@ -53,11 +53,16 @@ const {
   executing: fakeDataExecuting,
   tab: fakeDataTab,
   properties: fakeDataProperties,
+  previewRows: fakeDataPreviewRows,
+  previewLoading: fakeDataPreviewLoading,
+  previewSql: fakeDataPreviewSql,
+  executeError: fakeDataExecuteError,
   canExecute: fakeDataCanExecute,
   executeDisabledHint: fakeDataExecuteHint,
   openForTable,
   execute: onFakeDataExecute,
   exportSql: onFakeDataExport,
+  refreshPreview,
 } = fakeData
 
 watch(
@@ -450,9 +455,14 @@ function isTabProduction(tab: WorkspaceTab) {
       :executing="fakeDataExecuting"
       :table-name="fakeDataTab?.tableName"
       :properties="fakeDataProperties"
+      :preview-rows="fakeDataPreviewRows"
+      :preview-sql="fakeDataPreviewSql"
+      :preview-loading="fakeDataPreviewLoading"
+      :error-message="fakeDataExecuteError"
       :can-execute="fakeDataCanExecute"
       :execute-disabled-hint="fakeDataExecuteHint"
       @execute="onFakeDataExecute"
       @export="onFakeDataExport"
+      @refresh-preview="refreshPreview"
   />
 </template>

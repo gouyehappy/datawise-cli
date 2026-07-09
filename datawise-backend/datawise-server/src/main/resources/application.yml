@@ -65,6 +65,10 @@ datawise:
   query:
     # 服务端默认最大返回行数；0 表示不限制（客户端可在设置中进一步收紧）
     max-result-rows: 0
+  sql:
+    rewrite:
+      # 控制台执行前自动为表名/字段名加引号（基于 sqlparser + 连接 dbType）
+      quote-identifiers: true
   workspace:
     # SQL 脚本根目录默认值（可在设置页修改，持久化到 config/workspace.xml）
     scripts-dir: scripts
@@ -89,6 +93,37 @@ datawise:
     continue-on-table-failure: true
     table-retry-attempts: 2
     pipeline-read-ahead: true
+    task-concurrency-enabled: true
+    task-concurrency-tenant-slots: 2
+    task-concurrency-default-priority: 5
+    task-concurrency-admission-log-enabled: false
+    task-concurrency-priority:
+      small-table-threshold: 1
+      medium-table-threshold: 3
+      large-table-threshold: 5
+      huge-table-threshold: 10
+      small-table-bonus: 1
+      medium-table-bonus: 1
+      large-table-penalty: 1
+      huge-table-penalty: 2
+      resume-bonus: 1
+      small-batch-threshold: 200
+      large-batch-threshold: 2000
+      small-batch-bonus: 0
+      large-batch-penalty: 1
+      throttle-penalty: 1
+  task-concurrency:
+    enabled: true
+    store-type: in-memory
+    global-max-concurrent: 6
+    lease-ttl: 30m
+    dispatch-interval: 500ms
+    maintenance-interval: 30s
+    dispatch-batch-size: 10
+    runtime-enabled: true
+    metrics:
+      enabled: true
+      prefix: datawise.task.concurrency
   ai:
     rag:
       enabled: true

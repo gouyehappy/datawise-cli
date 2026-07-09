@@ -16,6 +16,10 @@ public class TableMigrationProperties {
     private int checkpointPersistEveryBatches = 10;
     /** Worker threads for async migration jobs in this JVM. */
     private int migrationJobThreads = 4;
+    /** Route async migration jobs through task-concurrency slot pool. */
+    private boolean taskConcurrencyEnabled = true;
+    /** Default allocated slots per user tenant when first enqueuing a migration job. */
+    private int taskConcurrencyTenantSlots = 2;
 
     public int getDefaultBatchSize() {
         return defaultBatchSize;
@@ -71,6 +75,22 @@ public class TableMigrationProperties {
 
     public void setMigrationJobThreads(int migrationJobThreads) {
         this.migrationJobThreads = Math.max(1, migrationJobThreads);
+    }
+
+    public boolean isTaskConcurrencyEnabled() {
+        return taskConcurrencyEnabled;
+    }
+
+    public void setTaskConcurrencyEnabled(boolean taskConcurrencyEnabled) {
+        this.taskConcurrencyEnabled = taskConcurrencyEnabled;
+    }
+
+    public int getTaskConcurrencyTenantSlots() {
+        return taskConcurrencyTenantSlots;
+    }
+
+    public void setTaskConcurrencyTenantSlots(int taskConcurrencyTenantSlots) {
+        this.taskConcurrencyTenantSlots = Math.max(1, taskConcurrencyTenantSlots);
     }
 
     private static final int MIN_BATCH_SIZE = 50;

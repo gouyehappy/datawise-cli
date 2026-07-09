@@ -1,14 +1,17 @@
-package org.apache.datawise.backend.configstore;
+package org.apache.datawise.backend.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.datawise.backend.common.UnauthorizedException;
+import org.apache.datawise.backend.configstore.ConfigDirectoryService;
+import org.apache.datawise.backend.configstore.ConnectionStore;
+import org.apache.datawise.backend.configstore.SessionEphemeralCatalogStore;
+import org.apache.datawise.backend.configstore.TeamStore;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.ConnectionGroupEntity;
 import org.apache.datawise.backend.model.TeamEntity;
 import org.apache.datawise.backend.model.TeamMemberEntity;
 import org.apache.datawise.backend.security.SecretTestSupport;
 import org.apache.datawise.backend.security.UserContext;
-import org.apache.datawise.backend.service.ConnectionVisibilityService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

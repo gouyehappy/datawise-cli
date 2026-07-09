@@ -31,6 +31,7 @@ export function workspaceTabDwIcon(type: WorkspaceTabType): DwIconName {
             return 'tab-console'
         case 'table':
         case 'schema-tables':
+        case 'metadoc':
             return 'tab-table'
         case 'connection':
             return 'tab-connection'

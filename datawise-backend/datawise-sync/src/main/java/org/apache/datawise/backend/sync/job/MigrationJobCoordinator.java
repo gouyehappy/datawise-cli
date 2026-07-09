@@ -89,6 +89,17 @@ public class MigrationJobCoordinator {
         return jobStore.requireOwned(userId, jobId);
     }
 
+    public Optional<MigrationJobEntity> findJob(String jobId) {
+        return jobStore.findById(jobId);
+    }
+
+    public ExecutionContext executionContextFor(MigrationJobEntity job) {
+        if (job == null) {
+            throw new IllegalArgumentException("job must not be null");
+        }
+        return new ExecutionContext(job, new JobBoundCheckpointSink(job, checkpointPersistEveryBatches));
+    }
+
     public void finalizeJob(MigrationJobEntity job, List<TableMigrationResult> results) {
         job.setResults(results != null ? List.copyOf(results) : List.of());
         job.setStatus(resolveJobStatus(results));

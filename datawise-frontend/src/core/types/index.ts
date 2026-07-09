@@ -157,6 +157,7 @@ export type WorkspaceTabType =
     | 'schema-compare'
     | 'schema-er'
     | 'schema-tables'
+    | 'metadoc'
     | 'cross-env-compare'
     | 'table-migration'
     | 'view_model'
@@ -229,6 +230,14 @@ export interface WorkspaceTab {
     redisView?: 'keys' | 'command'
     /** Explorer AI 平台能力目录 Tab */
     platformFeature?: import('@/features/platform/types/platform.types').PlatformFeatureId
+    /** 元数据文档预览 */
+    metadocHtml?: string
+    metadocMarkdown?: string
+    metadocFileName?: string
+    metadocView?: 'preview' | 'markdown'
+    metadocLoading?: boolean
+    metadocLoadError?: string
+    metadocDetailsLoading?: boolean
     /** v2.0 协同 SQL：该控制台绑定的团队共享 Query */
     teamSharedQuery?: {
         teamId: string

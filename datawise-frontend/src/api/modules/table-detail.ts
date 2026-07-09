@@ -16,4 +16,6 @@ export const tableDetailApi = {
         api.tableDetail.exportTableSql(tableName, options),
     exportDatabaseSql: (options: TableSqlExportOptions) =>
         api.tableDetail.exportDatabaseSql(options),
+    previewDatabaseMetadoc: (options: import('@/shared/api/types').MetadataDocPreviewOptions) =>
+        api.tableDetail.previewDatabaseMetadoc(options),
 }

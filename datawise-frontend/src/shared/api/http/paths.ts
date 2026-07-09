@@ -30,6 +30,10 @@ export const API_PATHS = {
         testEmbedding: '/api/ai/test-embedding',
         knowledge: '/api/ai/knowledge',
     },
+    datagen: {
+        tablePreview: '/api/datagen/table/preview',
+        tableExecute: '/api/datagen/table/execute',
+    },
     tableData: (tableName: string, options?: { connectionId?: string; database?: string; maxRows?: number; cursorId?: string }) => {
         const base = `/api/tables/${encodeURIComponent(tableName)}/data`
         const params = new URLSearchParams()
@@ -124,6 +128,21 @@ export const API_PATHS = {
         if (options?.database) params.set('database', options.database)
         if (options?.includeData) params.set('includeData', 'true')
         if (options?.maxRows != null && options.maxRows > 0) params.set('maxRows', String(options.maxRows))
+        const qs = params.toString()
+        return qs ? `${base}?${qs}` : base
+    },
+    databaseMetadocPreview: (options?: {
+        connectionId?: string
+        database?: string
+        format?: string
+        includeDetails?: boolean
+    }) => {
+        const base = '/api/export-metadoc/database/preview'
+        const params = new URLSearchParams()
+        if (options?.connectionId) params.set('connectionId', options.connectionId)
+        if (options?.database) params.set('database', options.database)
+        if (options?.format) params.set('format', options.format)
+        if (options?.includeDetails != null) params.set('includeDetails', String(options.includeDetails))
         const qs = params.toString()
         return qs ? `${base}?${qs}` : base
     },

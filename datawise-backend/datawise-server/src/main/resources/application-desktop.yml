@@ -29,3 +29,19 @@ datawise:
   jdbc:
     # 驱动在首次连接时再加载，避免启动扫描 config/drivers/
     preload-drivers-on-startup: false
+  migration:
+    task-concurrency-priority:
+      small-table-threshold: 1
+      medium-table-threshold: 3
+      large-table-threshold: 5
+      huge-table-threshold: 10
+      small-table-bonus: 1
+      medium-table-bonus: 1
+      large-table-penalty: 1
+      huge-table-penalty: 2
+      resume-bonus: 1
+      small-batch-threshold: 200
+      large-batch-threshold: 2000
+      small-batch-bonus: 0
+      large-batch-penalty: 1
+      throttle-penalty: 1

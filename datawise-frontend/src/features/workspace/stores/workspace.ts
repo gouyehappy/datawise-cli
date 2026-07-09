@@ -613,6 +613,61 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         return id
     }
 
+    function openMetadataDoc(options: {
+        connectionId: string
+        database: string
+        instanceId?: string
+        explorerNodeId?: string
+        title?: string
+        html?: string
+        markdown?: string
+        fileName?: string
+        loading?: boolean
+        loadError?: string
+        detailsLoading?: boolean
+    }) {
+        const existing = tabs.value.find(
+            (tab) =>
+                tab.type === 'metadoc'
+                && tab.connectionId === options.connectionId
+                && tab.database === options.database,
+        )
+        if (existing) {
+            existing.metadocHtml = options.html ?? existing.metadocHtml
+            existing.metadocMarkdown = options.markdown ?? existing.metadocMarkdown
+            existing.metadocFileName = options.fileName ?? existing.metadocFileName
+            existing.metadocLoading = options.loading ?? false
+            existing.metadocLoadError = options.loadError ?? undefined
+            existing.metadocDetailsLoading = options.detailsLoading ?? existing.metadocDetailsLoading ?? false
+            existing.metadocView = existing.metadocView ?? 'preview'
+            if (options.instanceId) existing.instanceId = options.instanceId
+            if (options.explorerNodeId) existing.explorerNodeId = options.explorerNodeId
+            if (options.title?.trim()) existing.title = options.title.trim()
+            activeTabId.value = existing.id
+            return existing.id
+        }
+        const id = nextTabId('metadoc')
+        tabs.value.push({
+            id,
+            title: options.title?.trim() || t('workspace.metadoc.tabTitle', {database: options.database}),
+            type: 'metadoc',
+            closable: true,
+            connectionId: options.connectionId,
+            database: options.database,
+            instanceId: options.instanceId,
+            explorerNodeId: options.explorerNodeId,
+            metadocHtml: options.html ?? '',
+            metadocMarkdown: options.markdown ?? '',
+            metadocFileName: options.fileName ?? '',
+            metadocView: 'preview',
+            metadocLoading: options.loading ?? false,
+            metadocLoadError: options.loadError ?? undefined,
+            metadocDetailsLoading: options.detailsLoading ?? false,
+        })
+        activeTabId.value = id
+        return id
+    }
+
     function openPlatformCatalog(options: {
         feature: PlatformFeatureId
         connectionId: string
@@ -1517,6 +1572,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (type === 'schema-compare') return 'schema'
         if (type === 'schema-er') return 'schema-er'
         if (type === 'schema-tables') return 'schema-tables'
+        if (type === 'metadoc') return 'metadoc'
         if (type === 'cross-env-compare') return 'cross-env'
         if (type === 'table-migration') return 'migration'
         if (type === 'redis-key') return 'redis'
@@ -1599,6 +1655,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         openSchemaCompare,
         openSchemaEr,
         openSchemaTables,
+        openMetadataDoc,
         openPlatformCatalog,
         openCrossEnvCompare,
         openTableMigration,

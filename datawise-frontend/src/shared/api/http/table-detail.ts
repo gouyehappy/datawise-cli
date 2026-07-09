@@ -1,4 +1,6 @@
 import type {
+    MetadataDocPreviewOptions,
+    MetadataDocPreviewResult,
     TableDetailApi,
     TableDdlResult,
     TablePropertiesResult,
@@ -93,6 +95,17 @@ export function createHttpTableDetailApi(): TableDetailApi {
                     database: resolved.database,
                     includeData: resolved.includeData,
                     maxRows: resolved.maxRows,
+                }),
+            )
+        },
+        previewDatabaseMetadoc: async (options) => {
+            const resolved: MetadataDocPreviewOptions = options ?? {}
+            return getJson<MetadataDocPreviewResult>(
+                API_PATHS.databaseMetadocPreview({
+                    connectionId: requireConnectionId(resolved.connectionId),
+                    database: resolved.database,
+                    format: resolved.format,
+                    includeDetails: resolved.includeDetails,
                 }),
             )
         },

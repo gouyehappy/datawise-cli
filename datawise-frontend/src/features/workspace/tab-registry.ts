@@ -26,6 +26,7 @@ import TerminalTab from './components/tabs/TerminalTab.vue'
 import SchemaCompareTab from './components/tabs/SchemaCompareTab.vue'
 import SchemaErTab from './components/tabs/SchemaErTab.vue'
 import SchemaTablesTab from './components/tabs/SchemaTablesTab.vue'
+import MetadocTab from './components/tabs/MetadocTab.vue'
 import CrossEnvCompareTab from './components/tabs/CrossEnvCompareTab.vue'
 import TableMigrationTab from './components/tabs/TableMigrationTab.vue'
 import ViewModelDataTab from './components/tabs/ViewModelDataTab.vue'
@@ -56,6 +57,8 @@ const definitions = [
     {key: 'schema-er' as const, component: SchemaErTab},
 
     {key: 'schema-tables' as const, component: SchemaTablesTab},
+
+    {key: 'metadoc' as const, component: MetadocTab},
 
     {key: 'cross-env-compare' as const, component: CrossEnvCompareTab},
 

@@ -1,17 +1,15 @@
 import type {ComposerTranslation} from 'vue-i18n'
 import type {TreeNode, WorkspaceTab} from '@/core/types'
 import {findDatabaseLabel} from '@/core/utils/tree'
-import {tableDetailApi, sqlApi} from '@/api'
+import {datagenApi, tableDetailApi} from '@/api'
 import {downloadTextFile} from '@/features/ai/analysis/services/analysis-export.service'
 import {
-    buildFakeDataInsertSql,
-    buildFakeDataRows,
     clampFakeDataRowCount,
 } from '@/features/workspace/services/fake-data.service'
 import {canDmlConnection} from '@/features/team/services/connection-access.service'
 import type {TeamSummary} from '@/core/types'
 
-function resolveDatabaseName(tab: WorkspaceTab, tree: TreeNode[]): string | undefined {
+export function resolveDatabaseName(tab: WorkspaceTab, tree: TreeNode[]): string | undefined {
     if (tab.database?.trim()) return tab.database.trim()
     if (tab.instanceId) {
         return findDatabaseLabel(tree, tab.instanceId) ?? undefined
@@ -29,18 +27,22 @@ export async function fetchFakeDataProperties(tab: WorkspaceTab, tree: TreeNode[
     })
 }
 
-export function buildFakeDataSqlForTab(
-    tab: WorkspaceTab,
-    tree: TreeNode[],
-    properties: Awaited<ReturnType<typeof fetchFakeDataProperties>>,
-    rowCount: number,
-) {
-    const rows = buildFakeDataRows(properties, clampFakeDataRowCount(rowCount))
-    return buildFakeDataInsertSql({
-        properties,
-        rows,
-        dbType: tab.dbType,
+export async function previewFakeDataForTab(options: {
+    tab: WorkspaceTab
+    tree: TreeNode[]
+    rowCount: number
+    seed?: number
+}) {
+    const {tab, tree, rowCount, seed} = options
+    if (tab.type !== 'table' || !tab.tableName?.trim() || !tab.connectionId) {
+        throw new Error('invalid table tab')
+    }
+    return datagenApi.previewTableDatagen({
+        connectionId: tab.connectionId,
         database: resolveDatabaseName(tab, tree),
+        tableName: tab.tableName,
+        rowCount: clampFakeDataRowCount(rowCount),
+        seed,
     })
 }
 
@@ -49,6 +51,7 @@ export async function executeFakeDataForTab(options: {
     tree: TreeNode[]
     properties: Awaited<ReturnType<typeof fetchFakeDataProperties>>
     rowCount: number
+    seed?: number
     teams: TeamSummary[]
     isGuest: boolean
     showToast: (message: string) => void
@@ -68,27 +71,34 @@ export async function executeFakeDataForTab(options: {
         showToast(t('workspace.fakeData.noColumns'))
         return false
     }
+    if (!tab.tableName?.trim()) {
+        showToast(t('workspace.fakeData.failed'))
+        return false
+    }
 
-    const sql = buildFakeDataSqlForTab(tab, tree, properties, rowCount)
-    const database = resolveDatabaseName(tab, tree)
-    await sqlApi.execute(sql, {
+    await datagenApi.executeTableDatagen({
         connectionId: tab.connectionId,
-        database,
+        database: resolveDatabaseName(tab, tree),
+        tableName: tab.tableName,
+        rowCount: clampFakeDataRowCount(rowCount),
+        seed: options.seed,
     })
     showToast(t('workspace.fakeData.executed', {count: clampFakeDataRowCount(rowCount)}))
     return true
 }
 
-export function exportFakeDataForTab(options: {
+export async function exportFakeDataForTab(options: {
     tab: WorkspaceTab
     tree: TreeNode[]
     properties: Awaited<ReturnType<typeof fetchFakeDataProperties>>
     rowCount: number
+    seed?: number
     showToast: (message: string) => void
     t: ComposerTranslation
 }) {
     const {tab, tree, properties, rowCount, showToast, t} = options
-    const sql = buildFakeDataSqlForTab(tab, tree, properties, rowCount)
+    const preview = await previewFakeDataForTab({tab, tree, rowCount, seed: options.seed})
+    const sql = preview.insertSql
     const tableName = properties.tableName || tab.tableName || 'table'
     const stamp = new Date().toISOString().replace(/[:.]/g, '-')
     downloadTextFile(sql, `${tableName}-fake-data-${stamp}.sql`, 'text/plain;charset=utf-8')

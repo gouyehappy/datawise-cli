@@ -703,6 +703,84 @@ export function useConnectionTree() {
         }
     }
 
+    async function openMetadataDocFromNode(node: TreeNode) {
+        const ctx = resolveExplorerSqlExportContext(explorer.tree, node)
+        if (!ctx || node.type !== 'database') {
+            layout.showToast(t('explorer.metadocContextMissing'))
+            return
+        }
+        layout.setModule('database')
+        workspace.openMetadataDoc({
+            connectionId: ctx.connectionId,
+            database: ctx.database,
+            explorerNodeId: node.id,
+            title: t('workspace.metadoc.tabTitle', {database: ctx.database}),
+            loading: true,
+            detailsLoading: false,
+        })
+        try {
+            // Phase 1: fast summary (table list only)
+            const summary = await tableDetailApi.previewDatabaseMetadoc({
+                connectionId: ctx.connectionId,
+                database: ctx.database,
+                format: 'md',
+                includeDetails: false,
+            })
+            workspace.openMetadataDoc({
+                connectionId: ctx.connectionId,
+                database: ctx.database,
+                explorerNodeId: node.id,
+                title: t('workspace.metadoc.tabTitle', {database: ctx.database}),
+                html: summary.html,
+                markdown: summary.markdown,
+                fileName: summary.fileName,
+                loading: false,
+                detailsLoading: true,
+            })
+
+            // Phase 2: full details (runs in background, updates the tab when ready)
+            void tableDetailApi.previewDatabaseMetadoc({
+                connectionId: ctx.connectionId,
+                database: ctx.database,
+                format: 'md',
+                includeDetails: true,
+            }).then((full) => {
+                workspace.openMetadataDoc({
+                    connectionId: ctx.connectionId,
+                    database: ctx.database,
+                    explorerNodeId: node.id,
+                    title: t('workspace.metadoc.tabTitle', {database: ctx.database}),
+                    html: full.html,
+                    markdown: full.markdown,
+                    fileName: full.fileName,
+                    loading: false,
+                    detailsLoading: false,
+                })
+            }).catch(() => {
+                workspace.openMetadataDoc({
+                    connectionId: ctx.connectionId,
+                    database: ctx.database,
+                    explorerNodeId: node.id,
+                    title: t('workspace.metadoc.tabTitle', {database: ctx.database}),
+                    loading: false,
+                    detailsLoading: false,
+                })
+            })
+        } catch (e) {
+            const message = e instanceof Error ? e.message : t('explorer.metadocFailed')
+            workspace.openMetadataDoc({
+                connectionId: ctx.connectionId,
+                database: ctx.database,
+                explorerNodeId: node.id,
+                title: t('workspace.metadoc.tabTitle', {database: ctx.database}),
+                loading: false,
+                detailsLoading: false,
+                loadError: message,
+            })
+            layout.showToast(t('explorer.metadocFailed'))
+        }
+    }
+
     async function openConsoleForTableNode(node: TreeNode) {
         const databaseNode = findAncestorByType(explorer.tree, node.id, 'database')
         const connectionId = findConnectionId(node)
@@ -1036,6 +1114,12 @@ export function useConnectionTree() {
             if (node.type === 'table' || node.type === 'database') {
                 void handleSqlExportAction(node, id as ExplorerSqlExportAction)
             }
+            closeMenu()
+            return
+        }
+
+        if (id === 'export-metadoc' && node.type === 'database') {
+            void openMetadataDocFromNode(node)
             closeMenu()
             return
         }
