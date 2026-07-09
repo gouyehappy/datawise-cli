@@ -25,6 +25,7 @@
         <module>datawise-database</module>
         <module>datawise-datagen</module>
         <module>datawise-sqlparser</module>
+        <module>datawise-sqlflow</module>
         <module>datawise-sync</module>
         <module>datawise-workspace</module>
         <module>datawise-ai</module>
@@ -274,6 +275,11 @@
             <dependency>
                 <groupId>org.apache.datawise</groupId>
                 <artifactId>datawise-sqlparser</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.datawise</groupId>
+                <artifactId>datawise-sqlflow</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

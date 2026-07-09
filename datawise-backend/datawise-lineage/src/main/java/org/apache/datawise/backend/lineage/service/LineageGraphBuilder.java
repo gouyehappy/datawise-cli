@@ -127,6 +127,7 @@ public class LineageGraphBuilder {
                 LineageSqlHash.sha256(sql),
                 Instant.now().toString(),
                 dbType != null ? dbType : "generic",
+                parseResult.dialectCompatibility(),
                 parseResult.engineId(),
                 parseResult.engineVersion(),
                 depth,

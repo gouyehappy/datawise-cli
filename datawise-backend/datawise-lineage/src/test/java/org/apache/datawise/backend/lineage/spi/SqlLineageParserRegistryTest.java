@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.lineage.spi;
 
+import org.apache.datawise.backend.domain.LineageDialectCompatibility;
 import org.apache.datawise.backend.lineage.model.LineageParseRequest;
 import org.apache.datawise.backend.lineage.model.LineageParseResult;
 import org.apache.datawise.backend.lineage.model.ParseStatus;
@@ -71,7 +72,14 @@ class SqlLineageParserRegistryTest {
                 if (status == ParseStatus.FAILED) {
                     return LineageParseResult.failed(engineId(), "test", "failed");
                 }
-                return new LineageParseResult(List.of(), List.of(), status, engineId(), "test");
+                return new LineageParseResult(
+                        List.of(),
+                        List.of(),
+                        status,
+                        engineId(),
+                        "test",
+                        LineageDialectCompatibility.UNKNOWN
+                );
             }
         };
     }

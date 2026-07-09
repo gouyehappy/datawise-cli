@@ -7,6 +7,7 @@ import org.apache.datawise.backend.database.federated.FederatedJoinSqlParser;
 import org.apache.datawise.backend.database.federated.FederatedJoinSqlParser.FederatedJoinPlan;
 import org.apache.datawise.backend.database.federated.FederatedJoinSqlParser.FederatedJoinStep;
 import org.apache.datawise.backend.database.federated.FederatedSqlSubquerySupport;
+import org.apache.datawise.backend.domain.LineageDialectCompatibility;
 import org.apache.datawise.backend.lineage.model.ColumnLineage;
 import org.apache.datawise.backend.lineage.model.FederatedLineageSource;
 import org.apache.datawise.backend.lineage.model.LineageParseRequest;
@@ -46,7 +47,7 @@ public class FederatedLineageParser implements SqlLineageParser {
 
     @Override
     public int priority() {
-        return 50;
+        return 80;
     }
 
     @Override
@@ -77,7 +78,14 @@ public class FederatedLineageParser implements SqlLineageParser {
                 columns = parseSingleSourceSql(request, warnings);
             }
             ParseStatus status = warnings.isEmpty() ? ParseStatus.COMPLETE : ParseStatus.PARTIAL;
-            return new LineageParseResult(columns, warnings, status, ENGINE_ID, ENGINE_VERSION);
+            return new LineageParseResult(
+                    columns,
+                    warnings,
+                    status,
+                    ENGINE_ID,
+                    ENGINE_VERSION,
+                    LineageDialectCompatibility.UNKNOWN
+            );
         } catch (IllegalArgumentException | JSQLParserException ex) {
             return LineageParseResult.failed(ENGINE_ID, ENGINE_VERSION, ex.getMessage());
         }

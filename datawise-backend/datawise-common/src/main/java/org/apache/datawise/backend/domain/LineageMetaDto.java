@@ -6,6 +6,7 @@ public record LineageMetaDto(
         String sqlHash,
         String parsedAt,
         String dialect,
+        LineageDialectCompatibility dialectCompatibility,
         String parser,
         String parserVersion,
         int depth,

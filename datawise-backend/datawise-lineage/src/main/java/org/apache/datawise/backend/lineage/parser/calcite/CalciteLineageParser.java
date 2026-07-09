@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.lineage.parser.calcite;
 
+import org.apache.datawise.backend.domain.LineageDialectCompatibility;
 import org.apache.datawise.backend.lineage.model.LineageParseRequest;
 import org.apache.datawise.backend.lineage.model.LineageParseResult;
 import org.apache.datawise.backend.lineage.spi.SqlLineageParser;
@@ -42,6 +43,11 @@ public class CalciteLineageParser implements SqlLineageParser {
 
     @Override
     public LineageParseResult parse(LineageParseRequest request) {
-        return LineageParseResult.failed(engineId(), engineVersion(), "Calcite parser not yet implemented");
+        return LineageParseResult.failed(
+                engineId(),
+                engineVersion(),
+                LineageDialectCompatibility.UNKNOWN,
+                "Calcite parser not yet implemented"
+        );
     }
 }

@@ -36,6 +36,10 @@
             <artifactId>datawise-database</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.datawise</groupId>
+            <artifactId>datawise-sqlflow</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.github.jsqlparser</groupId>
             <artifactId>jsqlparser</artifactId>
             <version>${jsqlparser.version}</version>

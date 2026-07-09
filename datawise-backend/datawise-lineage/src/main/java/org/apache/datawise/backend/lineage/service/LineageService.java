@@ -215,6 +215,16 @@ public class LineageService {
         );
 
         LineageParseResult parseResult = parserRegistry.parseWithFallback(parseRequest);
+        log.info(
+                "Lineage parse result model={} dbType={} parser={} version={} compatibility={} status={} warnings={}",
+                modelName,
+                dbType,
+                parseResult.engineId(),
+                parseResult.engineVersion(),
+                parseResult.dialectCompatibility(),
+                parseResult.status(),
+                parseResult.warnings().size()
+        );
 
         LineageGraphDto graph = graphBuilder.build(
 
@@ -289,6 +299,16 @@ public class LineageService {
             );
 
             LineageParseResult parseResult = parserRegistry.parseWithFallback(parseRequest);
+            log.info(
+                    "Lineage parse result model={} dbType={} parser={} version={} compatibility={} status={} warnings={}",
+                    modelName,
+                    dbType,
+                    parseResult.engineId(),
+                    parseResult.engineVersion(),
+                    parseResult.dialectCompatibility(),
+                    parseResult.status(),
+                    parseResult.warnings().size()
+            );
 
             LineageGraphDto graph = graphBuilder.build(
 
@@ -349,6 +369,16 @@ public class LineageService {
                     Set.of(normalizeModelName(candidateName))
             );
             LineageParseResult parseResult = parserRegistry.parseWithFallback(parseRequest);
+            log.info(
+                    "Lineage impact parse result model={} dbType={} parser={} version={} compatibility={} status={} warnings={}",
+                    candidateName,
+                    dbType,
+                    parseResult.engineId(),
+                    parseResult.engineVersion(),
+                    parseResult.dialectCompatibility(),
+                    parseResult.status(),
+                    parseResult.warnings().size()
+            );
             if (!LineageReferenceCollector.referencesViewModel(parseResult, targetNormalized)) {
                 continue;
             }

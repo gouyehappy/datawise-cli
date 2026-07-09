@@ -5,6 +5,7 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
 import org.apache.datawise.backend.common.DbType;
+import org.apache.datawise.backend.domain.LineageDialectCompatibility;
 import org.apache.datawise.backend.lineage.model.ColumnLineage;
 import org.apache.datawise.backend.lineage.model.LineageParseRequest;
 import org.apache.datawise.backend.lineage.model.LineageParseResult;
@@ -98,7 +99,14 @@ public class JsqlLineageParser implements SqlLineageParser {
             );
             List<ColumnLineage> columns = analyzer.analyze(select);
             ParseStatus status = warnings.isEmpty() ? ParseStatus.COMPLETE : ParseStatus.PARTIAL;
-            return new LineageParseResult(columns, warnings, status, ENGINE_ID, ENGINE_VERSION);
+            return new LineageParseResult(
+                    columns,
+                    warnings,
+                    status,
+                    ENGINE_ID,
+                    ENGINE_VERSION,
+                    LineageDialectCompatibility.UNKNOWN
+            );
         } catch (JSQLParserException ex) {
             return LineageParseResult.failed(ENGINE_ID, ENGINE_VERSION, ex.getMessage());
         }

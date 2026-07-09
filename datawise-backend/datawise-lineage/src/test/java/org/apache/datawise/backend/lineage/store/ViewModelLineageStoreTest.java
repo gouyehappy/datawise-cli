@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.lineage.store;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.datawise.backend.domain.LineageDialectCompatibility;
 import org.apache.datawise.backend.domain.LineageGraphDto;
 import org.apache.datawise.backend.domain.LineageMetaDto;
 import org.apache.datawise.backend.domain.LineageNodeRefDto;
@@ -73,6 +74,7 @@ class ViewModelLineageStoreTest {
                         sqlHash,
                         Instant.now().toString(),
                         "mysql",
+                        LineageDialectCompatibility.UNKNOWN,
                         "jsqlparser",
                         "5.3",
                         3,
