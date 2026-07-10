@@ -75,7 +75,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConnectionAccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleConnectionAccessDenied(ConnectionAccessDeniedException ex) {
-        ExceptionLogging.warn(log, "ConnectionAccessDeniedException", ex);
+        ExceptionLogging.warn(log, "connection.access.denied", ex);
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.fail(ConnectionAccessDeniedException.CODE));
     }

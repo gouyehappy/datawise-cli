@@ -15,6 +15,11 @@ class ConnectionProbeTargetPolicyTest {
     }
 
     @Test
+    void allowPrivateNetworks_skipsPrivateLiteralCheck() {
+        assertDoesNotThrow(() -> ConnectionProbeTargetPolicy.requireAllowedProbeHost("10.1.2.3", "Host", true));
+    }
+
+    @Test
     void rejectsPrivateIpv4() {
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,

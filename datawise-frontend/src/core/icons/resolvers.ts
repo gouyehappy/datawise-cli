@@ -56,6 +56,7 @@ export function workspaceTabDwIcon(type: WorkspaceTabType): DwIconName {
         case 'kafka-topics':
         case 'kafka-topic':
         case 'kafka-consumer-groups':
+        case 'kafka-table-publish':
             return 'tab-kafka'
         case 'platform_catalog':
             return 'ai'

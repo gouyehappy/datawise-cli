@@ -15,11 +15,12 @@ import {
 const props = defineProps<{
   connectionId: string
   selectedTopic?: string | null
+  /** 嵌入圆角卡片内时去掉外层底色与硬边框 */
+  embedded?: boolean
 }>()
 
 const emit = defineEmits<{
   select: [topic: string]
-  open: [topic: string]
   stats: [payload: { total: number; loaded: number }]
 }>()
 
@@ -140,10 +141,6 @@ function onTopicClick(topic: string) {
   emit('select', topic)
 }
 
-function onTopicDblClick(topic: string) {
-  emit('open', topic)
-}
-
 async function copyTopicName(topic: string, event: Event) {
   event.stopPropagation()
   try {
@@ -169,7 +166,7 @@ defineExpose({refresh: () => loadTopics(true)})
 </script>
 
 <template>
-  <aside class="kafka-topics-browser">
+  <aside class="kafka-topics-browser" :class="{ 'is-embedded': embedded }">
     <div class="kafka-topics-browser__toolbar">
       <form class="kafka-topics-browser__search" @submit.prevent="onSearch">
         <input
@@ -290,7 +287,6 @@ defineExpose({refresh: () => loadTopics(true)})
               role="option"
               :aria-selected="selectedTopic === topic"
               @click="onTopicClick(topic)"
-              @dblclick="onTopicDblClick(topic)"
           >
             <span class="kafka-topics-browser__topic" :title="topic">{{ topic }}</span>
             <button
@@ -326,6 +322,30 @@ defineExpose({refresh: () => loadTopics(true)})
   min-width: 0;
   min-height: 0;
   background: var(--dw-bg-panel);
+}
+
+.kafka-topics-browser.is-embedded {
+  background: transparent;
+}
+
+.kafka-topics-browser.is-embedded .kafka-topics-browser__toolbar {
+  padding: 0 12px 8px;
+  border-bottom: none;
+}
+
+.kafka-topics-browser.is-embedded .kafka-topics-browser__presets,
+.kafka-topics-browser.is-embedded .kafka-topics-browser__prefix-nav {
+  padding: 0 12px;
+}
+
+.kafka-topics-browser.is-embedded .kafka-topics-browser__list {
+  padding: 4px 12px 8px;
+}
+
+.kafka-topics-browser.is-embedded .kafka-topics-browser__footer {
+  padding: 8px 12px 12px;
+  border-top: none;
+  background: color-mix(in srgb, var(--dw-bg-editor) 50%, transparent);
 }
 
 .kafka-topics-browser__toolbar {
@@ -450,7 +470,11 @@ defineExpose({refresh: () => loadTopics(true)})
 
 .kafka-topics-browser__item:hover,
 .kafka-topics-browser__item.is-selected {
-  background: var(--dw-bg-muted);
+  background: color-mix(in srgb, var(--dw-primary) 10%, transparent);
+}
+
+.kafka-topics-browser.is-embedded .kafka-topics-browser__item.is-selected {
+  background: color-mix(in srgb, var(--dw-primary) 14%, transparent);
 }
 
 .kafka-topics-browser__topic {

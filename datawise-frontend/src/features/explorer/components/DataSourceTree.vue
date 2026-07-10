@@ -262,6 +262,7 @@ function displayNodeLabel(node: TreeNode) {
   if (node.type === 'kafka-feature') {
     if (node.meta === 'topics') return t('explorer.kafkaFeatures.topics')
     if (node.meta === 'consumer-groups') return t('explorer.kafkaFeatures.consumerGroups')
+    if (node.meta === 'table-publish') return t('explorer.kafkaFeatures.tablePublish')
   }
   if (node.type === 'load_more') return 'Load more'
   if (node.type === 'platform_feature') {

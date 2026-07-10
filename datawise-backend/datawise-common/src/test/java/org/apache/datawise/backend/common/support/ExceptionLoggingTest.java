@@ -37,16 +37,17 @@ class ExceptionLoggingTest {
         businessLog.setAdditive(false);
         exceptionLog.setAdditive(false);
         try {
-            ExceptionLogging.warn(businessLog, "connection.open", new IllegalArgumentException("bad\ninput"));
+            Exception ex = new IllegalArgumentException("bad\ninput");
+            ExceptionLogging.warn(businessLog, "connection.open", ex);
 
             assertThat(businessAppender.list).hasSize(1);
             assertThat(businessAppender.list.get(0).getFormattedMessage())
-                    .isEqualTo("connection.open | level=warn | errorType=IllegalArgumentException | error=bad input");
+                    .startsWith("connection.open | level=warn | errorType=IllegalArgumentException | error=bad input | at=");
             assertThat(businessAppender.list.get(0).getThrowableProxy()).isNull();
 
             assertThat(exceptionAppender.list).hasSize(1);
             assertThat(exceptionAppender.list.get(0).getFormattedMessage())
-                    .isEqualTo("connection.open | source=BusinessLog | level=warn | errorType=IllegalArgumentException | error=bad input");
+                    .startsWith("connection.open | source=BusinessLog | level=warn | errorType=IllegalArgumentException | error=bad input | at=");
             assertThat(exceptionAppender.list.get(0).getThrowableProxy()).isNotNull();
         } finally {
             businessLog.detachAppender(businessAppender);

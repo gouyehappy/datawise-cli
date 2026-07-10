@@ -1,6 +1,9 @@
 package org.apache.datawise.backend.connector.facade.messagebroker;
 
 import org.apache.datawise.backend.connector.facade.catalog.ConnectorCatalogAccess;
+import org.apache.datawise.backend.connector.operation.ConnectorMessageBrokerOperations;
+import org.apache.datawise.backend.connector.operation.ConnectorMessageBrokerOperations.MessageBrokerProducerCallback;
+import org.apache.datawise.backend.connector.operation.MessageBrokerProducer;
 import org.apache.datawise.backend.domain.KafkaConsumerGroupMetricsDto;
 import org.apache.datawise.backend.domain.KafkaConsumerGroupsResultDto;
 import org.apache.datawise.backend.domain.KafkaMessagesResultDto;
@@ -51,6 +54,25 @@ public class ConnectorMessageBrokerAccess {
         return catalog.resolve(connection).messageBroker().produceMessage(
                 connection, topic, key, value, partition
         );
+    }
+
+    public <T> T withProducer(ConnectionEntity connection, MessageBrokerProducerCallback<T> callback) {
+        ConnectorMessageBrokerOperations broker = catalog.resolve(connection).messageBroker();
+        try {
+            return broker.withProducer(connection, callback);
+        } catch (UnsupportedOperationException ex) {
+            if (!isMissingProducerSession(ex)) {
+                throw ex;
+            }
+            try (MessageBrokerProducer producer = new ProduceMessageProducerAdapter(connection, broker)) {
+                return callback.apply(producer);
+            }
+        }
+    }
+
+    private static boolean isMissingProducerSession(UnsupportedOperationException ex) {
+        String message = ex.getMessage();
+        return message != null && message.contains("Producer session is not supported");
     }
 
     public KafkaConsumerGroupsResultDto listConsumerGroups(

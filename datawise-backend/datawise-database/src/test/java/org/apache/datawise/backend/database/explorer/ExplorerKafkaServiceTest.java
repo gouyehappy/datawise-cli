@@ -3,6 +3,7 @@ package org.apache.datawise.backend.database.explorer;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
 import org.apache.datawise.backend.connector.facade.messagebroker.ConnectorMessageBrokerAccess;
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
+import org.apache.datawise.backend.database.kafka.KafkaTablePublishService;
 import org.apache.datawise.backend.domain.KafkaTopicsResultDto;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,8 @@ class ExplorerKafkaServiceTest {
     private ConnectorFacade connectorFacade;
     @Mock
     private ConnectorMessageBrokerAccess messageBrokerAccess;
+    @Mock
+    private KafkaTablePublishService kafkaTablePublishService;
 
     @InjectMocks
     private ExplorerKafkaService service;

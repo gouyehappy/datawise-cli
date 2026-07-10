@@ -1,6 +1,7 @@
 package org.apache.datawise.backend;
 
 import org.apache.datawise.backend.config.AuthSessionProperties;
+import org.apache.datawise.backend.config.ConnectionProbeProperties;
 import org.apache.datawise.backend.config.DatawiseConfigProperties;
 import org.apache.datawise.backend.config.DatawiseQueryProperties;
 import org.apache.datawise.backend.config.DatawiseWorkspaceProperties;
@@ -25,6 +26,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         DatawiseWorkspaceProperties.class,
         DatawiseConfigProperties.class,
         AuthSessionProperties.class,
+        ConnectionProbeProperties.class,
         AiRagProperties.class,
         AiAnalysisProperties.class,
         AiPythonProperties.class,

@@ -25,6 +25,8 @@ import org.apache.datawise.backend.domain.KafkaProduceResultDto;
 import org.apache.datawise.backend.domain.KafkaTopicDetailDto;
 import org.apache.datawise.backend.domain.KafkaTopicsResultDto;
 import org.apache.datawise.backend.domain.ProduceKafkaMessageRequest;
+import org.apache.datawise.backend.domain.PublishTableToKafkaRequest;
+import org.apache.datawise.backend.domain.PublishTableToKafkaResult;
 import org.apache.datawise.backend.domain.ExecuteRedisCommandRequest;
 import org.apache.datawise.backend.domain.RedisCommandResultDto;
 import org.apache.datawise.backend.domain.RedisKeyDetailDto;
@@ -226,6 +228,14 @@ public class ExplorerController {
                 request.value(),
                 request.partition()
         ));
+    }
+
+    @PostMapping("/connections/{connectionId}/kafka/publish-table")
+    public ApiResponse<PublishTableToKafkaResult> publishTableToKafka(
+            @PathVariable String connectionId,
+            @RequestBody PublishTableToKafkaRequest request
+    ) {
+        return ApiResponse.ok(kafkaService.publishTable(connectionId, request));
     }
 
     @GetMapping("/connections/{connectionId}/kafka/consumer-groups")

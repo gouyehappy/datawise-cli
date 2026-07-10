@@ -23,13 +23,15 @@ public final class ExceptionLogging {
         }
         String errorType = errorType(ex);
         String errorMessage = errorMessage(ex);
-        log.warn("{} | level=warn | errorType={} | error={}", context, errorType, errorMessage);
+        String at = stackLocation(ex);
+        log.warn("{} | level=warn | errorType={} | error={} | at={}", context, errorType, errorMessage, at);
         EXCEPTION.warn(
-                "{} | source={} | level=warn | errorType={} | error={}",
+                "{} | source={} | level=warn | errorType={} | error={} | at={}",
                 context,
                 sourceName(log),
                 errorType,
                 errorMessage,
+                at,
                 ex
         );
     }
@@ -40,13 +42,15 @@ public final class ExceptionLogging {
         }
         String errorType = errorType(ex);
         String errorMessage = errorMessage(ex);
-        log.error("{} | level=error | errorType={} | error={}", context, errorType, errorMessage);
+        String at = stackLocation(ex);
+        log.error("{} | level=error | errorType={} | error={} | at={}", context, errorType, errorMessage, at);
         EXCEPTION.error(
-                "{} | source={} | level=error | errorType={} | error={}",
+                "{} | source={} | level=error | errorType={} | error={} | at={}",
                 context,
                 sourceName(log),
                 errorType,
                 errorMessage,
+                at,
                 ex
         );
     }
@@ -82,5 +86,43 @@ public final class ExceptionLogging {
             return value;
         }
         return value.substring(0, maxLen) + "...";
+    }
+
+    private static String stackLocation(Throwable ex) {
+        StackTraceElement[] frames = ex.getStackTrace();
+        if (frames == null) {
+            return "unknown";
+        }
+        for (StackTraceElement frame : frames) {
+            if (frame == null || shouldSkipStackFrame(frame.getClassName())) {
+                continue;
+            }
+            return shortenClassName(frame.getClassName())
+                    + "." + frame.getMethodName()
+                    + ":" + frame.getLineNumber();
+        }
+        return "unknown";
+    }
+
+    private static boolean shouldSkipStackFrame(String className) {
+        if (className == null || className.isBlank()) {
+            return true;
+        }
+        return className.startsWith("java.")
+                || className.startsWith("javax.")
+                || className.startsWith("jakarta.")
+                || className.startsWith("jdk.")
+                || className.startsWith("sun.")
+                || className.startsWith("org.springframework.")
+                || className.contains("ExceptionLogging")
+                || className.contains("GlobalExceptionHandler");
+    }
+
+    private static String shortenClassName(String className) {
+        String prefix = "org.apache.datawise.";
+        if (className.startsWith(prefix)) {
+            return className.substring(prefix.length());
+        }
+        return className;
     }
 }

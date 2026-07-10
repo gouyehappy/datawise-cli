@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.database.connection;
 
+import org.apache.datawise.backend.config.ConnectionProbeProperties;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
 import org.apache.datawise.backend.connector.facade.catalog.ConnectorCatalogAccess;
 import org.apache.datawise.backend.domain.ConnectionConfig;
@@ -39,7 +40,9 @@ class ConnectionTestServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ConnectionTestService(connectorFacade, datasourceCatalogService, jdbcDriverService);
+        ConnectionProbeProperties probeProperties = new ConnectionProbeProperties();
+        probeProperties.setAllowPrivateNetworks(false);
+        service = new ConnectionTestService(connectorFacade, datasourceCatalogService, jdbcDriverService, probeProperties);
     }
 
     @Test
@@ -82,7 +85,7 @@ class ConnectionTestServiceTest {
     }
 
     @Test
-    void test_rejectsPrivateHost() {
+    void test_rejectsPrivateHostWhenRestricted() {
         ConnectionConfig config = baseConfig();
         config.setHost("10.0.0.5");
 
@@ -91,6 +94,30 @@ class ConnectionTestServiceTest {
         assertFalse(result.ok());
         assertTrue(result.message().contains("private or link-local"));
         verify(catalogAccess, never()).testConnection(any());
+    }
+
+    @Test
+    void test_allowsPrivateHostWhenConfigured() throws Exception {
+        ConnectionProbeProperties probeProperties = new ConnectionProbeProperties();
+        probeProperties.setAllowPrivateNetworks(true);
+        ConnectionTestService permissiveService = new ConnectionTestService(
+                connectorFacade,
+                datasourceCatalogService,
+                jdbcDriverService,
+                probeProperties
+        );
+        ConnectionConfig config = baseConfig();
+        config.setHost("10.15.34.56");
+        config.setDbType("kafka");
+        config.setPort("9092");
+        when(connectorFacade.catalog()).thenReturn(catalogAccess);
+        when(datasourceCatalogService.findById("kafka")).thenReturn(Optional.of(kafkaDatasource()));
+        when(catalogAccess.testConnection(any())).thenReturn(new ConnectionTestResult(true, "OK", 12));
+
+        ConnectionTestResult result = permissiveService.test(config);
+
+        assertTrue(result.ok());
+        verify(catalogAccess).testConnection(any());
     }
 
     @Test
@@ -161,6 +188,20 @@ class ConnectionTestServiceTest {
                 "com.mysql.cj.jdbc.Driver",
                 List.of("JDBC"),
                 "`"
+        );
+    }
+
+    private static DatasourceDefinitionDto kafkaDatasource() {
+        return new DatasourceDefinitionDto(
+                "kafka",
+                "Kafka",
+                false,
+                "9092",
+                false,
+                null,
+                null,
+                List.of("MESSAGE_BROKER"),
+                null
         );
     }
 }

@@ -60,14 +60,16 @@ public class ConnectionAccessService {
     }
 
     public void requireDmlAccess(Long userId, String connectionId) {
-        if (!resolveAccess(userId, connectionId).allowsDml()) {
-            throw new ConnectionAccessDeniedException(connectionId);
+        ConnectionAccessLevel actual = resolveAccess(userId, connectionId);
+        if (!actual.allowsDml()) {
+            deny(userId, connectionId, "DML", actual, "requireDmlAccess");
         }
     }
 
     public void requireDdlAccess(Long userId, String connectionId) {
-        if (!resolveAccess(userId, connectionId).allowsDdl()) {
-            throw new ConnectionAccessDeniedException(connectionId);
+        ConnectionAccessLevel actual = resolveAccess(userId, connectionId);
+        if (!actual.allowsDdl()) {
+            deny(userId, connectionId, "DDL", actual, "requireDdlAccess");
         }
     }
 
@@ -83,13 +85,23 @@ public class ConnectionAccessService {
         ConnectionAccessLevel level = resolveAccess(userId, connectionId);
         if (SqlWriteClassifier.requiresDdlAccess(sql)) {
             if (!level.allowsDdl()) {
-                throw new ConnectionAccessDeniedException(connectionId);
+                deny(userId, connectionId, "DDL", level, "requireSqlWriteAccess:ddl");
             }
             return;
         }
         if (!level.allowsDml()) {
-            throw new ConnectionAccessDeniedException(connectionId);
+            deny(userId, connectionId, "DML", level, "requireSqlWriteAccess:dml");
         }
+    }
+
+    private static void deny(
+            Long userId,
+            String connectionId,
+            String requiredAccess,
+            ConnectionAccessLevel actualAccess,
+            String operation
+    ) {
+        throw new ConnectionAccessDeniedException(userId, connectionId, requiredAccess, actualAccess, operation);
     }
 
     public Set<String> listRestrictedConnectionIds(Long userId) {

@@ -13,8 +13,15 @@ public final class ConnectionProbeTargetPolicy {
     }
 
     public static void requireAllowedProbeHost(String host, String label) {
-        if (host == null || host.isBlank()) {
-            throw new IllegalArgumentException(label + " is required");
+        requireAllowedProbeHost(host, label, false);
+    }
+
+    public static void requireAllowedProbeHost(String host, String label, boolean allowPrivateNetworks) {
+        if (allowPrivateNetworks) {
+            if (host == null || host.isBlank()) {
+                throw new IllegalArgumentException(label + " is required");
+            }
+            return;
         }
         String trimmed = host.trim();
         if (isLocalhost(trimmed)) {

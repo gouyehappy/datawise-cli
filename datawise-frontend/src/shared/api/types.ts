@@ -816,6 +816,12 @@ export interface ExplorerApi {
         payload: { key?: string; value: string; partition?: number },
     ): Promise<import('@/features/explorer/services/kafka-topic.service').KafkaProduceResult>
 
+    publishTableToKafka(
+        connectionId: string,
+        payload: import('@/features/explorer/services/kafka-topic.service').PublishTableToKafkaRequest,
+        options?: { silent?: boolean },
+    ): Promise<import('@/features/explorer/services/kafka-topic.service').PublishTableToKafkaResult>
+
     fetchKafkaConsumerGroups(
         connectionId: string,
         options?: { pattern?: string; limit?: number },

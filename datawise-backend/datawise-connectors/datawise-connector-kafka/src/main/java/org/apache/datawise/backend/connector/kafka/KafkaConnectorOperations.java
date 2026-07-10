@@ -4,6 +4,8 @@ import org.apache.datawise.backend.connector.ConnectorCapability;
 import org.apache.datawise.backend.connector.operation.ConnectorCatalogOperations;
 import org.apache.datawise.backend.connector.operation.ConnectorConnectionOperations;
 import org.apache.datawise.backend.connector.operation.ConnectorMessageBrokerOperations;
+import org.apache.datawise.backend.connector.operation.ConnectorMessageBrokerOperations.MessageBrokerProducerCallback;
+import org.apache.datawise.backend.connector.operation.MessageBrokerProducer;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
 import org.apache.datawise.backend.domain.KafkaConsumerGroupMetricsDto;
 import org.apache.datawise.backend.domain.KafkaConsumerGroupsResultDto;
@@ -13,6 +15,7 @@ import org.apache.datawise.backend.domain.KafkaTopicDetailDto;
 import org.apache.datawise.backend.domain.KafkaTopicsResultDto;
 import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.kafka.KafkaConnectionSupport;
+import org.apache.datawise.backend.kafka.KafkaMessageProducer;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.apache.datawise.backend.connector.kafka.support.KafkaConnectionErrors;
@@ -91,6 +94,13 @@ public class KafkaConnectorOperations
             Integer partition
     ) {
         return KafkaConnectionSupport.produceMessage(connection, topic, key, value, partition);
+    }
+
+    @Override
+    public <T> T withProducer(ConnectionEntity connection, MessageBrokerProducerCallback<T> callback) {
+        try (MessageBrokerProducer producer = KafkaMessageProducer.openSession(connection)) {
+            return callback.apply(producer);
+        }
     }
 
     @Override

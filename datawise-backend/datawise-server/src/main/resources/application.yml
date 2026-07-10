@@ -42,6 +42,10 @@ datawise:
       # 登录 token 默认有效 1 小时；可在设置页覆盖 config/auth-session.json
       ttl-minutes: 60
       sliding-renewal: true
+  security:
+    connection-probe:
+      # 允许连接测试探测内网地址（10.x / 192.168.x 等）；内网部署保持 true
+      allow-private-networks: true
   logging:
     # 分类日志目录（见 logback-spring.xml）
     dir: config/logs

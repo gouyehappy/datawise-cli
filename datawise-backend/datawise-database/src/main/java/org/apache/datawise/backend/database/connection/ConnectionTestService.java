@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.database.connection;
 
 import org.apache.datawise.backend.common.support.ConnectionProbeTargetPolicy;
+import org.apache.datawise.backend.config.ConnectionProbeProperties;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
 import org.apache.datawise.backend.domain.ConnectionConfig;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
@@ -21,15 +22,18 @@ public class ConnectionTestService {
     private final ConnectorFacade connectorFacade;
     private final DatasourceCatalogService datasourceCatalogService;
     private final JdbcDriverService jdbcDriverService;
+    private final ConnectionProbeProperties probeProperties;
 
     public ConnectionTestService(
             ConnectorFacade connectorFacade,
             DatasourceCatalogService datasourceCatalogService,
-            JdbcDriverService jdbcDriverService
+            JdbcDriverService jdbcDriverService,
+            ConnectionProbeProperties probeProperties
     ) {
         this.connectorFacade = connectorFacade;
         this.datasourceCatalogService = datasourceCatalogService;
         this.jdbcDriverService = jdbcDriverService;
+        this.probeProperties = probeProperties;
     }
 
     public ConnectionTestResult test(ConnectionConfig config) {
@@ -37,7 +41,11 @@ public class ConnectionTestService {
             return new ConnectionTestResult(false, "Host is required", 0);
         }
         try {
-            ConnectionProbeTargetPolicy.requireAllowedProbeHost(config.getHost(), "Host");
+            ConnectionProbeTargetPolicy.requireAllowedProbeHost(
+                    config.getHost(),
+                    "Host",
+                    probeProperties.isAllowPrivateNetworks()
+            );
         } catch (IllegalArgumentException ex) {
             return new ConnectionTestResult(false, ex.getMessage(), 0);
         }
@@ -67,7 +75,11 @@ public class ConnectionTestService {
 
         try {
             if (Boolean.TRUE.equals(config.getSshEnabled()) && config.getSshHost() != null && !config.getSshHost().isBlank()) {
-                ConnectionProbeTargetPolicy.requireAllowedProbeHost(config.getSshHost(), "SSH host");
+                ConnectionProbeTargetPolicy.requireAllowedProbeHost(
+                        config.getSshHost(),
+                        "SSH host",
+                        probeProperties.isAllowPrivateNetworks()
+                );
             }
         } catch (IllegalArgumentException ex) {
             return new ConnectionTestResult(false, ex.getMessage(), 0);

@@ -18,6 +18,8 @@ const props = defineProps<{
     connectionId: string
     database?: number
     selectedKey?: string | null
+    /** 嵌入圆角卡片内时去掉外层底色与硬边框 */
+    embedded?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -176,7 +178,7 @@ defineExpose({refresh: () => scanKeys(true)})
 </script>
 
 <template>
-  <aside class="redis-keys-browser">
+  <aside class="redis-keys-browser" :class="{ 'is-embedded': embedded }">
     <div class="redis-keys-browser__toolbar">
       <form class="redis-keys-browser__search" @submit.prevent="onSearch">
         <input
@@ -335,6 +337,31 @@ defineExpose({refresh: () => scanKeys(true)})
   background: var(--dw-bg-panel);
 }
 
+.redis-keys-browser.is-embedded {
+  background: transparent;
+}
+
+.redis-keys-browser.is-embedded .redis-keys-browser__toolbar {
+  padding: 0 12px 8px;
+  border-bottom: none;
+}
+
+.redis-keys-browser.is-embedded .redis-keys-browser__presets,
+.redis-keys-browser.is-embedded .redis-keys-browser__prefix-nav {
+  padding: 0 12px;
+  border-bottom: none;
+}
+
+.redis-keys-browser.is-embedded .redis-keys-browser__list {
+  padding: 0;
+}
+
+.redis-keys-browser.is-embedded .redis-keys-browser__footer {
+  padding: 8px 12px 12px;
+  border-top: none;
+  background: color-mix(in srgb, var(--dw-bg-editor) 50%, transparent);
+}
+
 .redis-keys-browser__toolbar {
   display: flex;
   flex-direction: column;
@@ -462,6 +489,10 @@ defineExpose({refresh: () => scanKeys(true)})
 .redis-keys-browser__item:hover,
 .redis-keys-browser__item.is-selected {
   background: color-mix(in srgb, var(--dw-primary) 12%, transparent);
+}
+
+.redis-keys-browser.is-embedded .redis-keys-browser__item.is-selected {
+  background: color-mix(in srgb, var(--dw-primary) 14%, transparent);
 }
 
 .redis-keys-browser__key {

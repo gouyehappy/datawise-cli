@@ -38,4 +38,16 @@ public interface ConnectorMessageBrokerOperations {
             String groupId,
             String topic
     );
+
+    /**
+     * Opens a producer session, runs the callback, then closes the producer (flush included).
+     */
+    default <T> T withProducer(ConnectionEntity connection, MessageBrokerProducerCallback<T> callback) {
+        throw new UnsupportedOperationException("Producer session is not supported for this connection type");
+    }
+
+    @FunctionalInterface
+    interface MessageBrokerProducerCallback<T> {
+        T apply(MessageBrokerProducer producer);
+    }
 }

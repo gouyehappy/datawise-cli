@@ -8,7 +8,10 @@ import org.apache.datawise.backend.domain.KafkaMessagesResultDto;
 import org.apache.datawise.backend.domain.KafkaProduceResultDto;
 import org.apache.datawise.backend.domain.KafkaTopicDetailDto;
 import org.apache.datawise.backend.domain.KafkaTopicsResultDto;
+import org.apache.datawise.backend.domain.PublishTableToKafkaRequest;
+import org.apache.datawise.backend.domain.PublishTableToKafkaResult;
 import org.apache.datawise.backend.model.ConnectionEntity;
+import org.apache.datawise.backend.database.kafka.KafkaTablePublishService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -19,13 +22,16 @@ public class ExplorerKafkaService {
 
     private final ConnectionExecutionContext connectionContext;
     private final ConnectorFacade connectorFacade;
+    private final KafkaTablePublishService kafkaTablePublishService;
 
     public ExplorerKafkaService(
             ConnectionExecutionContext connectionContext,
-            ConnectorFacade connectorFacade
+            ConnectorFacade connectorFacade,
+            KafkaTablePublishService kafkaTablePublishService
     ) {
         this.connectionContext = connectionContext;
         this.connectorFacade = connectorFacade;
+        this.kafkaTablePublishService = kafkaTablePublishService;
     }
 
     public KafkaTopicsResultDto listTopics(String connectionId, String pattern, Integer limit) {
@@ -66,6 +72,10 @@ public class ExplorerKafkaService {
         return connectorFacade.messageBroker().produceMessage(
                 connection, topic, key, value, partition
         );
+    }
+
+    public PublishTableToKafkaResult publishTable(String kafkaConnectionId, PublishTableToKafkaRequest request) {
+        return kafkaTablePublishService.publish(kafkaConnectionId, request);
     }
 
     public KafkaConsumerGroupsResultDto listConsumerGroups(

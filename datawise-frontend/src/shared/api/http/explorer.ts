@@ -153,6 +153,9 @@ export function createHttpExplorerApi(): ExplorerApi {
         produceKafkaMessage: async (connectionId, topic, payload) =>
             postJson(API_PATHS.explorer.kafkaProduce(connectionId, topic), payload),
 
+        publishTableToKafka: async (connectionId, payload, options) =>
+            postJson(API_PATHS.explorer.kafkaPublishTable(connectionId), payload, options),
+
         fetchKafkaConsumerGroups: async (connectionId, options) =>
             getJson(API_PATHS.explorer.kafkaConsumerGroups(connectionId), {
                 pattern: options?.pattern,

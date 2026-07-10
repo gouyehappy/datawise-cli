@@ -156,17 +156,24 @@ watch(
     </header>
 
     <div class="redis-workbench__body">
-      <RedisKeysBrowser
-          v-if="!isCommandView"
-          ref="keysBrowserRef"
-          class="redis-workbench__keys"
-          :connection-id="connectionId"
-          :database="redisDb"
-          :selected-key="selectedKey"
-          @select="onSelectKey"
-          @open="onOpenKey"
-          @stats="onStats"
-      />
+      <div v-if="!isCommandView" class="redis-workbench__left">
+        <section class="redis-workbench__keys-card">
+          <header class="redis-workbench__keys-head">
+            <h3>{{ t('explorer.redisFeatures.keys') }}</h3>
+          </header>
+          <RedisKeysBrowser
+              ref="keysBrowserRef"
+              class="redis-workbench__keys"
+              :connection-id="connectionId"
+              :database="redisDb"
+              :selected-key="selectedKey"
+              embedded
+              @select="onSelectKey"
+              @open="onOpenKey"
+              @stats="onStats"
+          />
+        </section>
+      </div>
 
       <div class="redis-workbench__right" :class="{'redis-workbench__right--command': isCommandView}">
         <RedisKeyDetailPanel
@@ -296,12 +303,44 @@ watch(
 .redis-workbench__body {
   display: grid;
   grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
+  column-gap: 10px;
   flex: 1;
   min-height: 0;
 }
 
+.redis-workbench__left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 0 10px 10px;
+}
+
+.redis-workbench__keys-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--dw-border);
+  border-radius: 8px;
+  background: var(--dw-bg-panel);
+  overflow: hidden;
+}
+
+.redis-workbench__keys-head {
+  flex-shrink: 0;
+  padding: 12px 12px 0;
+}
+
+.redis-workbench__keys-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .redis-workbench__keys {
-  border-right: 1px solid var(--dw-border);
+  flex: 1;
+  min-height: 0;
 }
 
 .redis-workbench__right {
@@ -309,7 +348,7 @@ watch(
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  padding: 10px;
+  padding: 10px 10px 10px 0;
   gap: 10px;
 }
 
@@ -409,12 +448,29 @@ watch(
 }
 
 .redis-workbench__right--command {
-  padding: 0;
+  padding: 10px;
 }
 
 .redis-workbench__right--command .redis-workbench__command-wrap {
-  border: none;
-  border-radius: 0;
+  border: 1px solid var(--dw-border);
+  border-radius: 8px;
   height: 100%;
+}
+
+@media (max-width: 900px) {
+  .redis-workbench__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(220px, 38%) minmax(0, 1fr);
+    column-gap: 0;
+    row-gap: 10px;
+  }
+
+  .redis-workbench__left {
+    padding: 10px 10px 0;
+  }
+
+  .redis-workbench__right {
+    padding: 0 10px 10px;
+  }
 }
 </style>

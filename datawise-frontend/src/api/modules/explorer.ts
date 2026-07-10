@@ -46,6 +46,11 @@ export const explorerApi = {
         topic: string,
         payload: { key?: string; value: string; partition?: number },
     ) => api.explorer.produceKafkaMessage(connectionId, topic, payload),
+    publishTableToKafka: (
+        connectionId: string,
+        payload: import('@/features/explorer/services/kafka-topic.service').PublishTableToKafkaRequest,
+        options?: { silent?: boolean },
+    ) => api.explorer.publishTableToKafka(connectionId, payload, options),
     fetchKafkaConsumerGroups: (
         connectionId: string,
         options?: { pattern?: string; limit?: number },

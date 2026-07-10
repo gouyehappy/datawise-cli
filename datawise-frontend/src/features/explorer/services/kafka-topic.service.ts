@@ -36,6 +36,26 @@ export interface KafkaProduceResult {
     offset: number
 }
 
+export interface PublishTableToKafkaRequest {
+    sourceConnectionId: string
+    sourceDatabase?: string | null
+    tableName: string
+    topic: string
+    keyColumn?: string | null
+    maxMessages?: number | null
+    intervalMs?: number | null
+    partition?: number | null
+}
+
+export interface PublishTableToKafkaResult {
+    messagesSent: number
+    messagesFailed: number
+    durationMs: number
+    stopReason: string
+    lastError?: string | null
+    lastProduce?: KafkaProduceResult | null
+}
+
 export interface KafkaConsumerGroupSummary {
     groupId: string
     state: string

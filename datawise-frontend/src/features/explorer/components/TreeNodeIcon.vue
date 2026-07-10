@@ -38,7 +38,7 @@ function resolveTreeIcon(type: TreeNodeType, expanded?: boolean, feature?: strin
   if (type === 'console') return 'console'
   if (type === 'kafka-topic') return 'tab-kafka'
   if (type === 'kafka-feature') {
-    return feature === 'consumer-groups' ? 'users' : 'tab-kafka'
+    return feature === 'consumer-groups' ? 'users' : feature === 'table-publish' ? 'export' : 'tab-kafka'
   }
   if (type === 'redis-browser' || type === 'redis-feature') {
     return feature === 'command' ? 'console' : 'search'

@@ -410,6 +410,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         connectionId: string
         connectionName?: string
         explorerNodeId?: string
+        topic?: string
     }) {
         const existing = tabs.value.find(
             (tab) =>
@@ -417,6 +418,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
                 && tab.connectionId === options.connectionId,
         )
         if (existing) {
+            if (options.topic) {
+                updateTabContext(existing.id, {kafkaTopic: options.topic})
+            }
             activeTabId.value = existing.id
             return existing.id
         }
@@ -425,12 +429,13 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         const id = nextTabId('kafka-topics')
         tabs.value.push({
             id,
-            title: label ? t('explorer.kafkaTopics.tabTitle', {name: label}) : t('explorer.kafkaTopics.title'),
+            title: label ? t('explorer.kafkaConsole.tabTitle', {name: label}) : t('explorer.kafkaConsole.title'),
             type: 'kafka-topics',
             closable: true,
             connectionId: options.connectionId,
             dbType: 'kafka',
             explorerNodeId: options.explorerNodeId,
+            kafkaTopic: options.topic,
         })
         activeTabId.value = id
         return id
@@ -442,30 +447,12 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         explorerNodeId?: string
         topic: string
     }) {
-        const existing = tabs.value.find(
-            (tab) =>
-                tab.type === 'kafka-topic'
-                && tab.connectionId === options.connectionId
-                && tab.kafkaTopic === options.topic,
-        )
-        if (existing) {
-            activeTabId.value = existing.id
-            return existing.id
-        }
-
-        const id = nextTabId('kafka-topic')
-        tabs.value.push({
-            id,
-            title: t('explorer.kafkaTopic.tabTitle', {topic: options.topic}),
-            type: 'kafka-topic',
-            closable: true,
+        return openKafkaTopics({
             connectionId: options.connectionId,
-            dbType: 'kafka',
+            connectionName: options.connectionName,
             explorerNodeId: options.explorerNodeId,
-            kafkaTopic: options.topic,
+            topic: options.topic,
         })
-        activeTabId.value = id
-        return id
     }
 
     function openKafkaConsumerGroups(options: {
@@ -498,6 +485,68 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             dbType: 'kafka',
             explorerNodeId: options.explorerNodeId,
             kafkaTopic: options.topic,
+        })
+        activeTabId.value = id
+        return id
+    }
+
+    function openKafkaTablePublish(options: {
+        kafkaConnectionId?: string
+        kafkaConnectionName?: string
+        explorerNodeId?: string
+        lockKafkaConnection?: boolean
+        source?: {
+            connectionId: string
+            connectionLabel?: string
+            database: string
+            tableName: string
+        }
+    }) {
+        const source = options.source
+        const kafkaId = options.kafkaConnectionId
+
+        const existing = tabs.value.find((tab) => {
+            if (tab.type !== 'kafka-table-publish') return false
+            if (source) {
+                return tab.kafkaPublishSourceConnectionId === source.connectionId
+                    && tab.database === source.database
+                    && tab.tableName === source.tableName
+            }
+            if (kafkaId) {
+                return tab.connectionId === kafkaId && !tab.kafkaPublishSourceConnectionId
+            }
+            return false
+        })
+
+        if (existing) {
+            if (kafkaId) existing.connectionId = kafkaId
+            if (options.lockKafkaConnection) existing.kafkaPublishLockConnection = true
+            activeTabId.value = existing.id
+            return existing.id
+        }
+
+        const kafkaLabel = options.kafkaConnectionName
+            ?? (kafkaId ? resolveConnectionLabel(kafkaId) : undefined)
+
+        const title = source?.tableName
+            ? t('explorer.kafkaTablePublish.tabTitleTable', {table: source.tableName})
+            : kafkaLabel
+                ? t('explorer.kafkaTablePublish.tabTitle', {name: kafkaLabel})
+                : t('explorer.kafkaTablePublish.title')
+
+        const id = nextTabId('kafka-table-publish')
+        tabs.value.push({
+            id,
+            title,
+            type: 'kafka-table-publish',
+            closable: true,
+            connectionId: kafkaId,
+            dbType: 'kafka',
+            explorerNodeId: options.explorerNodeId,
+            kafkaPublishSourceConnectionId: source?.connectionId,
+            kafkaPublishLockConnection: options.lockKafkaConnection ?? false,
+            database: source?.database,
+            tableName: source?.tableName,
         })
         activeTabId.value = id
         return id
@@ -1580,6 +1629,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (type === 'kafka-topics') return 'kafka-topics'
         if (type === 'kafka-topic') return 'kafka-topic'
         if (type === 'kafka-consumer-groups') return 'kafka-consumer-groups'
+        if (type === 'kafka-table-publish') return 'kafka-table-publish'
         if (type === 'platform_catalog') return 'platform-catalog'
         if (type === 'view_model_lineage') return 'lineage'
         return 'tab'
@@ -1669,6 +1719,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         openKafkaTopics,
         openKafkaTopic,
         openKafkaConsumerGroups,
+        openKafkaTablePublish,
         closeTab,
         closeConsoleTabsForSqlFile,
         closeTableTabs,

@@ -168,6 +168,7 @@ export type WorkspaceTabType =
     | 'kafka-topics'
     | 'kafka-topic'
     | 'kafka-consumer-groups'
+    | 'kafka-table-publish'
     | 'platform_catalog'
 
 export interface WorkspaceTab {
@@ -226,6 +227,10 @@ export interface WorkspaceTab {
     redisKey?: string
     /** Kafka 工作台当前选中的 Topic */
     kafkaTopic?: string
+    /** Kafka 表数据发布：源连接 ID */
+    kafkaPublishSourceConnectionId?: string
+    /** Kafka 表数据发布：锁定目标 Kafka 连接（从 Kafka 数据源发起） */
+    kafkaPublishLockConnection?: boolean
     /** Redis 工作台初始视图 */
     redisView?: 'keys' | 'command'
     /** Explorer AI 平台能力目录 Tab */

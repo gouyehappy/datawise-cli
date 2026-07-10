@@ -203,6 +203,8 @@ export const API_PATHS = {
             `/api/explorer/connections/${encodeURIComponent(connectionId)}/kafka/topics/${encodeURIComponent(topic)}/messages`,
         kafkaProduce: (connectionId: string, topic: string) =>
             `/api/explorer/connections/${encodeURIComponent(connectionId)}/kafka/topics/${encodeURIComponent(topic)}/messages`,
+        kafkaPublishTable: (connectionId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/kafka/publish-table`,
         kafkaConsumerGroups: (connectionId: string) =>
             `/api/explorer/connections/${encodeURIComponent(connectionId)}/kafka/consumer-groups`,
         kafkaConsumerGroupMetrics: (connectionId: string, groupId: string) =>

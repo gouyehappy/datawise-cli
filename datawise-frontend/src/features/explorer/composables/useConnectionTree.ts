@@ -57,6 +57,9 @@ import {
 } from '@/features/explorer/services/table-migration.service'
 import {parseRedisKeyFromNodeId} from '@/features/explorer/services/redis-key.service'
 import {parseKafkaTopicFromNodeId} from '@/features/explorer/services/kafka-topic.service'
+import {
+    resolveKafkaTablePublishContext,
+} from '@/features/explorer/services/kafka-table-publish.service'
 import {parseRedisFeatureId} from '@/features/explorer/services/redis-feature-tree.service'
 import {parseKafkaFeatureId} from '@/features/explorer/services/kafka-feature-tree.service'
 import {isPinnableExplorerNode} from '@/features/explorer/services/explorer-pinned-sort.service'
@@ -427,6 +430,8 @@ export function useConnectionTree() {
                     connectionName,
                     explorerNodeId: connectionId,
                 })
+            } else if (feature === 'table-publish') {
+                openKafkaTablePublishFromKafkaConnection(connectionId)
             }
             return
         }
@@ -482,6 +487,7 @@ export function useConnectionTree() {
             return prependConnectionLifecycleMenu(withMove([
                 {id: 'open-kafka-topics', label: t('explorer.context.openKafkaTopics'), icon: 'open'},
                 {id: 'open-kafka-consumer-groups', label: t('explorer.context.openKafkaConsumerGroups'), icon: 'open'},
+                {id: 'publish-table-data', label: t('explorer.context.publishTableData'), icon: 'export'},
                 {id: 'edit', label: t('explorer.context.editConnection'), icon: 'edit', shortcut: 'F4'},
                 {id: 'move', label: t('explorer.context.moveConnection'), icon: 'file'},
                 {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
@@ -653,6 +659,38 @@ export function useConnectionTree() {
         } finally {
             sqlExportWizardExporting.value = false
         }
+    }
+
+    function openKafkaTablePublishWizard(node: TreeNode) {
+        const connectionId = findConnectionId(node)
+        const ctx = resolveKafkaTablePublishContext(
+            explorer.tree,
+            node,
+            connectionId ? findConnectionLabel(connectionId) : undefined,
+        )
+        if (!ctx) {
+            layout.showToast(t('explorer.kafkaTablePublish.contextMissing'))
+            return
+        }
+        layout.setModule('database')
+        workspace.openKafkaTablePublish({
+            source: {
+                connectionId: ctx.sourceConnectionId,
+                connectionLabel: ctx.sourceConnectionLabel,
+                database: ctx.sourceDatabase,
+                tableName: ctx.tableName,
+            },
+        })
+    }
+
+    function openKafkaTablePublishFromKafkaConnection(kafkaConnectionId: string) {
+        layout.setModule('database')
+        workspace.openKafkaTablePublish({
+            kafkaConnectionId,
+            kafkaConnectionName: findConnectionLabel(kafkaConnectionId),
+            explorerNodeId: kafkaConnectionId,
+            lockKafkaConnection: true,
+        })
     }
 
     function openTableMigrationFromNode(node: TreeNode) {
@@ -1089,6 +1127,12 @@ export function useConnectionTree() {
             return
         }
 
+        if (id === 'publish-table-data' && node.type === 'connection' && node.dbType === 'kafka') {
+            openKafkaTablePublishFromKafkaConnection(node.id)
+            closeMenu()
+            return
+        }
+
         if (id === 'kafka-console' && node.type === 'connection' && node.dbType === 'kafka') {
             workspace.openKafkaTopics({
                 connectionId: node.id,
@@ -1101,6 +1145,12 @@ export function useConnectionTree() {
 
         if (id === 'export-wizard' && (node.type === 'table' || node.type === 'database')) {
             openSqlExportWizard(node)
+            closeMenu()
+            return
+        }
+
+        if (id === 'publish-to-kafka' && node.type === 'table') {
+            openKafkaTablePublishWizard(node)
             closeMenu()
             return
         }

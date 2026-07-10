@@ -41,6 +41,7 @@ export function getContextMenuForNodeType(type: string, t: ComposerTranslation):
         {id: 'import', label: c('importData'), icon: 'import'},
         {id: 'migrate-data', label: c('migrateData'), icon: 'import'},
         {id: 'export-data', label: c('exportData'), icon: 'export'},
+        {id: 'publish-to-kafka', label: c('publishToKafka'), icon: 'export'},
         {id: 'divider-4', label: '', divider: true},
         {id: 'delete', label: c('deleteTable'), icon: 'delete', shortcut: 'Delete', danger: true},
     ]

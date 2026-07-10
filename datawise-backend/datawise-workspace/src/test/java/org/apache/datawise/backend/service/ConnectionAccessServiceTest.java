@@ -109,7 +109,15 @@ class ConnectionAccessServiceTest {
     void requireDmlAccessThrowsForReadOnly() {
         seedTeam("team-1", List.of("conn-1"), Map.of("conn-1", "readonly"), 1L);
         seedMember("team-1", 2L, "member");
-        assertThrows(ConnectionAccessDeniedException.class, () -> service.requireDmlAccess(2L, "conn-1"));
+        ConnectionAccessDeniedException ex = assertThrows(
+                ConnectionAccessDeniedException.class,
+                () -> service.requireDmlAccess(2L, "conn-1")
+        );
+        assertEquals("conn-1", ex.getConnectionId());
+        assertEquals(2L, ex.getUserId());
+        assertEquals("DML", ex.getRequiredAccess());
+        assertEquals("READONLY", ex.getActualAccess());
+        assertEquals("requireDmlAccess", ex.getOperation());
     }
 
     @Test
