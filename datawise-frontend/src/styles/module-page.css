@@ -627,6 +627,48 @@
     color: var(--dw-primary);
 }
 
+.module-shell__nav-branch {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.module-shell__nav-item--branch {
+    grid-template-columns: 18px minmax(0, 1fr) 14px;
+}
+
+.module-shell__nav-item-chevron {
+    color: var(--dw-text-muted);
+    font-size: 14px;
+    line-height: 1;
+    transform: rotate(90deg);
+    transition: transform 0.12s ease;
+}
+
+.module-shell__nav-item--branch.is-expanded .module-shell__nav-item-chevron {
+    transform: rotate(270deg);
+}
+
+.module-shell__nav-children {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: 12px;
+    padding-left: 10px;
+    border-left: 1px solid var(--dw-border-light);
+}
+
+.module-shell__nav-item--child {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: calc(var(--mp-btn-h) - 4px);
+    padding-left: 12px;
+    font-size: calc(var(--mp-sub) - 1px);
+}
+
+.module-shell__nav-item--child.is-active {
+    box-shadow: inset 2px 0 0 var(--dw-primary);
+}
+
 .module-shell__back {
     margin-top: clamp(8px, 1vmin, 12px);
     height: var(--mp-btn-h);
@@ -664,18 +706,7 @@
     min-width: 0;
 }
 
-/* Settings 子面板内标题与区块 — 详见 settings-panel.css */
-
-.module-shell__main .basic-settings,
-.module-shell__main .editor-settings,
-.module-shell__main .profile-settings,
-.module-shell__main .layout-settings,
-.module-shell__main .shortcut-settings,
-.module-shell__main .sql-shortcuts-settings,
-.module-shell__main .about-settings,
-.module-shell__main .data-agent-settings {
-    max-width: clamp(480px, 58vw, 760px);
-}
+/* Settings 子面板宽度由 settings-page（SettingsPageShell）统一控制，见 settings-panel.css */
 
 /* ---- 氛围页（Dashboard / Plugin / Team 等滚动内容页） ---- */
 

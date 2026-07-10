@@ -6,6 +6,7 @@ import {UserResource} from '@/features/auth/types/user-resource.types'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
 import SettingsSwitch from '@/core/components/SettingsSwitch.vue'
 import AppBrandLogo from '@/features/layout/components/AppBrandLogo.vue'
+import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import {APP_VERSION} from '@/features/settings/services/about-settings.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useUpdateSettingsStore} from '@/features/settings/stores/update-settings'
@@ -38,67 +39,69 @@ function patchUpdatePrefs(patch: Partial<typeof updateSettings.preferences>) {
 </script>
 
 <template>
-  <div class="about-settings">
-    <header class="panel-head">
-      <h2>{{ t('settings.about.title') }}</h2>
-      <p>{{ t('settings.about.subtitle') }}</p>
-    </header>
-
-    <section class="about-card">
-      <div class="about-brand">
-        <AppBrandLogo size="lg"/>
-        <div>
-          <h3>{{ t('settings.about.versionLabel', {version: APP_VERSION}) }}</h3>
-          <p class="latest-line">
-            {{ t('settings.about.latestVersion', {version: updateSettings.lastCheck?.latestVersion ?? APP_VERSION}) }}
-          </p>
+  <SettingsPageShell
+      :title="t('settings.about.title')"
+      :subtitle="t('settings.about.subtitle')"
+      :readonly="readOnly"
+      :readonly-hint="hint"
+  >
+    <div class="settings-groups">
+      <section class="about-card">
+        <div class="about-brand">
+          <AppBrandLogo size="lg"/>
+          <div>
+            <h3>{{ t('settings.about.versionLabel', {version: APP_VERSION}) }}</h3>
+            <p class="latest-line">
+              {{ t('settings.about.latestVersion', {version: updateSettings.lastCheck?.latestVersion ?? APP_VERSION}) }}
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div class="about-actions">
-        <DwButton
-            variant="primary"
-            :loading="updateSettings.checking"
-            :disabled="updateSettings.checking"
-            @click="handleCheckUpdate"
-        >
-          {{ updateSettings.checking ? t('settings.about.checking') : t('settings.about.checkUpdate') }}
-        </DwButton>
-        <DwButton variant="secondary" @click="showChangelog = true">
-          {{ t('settings.about.changelog') }}
-        </DwButton>
-      </div>
-    </section>
+        <div class="about-actions">
+          <DwButton
+              variant="primary"
+              :loading="updateSettings.checking"
+              :disabled="updateSettings.checking"
+              @click="handleCheckUpdate"
+          >
+            {{ updateSettings.checking ? t('settings.about.checking') : t('settings.about.checkUpdate') }}
+          </DwButton>
+          <DwButton variant="secondary" @click="showChangelog = true">
+            {{ t('settings.about.changelog') }}
+          </DwButton>
+        </div>
+      </section>
 
-    <section class="setting-block update-section">
-      <h3>{{ t('settings.about.softwareUpdate') }}</h3>
-      <p class="update-intro">{{ t('settings.about.intro') }}</p>
+      <section class="setting-block update-section">
+        <h3>{{ t('settings.about.softwareUpdate') }}</h3>
+        <p class="update-intro">{{ t('settings.about.intro') }}</p>
 
-      <div class="update-block">
-        <h4>{{ t('settings.about.autoUpdateTitle') }}</h4>
-        <p>{{ t('settings.about.autoUpdateDesc') }}</p>
-      </div>
+        <div class="update-block">
+          <h4>{{ t('settings.about.autoUpdateTitle') }}</h4>
+          <p>{{ t('settings.about.autoUpdateDesc') }}</p>
+        </div>
 
-      <div class="update-block">
-        <h4>{{ t('settings.about.networkTitle') }}</h4>
-        <p>{{ t('settings.about.networkDesc') }}</p>
-      </div>
+        <div class="update-block">
+          <h4>{{ t('settings.about.networkTitle') }}</h4>
+          <p>{{ t('settings.about.networkDesc') }}</p>
+        </div>
 
-      <div class="update-options">
-        <SettingsSwitch
-            :model-value="updateSettings.preferences.notifyOnUpdate"
-            :label="t('settings.about.notifyOnUpdate')"
-            :disabled="readOnly"
-            @update:model-value="patchUpdatePrefs({ notifyOnUpdate: $event })"
-        />
-        <SettingsSwitch
-            :model-value="updateSettings.preferences.autoDownload"
-            :label="t('settings.about.autoDownload')"
-            :disabled="readOnly"
-            @update:model-value="patchUpdatePrefs({ autoDownload: $event })"
-        />
-      </div>
-    </section>
+        <div class="update-options">
+          <SettingsSwitch
+              :model-value="updateSettings.preferences.notifyOnUpdate"
+              :label="t('settings.about.notifyOnUpdate')"
+              :disabled="readOnly"
+              @update:model-value="patchUpdatePrefs({ notifyOnUpdate: $event })"
+          />
+          <SettingsSwitch
+              :model-value="updateSettings.preferences.autoDownload"
+              :label="t('settings.about.autoDownload')"
+              :disabled="readOnly"
+              @update:model-value="patchUpdatePrefs({ autoDownload: $event })"
+          />
+        </div>
+      </section>
+    </div>
 
     <AppModal
         :open="showChangelog"
@@ -116,11 +119,5 @@ function patchUpdatePrefs(patch: Partial<typeof updateSettings.preferences>) {
         </li>
       </ul>
     </AppModal>
-  </div>
+  </SettingsPageShell>
 </template>
-
-<style scoped>
-.about-settings {
-  max-width: clamp(520px, 58vw, 640px);
-}
-</style>

@@ -161,6 +161,8 @@ export default {
         rollbackDone: 'Transaction rolled back',
         autocommitOn: 'Autocommit enabled',
         autocommitOff: 'Autocommit disabled',
+        dmlAccessDenied: 'This connection is read-only. Manual transactions are not available.',
+        unsavedConnectionHint: 'Save the connection before using manual transactions.',
     },
     cancelExecution: {
         cancelQuery: 'Cancel query',

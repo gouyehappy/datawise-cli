@@ -9,6 +9,10 @@ import {
 import {DEFAULT_PORTS} from '../constants/db-types'
 import {buildJdbcUrl} from './jdbc-url'
 
+export function isUnsavedConnectionId(connectionId: string | undefined): boolean {
+    return Boolean(connectionId?.trim().startsWith('new-'))
+}
+
 export function createDefaultConnection(
     dbType: DbType,
     catalogItem?: DatasourceDefinition | null,

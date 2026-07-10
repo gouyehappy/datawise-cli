@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** 编辑器内嵌设置抽屉：遮罩 + {@link SqlEditorSettingsShell} */
-import {computed, ref, toRef, watch} from 'vue'
+import {computed, toRef} from 'vue'
 import SqlEditorSettingsShell from '@sql-editor/components/settings/SqlEditorSettingsShell.vue'
 import {useSqlEditorShortcutsController} from '@sql-editor/composables/useSqlEditorShortcutsController'
 import {resolveEditorUiTone} from '@sql-editor/utils/editor-ui-tone'
@@ -22,14 +22,6 @@ const controller = useSqlEditorShortcutsController(props.runtime, {
 })
 
 const uiTone = computed(() => resolveEditorUiTone(props.theme))
-const shellKey = ref(0)
-
-watch(
-    () => props.open,
-    (open) => {
-      if (open) shellKey.value += 1
-    },
-)
 
 function onLayerClick() {
   close()
@@ -42,13 +34,12 @@ function close() {
 
 <template>
   <div
-      v-if="open"
+      v-show="open"
       class="sql-settings-layer"
       :data-tone="uiTone"
       @click.self="onLayerClick"
   >
     <SqlEditorSettingsShell
-        :key="shellKey"
         layout="drawer"
         show-close
         :theme="theme"

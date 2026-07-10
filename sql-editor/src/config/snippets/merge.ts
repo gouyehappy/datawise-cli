@@ -7,6 +7,7 @@ import {
     normalizeSnippetConfig,
 } from '@sql-editor/config/snippets/normalize'
 import {sqlEditorShortcutsLayerHasOverrides} from '@sql-editor/config/snippets/layer-overrides'
+import {resolvePrimaryCompletionSlot} from '@sql-editor/constants/completion-slots'
 import type {
     SqlEditorShortcutsLayer,
     SqlEditorShortcutsSettings,
@@ -24,6 +25,50 @@ import {
     normalizeSqlEditorAiLayer,
     resolveSqlEditorAiSettings
 } from '@sql-editor/ai/settings'
+
+/** 片段在合并时的身份键：主槽位 + label（与补全侧按 label 去重一致） */
+export function snippetIdentityKey(
+    snippet: Pick<SqlSnippetConfig, 'label' | 'slots'> & {id?: string},
+): string {
+    const label = String(snippet.label ?? snippet.id ?? '').trim().toLowerCase()
+    if (!label) return ''
+    const slot = resolvePrimaryCompletionSlot(Array.isArray(snippet.slots) ? snippet.slots : [])
+    return `${slot}:${label}`
+}
+
+function findSnippetMergeIndex(list: readonly SqlSnippetConfig[], candidate: SqlSnippetConfig): number {
+    const identity = snippetIdentityKey(candidate)
+    return list.findIndex((item) =>
+        item.id === candidate.id || (identity !== '' && snippetIdentityKey(item) === identity),
+    )
+}
+
+/**
+ * 设置页展示用：若某 label 已有上下文槽位片段，则隐藏同名的 global/statement_start 冗余项。
+ * 保留完整 SELECT 语句模板（如 global.cnt）。
+ */
+export function filterRedundantGlobalSnippetsForDisplay(
+    snippets: readonly SqlSnippetConfig[],
+): SqlSnippetConfig[] {
+    const contextualLabels = new Set<string>()
+    for (const item of snippets) {
+        const slot = resolvePrimaryCompletionSlot(item.slots)
+        if (slot !== 'statement_start') {
+            contextualLabels.add(item.label.trim().toLowerCase())
+        }
+    }
+
+    return snippets.filter((item) => {
+        const slot = resolvePrimaryCompletionSlot(item.slots)
+        if (slot !== 'statement_start') return true
+
+        const label = item.label.trim().toLowerCase()
+        if (!contextualLabels.has(label)) return true
+        if (!item.id.startsWith('global.')) return true
+        if (/^\s*SELECT\b/is.test(item.insertText)) return true
+        return false
+    })
+}
 
 /** 空层，用于「仅个人」或重置 */
 export function createEmptySqlEditorShortcutsLayer(): SqlEditorShortcutsLayer {
@@ -64,18 +109,19 @@ export function applySqlEditorShortcutsOverlay(
 
     let snippets = base.snippets
     if (layer.snippets) {
-        const byId = new Map(base.snippets.map((s) => [s.id, s]))
+        const list = [...base.snippets]
         for (const patch of layer.snippets) {
             const id = String(patch.id ?? patch.label).trim()
             if (!id) continue
-            const prev = byId.get(id)
-            if (prev) {
-                byId.set(id, {...prev, ...patch, id})
+            const normalized = normalizeSnippetConfig({...patch, id}, list.length)
+            const idx = findSnippetMergeIndex(list, normalized)
+            if (idx >= 0) {
+                list[idx] = {...list[idx], ...normalized, id: normalized.id}
             } else {
-                byId.set(id, normalizeSnippetConfig({...patch, id}, byId.size))
+                list.push(normalized)
             }
         }
-        snippets = [...byId.values()]
+        snippets = list
     }
 
     let quickChips = base.quickChips ?? []

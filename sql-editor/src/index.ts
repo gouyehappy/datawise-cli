@@ -20,6 +20,7 @@ export {default as SqlEditor} from './components/SqlEditor.vue'
 export {default as SqlEditorHintBar} from './components/SqlEditorHintBar.vue'
 export {default as SqlEditorSettingsDrawer} from './components/SqlEditorSettingsDrawer.vue'
 export {default as SqlEditorSettingsShell} from './components/settings/SqlEditorSettingsShell.vue'
+export {default as SqlSnippetsEditorWorkbench} from './components/settings/SqlSnippetsEditorWorkbench.vue'
 
 // --- 插件（推荐入口）---
 export {installSqlEditorPlugin, type SqlEditorPluginOptions} from './plugin'

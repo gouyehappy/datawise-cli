@@ -14,8 +14,8 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  openSettings: []
-  hideHintBar: []
+  'open-settings': []
+  'hide-hint-bar': []
 }>()
 
 const {t} = useSqlEditorI18n()
@@ -37,10 +37,10 @@ const {t} = useSqlEditorI18n()
     <button
         v-if="showHide"
         type="button"
-        class="hint-settings-btn"
+        class="hint-settings-btn hint-settings-btn--raised"
         :title="t('hintbar.hide_bar')"
         :aria-label="t('hintbar.hide_bar')"
-        @click="emit('hideHintBar')"
+        @click.stop="emit('hide-hint-bar')"
     >
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
         <path d="M4 10.5 8 6.5 12 10.5" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>
@@ -49,10 +49,10 @@ const {t} = useSqlEditorI18n()
     <button
         v-if="showSettings"
         type="button"
-        class="hint-settings-btn"
+        class="hint-settings-btn hint-settings-btn--raised"
         :title="t('hintbar.open_settings')"
         :aria-label="t('hintbar.open_settings')"
-        @click="emit('openSettings')"
+        @click.stop="emit('open-settings')"
     >
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
         <path
@@ -78,6 +78,8 @@ const {t} = useSqlEditorI18n()
 }
 
 .hint-settings-btn {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;

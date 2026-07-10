@@ -16,6 +16,7 @@ import {
   groupItemsByCompletionSlot,
   resolvePrimaryCompletionSlot,
 } from '@sql-editor/constants/completion-slots'
+import {filterRedundantGlobalSnippetsForDisplay} from '@sql-editor/config/snippets/merge'
 import SettingsSnippetsPanel from '@sql-editor/components/settings/SettingsSnippetsPanel.vue'
 import SettingsBehaviorPanel from '@sql-editor/components/settings/SettingsBehaviorPanel.vue'
 import SettingsKeybindingsPanel from '@sql-editor/components/settings/SettingsKeybindingsPanel.vue'
@@ -36,28 +37,41 @@ import {
     resolveSqlEditorTheme,
 } from '@sql-editor/utils/resolve-editor-theme'
 
+type SettingsTabId = 'behavior' | 'keybindings' | 'quick' | 'snippets'
+
 const props = withDefaults(
     defineProps<{
       controller: SqlEditorShortcutsController
       layout?: 'drawer' | 'page'
       showClose?: boolean
+      showNav?: boolean
+      initialTab?: SettingsTabId
+      visibleTabs?: SettingsTabId[]
     }>(),
     {
       layout: 'drawer',
       showClose: false,
+      showNav: true,
+      initialTab: 'behavior',
     },
 )
 
 const emit = defineEmits<{
   close: []
+  'update:activeTab': [tab: SettingsTabId]
 }>()
 
 const globalConfig = inject(SQL_EDITOR_CONFIG_KEY, null)
 
 const {t} = useSqlEditorI18n()
 
-const activeTab = ref<'behavior' | 'keybindings' | 'quick' | 'snippets'>('behavior')
+const activeTab = ref<SettingsTabId>(props.initialTab)
 const resetConfirmOpen = ref(false)
+
+function setActiveTab(tab: SettingsTabId) {
+  activeTab.value = tab
+  emit('update:activeTab', tab)
+}
 
 const controller = props.controller
 
@@ -94,6 +108,7 @@ const themeOptions = computed(() =>
     ),
 )
 const uiTone = computed(() => resolveEditorUiTone(resolvedTheme.value))
+const shellTone = computed(() => (props.layout === 'page' ? 'light' : uiTone.value))
 
 function onSetTheme(theme: string) {
   const normalized = normalizeSqlEditorThemeId(theme)
@@ -119,14 +134,36 @@ function patchFormatter(patch: Partial<SqlEditorFormatterSettings>) {
   })
 }
 
-const tabs = computed(() => [
+const allTabs = computed(() => [
   {id: 'behavior' as const, label: t('settings.tab.behavior'), short: t('settings.tab.behavior_short')},
   {id: 'keybindings' as const, label: t('settings.tab.keybindings'), short: t('settings.tab.keybindings_short')},
   {id: 'quick' as const, label: t('settings.tab.quick'), short: t('settings.tab.quick_short')},
   {id: 'snippets' as const, label: t('settings.tab.snippets'), short: t('settings.tab.snippets_short')},
 ])
 
+const tabs = computed(() => {
+  const allowed = props.visibleTabs?.length ? new Set(props.visibleTabs) : null
+  if (!allowed) return allTabs.value
+  return allTabs.value.filter((tab) => allowed.has(tab.id))
+})
+
+const showTabNav = computed(() => props.showNav && tabs.value.length > 1)
+
 const activeTabMeta = computed(() => tabs.value.find((tab) => tab.id === activeTab.value) ?? tabs.value[0])
+
+function syncActiveTab() {
+  if (!tabs.value.length) return
+  if (!tabs.value.some((tab) => tab.id === activeTab.value)) {
+    activeTab.value = tabs.value[0].id
+  }
+}
+
+watch(() => props.initialTab, (tab) => {
+  activeTab.value = tab
+  syncActiveTab()
+})
+
+watch(tabs, syncActiveTab, {immediate: true})
 const keybindings = computed(() => settings.value.keybindings ?? [])
 
 const {
@@ -154,7 +191,7 @@ const groupedQuickChips = computed(() =>
 
 const groupedSnippets = computed(() =>
     groupItemsByCompletionSlot(
-        settings.value.snippets,
+        filterRedundantGlobalSnippetsForDisplay(settings.value.snippets),
         (item) => resolvePrimaryCompletionSlot(item.slots),
         (a, b) => a.label.localeCompare(b.label),
     ),
@@ -235,8 +272,8 @@ function cancelAddSnippetForm() {
 <template>
   <aside
       class="sql-settings-shell"
-      :class="[`sql-settings-shell--${layout}`, { 'is-confirming': resetConfirmOpen }]"
-      :data-tone="uiTone"
+      :class="[`sql-settings-shell--${layout}`, { 'is-confirming': resetConfirmOpen, 'sql-settings-shell--with-nav': showTabNav }]"
+      :data-tone="shellTone"
       role="region"
       :aria-label="t('settings.title')"
   >
@@ -258,7 +295,7 @@ function cancelAddSnippetForm() {
     </header>
 
     <div class="panel-shell">
-      <nav class="panel-nav" role="tablist" :aria-label="t('settings.title')">
+      <nav v-if="showTabNav" class="panel-nav" role="tablist" :aria-label="t('settings.title')">
         <button
             v-for="tab in tabs"
             :key="tab.id"
@@ -268,7 +305,7 @@ function cancelAddSnippetForm() {
             :class="{ active: activeTab === tab.id }"
             :aria-selected="activeTab === tab.id"
             :title="tab.label"
-            @click="activeTab = tab.id"
+            @click="setActiveTab(tab.id)"
         >
             <span class="nav-icon" aria-hidden="true">
               <svg v-if="tab.id === 'behavior'" viewBox="0 0 16 16" width="14" height="14">
@@ -294,8 +331,8 @@ function cancelAddSnippetForm() {
         </button>
       </nav>
 
-      <div class="panel-main">
-        <div class="panel-section-head">{{ activeTabMeta.label }}</div>
+      <div class="panel-main" :class="{'panel-main--solo': !showTabNav}">
+        <div v-if="showTabNav" class="panel-section-head">{{ activeTabMeta.label }}</div>
 
         <div class="panel-body">
           <SettingsBehaviorPanel
@@ -420,9 +457,13 @@ function cancelAddSnippetForm() {
 
 .sql-settings-shell--page {
   width: 100%;
-  max-width: 960px;
-  min-height: 480px;
+  max-width: none;
+  min-height: clamp(420px, 50vh, 560px);
   font-size: 12px;
+}
+
+.sql-settings-shell--page:not(.sql-settings-shell--with-nav) .panel-main {
+  border-radius: 0;
 }
 
 .sql-settings-shell[data-tone='dark'] {

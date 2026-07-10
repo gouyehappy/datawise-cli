@@ -19,6 +19,8 @@ export {
     resolveSqlEditorShortcutsLayers,
     toExportableSqlEditorShortcutsSettings,
     resolveSqlSnippetSource,
+    snippetIdentityKey,
+    filterRedundantGlobalSnippetsForDisplay,
 } from '@sql-editor/config/snippets/merge'
 
 export {sqlEditorShortcutsLayerHasOverrides} from '@sql-editor/config/snippets/layer-overrides'

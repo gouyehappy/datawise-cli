@@ -61,6 +61,8 @@ export default {
     test: '测试连接',
     testSuccess: '{message}（{latency}ms）',
     saveFailed: '保存失败',
+    saveAccessDenied: '无法保存此连接：你没有修改权限。请新建自己的连接，或联系团队管理员（团队共享 / 旧版连接可能无法直接编辑）。',
+    deleteAccessDenied: '无法删除此连接：你没有删除权限。只能删除自己创建的连接；团队共享或旧版连接请联系管理员处理。',
     saveSuccess: '连接已保存',
     savingHint: '正在保存并同步连接配置…',
     updateSuccess: '连接已更新',

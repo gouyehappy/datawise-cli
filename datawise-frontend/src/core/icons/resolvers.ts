@@ -13,6 +13,7 @@ export function settingsSectionDwIcon(section: SettingsSection): DwIconName {
         profile: 'settings-profile',
         editor: 'settings-editor',
         sqlEditor: 'settings-sql-editor',
+        sqlSnippets: 'settings-sql-editor',
         shortcuts: 'settings-shortcuts',
         plugins: 'settings-plugins',
         ai: 'settings-ai',

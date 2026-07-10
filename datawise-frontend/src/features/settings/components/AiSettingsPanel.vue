@@ -24,6 +24,9 @@ import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
+import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
+import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
+import SettingsSegmentTabs from '@/features/settings/components/SettingsSegmentTabs.vue'
 import {DwButton, DwInput, DwSecretInput, FormField, StatusPill} from '@/core/components'
 import type {
   AiEmbeddingProfile,
@@ -91,6 +94,14 @@ const filterTabs = computed(() => [
   {id: 'chat' as const, label: t('settings.ai.modelKindChat'), count: chatProfiles.value.length},
   {id: 'embedding' as const, label: t('settings.ai.modelKindEmbedding'), count: embeddingProfiles.value.length},
 ])
+
+const filterSegmentTabs = computed(() =>
+    filterTabs.value.map((tab) => ({
+      id: tab.id,
+      label: tab.label,
+      count: tab.count,
+    })),
+)
 
 const listItems = computed<ModelListItem[]>(() => {
   const items: ModelListItem[] = []
@@ -431,33 +442,29 @@ async function runEmbeddingTest() {
 </script>
 
 <template>
-  <div class="ai-settings">
-    <template v-if="viewMode === 'list'">
-      <header class="panel-head ai-settings__head">
-        <div class="panel-head__copy">
-          <h2>{{ t('settings.ai.title') }}</h2>
-          <p>{{ t('settings.ai.subtitleList') }}</p>
-        </div>
-      </header>
+  <SettingsPageShell
+      v-if="viewMode === 'list'"
+      :title="t('settings.ai.title')"
+      :subtitle="t('settings.ai.subtitleList')"
+      :readonly="readOnly"
+      :readonly-hint="hint"
+  >
+    <template #tips>
+      <SettingsTipsCard
+          :title="t('settings.ai.title')"
+          :content="t('settings.ai.storageNoteShort')"
+          icon="feedback"
+      />
+    </template>
 
-      <p v-if="readOnly" class="guest-notice">{{ hint }}</p>
-
-      <div class="ai-list-shell">
+    <div class="ai-list-shell">
         <div class="ai-list-shell__toolbar">
-          <nav class="ai-filter-tabs" role="tablist" :aria-label="t('settings.ai.modelKindGroup')">
-            <button
-                v-for="tab in filterTabs"
-                :key="tab.id"
-                class="ai-filter-tabs__btn"
-                :class="{'is-active': filterKind === tab.id}"
-                type="button"
-                role="tab"
-                :aria-selected="filterKind === tab.id"
-                @click="filterKind = tab.id"
-            >
-              {{ tab.label }}<span class="ai-filter-tabs__count">({{ tab.count }})</span>
-            </button>
-          </nav>
+          <SettingsSegmentTabs
+              v-model="filterKind"
+              variant="inline"
+              :tabs="filterSegmentTabs"
+              :aria-label="t('settings.ai.modelKindGroup')"
+          />
 
           <div v-if="showProfileSearch" class="ai-list-toolbar">
             <DwInput
@@ -468,8 +475,6 @@ async function runEmbeddingTest() {
             />
           </div>
         </div>
-
-        <p class="ai-list-note">{{ t('settings.ai.storageNoteShort') }}</p>
 
         <div class="ai-model-list" role="list">
           <div v-if="!listItems.length" class="ai-model-list__empty">
@@ -518,18 +523,21 @@ async function runEmbeddingTest() {
           </button>
         </div>
       </div>
-    </template>
+  </SettingsPageShell>
 
-    <template v-else>
-      <div class="ai-edit-panel" :class="{'is-readonly': readOnly}">
+  <SettingsPageShell
+      v-else
+      embedded
+      :readonly="readOnly"
+      :readonly-hint="hint"
+  >
+    <div class="ai-edit-panel">
         <header class="ai-edit-panel__head">
           <button class="ai-back-link" type="button" @click="backToList">
             <DwIcon name="chevron-left" size="sm" :stroke-width="1.5"/>
             {{ t('settings.ai.backToList') }}
           </button>
         </header>
-
-        <p v-if="readOnly" class="guest-notice">{{ hint }}</p>
 
         <div v-if="isEditingChat && chatDraft" class="ai-edit-card">
           <div class="ai-edit-card__hero">
@@ -817,7 +825,6 @@ async function runEmbeddingTest() {
           <DwButton variant="ghost" @click="backToList">{{ t('settings.ai.cancel') }}</DwButton>
           <DwButton variant="primary" :loading="saving" @click="saveProfile">{{ t('settings.ai.save') }}</DwButton>
         </footer>
-      </div>
-    </template>
-  </div>
+    </div>
+  </SettingsPageShell>
 </template>

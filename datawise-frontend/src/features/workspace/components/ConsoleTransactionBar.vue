@@ -3,6 +3,7 @@ import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {usePopoverEscape} from '@/core/composables/usePopoverEscape'
 import {DwIcon} from '@/core/icons'
+import {isUnsavedConnectionId} from '@/features/connection/utils/connection-defaults'
 import {useConsoleTransaction} from '@/features/workspace/composables/useConsoleTransaction'
 import {isManualTransactionMode} from '@/features/workspace/services/transaction-mode.service'
 
@@ -42,9 +43,27 @@ const compactStatusLabel = computed(() => {
 
 const statusTone = computed<'idle' | 'manual' | 'pending' | 'disabled'>(() => {
   if (!props.connectionId) return 'disabled'
+  if (props.canManage === false) return 'disabled'
   if (isPending.value) return 'pending'
   if (isManual.value) return 'manual'
   return 'idle'
+})
+
+const triggerTitle = computed(() => {
+  if (!props.connectionId) return t('console.transaction.noConnection')
+  if (props.canManage === false) {
+    return isUnsavedConnectionId(props.connectionId)
+        ? t('console.transaction.unsavedConnectionHint')
+        : t('console.transaction.dmlAccessDenied')
+  }
+  return `${t('console.transaction.menuTitle')} · ${statusLabel.value}`
+})
+
+const manualModeDisabledHint = computed(() => {
+  if (props.canManage !== false) return ''
+  return isUnsavedConnectionId(props.connectionId)
+      ? t('console.transaction.unsavedConnectionHint')
+      : t('console.transaction.dmlAccessDenied')
 })
 
 function closeMenu() {
@@ -78,7 +97,7 @@ usePopoverEscape(open, closeMenu)
         class="txn-trigger"
         type="button"
         :disabled="!connectionId || transaction.loading.value || canManage === false"
-        :title="`${t('console.transaction.menuTitle')} · ${statusLabel}`"
+        :title="triggerTitle"
         @click="toggleMenu"
     >
       <span class="txn-dot" aria-hidden="true"/>
@@ -90,7 +109,7 @@ usePopoverEscape(open, closeMenu)
       <button
           class="txn-quick-btn txn-quick-btn--commit"
           type="button"
-          :disabled="!transaction.canCommit() || transaction.loading.value"
+          :disabled="!transaction.canCommit() || transaction.loading.value || canManage === false"
           @click="transaction.commit()"
       >
         {{ t('console.transaction.commit') }}
@@ -98,7 +117,7 @@ usePopoverEscape(open, closeMenu)
       <button
           class="txn-quick-btn txn-quick-btn--rollback"
           type="button"
-          :disabled="!transaction.canRollback() || transaction.loading.value"
+          :disabled="!transaction.canRollback() || transaction.loading.value || canManage === false"
           @click="transaction.rollback()"
       >
         {{ t('console.transaction.rollback') }}
@@ -114,7 +133,7 @@ usePopoverEscape(open, closeMenu)
       <button
           class="txn-item"
           type="button"
-          :disabled="!transaction.canBegin() || transaction.loading.value"
+          :disabled="!transaction.canBegin() || transaction.loading.value || canManage === false"
           @click="runAction(transaction.begin)"
       >
         <span class="txn-item-label">{{ t('console.transaction.begin') }}</span>
@@ -123,7 +142,7 @@ usePopoverEscape(open, closeMenu)
       <button
           class="txn-item"
           type="button"
-          :disabled="!transaction.canCommit() || transaction.loading.value"
+          :disabled="!transaction.canCommit() || transaction.loading.value || canManage === false"
           @click="runAction(transaction.commit)"
       >
         <span class="txn-item-label">{{ t('console.transaction.commit') }}</span>
@@ -132,7 +151,7 @@ usePopoverEscape(open, closeMenu)
       <button
           class="txn-item"
           type="button"
-          :disabled="!transaction.canRollback() || transaction.loading.value"
+          :disabled="!transaction.canRollback() || transaction.loading.value || canManage === false"
           @click="runAction(transaction.rollback)"
       >
         <span class="txn-item-label">{{ t('console.transaction.rollback') }}</span>
@@ -163,7 +182,8 @@ usePopoverEscape(open, closeMenu)
           class="txn-mode"
           type="button"
           :class="{ active: !transaction.status.value.autocommit }"
-          :disabled="transaction.loading.value"
+          :disabled="transaction.loading.value || canManage === false"
+          :title="manualModeDisabledHint || undefined"
           @click="runAction(() => {
             if (transaction.status.value.autocommit) transaction.toggleAutocommit()
           })"

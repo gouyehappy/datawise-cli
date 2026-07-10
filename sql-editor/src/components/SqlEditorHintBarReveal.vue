@@ -62,15 +62,9 @@ const {t} = useSqlEditorI18n()
   color: var(--dw-text-muted, #777);
   cursor: pointer;
   box-shadow: 0 1px 4px color-mix(in srgb, #000 8%, transparent);
-  opacity: 0;
-  transform: translateY(-3px);
-  transition: opacity 0.14s ease, transform 0.14s ease, color 0.12s ease, background 0.12s ease;
-}
-
-.sql-editor-hint-reveal:hover .sql-editor-hint-reveal__btn,
-.sql-editor-hint-reveal:focus-within .sql-editor-hint-reveal__btn {
   opacity: 1;
   transform: translateY(0);
+  transition: color 0.12s ease, background 0.12s ease;
 }
 
 .sql-editor-hint-reveal__btn:hover {

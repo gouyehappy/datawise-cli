@@ -7,6 +7,7 @@ import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useToastStore} from '@/features/layout/stores/toast-store'
 import ProfileEditDialog from '@/features/settings/components/ProfileEditDialog.vue'
 import ChangePasswordDialog from '@/features/settings/components/ChangePasswordDialog.vue'
+import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 
 const {t} = useI18n()
 const layout = useLayoutStore()
@@ -66,52 +67,52 @@ async function saveSessionPolicy() {
 </script>
 
 <template>
-  <div class="profile-settings">
-    <header class="panel-head">
-      <h2>{{ t('settings.profile.title') }}</h2>
-      <p>{{ t('settings.profile.subtitle') }}</p>
-    </header>
+  <SettingsPageShell
+      :title="t('settings.profile.title')"
+      :subtitle="t('settings.profile.subtitle')"
+  >
+    <div class="settings-groups profile-settings">
+      <section class="profile-card">
+        <div class="avatar">{{ layout.profileName.charAt(0) }}</div>
+        <div class="info">
+          <div class="name">{{ layout.profileName }}</div>
+          <div class="email">{{ layout.profileEmail }}</div>
+        </div>
+      </section>
 
-    <div class="profile-card">
-      <div class="avatar">{{ layout.profileName.charAt(0) }}</div>
-      <div class="info">
-        <div class="name">{{ layout.profileName }}</div>
-        <div class="email">{{ layout.profileEmail }}</div>
+      <div class="actions">
+        <button class="action-btn" type="button" @click="editProfile">{{ t('profile.editProfile') }}</button>
+        <button v-if="!auth.isGuest" class="action-btn" type="button" @click="changePassword">{{ t('profile.changePassword') }}</button>
       </div>
-    </div>
 
-    <div class="actions">
-      <button class="action-btn" type="button" @click="editProfile">{{ t('profile.editProfile') }}</button>
-      <button v-if="!auth.isGuest" class="action-btn" type="button" @click="changePassword">{{ t('profile.changePassword') }}</button>
+      <section v-if="!auth.isGuest" class="setting-block session-policy">
+        <h3>{{ t('settings.profile.sessionPolicyTitle') }}</h3>
+        <p class="session-policy__hint hint">{{ t('settings.profile.sessionPolicyHint') }}</p>
+        <label class="session-policy__field">
+          <span>{{ t('settings.profile.sessionTtlMinutes') }}</span>
+          <input
+              v-model.number="sessionTtlMinutes"
+              class="dw-input"
+              type="number"
+              min="5"
+              max="1440"
+              step="5"
+          />
+        </label>
+        <label class="session-policy__checkbox">
+          <input v-model="sessionSlidingRenewal" type="checkbox"/>
+          <span>{{ t('settings.profile.sessionSlidingRenewal') }}</span>
+        </label>
+        <button
+            class="action-btn"
+            type="button"
+            :disabled="savingSessionPolicy"
+            @click="saveSessionPolicy"
+        >
+          {{ savingSessionPolicy ? '…' : t('settings.profile.sessionPolicySave') }}
+        </button>
+      </section>
     </div>
-
-    <section v-if="!auth.isGuest" class="setting-block session-policy">
-      <h3>{{ t('settings.profile.sessionPolicyTitle') }}</h3>
-      <p class="session-policy__hint hint">{{ t('settings.profile.sessionPolicyHint') }}</p>
-      <label class="session-policy__field">
-        <span>{{ t('settings.profile.sessionTtlMinutes') }}</span>
-        <input
-            v-model.number="sessionTtlMinutes"
-            class="dw-input"
-            type="number"
-            min="5"
-            max="1440"
-            step="5"
-        />
-      </label>
-      <label class="session-policy__checkbox">
-        <input v-model="sessionSlidingRenewal" type="checkbox"/>
-        <span>{{ t('settings.profile.sessionSlidingRenewal') }}</span>
-      </label>
-      <button
-          class="action-btn"
-          type="button"
-          :disabled="savingSessionPolicy"
-          @click="saveSessionPolicy"
-      >
-        {{ savingSessionPolicy ? '…' : t('settings.profile.sessionPolicySave') }}
-      </button>
-    </section>
 
     <ProfileEditDialog
         v-model:open="showEditDialog"
@@ -123,11 +124,5 @@ async function saveSessionPolicy() {
         v-model:open="showPasswordDialog"
         @success="onPasswordChanged"
     />
-  </div>
+  </SettingsPageShell>
 </template>
-
-<style scoped>
-.profile-settings {
-  max-width: clamp(480px, 52vw, 520px);
-}
-</style>

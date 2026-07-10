@@ -11,7 +11,9 @@ const {t} = useI18n()
 const layout = useLayoutStore()
 const {showProfileMenu} = storeToRefs(layout)
 
+const rootRef = ref<HTMLElement | null>(null)
 const btnRef = ref<HTMLElement | null>(null)
+const menuPanelRef = ref<InstanceType<typeof TitleBarMainMenu> | null>(null)
 const menuStyle = ref<{top: string; left: string} | undefined>()
 
 usePopoverEscape(showProfileMenu, () => layout.closeProfileMenu())
@@ -26,7 +28,8 @@ function updatePlacement() {
     }
 }
 
-function toggle() {
+function toggle(event: MouseEvent) {
+    event.stopPropagation()
     layout.toggleProfileMenu()
     if (layout.showProfileMenu) {
         void nextTick(updatePlacement)
@@ -42,28 +45,27 @@ function onResize() {
 }
 
 onMounted(() => {
-    document.addEventListener('mousedown', onDocumentMouseDown)
+    document.addEventListener('click', onDocumentClick)
     window.addEventListener('resize', onResize)
 })
 
 onUnmounted(() => {
-    document.removeEventListener('mousedown', onDocumentMouseDown)
+    document.removeEventListener('click', onDocumentClick)
     window.removeEventListener('resize', onResize)
 })
 
-function onDocumentMouseDown(event: MouseEvent) {
+function onDocumentClick(event: MouseEvent) {
     if (!showProfileMenu.value) return
     const target = event.target
     if (!(target instanceof Node)) return
-    if (btnRef.value?.contains(target)) return
-    const menu = document.querySelector('.titlebar-main-menu')
-    if (menu?.contains(target)) return
+    if (rootRef.value?.contains(target)) return
+    if (menuPanelRef.value?.containsNode(target)) return
     layout.closeProfileMenu()
 }
 </script>
 
 <template>
-  <div class="titlebar-app-menu">
+  <div ref="rootRef" class="titlebar-app-menu">
     <button
         ref="btnRef"
         type="button"
@@ -80,6 +82,7 @@ function onDocumentMouseDown(event: MouseEvent) {
     <Teleport to="body">
       <TitleBarMainMenu
           v-if="showProfileMenu"
+          ref="menuPanelRef"
           :menu-style="menuStyle"
           @close="layout.closeProfileMenu()"
       />

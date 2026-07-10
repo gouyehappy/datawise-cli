@@ -1,11 +1,12 @@
 import {getPluginBundledSharedLayer} from '@sql-editor/config/snippets/builtin'
-import {resolveSqlEditorShortcutsLayers} from '@sql-editor/config/snippets/merge'
+import {resolveSqlEditorShortcutsLayers, snippetIdentityKey} from '@sql-editor/config/snippets/merge'
 import {shallowRef} from 'vue'
 import type {
     SqlCompletionSlot,
     SqlEditorShortcutsLayer,
     SqlEditorShortcutsSettings,
     SqlSnippet,
+    SqlSnippetConfig,
 } from '@sql-editor/types'
 
 let activeSettings: SqlEditorShortcutsSettings = resolveSqlEditorShortcutsLayers({
@@ -15,11 +16,21 @@ let activeSettings: SqlEditorShortcutsSettings = resolveSqlEditorShortcutsLayers
 let globalSnippets: SqlSnippet[] = []
 let slotSnippets: Partial<Record<SqlCompletionSlot, SqlSnippet[]>> = {}
 
-/** 设置变更时递增，供提示条等 computed 刷新 */
+/** 设置变更时递增，供 Monaco / 补全等重配置刷新 */
 export const sqlEditorSettingsVersion = shallowRef(0)
+
+/** 仅提示条显隐变更时递增，避免触发 Monaco 全量重配置 */
+export const sqlEditorHintBarVersion = shallowRef(0)
 
 function bumpSettingsVersion() {
     sqlEditorSettingsVersion.value += 1
+}
+
+function snippetCacheKey(snippets: readonly SqlSnippetConfig[]): string {
+    return snippets
+        .filter((s) => s.enabled)
+        .map((s) => `${s.id}\0${snippetIdentityKey(s)}`)
+        .join('\n')
 }
 
 function toRuntimeSnippet(item: { label: string; insertText: string; detail?: string }): SqlSnippet {
@@ -48,14 +59,25 @@ function rebuildSnippetCache(): void {
 }
 
 /** 写入运行时片段层并刷新补全缓存 */
-export function setSqlEditorSnippetLayers(layers: {
-    pluginShared?: SqlEditorShortcutsLayer | null
-    shared?: SqlEditorShortcutsLayer | null
-    personal?: SqlEditorShortcutsLayer | null
-}): SqlEditorShortcutsSettings {
+export function setSqlEditorSnippetLayers(
+    layers: {
+        pluginShared?: SqlEditorShortcutsLayer | null
+        shared?: SqlEditorShortcutsLayer | null
+        personal?: SqlEditorShortcutsLayer | null
+    },
+    options?: { hintBarOnly?: boolean },
+): SqlEditorShortcutsSettings {
+    const prevKey = snippetCacheKey(activeSettings.snippets)
     activeSettings = resolveSqlEditorShortcutsLayers(layers)
-    rebuildSnippetCache()
-    bumpSettingsVersion()
+    const nextKey = snippetCacheKey(activeSettings.snippets)
+    if (prevKey !== nextKey) {
+        rebuildSnippetCache()
+    }
+    if (options?.hintBarOnly) {
+        sqlEditorHintBarVersion.value += 1
+    } else {
+        bumpSettingsVersion()
+    }
     return activeSettings
 }
 

@@ -290,7 +290,7 @@ describe('plugin-registry.service', () => {
 
     it('resolvePluginSettingsTab returns plugins for explorer and sqlEditor for snippets', () => {
         assert.equal(resolvePluginSettingsTab('p-mysql-explorer'), 'plugins')
-        assert.equal(resolvePluginSettingsTab('p-sql-snippets'), 'sqlEditor')
+        assert.equal(resolvePluginSettingsTab('p-sql-snippets'), 'sqlSnippets')
         assert.equal(resolvePluginSettingsTab('p-grid-export'), undefined)
     })
 })

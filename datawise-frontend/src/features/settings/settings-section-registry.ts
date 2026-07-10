@@ -16,6 +16,7 @@ import LayoutSettingsPanel from '@/features/settings/components/LayoutSettingsPa
 import ProfileSettingsPanel from '@/features/settings/components/ProfileSettingsPanel.vue'
 import PluginSettingsPanel from '@/features/settings/components/PluginSettingsPanel.vue'
 import SqlEditorShortcutsPanel from '@/features/settings/components/SqlEditorShortcutsPanel.vue'
+import SqlSnippetsSettingsPanel from '@/features/settings/components/SqlSnippetsSettingsPanel.vue'
 import ShortcutSettingsPanel from '@/features/settings/components/ShortcutSettingsPanel.vue'
 
 const definitions = [
@@ -26,6 +27,7 @@ const definitions = [
     {key: 'profile' as const, component: ProfileSettingsPanel},
     {key: 'editor' as const, component: EditorSettingsPanel},
     {key: 'sqlEditor' as const, component: SqlEditorShortcutsPanel},
+    {key: 'sqlSnippets' as const, component: SqlSnippetsSettingsPanel},
     {key: 'shortcuts' as const, component: ShortcutSettingsPanel},
     {key: 'plugins' as const, component: PluginSettingsPanel},
     {key: 'ai' as const, component: AiSettingsPanel},

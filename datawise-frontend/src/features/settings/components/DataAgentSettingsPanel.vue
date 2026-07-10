@@ -20,6 +20,9 @@ import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
+import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
+import SettingsSectionCard from '@/features/settings/components/SettingsSectionCard.vue'
+import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
 import LayoutToggleChip from '@/features/settings/components/LayoutToggleChip.vue'
 import DwSelect from '@/core/components/DwSelect.vue'
 import {StatusPill} from '@/core/components'
@@ -52,6 +55,15 @@ const skipSqlConfirmation = computed({
 const analysisMode = computed(() => appConfig.aiPreferences.analysisMode ?? 'smart')
 
 const showCustomSteps = computed(() => analysisMode.value === 'custom')
+
+const analysisModeLabel = computed(() =>
+    t(`settings.dataAgent.analysisPreset${analysisMode.value === 'custom' ? 'CustomMode' : analysisMode.value === 'quick' ? 'Quick' : 'Smart'}`),
+)
+
+const pythonRuntimeBadge = computed(() => {
+  if (!pythonRuntime.value) return ''
+  return pythonRuntime.value.enabled ? t('common.yes') : t('common.no')
+})
 
 const llmProfiles = computed(() => appConfig.aiPreferences.llmProfiles)
 
@@ -200,47 +212,44 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="data-agent-settings" :class="{'is-embedded': props.embedded}">
-    <header v-if="!props.embedded" class="panel-head">
-      <div class="panel-head__copy">
-        <h2>{{ t('settings.dataAgent.title') }}</h2>
-        <p>{{ t('settings.dataAgent.subtitle') }}</p>
-      </div>
-    </header>
+  <SettingsPageShell
+      :embedded="props.embedded"
+      :title="t('settings.dataAgent.title')"
+      :subtitle="t('settings.dataAgent.subtitle')"
+      :readonly="readOnly"
+      :readonly-hint="hint"
+  >
+    <template v-if="!props.embedded" #tips>
+      <SettingsTipsCard
+          :title="t('settings.dataAgent.title')"
+          :content="t('settings.dataAgent.subtitle')"
+          icon="settings-data-agent"
+      />
+    </template>
 
-    <p v-if="readOnly" class="guest-notice">{{ hint }}</p>
-
-    <div class="settings-stack" :class="{'is-readonly': readOnly}">
-      <section class="setting-card">
-        <div class="setting-card__head setting-card__head--compact">
-          <div class="setting-card__icon setting-card__icon--left" aria-hidden="true">
-            <DwIcon name="run" :size="18" :stroke-width="1.7"/>
-          </div>
-          <div>
-            <h3>{{ t('settings.dataAgent.executionTitle') }}</h3>
-            <p class="hint">{{ t('settings.dataAgent.executionHint') }}</p>
-          </div>
-        </div>
+    <div class="settings-groups settings-stack">
+      <SettingsSectionCard
+          :title="t('settings.dataAgent.executionTitle')"
+          :hint="t('settings.dataAgent.executionHint')"
+          icon="run"
+          tone="primary"
+          compact-head
+      >
         <LayoutToggleChip
             :label="t('settings.dataAgent.skipSqlConfirmation')"
             :caption="t('settings.dataAgent.skipSqlConfirmationHint')"
             :active="skipSqlConfirmation"
             @toggle="toggleSkipSqlConfirmation"
         />
-      </section>
+      </SettingsSectionCard>
 
-      <section class="setting-card">
-        <div class="setting-card__head">
-          <div class="setting-card__icon setting-card__icon--right" aria-hidden="true">
-            <DwIcon name="list-ordered" :size="18" :stroke-width="1.7"/>
-          </div>
-          <div>
-            <h3>{{ t('settings.dataAgent.analysisStepsTitle') }}</h3>
-            <p class="hint">{{ t('settings.dataAgent.analysisStepsHint') }}</p>
-          </div>
-          <StatusPill variant="info" chip>{{ t(`settings.dataAgent.analysisPreset${analysisMode === 'custom' ? 'CustomMode' : analysisMode === 'quick' ? 'Quick' : 'Smart'}`) }}</StatusPill>
-        </div>
-
+      <SettingsSectionCard
+          :title="t('settings.dataAgent.analysisStepsTitle')"
+          :hint="t('settings.dataAgent.analysisStepsHint')"
+          icon="list-ordered"
+          tone="sky"
+          :badge="analysisModeLabel"
+      >
         <div class="mode-pick-grid" role="group" :aria-label="t('settings.dataAgent.analysisPresetGroup')">
           <button
               v-for="mode in ANALYSIS_MODES"
@@ -280,19 +289,14 @@ onMounted(() => {
             />
           </div>
         </div>
-      </section>
+      </SettingsSectionCard>
 
-      <section class="setting-card">
-        <div class="setting-card__head">
-          <div class="setting-card__icon setting-card__icon--left" aria-hidden="true">
-            <DwIcon name="optimize" :size="18" :stroke-width="1.7"/>
-          </div>
-          <div>
-            <h3>{{ t('settings.dataAgent.llmRoutingTitle') }}</h3>
-            <p class="hint">{{ t('settings.dataAgent.llmRoutingHint') }}</p>
-          </div>
-        </div>
-
+      <SettingsSectionCard
+          :title="t('settings.dataAgent.llmRoutingTitle')"
+          :hint="t('settings.dataAgent.llmRoutingHint')"
+          icon="optimize"
+          tone="violet"
+      >
         <div class="route-list">
           <div
               v-for="step in AI_LLM_ROUTE_STEPS"
@@ -316,26 +320,16 @@ onMounted(() => {
         <p class="setting-callout setting-callout--muted">
           {{ t('settings.dataAgent.llmRouteFallbackHint', {name: defaultRouteProfileName}) }}
         </p>
-      </section>
+      </SettingsSectionCard>
 
-      <section class="setting-card setting-card--runtime">
-        <div class="setting-card__head setting-card__head--compact">
-          <div class="setting-card__icon setting-card__icon--panel" aria-hidden="true">
-            <DwIcon name="delete" :size="18" :stroke-width="1.7"/>
-          </div>
-          <div>
-            <h3>{{ t('settings.dataAgent.pythonRuntimeTitle') }}</h3>
-            <p class="hint">{{ t('settings.dataAgent.pythonRuntimeHint') }}</p>
-          </div>
-          <StatusPill
-              v-if="pythonRuntime"
-              :variant="pythonRuntime.enabled ? 'success' : 'neutral'"
-              dot
-          >
-            {{ pythonRuntime.enabled ? t('common.yes') : t('common.no') }}
-          </StatusPill>
-        </div>
-
+      <SettingsSectionCard
+          :title="t('settings.dataAgent.pythonRuntimeTitle')"
+          :hint="t('settings.dataAgent.pythonRuntimeHint')"
+          icon="terminal"
+          tone="panel"
+          compact-head
+          :badge="pythonRuntimeBadge"
+      >
         <p v-if="pythonRuntimeLoading" class="runtime-loading">
           <span class="runtime-loading__dot" aria-hidden="true"/>
           {{ t('settings.dataAgent.pythonRuntimeLoading') }}
@@ -358,16 +352,12 @@ onMounted(() => {
             <span v-else class="runtime-spec__value" :class="{'is-mono': spec.mono}">{{ spec.value }}</span>
           </div>
         </div>
-      </section>
+      </SettingsSectionCard>
     </div>
-  </div>
+  </SettingsPageShell>
 </template>
 
 <style scoped>
-.data-agent-settings {
-  max-width: clamp(560px, 62vw, 760px);
-}
-
 .settings-stack {
   display: flex;
   flex-direction: column;

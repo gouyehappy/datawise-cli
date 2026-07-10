@@ -55,6 +55,7 @@ describe('connection-access.service', () => {
     it('checks dml vs ddl capability helpers', () => {
         assert.equal(canDmlConnection('conn-1', teams), false)
         assert.equal(canDmlConnection('conn-2', teams), true)
+        assert.equal(canDmlConnection('new-123456', teams), false)
         assert.equal(canDdlConnection('conn-2', teams), false)
         assert.equal(canDdlConnection('conn-3', teams), true)
     })

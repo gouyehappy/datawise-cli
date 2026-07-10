@@ -2,6 +2,8 @@ import {ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {ConnectionConfig} from '@/core/types'
 import type {Reactive} from 'vue'
+import {isUnsavedConnectionId} from '@/features/connection/utils/connection-defaults'
+import {resolveConnectionCatalogErrorMessage} from '@/features/connection/services/connection-catalog.service'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
@@ -31,12 +33,13 @@ export function useConnectionTabActions(options: {
         }
 
         const editId = options.editingConnectionId?.()
+        const updating = Boolean(editId?.trim()) && !isUnsavedConnectionId(editId)
 
         saving.value = true
         try {
-            if (editId) {
-                payload.id = editId
-                await explorer.updateConnection(editId, payload)
+            if (updating) {
+                payload.id = editId!
+                await explorer.updateConnection(editId!, payload)
                 layout.showToast(t('connection.updateSuccess'))
                 explorer.selectNode(editId)
                 explorer.expandToNode(editId)
@@ -54,8 +57,8 @@ export function useConnectionTabActions(options: {
 
             layout.setModule('database')
             workspace.closeTab(options.tabId)
-        } catch {
-            layout.showToast(t('connection.saveFailed'))
+        } catch (error) {
+            layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'save'))
         } finally {
             saving.value = false
         }

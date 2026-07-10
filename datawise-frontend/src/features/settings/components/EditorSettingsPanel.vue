@@ -5,6 +5,9 @@ import {storeToRefs} from 'pinia'
 import MonacoEditor from '@/core/components/MonacoEditor.vue'
 import SettingsSelect from '@/core/components/SettingsSelect.vue'
 import LayoutToggleChip from '@/features/settings/components/LayoutToggleChip.vue'
+import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
+import SettingsSectionCard from '@/features/settings/components/SettingsSectionCard.vue'
+import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
 import {DwCheckbox, DwInput, FormField} from '@/core/components'
 import {
   EDITOR_FONT_OPTIONS,
@@ -138,23 +141,31 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
 </script>
 
 <template>
-  <div ref="settingsScrollEl" class="editor-settings editor-settings--v2">
-    <header class="panel-head">
-      <h2>{{ t('settings.editor.title') }}</h2>
-      <p>{{ t('settings.editor.subtitle') }}</p>
-    </header>
+  <SettingsPageShell
+      class="settings-page--editor"
+      :title="t('settings.editor.title')"
+      :subtitle="t('settings.editor.subtitle')"
+      :readonly="editorReadOnly"
+      :readonly-hint="editorHint"
+  >
+    <template #tips>
+      <SettingsTipsCard
+          :title="t('settings.editor.tipsTitle')"
+          :content="t('settings.editor.subtitle')"
+          icon="settings-editor"
+      />
+    </template>
 
-    <p v-if="editorReadOnly" class="guest-notice">{{ editorHint }}</p>
-
-    <div class="editor-settings__layout" :class="{'is-readonly': editorReadOnly}">
-      <div class="editor-settings__main">
-        <article class="editor-card">
-          <header class="editor-card__head">
-            <h3>{{ t('settings.editor.sectionAppearance') }}</h3>
-            <p>{{ t('settings.editor.sectionAppearanceHint') }}</p>
-          </header>
-          <div class="editor-card__body">
-            <FormField :label="t('settings.editor.theme')" input-id="editor-theme">
+    <div ref="settingsScrollEl" class="editor-settings editor-settings--v2">
+      <div class="editor-settings__layout">
+      <div class="settings-groups editor-settings__main">
+        <SettingsSectionCard
+            :title="t('settings.editor.sectionAppearance')"
+            :hint="t('settings.editor.sectionAppearanceHint')"
+            icon="settings-editor"
+            tone="primary"
+        >
+          <FormField :label="t('settings.editor.theme')" input-id="editor-theme">
               <template #default="{ id }">
                 <div class="theme-grid">
                   <button
@@ -220,16 +231,15 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
               </FormField>
             </div>
             <p class="field-hint">{{ t('settings.editor.fontSizeHint') }}</p>
-          </div>
-        </article>
+        </SettingsSectionCard>
 
-        <article class="editor-card">
-          <header class="editor-card__head">
-            <h3>{{ t('settings.editor.sectionDisplay') }}</h3>
-            <p>{{ t('settings.editor.sectionDisplayHint') }}</p>
-          </header>
-          <div class="editor-card__body editor-card__body--toggles">
-            <LayoutToggleChip
+        <SettingsSectionCard
+            :title="t('settings.editor.sectionDisplay')"
+            :hint="t('settings.editor.sectionDisplayHint')"
+            icon="layout"
+            tone="sky"
+        >
+          <LayoutToggleChip
                 :label="t('settings.editor.lineNumbers')"
                 :caption="t('settings.editor.lineNumbersHint')"
                 :active="editorSettings.settings.lineNumbers"
@@ -253,16 +263,15 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
                 :active="editorSettings.settings.folding"
                 @toggle="toggleSetting('folding')"
             />
-          </div>
-        </article>
+        </SettingsSectionCard>
 
-        <article class="editor-card">
-          <header class="editor-card__head">
-            <h3>{{ t('settings.editor.sectionQuery') }}</h3>
-            <p>{{ t('settings.editor.sectionQueryHint') }}</p>
-          </header>
-          <div class="editor-card__body">
-            <div class="editor-card__grid editor-card__grid--query">
+        <SettingsSectionCard
+            :title="t('settings.editor.sectionQuery')"
+            :hint="t('settings.editor.sectionQueryHint')"
+            icon="run"
+            tone="violet"
+        >
+          <div class="editor-card__grid editor-card__grid--query">
               <FormField :label="t('settings.editor.maxResultRows')" input-id="editor-max-result-rows">
                 <template #default="{ id }">
                   <div class="input-with-unit">
@@ -311,16 +320,16 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
             <p class="field-hint">{{ t('settings.editor.maxResultRowsHint') }}</p>
             <p class="field-hint">{{ t('settings.editor.slowQueryThresholdMsHint') }}</p>
             <p class="field-hint">{{ t('settings.editor.defaultGridPageSizeHint') }}</p>
-          </div>
-        </article>
+        </SettingsSectionCard>
 
-        <article class="editor-card editor-card--danger">
-          <header class="editor-card__head">
-            <h3>{{ t('settings.editor.dangerousSqlTitle') }}</h3>
-            <p>{{ t('settings.editor.dangerousSqlHint') }}</p>
-          </header>
-          <div class="editor-card__body">
-            <DwCheckbox
+        <SettingsSectionCard
+            class="editor-section--danger"
+            :title="t('settings.editor.dangerousSqlTitle')"
+            :hint="t('settings.editor.dangerousSqlHint')"
+            icon="alert-triangle"
+            tone="panel"
+        >
+          <DwCheckbox
                 block
                 class="danger-sql-toggle"
                 :model-value="dangerousSqlPrefs.confirmEnabled"
@@ -345,8 +354,7 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
               </template>
             </FormField>
             <p class="field-note muted">{{ t('settings.editor.dangerousSqlWhitelistHint') }}</p>
-          </div>
-        </article>
+        </SettingsSectionCard>
       </div>
 
       <aside class="editor-preview" aria-label="preview">
@@ -369,25 +377,16 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
         </div>
         <p class="editor-preview__hint">{{ t('settings.editor.previewHint') }}</p>
       </aside>
+      </div>
     </div>
-  </div>
+  </SettingsPageShell>
 </template>
 
 <style scoped>
-.editor-settings--v2 {
-  max-width: min(1160px, 100%);
-}
-
-.editor-settings__layout.is-readonly {
-  opacity: 0.72;
-  pointer-events: none;
-}
-
 .editor-settings__layout {
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(320px, 1.05fr);
+  grid-template-columns: minmax(260px, 0.68fr) minmax(420px, 1.42fr);
   gap: clamp(16px, 2vmin, 22px);
-  margin-top: clamp(16px, 2vmin, 20px);
   align-items: start;
 }
 
@@ -398,54 +397,6 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
   min-width: 0;
 }
 
-.editor-card {
-  position: relative;
-  border: 1px solid var(--dw-panel-border);
-  border-radius: var(--dw-panel-radius);
-  background: var(--dw-bg-panel);
-  box-shadow: var(--dw-panel-shadow);
-  overflow: visible;
-}
-
-.editor-card:has(.dw-select.is-open) {
-  z-index: 40;
-}
-
-.editor-card__body :deep(.dw-select.is-open) {
-  position: relative;
-  z-index: 41;
-}
-
-.editor-card__head {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--dw-border-light);
-  background: var(--dw-bg-editor);
-}
-
-.editor-card__head h3 {
-  margin: 0 0 4px;
-  font-size: var(--mp-sub);
-  font-weight: 650;
-}
-
-.editor-card__head p {
-  margin: 0;
-  font-size: 11px;
-  color: var(--dw-text-muted);
-  line-height: 1.45;
-}
-
-.editor-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(8px, 1vmin, 10px);
-  padding: 12px;
-}
-
-.editor-card__body--toggles {
-  gap: 8px;
-}
-
 .editor-card__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -454,6 +405,14 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
 
 .editor-card__grid--query {
   grid-template-columns: 1fr 1fr;
+}
+
+.editor-card__body--toggles :deep(.layout-toggle-chip + .layout-toggle-chip) {
+  margin-top: 0;
+}
+
+.editor-section--danger {
+  border-color: color-mix(in srgb, var(--dw-warn, #f59e0b) 28%, var(--dw-panel-border));
 }
 
 .editor-field--full {
@@ -509,22 +468,6 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
   background: linear-gradient(180deg, #fff 0%, #f6f8fa 100%);
 }
 
-.field-hint,
-.field-note {
-  margin: 0;
-  font-size: var(--mp-caption);
-  line-height: 1.5;
-  color: var(--dw-text-muted);
-}
-
-.field-note {
-  color: var(--dw-text-secondary);
-}
-
-.field-note.muted {
-  color: var(--dw-text-muted);
-}
-
 .danger-sql-toggle {
   margin-bottom: 4px;
 }
@@ -562,7 +505,7 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
 }
 
 .preview-editor {
-  height: clamp(360px, 42vh, 460px);
+  height: clamp(420px, 50vh, 540px);
   padding: 2px;
   background: #1a1b26;
   contain: layout size;

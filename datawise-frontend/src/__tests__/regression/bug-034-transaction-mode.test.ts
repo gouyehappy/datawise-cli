@@ -4,6 +4,7 @@ import {
     canBeginTransaction,
     canCommitOrRollback,
     isManualTransactionMode,
+    resolveTransactionErrorMessage,
     resolveTransactionScopeKey,
 } from '@/features/workspace/services/transaction-mode.service'
 
@@ -28,5 +29,13 @@ describe('transaction mode service', () => {
     it('builds scope keys for connection/database changes', () => {
         assert.equal(resolveTransactionScopeKey('c1', 'db_a'), 'c1:db_a')
         assert.equal(resolveTransactionScopeKey('c1', 'db_b'), 'c1:db_b')
+    })
+
+    it('maps connection access denied errors to friendly text', () => {
+        const t = (key: string) => key
+        assert.equal(
+            resolveTransactionErrorMessage(new Error('CONNECTION_ACCESS_DENIED actual=READONLY'), t),
+            'console.transaction.dmlAccessDenied',
+        )
     })
 })

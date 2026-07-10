@@ -61,6 +61,8 @@ export default {
     test: 'Test connection',
     testSuccess: '{message} ({latency}ms)',
     saveFailed: 'Save failed',
+    saveAccessDenied: 'Cannot save this connection: you do not have permission to edit it. Create your own connection, or ask a team admin (shared or legacy connections may not be editable).',
+    deleteAccessDenied: 'Cannot delete this connection: you do not have permission. Only connections you created can be removed; for shared or legacy connections, ask a team admin.',
     saveSuccess: 'Connection saved to tree',
     savingHint: 'Saving and syncing connection…',
     updateSuccess: 'Connection updated',

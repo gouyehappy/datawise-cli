@@ -7,6 +7,7 @@ import {
     canBeginTransaction,
     canCommitOrRollback,
     DEFAULT_SQL_SESSION_STATUS,
+    resolveTransactionErrorMessage,
     resolveTransactionScopeKey,
 } from '@/features/workspace/services/transaction-mode.service'
 import {registerConnectionHealthCheck} from '@/features/explorer/services/register-connection-health.service'
@@ -60,8 +61,7 @@ export function useConsoleTransaction(options: {
             }
             layout.showToast(t(successKey))
         } catch (error) {
-            const message = error instanceof Error ? error.message : t('console.transaction.actionFailed')
-            layout.showErrorToast(message)
+            layout.showErrorToast(resolveTransactionErrorMessage(error, t))
             await refreshStatus()
         } finally {
             loading.value = false

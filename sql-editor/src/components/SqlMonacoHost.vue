@@ -10,7 +10,7 @@ import {registerSqlEditorLineShortcuts} from '@sql-editor/editor/line-shortcuts'
 import {bindSuggestAcceptSuppress} from '@sql-editor/completion/monaco/suggest-accept'
 import {
   bindSqlSuggestDetailsAutoShow,
-  applySqlSuggestDetailsSetting
+  applySqlSuggestDetailsSetting,
 } from '@sql-editor/completion/monaco/suggest-details'
 import {extractExecutableLineSql} from '@sql-editor/utils/current-line-sql'
 import {resolveStatementAtCursor} from '@sql-editor/utils/statement-at-cursor'
@@ -252,7 +252,10 @@ function triggerSuggest() {
 
 function dismissSuggestWidget() {
   if (!editor) return
-  editor.trigger('sql-editor', 'editor.action.hideSuggestWidget', {})
+  const controller = editor.getContribution('editor.contrib.suggestController') as {
+    cancelSuggestWidget?: () => void
+  } | null
+  controller?.cancelSuggestWidget?.()
 }
 
 let suggestRaf = 0

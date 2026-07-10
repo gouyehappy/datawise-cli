@@ -161,6 +161,8 @@ export default {
         rollbackDone: '事务已回滚',
         autocommitOn: '已开启自动提交',
         autocommitOff: '已关闭自动提交',
+        dmlAccessDenied: '当前连接没有写入权限，无法使用手动事务',
+        unsavedConnectionHint: '请先保存连接后再使用手动事务',
     },
     cancelExecution: {
         cancelQuery: '终止查询',

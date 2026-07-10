@@ -170,20 +170,20 @@ export const PLUGIN_REGISTRY: Record<PluginId, PluginRegistryMeta> = {
         tone: 'indigo',
         surfaces: ['sqlEditor', 'settings'],
         openModule: 'settings',
-        settingsTab: 'sqlEditor',
+        settingsTab: 'sqlSnippets',
     },
     'p-sql-snippets-team': {
         tone: 'indigo',
         surfaces: ['sqlEditor', 'settings'],
         openModule: 'settings',
-        settingsTab: 'sqlEditor',
+        settingsTab: 'sqlSnippets',
         requires: ['p-sql-snippets'],
     },
     'p-sql-snippets-personal': {
         tone: 'indigo',
         surfaces: ['sqlEditor', 'settings'],
         openModule: 'settings',
-        settingsTab: 'sqlEditor',
+        settingsTab: 'sqlSnippets',
     },
     'p-sql-history': {
         tone: 'sky',

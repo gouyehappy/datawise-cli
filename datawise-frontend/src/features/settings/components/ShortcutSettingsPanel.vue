@@ -8,6 +8,8 @@ import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWrit
 import ShortcutActionIcon from '@/core/shortcuts/ShortcutActionIcon.vue'
 import type {ShortcutCategory} from '@/core/shortcuts/types'
 import ShortcutKeyInput from '@/features/settings/components/ShortcutKeyInput.vue'
+import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
+import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
 import {useShortcutSettingsStore} from '@/features/settings/stores/shortcut-settings-store'
 
 const {t} = useI18n()
@@ -52,31 +54,28 @@ function resetAll() {
 </script>
 
 <template>
-  <div class="shortcut-settings">
-    <header class="panel-head">
-      <div class="panel-head__copy">
-        <h2>{{ t('shortcuts.title') }}</h2>
-        <p>{{ t('shortcuts.subtitle') }}</p>
-      </div>
+  <SettingsPageShell
+      :title="t('shortcuts.title')"
+      :subtitle="t('shortcuts.subtitle')"
+      :readonly="readOnly"
+      :readonly-hint="hint"
+  >
+    <template #actions>
       <button class="reset-all-btn" type="button" :disabled="readOnly" @click="resetAll">
         <DwIcon name="refresh" size="sm" :stroke-width="1.5"/>
         {{ t('shortcuts.resetAll') }}
       </button>
-    </header>
+    </template>
 
-    <p v-if="readOnly" class="guest-notice">{{ hint }}</p>
+    <template #tips>
+      <SettingsTipsCard
+          :title="t('shortcuts.tipsTitle')"
+          :content="t('shortcuts.tipsContent')"
+          icon="shortcuts"
+      />
+    </template>
 
-    <section class="tips-card">
-      <div class="tips-card__icon" aria-hidden="true">
-        <DwIcon name="shortcuts" :size="20" :stroke-width="1.7"/>
-      </div>
-      <div class="tips-card__body">
-        <h3>{{ t('shortcuts.tipsTitle') }}</h3>
-        <p>{{ t('shortcuts.tipsContent') }}</p>
-      </div>
-    </section>
-
-    <div class="shortcut-groups">
+    <div class="settings-groups">
       <section
           v-for="category in categories"
           :key="category"
@@ -120,20 +119,10 @@ function resetAll() {
         </div>
       </section>
     </div>
-  </div>
+  </SettingsPageShell>
 </template>
 
 <style scoped>
-.shortcut-settings {
-  max-width: clamp(720px, 78vw, 860px);
-}
-
-.shortcut-groups {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-gap-lg);
-}
-
 .shortcut-table__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -200,10 +189,6 @@ function resetAll() {
 }
 
 @media (max-width: 720px) {
-  .panel-head {
-    flex-direction: column;
-  }
-
   .shortcut-table__header {
     display: none;
   }

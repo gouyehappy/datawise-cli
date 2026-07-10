@@ -17,6 +17,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{ close: [] }>()
 
+const rootRef = ref<HTMLElement | null>(null)
+
 const {t} = useI18n()
 const layout = useLayoutStore()
 const auth = useAuthStore()
@@ -107,10 +109,17 @@ function onUseDefault() {
 function onReloadExplorer() {
     void runExplorerRefresh().finally(() => closeMenu())
 }
+
+defineExpose({
+    containsNode(target: Node): boolean {
+        return rootRef.value?.contains(target) ?? false
+    },
+})
 </script>
 
 <template>
   <div
+      ref="rootRef"
       class="titlebar-main-menu"
       :class="{ 'titlebar-main-menu--anchored': !!props.menuStyle }"
       :style="props.menuStyle"

@@ -1,4 +1,5 @@
 import type {TeamSummary} from '@/core/types'
+import {isUnsavedConnectionId} from '@/features/connection/utils/connection-defaults'
 import {canManageTeam, isTeamViewer} from '@/features/team/services/team-role.service'
 
 export type ConnectionAccessLevel = 'readonly' | 'readwrite' | 'ddl'
@@ -92,6 +93,7 @@ export function canDmlConnection(
     connectionId: string | undefined,
     teams: TeamSummary[],
 ): boolean {
+    if (!connectionId?.trim() || isUnsavedConnectionId(connectionId)) return false
     return resolveConnectionAccess(connectionId, teams) !== 'readonly'
 }
 

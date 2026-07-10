@@ -9,6 +9,7 @@ import ConnectionPreviewPanel from '@/features/connection/components/ConnectionP
 import {useConnectionForm} from '@/features/connection/composables/useConnectionForm'
 import {useConnectionTabActions} from '@/features/connection/composables/useConnectionTabActions'
 import {useConnectionTest} from '@/features/connection/composables/useConnectionTest'
+import {isUnsavedConnectionId} from '@/features/connection/utils/connection-defaults'
 import type {WorkspaceTab} from '@/core/types'
 import {fetchConnectionFromCatalog} from '@/shared/config/connections-catalog.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -18,7 +19,9 @@ const props = defineProps<{ tab: WorkspaceTab }>()
 const layout = useLayoutStore()
 
 const dbType = computed(() => props.tab.dbType!)
-const isEdit = computed(() => !!props.tab.connectionId)
+const isEdit = computed(() =>
+    !!props.tab.connectionId && !isUnsavedConnectionId(props.tab.connectionId),
+)
 const loading = ref(false)
 
 const {form, label, getPayload, applyConfig} = useConnectionForm(dbType.value)
@@ -37,7 +40,7 @@ const {saveConnection, cancel, saving} = useConnectionTabActions({
 })
 
 onMounted(() => {
-  if (!props.tab.connectionId) return
+  if (!props.tab.connectionId || isUnsavedConnectionId(props.tab.connectionId)) return
   loading.value = true
   void fetchConnectionFromCatalog(props.tab.connectionId)
       .then((config) => {

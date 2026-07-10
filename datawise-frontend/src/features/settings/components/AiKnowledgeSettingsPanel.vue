@@ -22,6 +22,8 @@ import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
+import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
+import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
 import type {AiRagPreferences, AiVectorStorePreference} from '@/shared/config/app-config.types'
 import {DEFAULT_AI_RAG_PREFERENCES} from '@/shared/config/app-config.defaults'
 import {
@@ -513,16 +515,22 @@ watch([ragScopeConnectionId, ragScopeDatabase], () => {
 </script>
 
 <template>
-  <div class="knowledge-settings" :class="{'is-embedded': props.embedded, [`is-view-${props.view}`]: true}">
-    <header v-if="!props.embedded" class="panel-head knowledge-settings__head">
-      <div class="panel-head__copy">
-        <h2>{{ t('settings.knowledge.title') }}</h2>
-        <p>{{ t('settings.knowledge.subtitle') }}</p>
-      </div>
-    </header>
-
-    <p v-if="readOnly && !props.embedded" class="guest-notice">{{ hint }}</p>
-    <p v-else-if="readOnly" class="guest-notice guest-notice--embedded">{{ hint }}</p>
+  <SettingsPageShell
+      :embedded="props.embedded"
+      :width="props.embedded ? 'full' : 'default'"
+      :title="t('settings.knowledge.title')"
+      :subtitle="t('settings.knowledge.subtitle')"
+      :readonly="readOnly"
+      :readonly-hint="hint"
+      :class="[`is-view-${props.view}`]"
+  >
+    <template v-if="!props.embedded" #tips>
+      <SettingsTipsCard
+          :title="t('settings.knowledge.title')"
+          :content="t('settings.knowledge.subtitle')"
+          icon="settings-knowledge"
+      />
+    </template>
 
     <section v-if="showRagSection" class="kb-rag-panel kb-rag-panel--v2">
       <div class="kb-rag-status" :class="{'is-ready': ragReady, 'is-pending': !ragReady && !ragLoading, 'is-loading': ragLoading}">
@@ -996,5 +1004,5 @@ watch([ragScopeConnectionId, ragScopeDatabase], () => {
         </div>
       </footer>
     </section>
-  </div>
+  </SettingsPageShell>
 </template>

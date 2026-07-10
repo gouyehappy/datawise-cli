@@ -3,11 +3,10 @@ import {computed, inject, onMounted, onUnmounted, ref, toRef, unref, watch, next
 import type * as monaco from 'monaco-editor'
 import SqlMonacoHost from './SqlMonacoHost.vue'
 import SqlEditorHintBar from './SqlEditorHintBar.vue'
-import SqlEditorHintBarReveal from './SqlEditorHintBarReveal.vue'
 import SqlEditorAiBar from './SqlEditorAiBar.vue'
 import SqlEditorSettingsDrawer from './SqlEditorSettingsDrawer.vue'
 import {SQL_EDITOR_CONFIG_KEY, SQL_EDITOR_RUNTIME_KEY} from '@sql-editor/config/injection'
-import {sqlEditorSettingsVersion, getSqlEditorShortcutsSettings} from '@sql-editor/config/snippets/cache'
+import {sqlEditorSettingsVersion, sqlEditorHintBarVersion, getSqlEditorShortcutsSettings, setSqlEditorSnippetLayers} from '@sql-editor/config/snippets/cache'
 import {ensureSqlEditorSetup} from '@sql-editor/setup'
 import {
   createSqlEditorRuntime,
@@ -128,33 +127,58 @@ const resolvedMonacoOptions = computed((): monaco.editor.IStandaloneEditorConstr
   return typeof injected === 'function' ? injected() : {}
 })
 
-const hintBarEnabled = computed(() => {
-  void sqlEditorSettingsVersion.value
+function resolveHintBarVisibleFromSettings(): boolean {
   if (props.showHintBar === false) return false
   if (props.preview) return true
-  return getSqlEditorShortcutsSettings().showHintBar === true
-})
 
-const hintRevealInset = computed(() => {
-  const minimap = resolvedMonacoOptions.value.minimap
-  if (!minimap || minimap.enabled === false) {
-    return '8px'
-  }
-  const size = minimap.size
-  if (size === 'fill' || size === 'fit') return '96px'
-  if (typeof size === 'number') return `${Math.min(120, Math.max(56, size * 8))}px`
-  return '72px'
-})
+  const personal = readPersonalSqlEditorLayer()
+  if (personal.showHintBar === false) return false
+
+  if (props.showHintBar === true) return true
+
+  return getSqlEditorShortcutsSettings().showHintBar === true
+}
+
+/** UI 即时切换；持久化异步写入，避免触发 Monaco 全量重配置 */
+const hintBarVisible = ref(resolveHintBarVisibleFromSettings())
+const hintBarEnabled = computed(() => hintBarVisible.value)
+
+function patchRuntimePersonalLayer(target: typeof runtime, personal: ReturnType<typeof readPersonalSqlEditorLayer>) {
+  target.setSnippetLayers({
+    ...target.getSnippetLayers(),
+    personal,
+  })
+}
+
+function syncGlobalHintBarSettings() {
+  setSqlEditorSnippetLayers({
+    pluginShared: sharedRuntime.getPluginSnippetLayer(),
+    shared: sharedRuntime.isTeamSnippetsEnabled()
+        ? sharedRuntime.getSnippetLayers().external
+        : null,
+    personal: readPersonalSqlEditorLayer(),
+  }, {hintBarOnly: true})
+}
 
 function setHintBarVisible(visible: boolean) {
   if (props.preview) return
-  const personal = patchPersonalSqlEditorLayer(readPersonalSqlEditorLayer(), {showHintBar: visible})
-  writePersonalSqlEditorLayer(personal)
-  runtime.setSnippetLayers({
-    ...runtime.getSnippetLayers(),
-    personal,
+  hintBarVisible.value = visible
+
+  queueMicrotask(() => {
+    const personal = patchPersonalSqlEditorLayer(readPersonalSqlEditorLayer(), {showHintBar: visible})
+    writePersonalSqlEditorLayer(personal)
+
+    patchRuntimePersonalLayer(runtime, personal)
+    if (runtime !== sharedRuntime) {
+      patchRuntimePersonalLayer(sharedRuntime, personal)
+    }
+    const defaultRuntime = getDefaultSqlEditorRuntime()
+    if (defaultRuntime !== runtime && defaultRuntime !== sharedRuntime) {
+      patchRuntimePersonalLayer(defaultRuntime, personal)
+    }
+
+    syncGlobalHintBarSettings()
   })
-  runtime.sync()
 }
 
 const staticSchemaRef = computed(() => props.schema)
@@ -262,9 +286,18 @@ watch(
 watch(editorLocale, () => scheduleCompletionSync())
 
 watch(
+    () => sqlEditorHintBarVersion.value,
+    () => {
+      if (props.preview) return
+      hintBarVisible.value = resolveHintBarVisibleFromSettings()
+    },
+)
+
+watch(
     () => sqlEditorSettingsVersion.value,
     () => {
       if (props.preview) return
+      hintBarVisible.value = resolveHintBarVisibleFromSettings()
       runtime.setSnippetLayers({
         ...runtime.getSnippetLayers(),
         personal: readPersonalSqlEditorLayer(),
@@ -532,13 +565,8 @@ defineExpose<SqlEditorExpose>({
           @focus="pushCompletionContext"
           @run-statement="emit('run-statement', $event)"
       />
-      <SqlEditorHintBarReveal
-          v-if="!preview && props.showHintBar !== false && !hintBarEnabled"
-          :inset-right="hintRevealInset"
-          @reveal="setHintBarVisible(true)"
-      />
       <SqlEditorSettingsDrawer
-          v-if="!preview && settingsOpen"
+          v-if="!preview"
           v-model:open="settingsOpen"
           :runtime="runtime"
           :dialect="dialect"

@@ -56,6 +56,7 @@ export type SettingsSection =
     | 'profile'
     | 'editor'
     | 'sqlEditor'
+    | 'sqlSnippets'
     | 'shortcuts'
     | 'plugins'
     | 'ai'

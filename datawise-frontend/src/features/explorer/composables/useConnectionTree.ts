@@ -106,6 +106,7 @@ import {sqlFileNameFromTabLabel} from '@/features/workspace/services/console-tab
 import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource-catalog'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {resolveConnectionCatalogErrorMessage} from '@/features/connection/services/connection-catalog.service'
 import {useShortcutPanelStore} from '@/features/layout/stores/shortcut-panel-store'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
@@ -1445,8 +1446,8 @@ export function useConnectionTree() {
                         layout.showToast(t('explorer.groupDeleted', {name: label}))
                     }
                 })
-                .catch(() => {
-                    layout.showToast(t('explorer.deleteFailed'))
+                .catch((error) => {
+                    layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'delete'))
                 })
         }
         if (id === 'copy-name') {
@@ -1742,8 +1743,8 @@ export function useConnectionTree() {
                         layout.showToast(t('explorer.groupDeleted', {name: label}))
                     }
                 })
-                .catch(() => {
-                    layout.showToast(t('explorer.deleteFailed'))
+                .catch((error) => {
+                    layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'delete'))
                 })
         }
     }
