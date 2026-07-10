@@ -274,11 +274,18 @@ watch(
             form.value.topic = ''
         }
         if (!needsSourceSelection.value || !connectionId || !database.trim()) return
+        const connection = sourceConnections.value.find((item) => item.id === connectionId)
+        if (!connection) return
         tablesLoading.value = true
         try {
             availableTables.value = await fetchTablesForScope(
                 explorer.tree,
-                {connectionId, database: database.trim()},
+                {
+                    connectionId,
+                    database: database.trim(),
+                    connectionLabel: connection.label,
+                    dbType: connection.dbType,
+                },
                 {ensureChildrenLoaded: (nodeId) => explorer.ensureChildrenLoaded(nodeId)},
             )
         } catch {
