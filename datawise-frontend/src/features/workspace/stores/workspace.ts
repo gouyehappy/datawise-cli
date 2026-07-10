@@ -224,26 +224,21 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         }
 
         const id = nextTabId('console')
-        let sqlFile = resolved.sqlFile
-        if (!sqlFile && resolved.connectionId) {
-            const explorer = useExplorerStore()
-            sqlFile = await resolveNextScriptFileForOpen({
-                tabs: tabs.value,
-                connectionId: resolved.connectionId,
-                instanceId: resolved.instanceId,
-                instanceName: resolved.database,
-                tree: explorer.tree,
-            })
-        }
+        const sqlFile = resolved.sqlFile
         const title =
             resolved.title ??
-            resolveConsoleTabTitle({
-                sqlFile,
-                connectionName: resolved.connectionName,
-                kind: 'script',
-            }) ??
+            (sqlFile
+                ? resolveConsoleTabTitle({
+                    sqlFile,
+                    connectionName: resolved.connectionName,
+                    kind: 'script',
+                })
+                : resolveConsoleTabTitle({
+                    connectionName: resolved.connectionName,
+                    kind: 'console',
+                })) ??
             t('console.consoleTitle', {n: tabCounter})
-        tabs.value.push({
+        const tab: WorkspaceTab = {
             id,
             title,
             type: 'console',
@@ -256,9 +251,14 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             sqlFile,
             explorerNodeId: resolved.explorerNodeId,
             teamSharedQuery: resolved.teamSharedQuery,
-        })
+        }
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+        tabs.value.push(tab)
         activeTabId.value = id
         ensureConsoleQueryState(id)
+        if (!sqlFile && resolved.connectionId) {
+            ensureConsoleTabScriptFile(tab)
+        }
         return id
     }
 

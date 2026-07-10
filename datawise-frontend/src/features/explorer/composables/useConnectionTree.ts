@@ -85,7 +85,6 @@ import {
     prependConnectionLifecycleMenu,
     resolveConnectionLinkState,
 } from '@/features/explorer/services/explorer-connection-lifecycle.service'
-import {shouldCollapseOnDoubleClick} from '@/features/explorer/services/explorer-tree-expansion'
 import {resolveConnectionDbType} from '@/features/explorer/services/explorer-lazy-load'
 import {
     registerExplorerDatabaseShortcutHandler,
@@ -123,6 +122,9 @@ import {isViewModelDraftNode} from '@/features/explorer/services/view-model-tree
 function stripSqlExtension(fileName: string): string {
     return fileName.replace(/\.sql$/i, '')
 }
+
+/** 延迟 Info 面板同步，避免双击打开编辑器时与 ensureChildrenLoaded 争抢主线程 */
+const EXPLORER_INFO_SYNC_DELAY_MS = 280
 
 /** 连接树交互：选中、打开、右键菜单 */
 export function useConnectionTree() {
@@ -169,6 +171,29 @@ export function useConnectionTree() {
     const sqlExportWizardMaxRowsDefault = computed(() => resolveClientMaxResultRows())
 
     const flatNodes = useDataSourceFlatNodes(toRef(explorer, 'debouncedSearchQuery')).flatNodes
+
+    let explorerInfoSyncToken = 0
+
+    function cancelScheduledExplorerInfoSync() {
+        explorerInfoSyncToken += 1
+    }
+
+    function scheduleExplorerInfoSync(node: TreeNode) {
+        if (!isExplorerInfoNode(node)) return
+        const token = ++explorerInfoSyncToken
+        window.setTimeout(() => {
+            if (token !== explorerInfoSyncToken) return
+            void syncExplorerInfoForNode(node)
+        }, EXPLORER_INFO_SYNC_DELAY_MS)
+    }
+
+    function scheduleViewModelExplorerInfoSync(node: TreeNode) {
+        const token = ++explorerInfoSyncToken
+        window.setTimeout(() => {
+            if (token !== explorerInfoSyncToken) return
+            void syncViewModelExplorerInfo(node)
+        }, EXPLORER_INFO_SYNC_DELAY_MS)
+    }
 
     async function syncViewModelExplorerInfo(node: TreeNode) {
         const connectionId = findConnectionId(node)
@@ -272,6 +297,7 @@ export function useConnectionTree() {
     }
 
     async function openSqlFile(node: TreeNode) {
+        layout.setModule('database')
         try {
             await openSqlFileFromTree(explorer.tree, node)
         } catch {
@@ -294,24 +320,21 @@ export function useConnectionTree() {
             return
         }
         explorer.selectNode(node.id)
-        if (node.type === 'sql_file') {
-            await openSqlFile(node)
-            return
-        }
         if (node.type === 'view_model') {
-            await syncViewModelExplorerInfo(node)
+            scheduleViewModelExplorerInfoSync(node)
             return
         }
-        await syncExplorerInfoForNode(node)
+        scheduleExplorerInfoSync(node)
     }
 
     async function onOpen(node: TreeNode) {
+        cancelScheduledExplorerInfoSync()
         if (isExplorerFavoritesViewAllNode(node)) {
             explorer.showAllFavoriteTables()
             return
         }
         if (isExplorerFavoritesGroupId(node.id)) {
-            explorer.toggleFavoritesGroupExpanded()
+            explorer.selectNode(node.id)
             return
         }
         const favorite = shouldOpenFavoriteTable(node)
@@ -329,14 +352,8 @@ export function useConnectionTree() {
             openTableFromNode(node, 'data')
             return
         }
-        const latest = explorer.findNode(node.id) ?? node
-        if (shouldCollapseOnDoubleClick(latest)) {
-            explorer.collapseNode(node.id)
-            return
-        }
-        await explorer.expandPathToNode(node.id)
         if (node.type === 'sql_file') {
-            await openSqlFile(node)
+            void openSqlFile(node)
             return
         }
         if (node.type === 'view_model') {
@@ -437,18 +454,15 @@ export function useConnectionTree() {
             return
         }
         if (node.type === 'connection') {
-            await explorer.expandAndLoad(node.id, {notify: true})
-            await syncExplorerInfoForNode(explorer.findNode(node.id) ?? node)
+            await explorer.connectConnection(node.id, {notify: true})
             return
         }
         if (node.type === 'database') {
             const connectionId = findConnectionId(node)
             if (!connectionId) return
-            try {
-                await openLatestSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
-            } catch {
-                layout.showToast(t('console.loadSqlFileFailed'))
-            }
+            layout.setModule('database')
+            void openLatestSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
+                .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
         }
     }
 
@@ -1348,6 +1362,7 @@ export function useConnectionTree() {
         if (id === 'sql-editor-open' && node.type === 'database') {
             const connectionId = findConnectionId(node)
             if (connectionId) {
+                layout.setModule('database')
                 void openLatestSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
                     .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
             }
@@ -1372,8 +1387,8 @@ export function useConnectionTree() {
         if (id === 'sql-editor-new' && node.type === 'database') {
             const connectionId = findConnectionId(node)
             if (connectionId) {
+                layout.setModule('database')
                 void createNewSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
-                    .then(() => explorer.reloadWorkspacesFolder(connectionId, node.label))
                     .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
             }
             closeMenu()
@@ -1383,6 +1398,7 @@ export function useConnectionTree() {
         if (id === 'sql-editor-console' && node.type === 'database') {
             const connectionId = findConnectionId(node)
             if (connectionId) {
+                layout.setModule('database')
                 void openBlankSqlConsole(explorer.tree, node, findConnectionLabel(connectionId))
                     .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
             }
@@ -1757,6 +1773,7 @@ export function useConnectionTree() {
         if (action === 'open') {
             const connectionId = findConnectionId(node)
             if (connectionId) {
+                layout.setModule('database')
                 void openLatestSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
                     .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
             }
@@ -1779,8 +1796,8 @@ export function useConnectionTree() {
         if (action === 'new') {
             const connectionId = findConnectionId(node)
             if (connectionId) {
+                layout.setModule('database')
                 void createNewSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
-                    .then(() => explorer.reloadWorkspacesFolder(connectionId, node.label))
                     .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
             }
             return
@@ -1789,6 +1806,7 @@ export function useConnectionTree() {
         if (action === 'console') {
             const connectionId = findConnectionId(node)
             if (connectionId) {
+                layout.setModule('database')
                 void openBlankSqlConsole(explorer.tree, node, findConnectionLabel(connectionId))
                     .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
             }

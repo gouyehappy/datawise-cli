@@ -32,17 +32,18 @@ export function useConnectionTabActions(options: {
             options.form.name = payload.name
         }
 
-        const editId = options.editingConnectionId?.()
-        const updating = Boolean(editId?.trim()) && !isUnsavedConnectionId(editId)
+        const rawEditId = options.editingConnectionId?.()?.trim()
+        const persistedEditId =
+            rawEditId && !isUnsavedConnectionId(rawEditId) ? rawEditId : undefined
 
         saving.value = true
         try {
-            if (updating) {
-                payload.id = editId!
-                await explorer.updateConnection(editId!, payload)
+            if (persistedEditId) {
+                payload.id = persistedEditId
+                await explorer.updateConnection(persistedEditId, payload)
                 layout.showToast(t('connection.updateSuccess'))
-                explorer.selectNode(editId)
-                explorer.expandToNode(editId)
+                explorer.selectNode(persistedEditId)
+                explorer.expandToNode(persistedEditId)
             } else {
                 const groupId = options.targetGroupId?.()
                 const id = await explorer.addConnection(payload, groupId)

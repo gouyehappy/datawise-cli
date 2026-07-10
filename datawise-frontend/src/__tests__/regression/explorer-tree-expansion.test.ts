@@ -5,8 +5,6 @@ import {
     collectPathNodeIds,
     markExpandedPath,
     shouldCollapseOnToggle,
-    shouldCollapseOnDoubleClick,
-    shouldLoadOnSelect,
     shouldLoadOnNodeSelect,
 } from '@/features/explorer/services/explorer-tree-expansion'
 import {needsLazyLoad} from '@/features/explorer/services/explorer-lazy-load'
@@ -104,48 +102,6 @@ describe('explorer-tree-expansion', () => {
         const mongoDb = tree[1].children![0]
         mongoDb.expanded = true
         assert.equal(shouldCollapseOnToggle(mongoDb, 'mongodb'), true)
-    })
-
-    it('collapses on double click when node is expanded', () => {
-        const connection = tree[0]
-        connection.expanded = true
-        assert.equal(shouldCollapseOnDoubleClick(connection), true)
-    })
-
-    it('does not collapse on double click when node is collapsed', () => {
-        const connection = tree[0]
-        connection.expanded = false
-        assert.equal(shouldCollapseOnDoubleClick(connection), false)
-    })
-
-    it('does not collapse expanded table on double click', () => {
-        const table = node({
-            id: 'tbl-users',
-            label: 'users',
-            type: 'table',
-            expanded: true,
-            children: [
-                node({id: 'folder-cols', label: 'columns', type: 'columns', children: []}),
-            ],
-        })
-        assert.equal(shouldCollapseOnDoubleClick(table), false)
-    })
-
-    it('does not collapse non-expandable nodes on double click', () => {
-        const column = node({id: 'col-1', label: 'id', type: 'column'})
-        column.expanded = true
-        assert.equal(shouldCollapseOnDoubleClick(column), false)
-    })
-
-    it('loads on select when expanded flag is stale', () => {
-        const schema = tree[0].children![0].children![0]
-        assert.equal(shouldLoadOnSelect(schema, 'trino'), true)
-    })
-
-    it('loads on select when node is collapsed', () => {
-        const catalog = tree[0].children![1]
-        catalog.expanded = false
-        assert.equal(shouldLoadOnSelect(catalog, 'trino'), true)
     })
 
     it('does not load connection on single select', () => {

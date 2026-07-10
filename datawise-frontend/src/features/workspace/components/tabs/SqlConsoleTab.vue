@@ -90,6 +90,7 @@ const {consoleQueryByTabId} = storeToRefs(workspace)
 
 const sql = ref(props.tab.sql ?? '')
 const sqlParamValues = ref<Record<string, string>>({})
+const editorReady = ref(false)
 const parameterNames = computed(() => extractSqlParameters(sql.value))
 const aiSelectionSql = ref('')
 const splitRef = ref<HTMLElement>()
@@ -1071,12 +1072,21 @@ function clampEditorHeight(value: number) {
 }
 
 onMounted(() => {
-  if (!splitRef.value) return
+  layout.setModule('database')
+  if (!splitRef.value) {
+    requestAnimationFrame(() => {
+      editorReady.value = true
+    })
+    return
+  }
   if (appConfig.consoleEditorHeight === CONSOLE_EDITOR_HEIGHT_DEFAULT) {
     editorHeight.value = clampEditorHeight(
         Math.round(splitRef.value.clientHeight * CONSOLE_EDITOR_HEIGHT_RATIO),
     )
   }
+  requestAnimationFrame(() => {
+    editorReady.value = true
+  })
 })
 
 </script>
@@ -1296,6 +1306,7 @@ onMounted(() => {
         />
         <div class="editor-surface">
           <SqlEditor
+              v-if="editorReady"
               ref="editorRef"
               v-model="sql"
               :connection-id="connectionId || tab.connectionId"

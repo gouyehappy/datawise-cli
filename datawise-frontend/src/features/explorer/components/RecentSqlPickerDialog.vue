@@ -14,6 +14,7 @@ import {
   listInstanceSqlScripts,
 } from '@/features/explorer/services/sql-script.service'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
+import {useLayoutStore} from '@/features/layout/stores/layout'
 import type {InstanceSqlFileItem} from '@/shared/api/types'
 
 const props = defineProps<{
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 
 const {t} = useI18n()
 const explorer = useExplorerStore()
+const layout = useLayoutStore()
 
 const search = ref('')
 const showAllConnections = ref(false)
@@ -100,8 +102,9 @@ async function openSelected() {
 async function createNewScript() {
   if (!props.context) return
   const ctx = props.context
+  layout.setModule('database')
   void createNewSqlEditor(explorer.tree, ctx.databaseNode, ctx.connectionName)
-      .then(() => explorer.reloadWorkspacesFolder(ctx.connectionId, ctx.databaseNode.label))
+      .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
   emit('opened')
   close()
 }

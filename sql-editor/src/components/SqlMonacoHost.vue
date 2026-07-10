@@ -78,6 +78,8 @@ let suggestDetailsDisposable: monaco.IDisposable | null = null
 let suggestAcceptDisposable: monaco.IDisposable | null = null
 let selectionSyncDisposable: monaco.IDisposable | null = null
 let runGutterDisposable: monaco.IDisposable | null = null
+let initRafOuter = 0
+let initRafInner = 0
 
 function resolveTheme(): string {
   void sqlEditorSettingsVersion.value
@@ -440,7 +442,18 @@ function bindSuggestDetails() {
 }
 
 onMounted(() => {
-  if (!containerRef.value) return
+  if (!containerRef.value || editor) return
+  initRafOuter = requestAnimationFrame(() => {
+    initRafInner = requestAnimationFrame(() => {
+      initRafOuter = 0
+      initRafInner = 0
+      mountEditor()
+    })
+  })
+})
+
+function mountEditor() {
+  if (!containerRef.value || editor) return
   const options = resolveMonacoOptions()
   editor = monaco.editor.create(containerRef.value, {
     value: props.modelValue,
@@ -517,7 +530,7 @@ onMounted(() => {
   }
   bindLineShortcuts()
   emitCursorChange()
-})
+}
 
 watch(
     () => props.modelValue,
@@ -566,6 +579,8 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  if (initRafOuter) cancelAnimationFrame(initRafOuter)
+  if (initRafInner) cancelAnimationFrame(initRafInner)
   suggestDetailsDisposable?.dispose()
   suggestAcceptDisposable?.dispose()
   lineShortcutDisposable?.dispose()
