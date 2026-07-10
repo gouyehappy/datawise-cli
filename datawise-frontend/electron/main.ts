@@ -45,7 +45,6 @@ if (process.platform === 'win32') {
     app.commandLine.appendSwitch('disable-features', 'OverlayScrollbars')
 }
 
-const APP_ICON = loadAppIconImage()
 const APP_VERSION = '1.1.0'
 const LATEST_VERSION = process.env.DATAWISE_LATEST_VERSION?.trim() || APP_VERSION
 
@@ -251,6 +250,7 @@ function bindRendererDiagnostics(contents: WebContents) {
 function createWindow() {
     const isMac = process.platform === 'darwin'
     const useFramelessChrome = process.platform === 'win32' || process.platform === 'linux'
+    const windowIcon = loadAppIconImage()
 
     mainWindow = new BrowserWindow({
         width: 1440,
@@ -258,7 +258,7 @@ function createWindow() {
         minWidth: 1100,
         minHeight: 680,
         title: 'DataWise CLI',
-        icon: APP_ICON,
+        icon: windowIcon.isEmpty() ? undefined : windowIcon,
         backgroundColor: '#ffffff',
         frame: !useFramelessChrome && !isMac,
         titleBarStyle: isMac ? 'hiddenInset' : 'default',

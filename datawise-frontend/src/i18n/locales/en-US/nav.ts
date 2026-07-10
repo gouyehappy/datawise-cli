@@ -12,4 +12,10 @@ export default {
     feedbackToast: 'Thanks for your feedback! Email support@datawise.local',
     mainLabel: 'Main navigation',
     utilLabel: 'Utilities',
+    rail: {
+        hideLeft: 'Hide left rail',
+        showLeft: 'Show left rail',
+        hideRight: 'Hide right rail',
+        showRight: 'Show right rail',
+    },
 }

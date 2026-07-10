@@ -31,6 +31,8 @@ export interface KafkaTablePublishContext {
     tableName: string
 }
 
+export type KafkaTablePublishDataSource = 'table' | 'fake'
+
 export interface KafkaTablePublishForm {
     kafkaConnectionId: string
     topic: string
@@ -38,6 +40,8 @@ export interface KafkaTablePublishForm {
     maxMessages: number
     intervalMs: number
     partition: string
+    dataSource: KafkaTablePublishDataSource
+    continuous: boolean
 }
 
 export interface KafkaTablePublishSourceForm {
@@ -112,6 +116,8 @@ export function createDefaultKafkaTablePublishForm(
         maxMessages: KAFKA_PUBLISH_DEFAULT_MAX_MESSAGES,
         intervalMs: 0,
         partition: '',
+        dataSource: 'table',
+        continuous: false,
     }
 }
 
@@ -166,6 +172,10 @@ export function validateKafkaTablePublishForm(
 export function buildPublishTableToKafkaRequest(
     context: KafkaTablePublishContext,
     form: KafkaTablePublishForm,
+    options?: {
+        datagenSeed?: number
+        datagenRowOffset?: number
+    },
 ): PublishTableToKafkaRequest {
     const partition = form.partition.trim() === '' ? null : Number(form.partition)
     return {
@@ -177,6 +187,9 @@ export function buildPublishTableToKafkaRequest(
         maxMessages: form.maxMessages,
         intervalMs: form.intervalMs,
         partition: Number.isFinite(partition) ? partition : null,
+        fakeData: form.dataSource === 'fake',
+        datagenSeed: options?.datagenSeed ?? null,
+        datagenRowOffset: options?.datagenRowOffset ?? null,
     }
 }
 
@@ -192,11 +205,47 @@ export function formatKafkaTablePublishSuccess(
     result: PublishTableToKafkaResult,
     t: ComposerTranslation,
 ): string {
-    const reason = t(`explorer.kafkaTablePublish.stopReason.${result.stopReason}`)
+    const reasonKey = result.stopReason === 'USER_STOPPED'
+        ? 'USER_STOPPED'
+        : result.stopReason
+    const reason = t(`explorer.kafkaTablePublish.stopReason.${reasonKey}`)
     return t('explorer.kafkaTablePublish.successDetail', {
         sent: result.messagesSent,
         failed: result.messagesFailed,
         durationMs: result.durationMs,
         reason,
     })
+}
+
+export function formatKafkaTablePublishProgress(
+    sent: number,
+    failed: number,
+    t: ComposerTranslation,
+): string {
+    return t('explorer.kafkaTablePublish.continuousProgress', {sent, failed})
+}
+
+export function aggregatePublishResults(
+    results: PublishTableToKafkaResult[],
+    stoppedByUser: boolean,
+): PublishTableToKafkaResult {
+    if (!results.length) {
+        return {
+            messagesSent: 0,
+            messagesFailed: 0,
+            durationMs: 0,
+            stopReason: stoppedByUser ? 'USER_STOPPED' : 'TABLE_EXHAUSTED',
+            lastError: null,
+            lastProduce: null,
+        }
+    }
+    const last = results[results.length - 1]!
+    return {
+        messagesSent: results.reduce((sum, item) => sum + item.messagesSent, 0),
+        messagesFailed: results.reduce((sum, item) => sum + item.messagesFailed, 0),
+        durationMs: results.reduce((sum, item) => sum + item.durationMs, 0),
+        stopReason: stoppedByUser ? 'USER_STOPPED' : last.stopReason,
+        lastError: last.lastError ?? null,
+        lastProduce: last.lastProduce ?? null,
+    }
 }

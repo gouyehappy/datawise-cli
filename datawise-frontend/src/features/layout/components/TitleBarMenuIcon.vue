@@ -9,6 +9,8 @@ export type TitleBarMenuIconId =
     | 'dashboard'
     | 'ai'
     | 'settings'
+    | 'config'
+    | 'help'
     | 'tools'
     | 'console'
     | 'refresh'
@@ -40,6 +42,8 @@ const ICON_MAP: Record<TitleBarMenuIconId, DwIconName> = {
     dashboard: 'dashboard',
     ai: 'ai',
     settings: 'settings',
+    config: 'settings-basic',
+    help: 'feedback',
     tools: 'tools',
     console: 'console',
     refresh: 'refresh',

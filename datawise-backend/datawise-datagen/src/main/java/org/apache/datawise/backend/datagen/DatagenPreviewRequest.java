@@ -5,7 +5,17 @@ public record DatagenPreviewRequest(
         String database,
         String tableName,
         Integer rowCount,
-        Long seed
+        Long seed,
+        Integer rowOffset
 ) {
+    public DatagenPreviewRequest(
+            String connectionId,
+            String database,
+            String tableName,
+            Integer rowCount,
+            Long seed
+    ) {
+        this(connectionId, database, tableName, rowCount, seed, null);
+    }
 }
 

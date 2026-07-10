@@ -1,5 +1,10 @@
 import type {NavModule, SettingsSection} from '@/core/types'
 import type {TitleBarMenuIconId} from '@/features/layout/components/TitleBarMenuIcon.vue'
+import {
+    buildQuickConfigMenuChildren,
+    type TitleBarQuickConfigHandlers,
+    type TitleBarQuickConfigState,
+} from '@/features/layout/services/title-bar-config-menu.service'
 
 export type TitleBarMenuKind = 'nav' | 'action' | 'header'
 export type TitleBarMenuMode = 'leaf' | 'dropdown'
@@ -22,18 +27,17 @@ export interface TitleBarMenuItem {
 export interface TitleBarNavHandlers {
     setModule: (module: NavModule) => void
     openSettings: (section?: SettingsSection) => void
-    openPluginDevTools: () => void
-    openConnectorMarket: () => void
+    openOnboarding: () => void
+    config: TitleBarQuickConfigHandlers
 }
 
 export interface TitleBarNavContext {
     activeModule: NavModule
     settingsSection: SettingsSection
-    devToolsVisible: boolean
-    presetConflictCount: number
-    catalogIssueCount: number
-    aiWorkbenchEnabled: boolean
+    config: TitleBarQuickConfigState
 }
+
+const HELP_SECTIONS: SettingsSection[] = ['about']
 
 type LeafOptions = Pick<TitleBarMenuItem, 'active' | 'badge' | 'icon'>
 
@@ -46,91 +50,53 @@ function leaf(
     return {id, labelKey, kind: 'nav', run, ...options}
 }
 
-function settingsSectionIcon(section: SettingsSection): TitleBarMenuIconId {
-    switch (section) {
-        case 'basic': return 'basic'
-        case 'layout': return 'layout'
-        case 'plugins': return 'plugins'
-        case 'editor': return 'editor'
-        case 'shortcuts': return 'shortcuts'
-        case 'ai': return 'ai'
-        case 'about': return 'about'
-        default: return 'settings'
-    }
-}
-
-function settingsMenu(ctx: TitleBarNavContext, h: TitleBarNavHandlers): TitleBarMenuItem {
-    const sections: {id: SettingsSection; labelKey: string}[] = [
-        {id: 'basic', labelKey: 'settings.nav.basic'},
-        {id: 'layout', labelKey: 'settings.nav.layout'},
-        {id: 'editor', labelKey: 'settings.nav.editor'},
-        {id: 'shortcuts', labelKey: 'settings.nav.shortcuts'},
-        {id: 'plugins', labelKey: 'settings.nav.plugins'},
-        {id: 'ai', labelKey: 'settings.nav.ai'},
-        {id: 'about', labelKey: 'settings.nav.about'},
-    ]
+function configMenu(ctx: TitleBarNavContext, handlers: TitleBarNavHandlers): TitleBarMenuItem {
     return {
-        id: 'settings',
-        labelKey: 'app.titleBar.menu.settings',
-        icon: 'settings',
+        id: 'config',
+        labelKey: 'app.titleBar.menu.config',
+        icon: 'config',
         menuMode: 'dropdown',
-        active: ctx.activeModule === 'settings',
-        children: sections.map((section) =>
-            leaf(`settings:${section.id}`, section.labelKey, () => h.openSettings(section.id), {
-                active: ctx.activeModule === 'settings' && ctx.settingsSection === section.id,
-                icon: settingsSectionIcon(section.id),
-            }),
-        ),
+        children: buildQuickConfigMenuChildren(ctx.config, handlers.config),
     }
 }
 
-/** 桌面顶栏：仅一级主导航；设置用下拉跳分区 */
+function helpMenu(ctx: TitleBarNavContext, handlers: TitleBarNavHandlers): TitleBarMenuItem {
+    return {
+        id: 'help',
+        labelKey: 'app.titleBar.menu.help',
+        icon: 'help',
+        menuMode: 'dropdown',
+        active: ctx.activeModule === 'settings' && HELP_SECTIONS.includes(ctx.settingsSection),
+        children: [
+            leaf('help:onboarding', 'app.titleBar.menu.helpOnboarding', () => handlers.openOnboarding(), {
+                icon: 'open',
+            }),
+            leaf('help:about', 'settings.nav.about', () => handlers.openSettings('about'), {
+                active: ctx.activeModule === 'settings' && ctx.settingsSection === 'about',
+                icon: 'about',
+            }),
+        ],
+    }
+}
+
+/** 桌面顶栏：工作台、仪表盘、AI、配置、帮助 */
 export function buildTitleBarNav(ctx: TitleBarNavContext, handlers: TitleBarNavHandlers): TitleBarMenuItem[] {
-    const menus: TitleBarMenuItem[] = [
+    return [
         leaf('workbench', 'app.titleBar.menu.workbench', () => handlers.setModule('database'), {
             active: ctx.activeModule === 'database',
             icon: 'database',
         }),
-        leaf('plugins', 'app.titleBar.menu.plugins', () => handlers.setModule('plugin'), {
-            active: ctx.activeModule === 'plugin',
-            icon: 'plugins',
-            badge: ctx.presetConflictCount > 0 ? ctx.presetConflictCount : undefined,
-        }),
-        leaf('connectorMarket', 'app.titleBar.menu.connectorMarket', () => handlers.openConnectorMarket(), {
-            active: ctx.activeModule === 'connectorMarket',
-            icon: 'connectors',
-        }),
-    ]
-
-    if (ctx.aiWorkbenchEnabled) {
-        menus.push(
-            leaf('ai', 'app.titleBar.menu.ai', () => handlers.setModule('ai'), {
-                active: ctx.activeModule === 'ai',
-                icon: 'ai',
-            }),
-        )
-    }
-
-    if (ctx.devToolsVisible) {
-        const auditBadge = ctx.catalogIssueCount + ctx.presetConflictCount
-        menus.push(
-            leaf('devTools', 'app.titleBar.menu.devTools', () => handlers.openPluginDevTools(), {
-                active: ctx.activeModule === 'pluginDev',
-                icon: 'devTools',
-                badge: auditBadge > 0 ? auditBadge : undefined,
-            }),
-        )
-    }
-
-    menus.push(
         leaf('dashboard', 'app.titleBar.menu.dashboard', () => handlers.setModule('dashboard'), {
             active: ctx.activeModule === 'dashboard',
             icon: 'dashboard',
         }),
-        settingsMenu(ctx, handlers),
-    )
-
-    return menus
+        leaf('ai', 'app.titleBar.menu.ai', () => handlers.setModule('ai'), {
+            active: ctx.activeModule === 'ai',
+            icon: 'ai',
+        }),
+        configMenu(ctx, handlers),
+        helpMenu(ctx, handlers),
+    ]
 }
 
 export function titleBarMenuActionableChildren(item: TitleBarMenuItem): TitleBarMenuItem[] {

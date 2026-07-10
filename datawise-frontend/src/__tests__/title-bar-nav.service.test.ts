@@ -1,84 +1,99 @@
 import {describe, it} from 'node:test'
 import assert from 'node:assert/strict'
+import {buildQuickConfigMenuChildren} from '@/features/layout/services/title-bar-config-menu.service'
 import {
     buildTitleBarNav,
     titleBarMenuHasChildren,
 } from '@/features/layout/services/title-bar-nav.service'
 
+const defaultConfigState = {
+    showSideRailStrip: true,
+    showExplorerPanel: true,
+    showShortcutRailStrip: true,
+}
+
+const noopConfigHandlers = {
+    openPreferences: () => {},
+    toggleSideRailStrip: () => {},
+    toggleExplorerPanel: () => {},
+    toggleShortcutRailStrip: () => {},
+    applyFocusMode: () => {},
+}
+
 const noopHandlers = {
     setModule: () => {},
     openSettings: () => {},
-    openPluginDevTools: () => {},
-    openConnectorMarket: () => {},
+    openOnboarding: () => {},
+    config: noopConfigHandlers,
 }
 
+describe('title-bar-config-menu.service', () => {
+    it('builds a compact config menu with preferences, panel toggles, and focus mode', () => {
+        const items = buildQuickConfigMenuChildren(defaultConfigState, noopConfigHandlers)
+        const actionable = items.filter((item) => !item.divider)
+
+        assert.deepEqual(
+            actionable.map((item) => item.id),
+            [
+                'config:preferences',
+                'config:side-rail',
+                'config:explorer',
+                'config:shortcut-rail',
+                'config:focus-mode',
+            ],
+        )
+
+        const explorer = items.find((item) => item.id === 'config:explorer')
+        assert.equal(explorer?.labelKey, 'app.titleBar.menu.configQuick.hideToolbar')
+        assert.equal(explorer?.checked, true)
+    })
+})
+
 describe('title-bar-nav.service', () => {
-    it('builds primary nav with settings sections dropdown only', () => {
+    it('builds simplified primary nav with quick config menu', () => {
         const calls: string[] = []
-        const menus = buildTitleBarNav(
-            {
-                activeModule: 'settings',
-                settingsSection: 'layout',
-                devToolsVisible: true,
-                presetConflictCount: 1,
-                catalogIssueCount: 2,
-                aiWorkbenchEnabled: true,
-            },
-            {
-                ...noopHandlers,
-                openSettings: (s) => calls.push(`settings:${s ?? 'basic'}`),
-            },
-        )
-
-        assert.equal(menus.length, 7)
-        assert.ok(menus.every((item) => item.id !== 'tools'))
-        assert.ok(!menus.some((item) => item.menuMode === 'linked'))
-
-        const settings = menus.find((item) => item.id === 'settings')
-        assert.ok(settings && titleBarMenuHasChildren(settings))
-        assert.ok(!settings!.children!.some((item) => item.kind === 'action'))
-        assert.ok(!settings!.children!.some((item) => item.kind === 'header'))
-
-        const layoutChild = settings!.children!.find((item) => item.id === 'settings:layout')
-        assert.equal(layoutChild?.active, true)
-
-        layoutChild?.run?.()
-        assert.deepEqual(calls, ['settings:layout'])
-    })
-
-    it('shows preset conflict badge on plugins entry', () => {
-        const menus = buildTitleBarNav(
-            {
-                activeModule: 'plugin',
-                settingsSection: 'basic',
-                devToolsVisible: false,
-                presetConflictCount: 3,
-                catalogIssueCount: 0,
-                aiWorkbenchEnabled: false,
-            },
-            noopHandlers,
-        )
-
-        const plugins = menus.find((item) => item.id === 'plugins')
-        assert.equal(plugins?.badge, 3)
-        assert.ok(!menus.some((item) => item.id === 'devTools'))
-    })
-
-    it('omits dev tools when entry hidden', () => {
         const menus = buildTitleBarNav(
             {
                 activeModule: 'database',
                 settingsSection: 'basic',
-                devToolsVisible: false,
-                presetConflictCount: 0,
-                catalogIssueCount: 0,
-                aiWorkbenchEnabled: false,
+                config: defaultConfigState,
+            },
+            {
+                ...noopHandlers,
+                config: {
+                    ...noopConfigHandlers,
+                    openPreferences: () => calls.push('open-settings'),
+                },
+            },
+        )
+
+        assert.deepEqual(
+            menus.map((item) => item.id),
+            ['workbench', 'dashboard', 'ai', 'config', 'help'],
+        )
+
+        const config = menus.find((item) => item.id === 'config')
+        assert.ok(config && titleBarMenuHasChildren(config))
+        assert.ok(config!.children!.some((item) => item.id === 'config:preferences'))
+        assert.ok(config!.children!.some((item) => item.id === 'config:focus-mode'))
+        assert.ok(!config!.children!.some((item) => item.id === 'config:terminal'))
+        assert.equal(config?.active, undefined)
+
+        config!.children!.find((item) => item.id === 'config:preferences')?.run?.()
+        assert.deepEqual(calls, ['open-settings'])
+    })
+
+    it('marks help menu active on about section', () => {
+        const menus = buildTitleBarNav(
+            {
+                activeModule: 'settings',
+                settingsSection: 'about',
+                config: defaultConfigState,
             },
             noopHandlers,
         )
 
-        assert.equal(menus.length, 5)
-        assert.ok(!menus.some((item) => item.id === 'devTools'))
-        assert.ok(!menus.some((item) => item.id === 'ai'))
+        const help = menus.find((item) => item.id === 'help')
+        assert.equal(help?.active, true)
     })
 })

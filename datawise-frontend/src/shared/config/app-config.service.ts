@@ -186,6 +186,8 @@ export function normalizeLayout(raw: Partial<LayoutPreferences> | undefined): La
             SHORTCUT_RAIL_NAV_DEFS.map((item) => item.id),
             base.shortcutRailVisibility,
         ),
+        showSideRailStrip: raw?.showSideRailStrip ?? base.showSideRailStrip,
+        showShortcutRailStrip: raw?.showShortcutRailStrip ?? base.showShortcutRailStrip,
         showExplorerPanel: raw?.showExplorerPanel ?? base.showExplorerPanel,
         explorerWidth: clamp(raw?.explorerWidth, base.explorerWidth, 200, 360),
         shortcutPanelWidth: clamp(raw?.shortcutPanelWidth, base.shortcutPanelWidth, 220, 420),

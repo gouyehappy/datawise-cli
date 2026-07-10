@@ -5,6 +5,11 @@ declare module '*.json' {
     export default value
 }
 
+declare module '*.svg?raw' {
+    const content: string
+    export default content
+}
+
 import type {WindowPreferences} from '@/shared/config/app-config.types'
 import type {DeepLinkOpenPayload} from '@/shared/deep-link/deep-link.types'
 import type {NativeTerminalBridge} from '@/features/terminal/services/native-terminal.types'

@@ -16,8 +16,26 @@ const backendRoot = join(repoRoot, 'datawise-backend')
 const outRoot = join(frontendRoot, 'resources/desktop')
 const bundleConfigSrc = join(frontendRoot, 'resources/bundle-config')
 const repoConfig = join(repoRoot, 'config')
+const serverTargetDir = join(backendRoot, 'datawise-server/target')
 
-const SERVER_JAR = join(backendRoot, 'datawise-server/target/datawise-server-0.1.0-SNAPSHOT.jar')
+function resolveServerJar() {
+    if (!existsSync(serverTargetDir)) {
+        throw new Error(`Missing ${serverTargetDir} — run mvn package -pl datawise-server -am`)
+    }
+    const candidates = readdirSync(serverTargetDir)
+        .filter((name) =>
+            name.startsWith('datawise-server-')
+            && name.endsWith('.jar')
+            && !name.endsWith('.jar.original'),
+        )
+        .sort()
+    if (!candidates.length) {
+        throw new Error(
+            `No datawise-server-*.jar in ${serverTargetDir} — run mvn package -pl datawise-server -am`,
+        )
+    }
+    return join(serverTargetDir, candidates[candidates.length - 1])
+}
 
 const CONNECTOR_MODULES = [
     'datawise-connectors/datawise-connector-mysql',
@@ -130,9 +148,10 @@ async function main() {
     stopDesktopProcesses()
 
     // --- build backend ---
-    run(`mvn package -pl datawise-server -am -DskipTests`, backendRoot)
-    run(`mvn package -pl ${CONNECTOR_MODULES} -am -DskipTests`, backendRoot)
-    assertFile(SERVER_JAR, 'run mvn package -pl datawise-server -am')
+    run(`mvn package -pl datawise-server -am -Dmaven.test.skip=true`, backendRoot)
+    run(`mvn package -pl ${CONNECTOR_MODULES} -am -Dmaven.test.skip=true`, backendRoot)
+    const serverJar = resolveServerJar()
+    log(`using server jar ${serverJar}`)
 
     // --- assemble output tree ---
     stopDesktopProcesses()
@@ -141,8 +160,8 @@ async function main() {
     const configOut = join(outRoot, 'config-bundle')
     mkdirSync(backendOut, {recursive: true})
 
-    cpSync(SERVER_JAR, join(backendOut, 'datawise-server.jar'))
-    log(`copied ${SERVER_JAR}`)
+    cpSync(serverJar, join(backendOut, 'datawise-server.jar'))
+    log(`copied ${serverJar}`)
 
     const javaHome = process.env.JAVA_HOME?.trim()
     if (!javaHome) {

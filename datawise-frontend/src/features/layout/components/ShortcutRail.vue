@@ -13,10 +13,7 @@ import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {isShortcutPanelEnabled} from '@/features/plugin/services/plugin-registry.service'
 import {useShortcutPanelStore} from '@/features/layout/stores/shortcut-panel-store'
 import {useMigrationTaskStore} from '@/features/explorer/stores/migration-task-store'
-import {
-    SHORTCUT_PANEL_RESIZE_MIN,
-    useSidePanelResizeBounds,
-} from '@/core/composables/useSidePanelResizeBounds'
+import {useSidePanelResizeBounds, SHORTCUT_PANEL_RESIZE_MIN} from '@/core/composables/useSidePanelResizeBounds'
 
 const {t} = useI18n()
 const layout = useLayoutStore()

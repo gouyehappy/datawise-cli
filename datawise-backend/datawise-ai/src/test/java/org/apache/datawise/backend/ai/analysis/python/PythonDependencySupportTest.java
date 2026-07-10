@@ -14,6 +14,7 @@ class PythonDependencySupportTest {
     @Test
     void mapsSklearnToScikitLearn() {
         AiPythonProperties properties = new AiPythonProperties();
+        properties.setDependencyInstallEnabled(true);
         properties.setAllowedPackages("scikit-learn,pandas");
 
         List<String> packages = PythonDependencySupport.resolveAllowedPackages(
@@ -32,6 +33,7 @@ class PythonDependencySupportTest {
     @Test
     void ignoresStdlibAndDisallowedPackages() {
         AiPythonProperties properties = new AiPythonProperties();
+        properties.setDependencyInstallEnabled(true);
         properties.setAllowedPackages("pandas");
 
         List<String> packages = PythonDependencySupport.resolveAllowedPackages(

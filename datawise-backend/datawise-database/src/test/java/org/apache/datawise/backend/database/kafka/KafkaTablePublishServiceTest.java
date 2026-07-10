@@ -67,7 +67,8 @@ class KafkaTablePublishServiceTest {
                 connectionContext,
                 connectionAccessService,
                 connectorFacade,
-                tableDataService
+                tableDataService,
+                null
         );
         when(connectorFacade.messageBroker()).thenReturn(messageBrokerAccess);
         when(connectorFacade.catalog()).thenReturn(catalogAccess);
@@ -149,6 +150,68 @@ class KafkaTablePublishServiceTest {
         verify(producer).send(eq("events"), eq("1"), payloadCaptor.capture(), eq(null));
         assertTrue(payloadCaptor.getValue().contains("\"id\":1"));
         verify(connectionAccessService).requireDmlAccess(7L, "kafka-1");
+    }
+
+    @Test
+    void publish_fakeDataUsesSupplierAndHonorsLimit() {
+        KafkaFakeRowSupplier fakeRowSupplier = org.mockito.Mockito.mock(KafkaFakeRowSupplier.class);
+        service = new KafkaTablePublishService(
+                connectionContext,
+                connectionAccessService,
+                connectorFacade,
+                tableDataService,
+                fakeRowSupplier
+        );
+
+        ConnectionEntity kafka = kafkaConnection("kafka-1");
+        ConnectionEntity mysql = jdbcConnection("mysql-1");
+
+        when(connectionContext.requireUserId()).thenReturn(7L);
+        when(connectionContext.requireAvailableConnectionForCurrentUser(
+                eq("kafka-1"),
+                eq(ConnectionExecutionContext.EXPLORER_CONNECTION_NOT_FOUND)
+        )).thenReturn(new ConnectionExecutionContext.ResolvedConnection(7L, kafka));
+        when(connectionContext.requireAvailableConnectionForCurrentUser(
+                eq("mysql-1"),
+                eq("Connection not found: mysql-1")
+        )).thenReturn(new ConnectionExecutionContext.ResolvedConnection(7L, mysql));
+
+        when(fakeRowSupplier.generateRows(eq("mysql-1"), eq("shop"), eq("orders"), eq(3), eq(99L), eq(5)))
+                .thenReturn(List.of(
+                        Map.of("id", 1, "name", "a"),
+                        Map.of("id", 2, "name", "b"),
+                        Map.of("id", 3, "name", "c")
+                ));
+
+        when(messageBrokerAccess.withProducer(eq(kafka), any())).thenAnswer(invocation -> {
+            var callback = invocation.getArgument(1, org.apache.datawise.backend.connector.operation.ConnectorMessageBrokerOperations.MessageBrokerProducerCallback.class);
+            return callback.apply(producer);
+        });
+        when(producer.send(eq("events"), any(), any(), eq(null)))
+                .thenReturn(new KafkaProduceResultDto("events", 0, 10L));
+
+        PublishTableToKafkaResult result = service.publish(
+                "kafka-1",
+                new PublishTableToKafkaRequest(
+                        "mysql-1",
+                        "shop",
+                        "orders",
+                        "events",
+                        "id",
+                        3,
+                        0L,
+                        null,
+                        true,
+                        99L,
+                        5
+                )
+        );
+
+        assertEquals(3, result.messagesSent());
+        assertEquals(0, result.messagesFailed());
+        assertEquals(PublishTableToKafkaResult.STOP_LIMIT_REACHED, result.stopReason());
+        verify(fakeRowSupplier).generateRows("mysql-1", "shop", "orders", 3, 99L, 5);
+        verify(tableDataService, org.mockito.Mockito.never()).fetch(any(), any(), any(), any(), any());
     }
 
     private static ConnectionEntity kafkaConnection(String id) {

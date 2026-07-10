@@ -47,7 +47,7 @@ const desktopApp = isDesktopApp()
 <template>
   <div class="shell" :class="{'shell--desktop': desktopApp}">
     <div class="shell-body">
-      <AppSideRail/>
+      <AppSideRail v-if="appConfig.showSideRailStrip"/>
       <div class="shell-main">
         <MainContent/>
       </div>

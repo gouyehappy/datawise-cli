@@ -58,6 +58,7 @@ public class DatagenService {
         TablePropertiesResult properties = tableDetailService.loadProperties(tableName, connectionId, database);
         int rowCount = clampRowCount(request.rowCount());
         long seed = request.seed() != null ? request.seed() : System.currentTimeMillis();
+        int rowOffset = request.rowOffset() != null ? Math.max(0, request.rowOffset()) : 0;
 
         List<TableColumnDetail> insertableColumns = properties.columns().stream()
                 .filter(col -> !(col.autoIncrement() && "PRI".equalsIgnoreCase(col.keyType())))
@@ -67,13 +68,57 @@ public class DatagenService {
                     "-- no insertable columns\n");
         }
 
+        List<Map<String, Object>> rows = generateRows(insertableColumns, rowCount, seed, rowOffset);
+
+        String insertSql = buildInsertSql(dbType, database, properties.tableName(), insertableColumns, rows);
+        List<Map<String, Object>> previewRows = rows.subList(0, Math.min(DEFAULT_PREVIEW_ROWS, rows.size()));
+        return new DatagenPreviewResult(connectionId, database, tableName, rowCount, seed, previewRows, insertSql);
+    }
+
+    public List<Map<String, Object>> generateRows(
+            String connectionId,
+            String database,
+            String tableName,
+            int rowCount,
+            long seed,
+            int rowOffset
+    ) {
+        String resolvedConnectionId = requireNonBlank(connectionId, "connectionId is required");
+        String resolvedTableName = requireNonBlank(tableName, "tableName is required");
+
+        ConnectionExecutionContext.ResolvedConnectionWithDatabase resolved =
+                connectionContext.requireAvailableWithDatabaseForCurrentUser(
+                        resolvedConnectionId,
+                        database,
+                        ConnectionExecutionContext.DEFAULT_CONNECTION_NOT_FOUND
+                );
+
+        TablePropertiesResult properties = tableDetailService.loadProperties(
+                resolvedTableName,
+                resolvedConnectionId,
+                resolved.database()
+        );
+        List<TableColumnDetail> insertableColumns = properties.columns().stream()
+                .filter(col -> !(col.autoIncrement() && "PRI".equalsIgnoreCase(col.keyType())))
+                .toList();
+        if (insertableColumns.isEmpty()) {
+            return List.of();
+        }
+        return generateRows(insertableColumns, clampRowCount(rowCount), seed, Math.max(0, rowOffset));
+    }
+
+    private List<Map<String, Object>> generateRows(
+            List<TableColumnDetail> insertableColumns,
+            int rowCount,
+            long seed,
+            int rowOffset
+    ) {
         Random random = new Random(seed);
         Faker faker = new Faker(new Locale("zh", "CN"), random);
         GenContext ctx = new GenContext(faker, random);
 
         record ColumnGenerator(TableColumnDetail column, org.apache.datawise.datagen.type.base.IGenerator<?> generator) {
             Object generate(GenContext ctx) {
-                // 泛型被擦除，这里按 Object 处理即可
                 @SuppressWarnings("unchecked")
                 org.apache.datawise.datagen.type.base.IGenerator<Object> gen =
                         (org.apache.datawise.datagen.type.base.IGenerator<Object>) generator;
@@ -88,7 +133,7 @@ public class DatagenService {
         List<Map<String, Object>> rows = new ArrayList<>(rowCount);
         double nullableChance = 0.1d;
         for (int i = 0; i < rowCount; i++) {
-            ctx.setRowIndex(i);
+            ctx.setRowIndex(rowOffset + i);
             Map<String, Object> row = new LinkedHashMap<>();
             for (ColumnGenerator item : generators) {
                 TableColumnDetail col = item.column();
@@ -100,10 +145,7 @@ public class DatagenService {
             }
             rows.add(row);
         }
-
-        String insertSql = buildInsertSql(dbType, database, properties.tableName(), insertableColumns, rows);
-        List<Map<String, Object>> previewRows = rows.subList(0, Math.min(DEFAULT_PREVIEW_ROWS, rows.size()));
-        return new DatagenPreviewResult(connectionId, database, tableName, rowCount, seed, previewRows, insertSql);
+        return rows;
     }
 
     private String buildInsertSql(

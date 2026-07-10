@@ -12,4 +12,10 @@ export default {
     feedbackToast: '感谢反馈，请发送邮件至 support@datawise.local',
     mainLabel: '主导航',
     utilLabel: '工具',
+    rail: {
+        hideLeft: '隐藏左侧栏',
+        showLeft: '显示左侧栏',
+        hideRight: '隐藏右侧栏',
+        showRight: '显示右侧栏',
+    },
 }

@@ -233,12 +233,16 @@ public enum DbType {
             return getFieldIde(name, fieldIde);
         }
         String body = getFieldIde(name, fieldIde);
-        return switch (quote) {
-            case "`" -> "`" + body.replace("`", "``") + "`";
-            case "\"" -> "\"" + body.replace("\"", "\"\"") + "\"";
-            case "[" -> "[" + body.replace("]", "]]") + "]";
-            default -> quote + body + quote;
-        };
+        if ("`".equals(quote)) {
+            return "`" + body.replace("`", "``") + "`";
+        }
+        if ("\"".equals(quote)) {
+            return "\"" + body.replace("\"", "\"\"") + "\"";
+        }
+        if ("[".equals(quote)) {
+            return "[" + body.replace("]", "]]") + "]";
+        }
+        return quote + body + quote;
     }
 
     public String quoteSchemaTableName(String schema, String table) {
@@ -287,11 +291,13 @@ public enum DbType {
         if (fieldIde == null) {
             return identifier;
         }
-        return switch (fieldIde) {
-            case LOWERCASE -> identifier.toLowerCase(Locale.ROOT);
-            case UPPERCASE -> identifier.toUpperCase(Locale.ROOT);
-            default -> identifier;
-        };
+        if (fieldIde == FieldIdeEnum.LOWERCASE) {
+            return identifier.toLowerCase(Locale.ROOT);
+        }
+        if (fieldIde == FieldIdeEnum.UPPERCASE) {
+            return identifier.toUpperCase(Locale.ROOT);
+        }
+        return identifier;
     }
 
     // --- Binary compatibility for connector plugin JARs built before DbType.matches() migration ---

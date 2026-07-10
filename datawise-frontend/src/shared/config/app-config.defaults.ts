@@ -49,6 +49,8 @@ export const DEFAULT_LAYOUT_PREFERENCES: LayoutPreferences = {
     shortcutRailVisibility: Object.fromEntries(
         SHORTCUT_RAIL_NAV_DEFS.map((item) => [item.id, true]),
     ) as LayoutPreferences['shortcutRailVisibility'],
+    showSideRailStrip: true,
+    showShortcutRailStrip: true,
     showExplorerPanel: true,
     explorerWidth: DEFAULT_EXPLORER_WIDTH,
     shortcutPanelWidth: DEFAULT_SHORTCUT_PANEL_WIDTH,

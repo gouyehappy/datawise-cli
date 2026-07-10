@@ -7,7 +7,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "dev:electron": "cross-env ELECTRON=true vite",
+    "dev:electron": "npm run gen:icons && cross-env ELECTRON=true vite",
     "build": "vue-tsc --noEmit && vite build",
     "build:electron": "cross-env ELECTRON=true vue-tsc --noEmit && cross-env ELECTRON=true vite build",
     "pack:electron": "node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs --dir",
@@ -15,6 +15,8 @@
     "dist:electron:full": "npm run dist:desktop",
     "dist:win": "npm run gen:icons && node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs --win",
     "prepare:desktop": "node scripts/prepare-desktop-bundle.mjs",
+    "clean:desktop": "node scripts/clean-build-artifacts.mjs",
+    "dist:desktop:clean": "npm run clean:desktop && npm run dist:desktop",
     "dist:desktop": "npm run gen:icons && npm run stop:desktop && npm run prepare:desktop && node scripts/clean-release.mjs && npm run build:electron && node scripts/electron-builder-run.mjs --win",
     "stop:desktop": "node scripts/stop-desktop-app.mjs",
     "preview": "vite preview",
@@ -89,6 +91,7 @@
       "dist/**/*",
       "dist-electron/**/*",
       "build/icon.png",
+      "build/tray-icon.png",
       "node_modules/node-pty/**/*",
       "!node_modules/@datawise{,/**}"
     ],

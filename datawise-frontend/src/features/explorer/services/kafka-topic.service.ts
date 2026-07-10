@@ -45,6 +45,9 @@ export interface PublishTableToKafkaRequest {
     maxMessages?: number | null
     intervalMs?: number | null
     partition?: number | null
+    fakeData?: boolean | null
+    datagenSeed?: number | null
+    datagenRowOffset?: number | null
 }
 
 export interface PublishTableToKafkaResult {

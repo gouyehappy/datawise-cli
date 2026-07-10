@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {describe, it} from 'node:test'
 import {ApiError} from '@/shared/api/http/request'
 import {
+    aggregatePublishResults,
     buildDefaultKafkaTopicForTable,
     buildPublishTableToKafkaRequest,
     buildKafkaTablePublishContextFromSource,
@@ -155,7 +156,57 @@ describe('kafka-table-publish.service', () => {
                 maxMessages: 50,
                 intervalMs: 1000,
                 partition: 2,
+                fakeData: false,
+                datagenSeed: null,
+                datagenRowOffset: null,
             },
         )
+    })
+
+    it('builds fake-data publish request with datagen offsets', () => {
+        const form = {
+            ...createDefaultKafkaTablePublishForm(listKafkaConnections(tree)),
+            topic: 'orders',
+            dataSource: 'fake' as const,
+            continuous: true,
+        }
+        assert.deepEqual(
+            buildPublishTableToKafkaRequest(
+                {
+                    sourceConnectionId: 'mysql-1',
+                    sourceConnectionLabel: 'shop mysql',
+                    sourceDatabase: 'shop',
+                    tableName: 'orders',
+                },
+                form,
+                {datagenSeed: 42, datagenRowOffset: 100},
+            ),
+            {
+                sourceConnectionId: 'mysql-1',
+                sourceDatabase: 'shop',
+                tableName: 'orders',
+                topic: 'orders',
+                keyColumn: null,
+                maxMessages: 100,
+                intervalMs: 0,
+                partition: null,
+                fakeData: true,
+                datagenSeed: 42,
+                datagenRowOffset: 100,
+            },
+        )
+    })
+
+    it('aggregates continuous publish batches and user stop', () => {
+        const batches = [
+            {messagesSent: 10, messagesFailed: 0, durationMs: 50, stopReason: 'LIMIT_REACHED', lastError: null, lastProduce: null},
+            {messagesSent: 8, messagesFailed: 1, durationMs: 40, stopReason: 'PRODUCE_ERROR', lastError: 'boom', lastProduce: null},
+        ]
+        const stopped = aggregatePublishResults(batches, true)
+        assert.equal(stopped.messagesSent, 18)
+        assert.equal(stopped.messagesFailed, 1)
+        assert.equal(stopped.durationMs, 90)
+        assert.equal(stopped.stopReason, 'USER_STOPPED')
+        assert.equal(stopped.lastError, 'boom')
     })
 })

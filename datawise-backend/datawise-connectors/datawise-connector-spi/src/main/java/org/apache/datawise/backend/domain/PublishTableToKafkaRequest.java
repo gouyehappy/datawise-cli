@@ -11,6 +11,33 @@ public record PublishTableToKafkaRequest(
         String keyColumn,
         Integer maxMessages,
         Long intervalMs,
-        Integer partition
+        Integer partition,
+        Boolean fakeData,
+        Long datagenSeed,
+        Integer datagenRowOffset
 ) {
+    public PublishTableToKafkaRequest(
+            String sourceConnectionId,
+            String sourceDatabase,
+            String tableName,
+            String topic,
+            String keyColumn,
+            Integer maxMessages,
+            Long intervalMs,
+            Integer partition
+    ) {
+        this(
+                sourceConnectionId,
+                sourceDatabase,
+                tableName,
+                topic,
+                keyColumn,
+                maxMessages,
+                intervalMs,
+                partition,
+                null,
+                null,
+                null
+        );
+    }
 }

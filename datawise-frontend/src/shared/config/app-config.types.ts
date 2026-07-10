@@ -25,6 +25,8 @@ export interface WindowPreferences {
 export interface LayoutPreferences {
     sideRailVisibility: Partial<Record<SideRailItemId, boolean>>
     shortcutRailVisibility: Partial<Record<ShortcutPanel, boolean>>
+    showSideRailStrip: boolean
+    showShortcutRailStrip: boolean
     showExplorerPanel: boolean
     explorerWidth: number
     shortcutPanelWidth: number

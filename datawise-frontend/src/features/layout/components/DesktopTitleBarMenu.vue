@@ -4,7 +4,6 @@ import {useI18n} from 'vue-i18n'
 import {usePopoverEscape} from '@/core/composables/usePopoverEscape'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
-import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {
     buildTitleBarNav,
     titleBarMenuIsDropdown,
@@ -13,11 +12,12 @@ import {
 import TitleBarMenuIcon from '@/features/layout/components/TitleBarMenuIcon.vue'
 import {DwIcon} from '@/core/icons'
 import {useTitleBarMenuDensity} from '@/features/layout/composables/useTitleBarMenuDensity'
+import {useOnboardingStore} from '@/features/onboarding/stores/onboarding-store'
 
 const {t, te} = useI18n()
 const layout = useLayoutStore()
 const appConfig = useAppConfigStore()
-const pluginStore = usePluginStore()
+const onboarding = useOnboardingStore()
 
 const openMenuId = ref<string | null>(null)
 const rootRef = ref<HTMLElement | null>(null)
@@ -30,16 +30,25 @@ const menus = computed(() =>
         {
             activeModule: layout.activeModule,
             settingsSection: layout.settingsSection,
-            devToolsVisible: appConfig.isPluginDevToolsVisible(),
-            catalogIssueCount: pluginStore.catalogAllIssueCount,
-            presetConflictCount: pluginStore.referencePresetConflictCount,
-            aiWorkbenchEnabled: pluginStore.isEnabled('p-ai-workbench'),
+            config: {
+                showSideRailStrip: appConfig.showSideRailStrip,
+                showExplorerPanel: appConfig.showExplorerPanel,
+                showShortcutRailStrip: appConfig.showShortcutRailStrip,
+            },
         },
         {
             setModule: (module) => layout.setModule(module),
             openSettings: (section) => layout.openSettingsModule(section ?? 'basic'),
-            openPluginDevTools: () => pluginStore.openPluginDevTools(),
-            openConnectorMarket: () => pluginStore.openConnectorMarket(),
+            openOnboarding: () => onboarding.showGuide(),
+            config: {
+                openPreferences: () => layout.openSettingsModule('basic'),
+                toggleSideRailStrip: () => appConfig.setShowSideRailStrip(!appConfig.showSideRailStrip),
+                toggleExplorerPanel: () => appConfig.setShowExplorerPanel(!appConfig.showExplorerPanel),
+                toggleShortcutRailStrip: () => {
+                    appConfig.setShowShortcutRailStrip(!appConfig.showShortcutRailStrip)
+                },
+                applyFocusMode: () => appConfig.applyFocusMode(),
+            },
         },
     ),
 )
@@ -109,7 +118,8 @@ function toggleMenu(item: TitleBarMenuItem, event: MouseEvent) {
 function selectChild(item: TitleBarMenuItem) {
     if (!item.run) return
     item.run()
-    closeMenu()
+    const keepOpen = item.kind === 'action' && item.checked !== undefined
+    if (!keepOpen) closeMenu()
 }
 
 function onDocumentMouseDown(event: MouseEvent) {
@@ -194,22 +204,36 @@ onUnmounted(() => {
             <span class="titlebar-menu__dropdown-title">{{ labelOf(openDropdownMenu) }}</span>
           </div>
           <div class="titlebar-menu__dropdown-body">
-            <button
-                v-for="child in openDropdownMenu.children"
-                :key="child.id"
-                type="button"
-                class="titlebar-menu__dropdown-item"
-                :class="{'is-active': child.active}"
-                role="menuitem"
-                @click="selectChild(child)"
-            >
-              <span class="titlebar-menu__dropdown-leading" aria-hidden="true">
-                <TitleBarMenuIcon v-if="child.icon" :name="child.icon" size="md"/>
-              </span>
-              <span class="titlebar-menu__dropdown-copy">
-                <span class="titlebar-menu__dropdown-label">{{ labelOf(child) }}</span>
-              </span>
-            </button>
+            <template v-for="child in openDropdownMenu.children" :key="child.id">
+              <div
+                  v-if="child.kind === 'header'"
+                  class="titlebar-menu__dropdown-group"
+              >
+                {{ labelOf(child) }}
+              </div>
+              <div
+                  v-else-if="child.divider"
+                  class="titlebar-menu__dropdown-divider"
+                  role="separator"
+              />
+              <button
+                  v-else
+                  type="button"
+                  class="titlebar-menu__dropdown-item"
+                  :class="{'is-active': child.active, 'is-checked': child.checked}"
+                  role="menuitemcheckbox"
+                  :aria-checked="child.checked ? 'true' : 'false'"
+                  @click="selectChild(child)"
+              >
+                <span class="titlebar-menu__dropdown-leading" aria-hidden="true">
+                  <TitleBarMenuIcon v-if="child.icon" :name="child.icon" size="md"/>
+                </span>
+                <span class="titlebar-menu__dropdown-copy">
+                  <span class="titlebar-menu__dropdown-label">{{ labelOf(child) }}</span>
+                </span>
+                <span v-if="child.checked" class="titlebar-menu__dropdown-check" aria-hidden="true">✓</span>
+              </button>
+            </template>
           </div>
         </div>
       </Transition>
@@ -364,9 +388,28 @@ onUnmounted(() => {
   padding: 6px;
 }
 
+.titlebar-menu__dropdown-group {
+  padding: 6px 8px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dw-text-muted);
+}
+
+.titlebar-menu__dropdown-group:not(:first-child) {
+  padding-top: 8px;
+}
+
+.titlebar-menu__dropdown-divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: color-mix(in srgb, var(--dw-text) 8%, transparent);
+}
+
 .titlebar-menu__dropdown-item {
   display: grid;
-  grid-template-columns: 16px minmax(0, 1fr);
+  grid-template-columns: 16px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -409,6 +452,16 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.titlebar-menu__dropdown-item.is-checked {
+  color: var(--dw-text);
+}
+
+.titlebar-menu__dropdown-check {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dw-primary);
 }
 
 .titlebar-menu__dropdown-item.is-active .titlebar-menu__dropdown-label {

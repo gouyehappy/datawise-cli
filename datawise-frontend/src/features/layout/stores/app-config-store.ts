@@ -490,7 +490,24 @@ export const useAppConfigStore = defineStore('app-config', () => {
     watch(() => sqlEditorShortcuts.sharedSettings, () => persistSoon(), {deep: true})
     watch(() => sqlEditorShortcuts.personalSettings, () => persistSoon(), {deep: true})
 
-    const showShortcutRail = computed(() => hasVisibleShortcutRailItem(preferences.value))
+    const showSideRailStrip = computed(() => preferences.value.showSideRailStrip !== false)
+    const showShortcutRailStrip = computed(() => preferences.value.showShortcutRailStrip !== false)
+    const hasShortcutRailItems = computed(() => hasVisibleShortcutRailItem(preferences.value))
+    const showShortcutRail = computed(
+        () => showShortcutRailStrip.value && hasShortcutRailItems.value,
+    )
+
+    function setShowSideRailStrip(visible: boolean) {
+        applyLayoutState({...snapshotLayout(), showSideRailStrip: visible})
+    }
+
+    function setShowShortcutRailStrip(visible: boolean) {
+        applyLayoutState({...snapshotLayout(), showShortcutRailStrip: visible})
+        if (!visible) {
+            layout.activeShortcutPanel = null
+            layout.showNotificationDrawer = false
+        }
+    }
 
     const shortcutPanelWidth = computed(() => preferences.value.shortcutPanelWidth)
     const shortcutPanelMaxHeight = computed(() => preferences.value.shortcutPanelMaxHeight)
@@ -600,6 +617,21 @@ export const useAppConfigStore = defineStore('app-config', () => {
         applyFullConfig(createDefaultAppConfig())
     }
 
+    /** 一键专注：隐藏侧栏与结果面板，保留资源树便于查表写 SQL */
+    function applyFocusMode() {
+        const layout = useLayoutStore()
+        applyLayoutState({
+            ...snapshotLayout(),
+            showSideRailStrip: false,
+            showShortcutRailStrip: false,
+            showExplorerPanel: true,
+        })
+        setShowConsoleResultPanel(false)
+        layout.closeTerminalPanel()
+        layout.showNotificationDrawer = false
+        layout.activeShortcutPanel = null
+    }
+
     async function syncFromServer() {
         if (readGuestFlag()) {
             applyFullConfig(createDefaultAppConfig())
@@ -682,6 +714,9 @@ export const useAppConfigStore = defineStore('app-config', () => {
         workbenchLlmProfile,
         defaultEmbeddingProfile,
         showExplorerPanel: computed(() => preferences.value.showExplorerPanel),
+        showSideRailStrip,
+        showShortcutRailStrip,
+        hasShortcutRailItems,
         showShortcutRail,
         shortcutPanelWidth,
         shortcutPanelMaxHeight,
@@ -695,6 +730,8 @@ export const useAppConfigStore = defineStore('app-config', () => {
         setSideRailVisible,
         setShortcutVisible,
         setShowExplorerPanel,
+        setShowSideRailStrip,
+        setShowShortcutRailStrip,
         setConsoleEditorHeight,
         setShowConsoleResultPanel,
         setShortcutPanelWidth,
@@ -721,6 +758,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
         exportConfig,
         importConfigText,
         resetLayoutDefaults,
+        applyFocusMode,
         syncFromServer,
         reloadForCurrentScope,
     }

@@ -13,7 +13,7 @@ const rightVisible = computed(() =>
     appConfig.shortcutRailItems.filter((item) => item.visible).length,
 )
 
-const showLeftRail = computed(() => leftVisible.value > 0)
+const showLeftRail = computed(() => appConfig.showSideRailStrip && leftVisible.value > 0)
 const showExplorer = computed(() => appConfig.showExplorerPanel)
 const showRightRail = computed(() => appConfig.showShortcutRail)
 </script>

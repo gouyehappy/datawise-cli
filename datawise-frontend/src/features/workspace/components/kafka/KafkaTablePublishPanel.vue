@@ -3,16 +3,19 @@ import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {explorerApi} from '@/api'
 import {DwButton} from '@/core/components'
+import ConfirmDialog from '@/core/components/ConfirmDialog.vue'
 import DwSelect from '@/core/components/DwSelect.vue'
 import type {SelectOption} from '@/core/components/select.types'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import type {PublishTableToKafkaResult} from '@/features/explorer/services/kafka-topic.service'
 import {
+    aggregatePublishResults,
     buildDefaultKafkaTopicForTable,
     buildKafkaTablePublishContextFromSource,
     buildPublishTableToKafkaRequest,
     createDefaultKafkaTablePublishForm,
     createDefaultKafkaTablePublishSourceForm,
+    formatKafkaTablePublishProgress,
     formatKafkaTablePublishSuccess,
     KAFKA_PUBLISH_MAX_INTERVAL_MS,
     KAFKA_PUBLISH_MAX_MESSAGES_CAP,
@@ -55,9 +58,15 @@ const tablesResolved = ref(false)
 const topicManual = ref(false)
 
 const publishing = ref(false)
+const stopRequested = ref(false)
+const datagenSeed = ref(Date.now())
+const datagenRowOffset = ref(0)
+const liveSent = ref(0)
+const liveFailed = ref(0)
 const submitError = ref<string | null>(null)
 const submitResult = ref<PublishTableToKafkaResult | null>(null)
 const submitAttempted = ref(false)
+const sendConfirmOpen = ref(false)
 const touched = ref({
     sourceConnectionId: false,
     sourceDatabase: false,
@@ -100,7 +109,42 @@ const canPublish = computed(() => (
     !validationError.value
     && !publishing.value
     && resolvedContext.value != null
-    && submitResult.value == null
+))
+
+const isContinuousRunning = computed(() => publishing.value && form.value.continuous)
+
+const fieldDisabled = computed(() => publishing.value)
+
+const sendRulesLines = computed(() => {
+    const rules = 'explorer.kafkaTablePublish.sendRules'
+    const lines = [t(`${rules}.jsonFormat`)]
+    if (form.value.dataSource === 'fake') {
+        lines.push(t(form.value.continuous ? `${rules}.fakeContinuous` : `${rules}.fakeSingle`))
+    } else {
+        lines.push(t(form.value.continuous ? `${rules}.tableContinuous` : `${rules}.tableSingle`))
+    }
+    if (form.value.continuous) {
+        lines.push(t(`${rules}.continuousStop`, {batch: form.value.maxMessages}))
+    } else {
+        lines.push(t(`${rules}.singleStop`, {max: form.value.maxMessages}))
+    }
+    if (form.value.intervalMs > 0) {
+        lines.push(t(`${rules}.interval`, {ms: form.value.intervalMs}))
+    }
+    lines.push(t(`${rules}.lockedWhileSending`))
+    return lines
+})
+
+const maxMessagesHint = computed(() => (
+    form.value.continuous
+        ? t('explorer.kafkaTablePublish.batchSizeHint')
+        : t('explorer.kafkaTablePublish.maxMessagesHint')
+))
+
+const maxMessagesLabel = computed(() => (
+    form.value.continuous
+        ? t('explorer.kafkaTablePublish.batchSize')
+        : t('explorer.kafkaTablePublish.maxMessages')
 ))
 
 const successMessage = computed(() => (
@@ -109,6 +153,12 @@ const successMessage = computed(() => (
 
 const footerMessage = computed(() => {
     if (submitError.value) return {text: submitError.value, tone: 'error' as const}
+    if (isContinuousRunning.value) {
+        return {
+            text: formatKafkaTablePublishProgress(liveSent.value, liveFailed.value, t),
+            tone: 'muted' as const,
+        }
+    }
     if (successMessage.value) return {text: successMessage.value, tone: 'success' as const}
     if (submitAttempted.value && validationError.value) {
         return {text: validationError.value, tone: 'error' as const}
@@ -194,6 +244,11 @@ function resetFormState() {
     tablesLoadError.value = false
     tablesResolved.value = false
     topicManual.value = false
+    stopRequested.value = false
+    datagenSeed.value = Date.now()
+    datagenRowOffset.value = 0
+    liveSent.value = 0
+    liveFailed.value = 0
     publishing.value = false
     submitError.value = null
     submitResult.value = null
@@ -316,7 +371,18 @@ watch(
     {deep: true},
 )
 
+const sendConfirmMessage = computed(() => (
+    t('explorer.kafkaTablePublish.sendRulesConfirmBody', {batch: form.value.maxMessages})
+))
+
+function requestStop() {
+    stopRequested.value = true
+}
+
 async function submit() {
+    const context = resolvedContext.value
+    if (!context || validationError.value || publishing.value) return
+
     submitAttempted.value = true
     touched.value = {
         sourceConnectionId: true,
@@ -325,30 +391,82 @@ async function submit() {
         kafkaConnectionId: true,
         topic: true,
     }
+    if (validationError.value) return
+
+    if (form.value.continuous) {
+        sendConfirmOpen.value = true
+        return
+    }
+
+    await runPublish()
+}
+
+async function onSendConfirm() {
+    sendConfirmOpen.value = false
+    await runPublish()
+}
+
+async function runPublish() {
     const context = resolvedContext.value
-    if (!context || !canPublish.value) return
+    if (!context || publishing.value) return
+
     publishing.value = true
+    stopRequested.value = false
     submitError.value = null
     submitResult.value = null
+    liveSent.value = 0
+    liveFailed.value = 0
+    datagenSeed.value = Date.now()
+    datagenRowOffset.value = 0
+
+    const batchResults: PublishTableToKafkaResult[] = []
+
     try {
-        const result = await explorerApi.publishTableToKafka(
-            form.value.kafkaConnectionId,
-            buildPublishTableToKafkaRequest(context, form.value),
-            {silent: true},
-        )
-        if (result.messagesFailed > 0 || result.stopReason === 'PRODUCE_ERROR') {
-            submitError.value = result.lastError
-                ?? t('explorer.kafkaTablePublish.partialFailed', {
-                    sent: result.messagesSent,
-                    failed: result.messagesFailed,
-                })
-            return
+        do {
+            const result = await explorerApi.publishTableToKafka(
+                form.value.kafkaConnectionId,
+                buildPublishTableToKafkaRequest(context, form.value, {
+                    datagenSeed: datagenSeed.value,
+                    datagenRowOffset: datagenRowOffset.value,
+                }),
+                {silent: true},
+            )
+            batchResults.push(result)
+            liveSent.value += result.messagesSent
+            liveFailed.value += result.messagesFailed
+
+            if (form.value.dataSource === 'fake') {
+                datagenRowOffset.value += result.messagesSent
+            }
+
+            if (result.messagesFailed > 0 || result.stopReason === 'PRODUCE_ERROR') {
+                submitError.value = result.lastError
+                    ?? t('explorer.kafkaTablePublish.partialFailed', {
+                        sent: liveSent.value,
+                        failed: liveFailed.value,
+                    })
+                break
+            }
+
+            if (!form.value.continuous) {
+                submitResult.value = result
+                break
+            }
+
+            if (stopRequested.value) {
+                submitResult.value = aggregatePublishResults(batchResults, true)
+                break
+            }
+        } while (form.value.continuous)
+
+        if (!submitError.value && form.value.continuous && batchResults.length > 0 && !submitResult.value) {
+            submitResult.value = aggregatePublishResults(batchResults, stopRequested.value)
         }
-        submitResult.value = result
     } catch (error) {
         submitError.value = resolveKafkaTablePublishErrorMessage(error, t)
     } finally {
         publishing.value = false
+        stopRequested.value = false
     }
 }
 
@@ -357,7 +475,10 @@ defineExpose({resetFormState})
 
 <template>
   <form class="kafka-table-publish-panel" @submit.prevent="submit">
-    <div class="kafka-table-publish-panel__scroll">
+    <div
+        class="kafka-table-publish-panel__scroll"
+        :class="{ 'is-locked': publishing }"
+    >
       <p class="kafka-table-publish-panel__hint">{{ t('explorer.kafkaTablePublish.subtitle') }}</p>
 
       <div v-if="presetSource && !needsSourceSelection" class="kafka-table-publish-panel__source-tag">
@@ -374,6 +495,7 @@ defineExpose({resetFormState})
                 v-model="sourceForm.sourceConnectionId"
                 :placeholder="t('explorer.kafkaTablePublish.pickSourceConnection')"
                 :options="sourceConnectionOptions"
+                :disabled="fieldDisabled"
                 @update:model-value="touchField('sourceConnectionId')"
             />
           </div>
@@ -391,7 +513,7 @@ defineExpose({resetFormState})
                     ? t('explorer.kafkaTablePublish.loadingDatabases')
                     : t('explorer.kafkaTablePublish.pickSourceDatabase')"
                 :options="sourceDatabaseOptions"
-                :disabled="!sourceForm.sourceConnectionId || databasesLoading"
+                :disabled="fieldDisabled || !sourceForm.sourceConnectionId || databasesLoading"
                 @update:model-value="touchField('sourceDatabase')"
             />
           </div>
@@ -410,7 +532,7 @@ defineExpose({resetFormState})
                     ? t('explorer.kafkaTablePublish.loadingTables')
                     : t('explorer.kafkaTablePublish.pickSourceTable')"
                 :options="sourceTableOptions"
-                :disabled="!sourceForm.sourceDatabase || tablesLoading || databasesLoading"
+                :disabled="fieldDisabled || !sourceForm.sourceDatabase || tablesLoading || databasesLoading"
                 @update:model-value="touchField('tableName')"
             />
             <input
@@ -419,7 +541,7 @@ defineExpose({resetFormState})
                 class="kafka-table-publish-panel__input"
                 type="text"
                 spellcheck="false"
-                :disabled="!sourceForm.sourceDatabase"
+                :disabled="fieldDisabled || !sourceForm.sourceDatabase"
                 @blur="touchField('tableName')"
                 @input="applyTopicForTable(sourceForm.tableName)"
             >
@@ -441,7 +563,7 @@ defineExpose({resetFormState})
                 v-model="form.kafkaConnectionId"
                 :placeholder="t('explorer.kafkaTablePublish.noKafkaConnections')"
                 :options="kafkaConnectionOptions"
-                :disabled="lockKafkaConnection || !kafkaConnectionOptions.length"
+                :disabled="fieldDisabled || lockKafkaConnection || !kafkaConnectionOptions.length"
                 @update:model-value="touchField('kafkaConnectionId')"
             />
           </div>
@@ -457,7 +579,7 @@ defineExpose({resetFormState})
               class="kafka-table-publish-panel__input"
               type="text"
               spellcheck="false"
-              :disabled="publishing || !!successMessage"
+              :disabled="fieldDisabled"
               @input="onTopicInput"
           >
           <p class="kafka-table-publish-panel__field-note">
@@ -466,17 +588,66 @@ defineExpose({resetFormState})
         </label>
       </div>
 
+      <div class="kafka-table-publish-panel__row">
+        <label class="kafka-table-publish-panel__field">
+          <span>{{ t('explorer.kafkaTablePublish.dataSource') }}</span>
+          <div class="kafka-table-publish-panel__option-group">
+            <button
+                type="button"
+                class="kafka-table-publish-panel__option"
+                :class="{ 'is-active': form.dataSource === 'table' }"
+                :disabled="fieldDisabled"
+                @click="form.dataSource = 'table'"
+            >
+              {{ t('explorer.kafkaTablePublish.dataSourceTable') }}
+            </button>
+            <button
+                type="button"
+                class="kafka-table-publish-panel__option"
+                :class="{ 'is-active': form.dataSource === 'fake' }"
+                :disabled="fieldDisabled"
+                @click="form.dataSource = 'fake'"
+            >
+              {{ t('explorer.kafkaTablePublish.dataSourceFake') }}
+            </button>
+          </div>
+          <p class="kafka-table-publish-panel__field-note">
+            <span class="is-muted">{{ form.dataSource === 'fake'
+                ? t('explorer.kafkaTablePublish.dataSourceFakeHint')
+                : t('explorer.kafkaTablePublish.dataSourceTableHint') }}</span>
+          </p>
+        </label>
+
+        <label class="kafka-table-publish-panel__field kafka-table-publish-panel__field--checkbox">
+          <span>{{ t('explorer.kafkaTablePublish.sendMode') }}</span>
+          <label class="kafka-table-publish-panel__checkbox">
+            <input
+                v-model="form.continuous"
+                type="checkbox"
+                :disabled="fieldDisabled"
+            >
+            <span>{{ t('explorer.kafkaTablePublish.continuousSend') }}</span>
+          </label>
+          <p class="kafka-table-publish-panel__field-note">
+            <span class="is-muted">{{ t('explorer.kafkaTablePublish.continuousSendHint') }}</span>
+          </p>
+        </label>
+      </div>
+
       <div class="kafka-table-publish-panel__row kafka-table-publish-panel__row--triple">
         <label class="kafka-table-publish-panel__field">
-          <span>{{ t('explorer.kafkaTablePublish.maxMessages') }}</span>
+          <span>{{ maxMessagesLabel }}</span>
           <input
               v-model.number="form.maxMessages"
               class="kafka-table-publish-panel__input"
               type="number"
               min="1"
               :max="KAFKA_PUBLISH_MAX_MESSAGES_CAP"
-              :disabled="publishing || !!successMessage"
+              :disabled="fieldDisabled"
           >
+          <p class="kafka-table-publish-panel__field-note">
+            <span class="is-muted">{{ maxMessagesHint }}</span>
+          </p>
         </label>
 
         <label class="kafka-table-publish-panel__field">
@@ -487,7 +658,7 @@ defineExpose({resetFormState})
               type="number"
               min="0"
               :max="KAFKA_PUBLISH_MAX_INTERVAL_MS"
-              :disabled="publishing || !!successMessage"
+              :disabled="fieldDisabled"
           >
         </label>
 
@@ -499,7 +670,7 @@ defineExpose({resetFormState})
               type="text"
               inputmode="numeric"
               :placeholder="t('explorer.kafkaTablePublish.partitionOptional')"
-              :disabled="publishing || !!successMessage"
+              :disabled="fieldDisabled"
           >
         </label>
       </div>
@@ -512,9 +683,16 @@ defineExpose({resetFormState})
             type="text"
             spellcheck="false"
             :placeholder="t('explorer.kafkaTablePublish.keyColumnOptional')"
-            :disabled="publishing || !!successMessage"
+            :disabled="fieldDisabled"
         >
       </label>
+
+      <section class="kafka-table-publish-panel__rules" aria-label="send rules">
+        <h4 class="kafka-table-publish-panel__rules-title">{{ t('explorer.kafkaTablePublish.sendRulesTitle') }}</h4>
+        <ul class="kafka-table-publish-panel__rules-list">
+          <li v-for="(line, index) in sendRulesLines" :key="index">{{ line }}</li>
+        </ul>
+      </section>
     </div>
 
     <footer class="kafka-table-publish-panel__footer">
@@ -528,7 +706,7 @@ defineExpose({resetFormState})
         {{ footerMessage.text }}
       </p>
       <DwButton
-          v-if="successMessage"
+          v-if="successMessage && !isContinuousRunning && !publishing"
           variant="secondary"
           size="sm"
           type="button"
@@ -536,7 +714,17 @@ defineExpose({resetFormState})
       >
         {{ t('explorer.kafkaTablePublish.publishAgain') }}
       </DwButton>
+      <DwButton
+          v-if="isContinuousRunning"
+          variant="secondary"
+          size="sm"
+          type="button"
+          @click="requestStop"
+      >
+        {{ t('explorer.kafkaTablePublish.stop') }}
+      </DwButton>
       <button
+          v-if="!isContinuousRunning"
           class="kafka-table-publish-panel__send"
           type="submit"
           :disabled="!canPublish"
@@ -545,6 +733,14 @@ defineExpose({resetFormState})
       </button>
     </footer>
   </form>
+
+  <ConfirmDialog
+      v-model:open="sendConfirmOpen"
+      :title="t('explorer.kafkaTablePublish.sendRulesConfirmTitle')"
+      :message="sendConfirmMessage"
+      :confirm-label="t('explorer.kafkaTablePublish.publish')"
+      @confirm="onSendConfirm"
+  />
 </template>
 
 <style scoped>
@@ -559,6 +755,44 @@ defineExpose({resetFormState})
   flex-direction: column;
   gap: 10px;
   padding: 10px 12px 4px;
+}
+
+.kafka-table-publish-panel__scroll.is-locked {
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+.kafka-table-publish-panel__scroll.is-locked :deep(.dw-select),
+.kafka-table-publish-panel__scroll.is-locked .kafka-table-publish-panel__input,
+.kafka-table-publish-panel__scroll.is-locked .kafka-table-publish-panel__option {
+  cursor: not-allowed;
+}
+
+.kafka-table-publish-panel__rules {
+  margin: 2px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--dw-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--dw-bg-editor) 55%, var(--dw-bg-panel));
+}
+
+.kafka-table-publish-panel__rules-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dw-text);
+}
+
+.kafka-table-publish-panel__rules-list {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--dw-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.kafka-table-publish-panel__rules-list li + li {
+  margin-top: 4px;
 }
 
 .kafka-table-publish-panel__hint {
@@ -639,6 +873,51 @@ defineExpose({resetFormState})
   color: var(--dw-danger);
 }
 
+.kafka-table-publish-panel__field-note .is-muted {
+  color: var(--dw-text-muted);
+}
+
+.kafka-table-publish-panel__option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kafka-table-publish-panel__option {
+  border: 1px solid var(--dw-border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: transparent;
+  color: var(--dw-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.kafka-table-publish-panel__option.is-active {
+  border-color: var(--dw-primary);
+  color: var(--dw-primary);
+  background: color-mix(in srgb, var(--dw-primary) 10%, transparent);
+}
+
+.kafka-table-publish-panel__option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.kafka-table-publish-panel__checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  color: var(--dw-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.kafka-table-publish-panel__checkbox input {
+  margin: 0;
+}
+
 .kafka-table-publish-panel__input {
   width: 100%;
   min-height: 34px;
@@ -649,6 +928,11 @@ defineExpose({resetFormState})
   background: var(--dw-bg-panel);
   color: var(--dw-text);
   font-size: 12px;
+}
+
+.kafka-table-publish-panel__input:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
 }
 
 .kafka-table-publish-panel__field-error {

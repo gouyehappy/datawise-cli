@@ -13,6 +13,7 @@ import org.apache.datawise.backend.domain.PublishTableToKafkaResult;
 import org.apache.datawise.backend.domain.TableDataResult;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.service.ConnectionAccessService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,17 +33,20 @@ public class KafkaTablePublishService {
     private final ConnectionAccessService connectionAccessService;
     private final ConnectorFacade connectorFacade;
     private final TableDataService tableDataService;
+    private final KafkaFakeRowSupplier fakeRowSupplier;
 
     public KafkaTablePublishService(
             ConnectionExecutionContext connectionContext,
             ConnectionAccessService connectionAccessService,
             ConnectorFacade connectorFacade,
-            TableDataService tableDataService
+            TableDataService tableDataService,
+            @Autowired(required = false) KafkaFakeRowSupplier fakeRowSupplier
     ) {
         this.connectionContext = connectionContext;
         this.connectionAccessService = connectionAccessService;
         this.connectorFacade = connectorFacade;
         this.tableDataService = tableDataService;
+        this.fakeRowSupplier = fakeRowSupplier;
     }
 
     public PublishTableToKafkaResult publish(String kafkaConnectionId, PublishTableToKafkaRequest request) {
@@ -63,7 +67,85 @@ public class KafkaTablePublishService {
         String topic = request.topic().trim();
 
         return connectorFacade.messageBroker().withProducer(kafkaConnection, producer ->
-                publishRows(producer, request, topic, maxMessages, intervalMs)
+                isFakeData(request)
+                        ? publishFakeRows(producer, request, topic, maxMessages, intervalMs)
+                        : publishRows(producer, request, topic, maxMessages, intervalMs)
+        );
+    }
+
+    private PublishTableToKafkaResult publishFakeRows(
+            MessageBrokerProducer producer,
+            PublishTableToKafkaRequest request,
+            String topic,
+            int maxMessages,
+            long intervalMs
+    ) {
+        if (fakeRowSupplier == null) {
+            throw new IllegalStateException("Fake data generation is not available");
+        }
+
+        long startedAt = System.currentTimeMillis();
+        long seed = request.datagenSeed() != null ? request.datagenSeed() : System.currentTimeMillis();
+        int rowOffset = request.datagenRowOffset() != null ? Math.max(0, request.datagenRowOffset()) : 0;
+
+        List<Map<String, Object>> rows = fakeRowSupplier.generateRows(
+                request.sourceConnectionId(),
+                request.sourceDatabase(),
+                request.tableName().trim(),
+                maxMessages,
+                seed,
+                rowOffset
+        );
+
+        int sent = 0;
+        int failed = 0;
+        String lastError = null;
+        KafkaProduceResultDto lastProduce = null;
+        String stopReason = PublishTableToKafkaResult.STOP_LIMIT_REACHED;
+
+        if (rows == null || rows.isEmpty()) {
+            return new PublishTableToKafkaResult(
+                    0,
+                    0,
+                    System.currentTimeMillis() - startedAt,
+                    PublishTableToKafkaResult.STOP_TABLE_EXHAUSTED,
+                    null,
+                    null
+            );
+        }
+
+        for (Map<String, Object> row : rows) {
+            String json = KafkaTableRowJsonSupport.toJson(row, List.of());
+            String key = KafkaTableRowJsonSupport.resolveKey(row, request.keyColumn(), List.of());
+
+            try {
+                lastProduce = producer.send(topic, key, json, request.partition());
+                sent++;
+            } catch (RuntimeException ex) {
+                failed++;
+                lastError = ex.getMessage();
+                stopReason = PublishTableToKafkaResult.STOP_PRODUCE_ERROR;
+                break;
+            }
+
+            if (intervalMs > 0 && sent + failed < rows.size()) {
+                try {
+                    Thread.sleep(intervalMs);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    stopReason = PublishTableToKafkaResult.STOP_INTERRUPTED;
+                    break;
+                }
+            }
+        }
+
+        return new PublishTableToKafkaResult(
+                sent,
+                failed,
+                System.currentTimeMillis() - startedAt,
+                stopReason,
+                lastError,
+                lastProduce
         );
     }
 
@@ -162,6 +244,13 @@ public class KafkaTablePublishService {
         if (request.sourceConnectionId().equals(kafkaConnectionId)) {
             throw new IllegalArgumentException("sourceConnectionId must differ from kafka connection");
         }
+        if (isFakeData(request) && fakeRowSupplier == null) {
+            throw new IllegalArgumentException("Fake data generation is not available");
+        }
+    }
+
+    private static boolean isFakeData(PublishTableToKafkaRequest request) {
+        return Boolean.TRUE.equals(request.fakeData());
     }
 
     private ConnectionEntity requireKafkaConnection(String kafkaConnectionId) {

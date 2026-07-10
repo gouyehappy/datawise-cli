@@ -16,6 +16,7 @@ function killImage(imageName) {
 }
 
 if (process.platform === 'win32') {
+    killImage('DataWiseCLI.exe')
     killImage('DataWise CLI.exe')
     killImage('electron.exe')
 
