@@ -21,7 +21,7 @@ public class AiPythonProperties {
     private boolean sandboxEnabled = true;
     private String pythonCommand = "python";
     private String pipCommand = "pip";
-    private boolean dependencyInstallEnabled = true;
+    private boolean dependencyInstallEnabled = false;
     private String allowedPackages = "pandas,numpy,scipy,scikit-learn,matplotlib,statsmodels,seaborn";
     private int dependencyInstallTimeoutSeconds = 60;
     private String dockerBinary = "docker";

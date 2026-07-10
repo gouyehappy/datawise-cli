@@ -459,7 +459,7 @@ public class TableMigrationExecutor {
                         );
                     }
                     return new TableMigrationBatchCopier.CopyResumeState(
-                            "INCR_APPEND".equalsIgnoreCase(mode) ? 0 : Math.toIntExact(point.startOffset()),
+                            "INCR_APPEND".equalsIgnoreCase(mode) ? 0 : toBatchOffset(point.startOffset()),
                             point.priorRowsMigrated(),
                             point.priorBatches(),
                             List.of()
@@ -582,7 +582,18 @@ public class TableMigrationExecutor {
     }
 
     private static int toIntRows(long rows) {
-        return rows > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) rows;
+        if (rows > Integer.MAX_VALUE) {
+            log.warn("rowsMigrated {} exceeds Integer.MAX_VALUE; reporting truncated count", rows);
+            return Integer.MAX_VALUE;
+        }
+        return (int) rows;
+    }
+
+    private static int toBatchOffset(long offset) {
+        if (offset < 0 || offset > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Migration batch offset exceeds supported range: " + offset);
+        }
+        return (int) offset;
     }
 
     private static void requireStableOrderByIfNeeded(

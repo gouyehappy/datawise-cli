@@ -7,6 +7,7 @@ import org.apache.datawise.backend.common.TableDataException;
 import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.ddl.DdlException;
 import org.apache.datawise.backend.common.support.ExceptionLogging;
+import org.apache.datawise.backend.security.ClientErrorMessageSupport;
 import org.apache.datawise.backend.security.HeadlessMigrationAuth;
 import org.apache.datawise.backend.service.UserAdminPolicy;
 import org.apache.datawise.backend.jdbc.error.JdbcConnectionErrors;
@@ -37,7 +38,7 @@ public class GlobalExceptionHandler {
             data.put("errorLine", ex.getErrorLine());
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>(-1, ex.getMessage(), data.isEmpty() ? null : data));
+                .body(new ApiResponse<>(-1, ClientErrorMessageSupport.sqlExecutionMessage(ex.getMessage()), data.isEmpty() ? null : data));
     }
 
     @ExceptionHandler(DdlException.class)
@@ -92,7 +93,7 @@ public class GlobalExceptionHandler {
                 || UserAdminPolicy.ADMIN_REQUIRED.equals(ex.getMessage())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.fail(ex.getMessage()));
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.fail(ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.fail(ClientErrorMessageSupport.forClient(ex.getMessage())));
     }
 
     @ExceptionHandler(IllegalStateException.class)
@@ -113,7 +114,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleIOException(IOException ex) {
         ExceptionLogging.warn(log, "IOException", ex);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(ex.getMessage() != null ? ex.getMessage() : "IO error"));
+                .body(ApiResponse.fail(ClientErrorMessageSupport.ioMessage()));
     }
 
     @ExceptionHandler(RuntimeException.class)

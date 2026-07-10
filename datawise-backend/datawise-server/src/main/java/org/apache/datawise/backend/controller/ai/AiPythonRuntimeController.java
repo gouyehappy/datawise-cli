@@ -1,8 +1,11 @@
 package org.apache.datawise.backend.controller.ai;
 
 import org.apache.datawise.backend.ai.config.AiPythonProperties;
+import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.common.ApiResponse;
 import org.apache.datawise.backend.ai.domain.AiPythonRuntimeDto;
+import org.apache.datawise.backend.security.UserContext;
+import org.apache.datawise.backend.service.UserAccessPolicy;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,13 +15,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiPythonRuntimeController {
 
     private final AiPythonProperties pythonProperties;
+    private final UserAccessPolicy userAccessPolicy;
 
-    public AiPythonRuntimeController(AiPythonProperties pythonProperties) {
+    public AiPythonRuntimeController(AiPythonProperties pythonProperties, UserAccessPolicy userAccessPolicy) {
         this.pythonProperties = pythonProperties;
+        this.userAccessPolicy = userAccessPolicy;
     }
 
     @GetMapping("/runtime")
     public ApiResponse<AiPythonRuntimeDto> runtime() {
+        if (UserContext.getUserId() == null) {
+            throw new UnauthorizedException();
+        }
+        userAccessPolicy.requireRegisteredUser();
         return ApiResponse.ok(new AiPythonRuntimeDto(
                 pythonProperties.isEnabled(),
                 pythonProperties.getExecutor(),

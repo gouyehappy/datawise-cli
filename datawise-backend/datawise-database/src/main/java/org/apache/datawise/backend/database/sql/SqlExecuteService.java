@@ -109,6 +109,7 @@ public class SqlExecuteService {
             throw new IllegalArgumentException("SQL is required");
 
         }
+        SqlPayloadLimits.requireWithinLimit(trimmed);
 
         if (request.connectionId() == null || request.connectionId().isBlank()) {
 

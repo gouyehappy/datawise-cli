@@ -163,6 +163,7 @@ public class SqlController {
             @RequestParam String connectionId,
             @RequestParam(required = false) String database
     ) {
+        HeadlessSqlAuth.requireSqlAccess();
         return ApiResponse.ok(activeSessionService.list(connectionId, database));
     }
 
@@ -171,11 +172,13 @@ public class SqlController {
             @RequestParam String connectionId,
             @RequestParam(required = false) String database
     ) {
+        HeadlessSqlAuth.requireSqlAccess();
         return ApiResponse.ok(lockWaitService.list(connectionId, database));
     }
 
     @PostMapping("/kill-session")
     public ApiResponse<KillSessionResultDto> killSession(@RequestBody KillSessionRequest request) {
+        HeadlessSqlAuth.requireSqlAccess();
         ApiRequestLogger.logEntry(
                 log,
                 "POST /api/sql/kill-session",
@@ -208,6 +211,7 @@ public class SqlController {
     public ApiResponse<CancelSqlExecutionResult> cancelSqlExecution(
             @RequestBody CancelSqlExecutionRequest request
     ) {
+        HeadlessSqlAuth.requireSqlAccess();
         ApiRequestLogger.logEntry(
                 log,
                 "POST /api/sql/cancel-execution",

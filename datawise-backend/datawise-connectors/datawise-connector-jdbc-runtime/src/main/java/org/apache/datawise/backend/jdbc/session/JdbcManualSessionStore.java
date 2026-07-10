@@ -2,9 +2,13 @@ package org.apache.datawise.backend.jdbc.session;
 
 import org.apache.datawise.backend.domain.SqlSessionStatus;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -12,6 +16,8 @@ import java.util.concurrent.locks.ReentrantLock;
 /** 控制台手动 JDBC 会话的内存存储。 */
 @Component
 public class JdbcManualSessionStore {
+
+    private static final long IDLE_TTL_MS = 30L * 60L * 1000L;
 
     private final Map<String, ManagedSession> sessions = new ConcurrentHashMap<>();
 
@@ -31,7 +37,7 @@ public class JdbcManualSessionStore {
         return sessions.computeIfAbsent(
                 key(userId, sessionKey),
                 ignored -> new ManagedSession(connectionId, database)
-        );
+        ).touch();
     }
 
     /** 连接被 abort 后清掉会话内引用，避免后续 SQL 复用已失效连接。 */
@@ -49,6 +55,7 @@ public class JdbcManualSessionStore {
             }
             session.lock.lock();
             try {
+                closeQuietly(session.connection);
                 session.connection = null;
             } finally {
                 session.lock.unlock();
@@ -63,7 +70,7 @@ public class JdbcManualSessionStore {
         if (session == null || session.connection == null) {
             throw new IllegalStateException("SQL session not found or already closed");
         }
-        return session;
+        return session.touch();
     }
 
     public ManagedSession requireManualSession(long userId, String sessionKey) {
@@ -71,7 +78,7 @@ public class JdbcManualSessionStore {
         if (session == null || session.autocommit) {
             return null;
         }
-        return session;
+        return session.touch();
     }
 
     public ManagedSession remove(long userId, String sessionKey) {
@@ -85,8 +92,53 @@ public class JdbcManualSessionStore {
         }
     }
 
+    @Scheduled(fixedRate = 60_000)
+    void evictIdleSessionsScheduled() {
+        evictIdleSessions(System.currentTimeMillis() - IDLE_TTL_MS);
+    }
+
+    void evictIdleSessions(long cutoffMs) {
+        List<String> staleKeys = new ArrayList<>();
+        sessions.forEach((sessionKey, session) -> {
+            if (session.lastAccessedAtMs < cutoffMs) {
+                staleKeys.add(sessionKey);
+            }
+        });
+        for (String sessionKey : staleKeys) {
+            ManagedSession session = sessions.remove(sessionKey);
+            if (session == null) {
+                continue;
+            }
+            session.lock.lock();
+            try {
+                closeQuietly(session.connection);
+                session.connection = null;
+            } finally {
+                session.lock.unlock();
+            }
+        }
+    }
+
     public static String key(long userId, String sessionKey) {
         return userId + ":" + sessionKey;
+    }
+
+    private static void closeQuietly(Connection connection) {
+        if (connection == null) {
+            return;
+        }
+        try {
+            if (!connection.getAutoCommit()) {
+                connection.rollback();
+            }
+        } catch (SQLException ignored) {
+            // best effort
+        }
+        try {
+            connection.close();
+        } catch (SQLException ignored) {
+            // best effort
+        }
     }
 
     public static final class ManagedSession {
@@ -96,10 +148,16 @@ public class JdbcManualSessionStore {
         public String database;
         public boolean autocommit = true;
         public boolean pending;
+        public long lastAccessedAtMs = System.currentTimeMillis();
 
         ManagedSession(String connectionId, String database) {
             this.connectionId = connectionId;
             this.database = database;
+        }
+
+        ManagedSession touch() {
+            lastAccessedAtMs = System.currentTimeMillis();
+            return this;
         }
 
         public SqlSessionStatus toStatus() {

@@ -109,6 +109,25 @@ class ApiTokenServiceTest {
         );
     }
 
+    @Test
+    void capsLegacyTokenScanOnLookupMiss() throws Exception {
+        var configDirectory = new org.apache.datawise.backend.configstore.ConfigDirectoryService(tempDir);
+        var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+        ApiTokenStore store = new ApiTokenStore(configDirectory, objectMapper);
+        ApiTokenService service = new ApiTokenService(store, new BCryptPasswordEncoder());
+
+        for (int index = 0; index < 40; index++) {
+            ApiTokenEntity legacy = new ApiTokenEntity();
+            legacy.setId("legacy-" + index);
+            legacy.setUserId(2L);
+            legacy.setTokenHash(service.hashToken("dw_decoy_" + index));
+            legacy.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+            store.save(legacy);
+        }
+
+        assertFalse(service.authenticate("dw_missing_token").isPresent());
+    }
+
     private static void assertEqualsUser(long expected, ApiTokenEntity entity) {
         assertTrue(expected == entity.getUserId());
     }

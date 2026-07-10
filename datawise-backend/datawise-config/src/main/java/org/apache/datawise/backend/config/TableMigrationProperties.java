@@ -13,7 +13,7 @@ public class TableMigrationProperties {
     /** Prefetch next SELECT page on a dedicated source connection while inserting the current batch. */
     private boolean pipelineReadAhead = true;
     /** Persist migration checkpoint to disk every N committed batches (1 = every batch). */
-    private int checkpointPersistEveryBatches = 10;
+    private int checkpointPersistEveryBatches = 1;
     /** Worker threads for async migration jobs in this JVM. */
     private int migrationJobThreads = 4;
     /** Route async migration jobs through task-concurrency slot pool. */

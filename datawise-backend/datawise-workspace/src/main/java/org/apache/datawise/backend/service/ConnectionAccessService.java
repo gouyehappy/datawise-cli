@@ -1,7 +1,9 @@
 package org.apache.datawise.backend.service;
 
 import org.apache.datawise.backend.common.ConnectionAccessDeniedException;
+import org.apache.datawise.backend.configstore.ConnectionStore;
 import org.apache.datawise.backend.configstore.TeamStore;
+import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.TeamEntity;
 import org.apache.datawise.backend.model.TeamMemberEntity;
 import org.apache.datawise.backend.common.support.ConnectionAccessLevel;
@@ -17,9 +19,11 @@ import java.util.Set;
 public class ConnectionAccessService {
 
     private final TeamStore teamStore;
+    private final ConnectionStore connectionStore;
 
-    public ConnectionAccessService(TeamStore teamStore) {
+    public ConnectionAccessService(TeamStore teamStore, ConnectionStore connectionStore) {
         this.teamStore = teamStore;
+        this.connectionStore = connectionStore;
     }
 
     public ConnectionAccessLevel resolveAccess(Long userId, String connectionId) {
@@ -37,7 +41,22 @@ public class ConnectionAccessService {
             effective = effective == null ? level : effective.restrict(level);
         }
 
-        return effective != null ? effective : ConnectionAccessLevel.DDL;
+        if (effective != null) {
+            return effective;
+        }
+        return connectionStore.findConnectionById(connectionId)
+                .map(connection -> defaultAccessForConnection(userId, connection))
+                .orElse(ConnectionAccessLevel.READONLY);
+    }
+
+    private static ConnectionAccessLevel defaultAccessForConnection(Long userId, ConnectionEntity connection) {
+        if (connection.getUserId() == null) {
+            return ConnectionAccessLevel.READONLY;
+        }
+        if (userId != null && userId.equals(connection.getUserId())) {
+            return ConnectionAccessLevel.DDL;
+        }
+        return ConnectionAccessLevel.READONLY;
     }
 
     public void requireDmlAccess(Long userId, String connectionId) {

@@ -23,7 +23,7 @@ class TableMigrationPropertiesTest {
     @Test
     void defaults_matchMigrationRuntimeExpectations() {
         TableMigrationProperties properties = new TableMigrationProperties();
-        assertEquals(10, properties.getCheckpointPersistEveryBatches());
+        assertEquals(1, properties.getCheckpointPersistEveryBatches());
         assertEquals(4, properties.getMigrationJobThreads());
     }
 }

@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.security;
 
+import org.apache.datawise.backend.common.support.RestrictiveFilePermissions;
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -63,6 +64,7 @@ public class MasterKeyService {
         try {
             configDirectory.ensureExists();
             Files.writeString(keyPath, Base64.getEncoder().encodeToString(raw), StandardCharsets.UTF_8);
+            RestrictiveFilePermissions.applyOwnerOnly(keyPath);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to create " + MASTER_KEY_FILE, ex);
         }

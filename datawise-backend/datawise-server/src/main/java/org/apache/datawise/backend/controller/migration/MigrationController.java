@@ -20,6 +20,7 @@ import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.common.support.ApiRequestLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 @RestController
 @RequestMapping("/api/migration")
@@ -39,13 +41,16 @@ public class MigrationController {
 
     private final TableMigrationService tableMigrationService;
     private final TableMigrationPreflightService tableMigrationPreflightService;
+    private final ExecutorService migrationJobTaskExecutor;
 
     public MigrationController(
             TableMigrationService tableMigrationService,
-            TableMigrationPreflightService tableMigrationPreflightService
+            TableMigrationPreflightService tableMigrationPreflightService,
+            @Qualifier("migrationJobTaskExecutor") ExecutorService migrationJobTaskExecutor
     ) {
         this.tableMigrationService = tableMigrationService;
         this.tableMigrationPreflightService = tableMigrationPreflightService;
+        this.migrationJobTaskExecutor = migrationJobTaskExecutor;
     }
 
     @PostMapping("/jobs")
@@ -124,7 +129,7 @@ public class MigrationController {
                 ApiRequestLogger.logFailure(log, "GET /api/migration/jobs/{id}/stream", ex, "jobId", jobId);
                 TableMigrationStreamEmitter.completeFailure(emitter, ex, log);
             }
-        }));
+        }), migrationJobTaskExecutor);
         return emitter;
     }
 
@@ -237,7 +242,10 @@ public class MigrationController {
         );
         SseEmitter emitter = TableMigrationStreamEmitter.createEmitter();
         UserContext.Snapshot userSnapshot = UserContext.snapshotOrNull();
-        CompletableFuture.runAsync(() -> UserContext.runAs(userSnapshot, () -> streamBatchMigration(request, emitter)));
+        CompletableFuture.runAsync(
+                () -> UserContext.runAs(userSnapshot, () -> streamBatchMigration(request, emitter)),
+                migrationJobTaskExecutor
+        );
         return emitter;
     }
 

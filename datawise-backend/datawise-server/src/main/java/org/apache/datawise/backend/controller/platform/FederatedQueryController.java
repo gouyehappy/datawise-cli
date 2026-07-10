@@ -10,6 +10,7 @@ import org.apache.datawise.backend.domain.FederatedViewSummaryDto;
 import org.apache.datawise.backend.domain.GenerateFederatedSqlRequest;
 import org.apache.datawise.backend.domain.GenerateFederatedSqlResult;
 import org.apache.datawise.backend.domain.SaveFederatedViewRequest;
+import org.apache.datawise.backend.security.HeadlessSqlAuth;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -59,11 +60,13 @@ public class FederatedQueryController {
 
     @PostMapping("/execute")
     public ApiResponse<ExecuteSqlResult> execute(@RequestBody ExecuteFederatedViewRequest request) {
+        HeadlessSqlAuth.requireSqlAccess();
         return ApiResponse.ok(federatedQueryService.execute(request));
     }
 
     @PostMapping("/generate-sql")
     public ApiResponse<GenerateFederatedSqlResult> generateSql(@RequestBody GenerateFederatedSqlRequest request) {
+        HeadlessSqlAuth.requireSqlAccess();
         return ApiResponse.ok(federatedSqlGeneratorService.generate(request));
     }
 }

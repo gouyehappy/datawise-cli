@@ -11,6 +11,8 @@ public final class JdbcPoolSizeResolver {
 
     private static final String MAX_POOL_KEY = "jdbc.maximumPoolSize";
     private static final String MIN_IDLE_KEY = "jdbc.minimumIdle";
+    /** Upper bound for per-connection pool overrides from advancedConfig. */
+    public static final int MAXIMUM_POOL_SIZE_CAP = 50;
 
     private JdbcPoolSizeResolver() {
     }
@@ -19,9 +21,9 @@ public final class JdbcPoolSizeResolver {
         JdbcPoolProperties base = defaults != null ? defaults : new JdbcPoolProperties();
         Integer override = readIntProperty(entity != null ? entity.getAdvancedConfig() : null, MAX_POOL_KEY);
         if (override == null) {
-            return base.getMaximumPoolSize();
+            return Math.min(base.getMaximumPoolSize(), MAXIMUM_POOL_SIZE_CAP);
         }
-        return Math.max(1, override);
+        return Math.min(Math.max(1, override), MAXIMUM_POOL_SIZE_CAP);
     }
 
     public static int resolveMinimumIdle(ConnectionEntity entity, JdbcPoolProperties defaults, int maximumPoolSize) {

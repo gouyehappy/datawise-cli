@@ -8,6 +8,7 @@ import java.sql.Connection;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class JdbcManualSessionStoreTest {
 
@@ -34,14 +35,30 @@ class JdbcManualSessionStoreTest {
     }
 
     @Test
-    void invalidateConnection_clearsSessionReference() {
+    void invalidateConnection_closesAndClearsSessionReference() throws Exception {
         JdbcManualSessionStore store = new JdbcManualSessionStore();
         JdbcManualSessionStore.ManagedSession session = store.getOrCreate(1L, "tab-a", "conn-1", "shop");
-        session.connection = mock(Connection.class);
+        Connection connection = mock(Connection.class);
+        session.connection = connection;
 
         store.invalidateConnection("1:tab-a");
 
+        verify(connection).close();
         assertNull(session.connection);
+    }
+
+    @Test
+    void evictIdleSessions_closesStaleConnection() throws Exception {
+        JdbcManualSessionStore store = new JdbcManualSessionStore();
+        JdbcManualSessionStore.ManagedSession session = store.getOrCreate(1L, "tab-a", "conn-1", "shop");
+        Connection connection = mock(Connection.class);
+        session.connection = connection;
+        session.lastAccessedAtMs = 1L;
+
+        store.evictIdleSessions(System.currentTimeMillis());
+
+        verify(connection).close();
+        assertNull(store.get(1L, "tab-a"));
     }
 
     @Test

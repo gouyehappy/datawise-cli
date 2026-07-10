@@ -7,6 +7,7 @@ import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -20,7 +21,12 @@ public class SshTunnelManager {
     private static final int CONNECT_TIMEOUT_MS = 15_000;
     private static final String LOCAL_BIND_HOST = "127.0.0.1";
 
+    private final SshTunnelProperties sshTunnelProperties;
     private final ConcurrentMap<String, ManagedTunnel> tunnels = new ConcurrentHashMap<>();
+
+    public SshTunnelManager(SshTunnelProperties sshTunnelProperties) {
+        this.sshTunnelProperties = sshTunnelProperties != null ? sshTunnelProperties : new SshTunnelProperties();
+    }
 
     public record TunnelEndpoint(String localHost, int localPort) {
     }
@@ -30,13 +36,14 @@ public class SshTunnelManager {
         String key = SshTunnelSupport.fingerprint(entity, remotePort);
         ManagedTunnel existing = tunnels.get(key);
         if (existing != null && existing.isAlive()) {
+            existing.touch();
             return existing.endpoint();
         }
         if (existing != null) {
             existing.closeQuietly();
             tunnels.remove(key, existing);
         }
-        ManagedTunnel created = ManagedTunnel.connect(entity, remotePort, CONNECT_TIMEOUT_MS);
+        ManagedTunnel created = ManagedTunnel.connect(entity, remotePort, CONNECT_TIMEOUT_MS, sshTunnelProperties);
         tunnels.put(key, created);
         log.info(
                 "Opened SSH tunnel connectionId={} ssh={}:{} -> {}:{} via {}:{}",
@@ -65,13 +72,36 @@ public class SshTunnelManager {
         });
     }
 
+    @Scheduled(fixedRate = 60_000)
+    void evictIdleTunnelsScheduled() {
+        int idleTtlMinutes = sshTunnelProperties.getIdleTtlMinutes();
+        if (idleTtlMinutes <= 0) {
+            return;
+        }
+        long cutoff = System.currentTimeMillis() - idleTtlMinutes * 60_000L;
+        tunnels.entrySet().removeIf(entry -> {
+            if (entry.getValue().lastUsedAtMs >= cutoff) {
+                return false;
+            }
+            entry.getValue().closeQuietly();
+            log.info("Closed idle SSH tunnel key={}", entry.getKey());
+            return true;
+        });
+    }
+
     private static final class ManagedTunnel {
         private final TunnelEndpoint endpoint;
         private final Session session;
+        private volatile long lastUsedAtMs;
 
         private ManagedTunnel(TunnelEndpoint endpoint, Session session) {
             this.endpoint = endpoint;
             this.session = session;
+            this.lastUsedAtMs = System.currentTimeMillis();
+        }
+
+        private void touch() {
+            lastUsedAtMs = System.currentTimeMillis();
         }
 
         private TunnelEndpoint endpoint() {
@@ -93,10 +123,17 @@ public class SshTunnelManager {
             }
         }
 
-        private static ManagedTunnel connect(ConnectionEntity entity, int remotePort, int timeoutMs)
-                throws SshTunnelException {
+        private static ManagedTunnel connect(
+                ConnectionEntity entity,
+                int remotePort,
+                int timeoutMs,
+                SshTunnelProperties properties
+        ) throws SshTunnelException {
             try {
                 JSch jsch = new JSch();
+                if (properties.isStrictHostKeyChecking()) {
+                    SshKnownHostsSupport.configureKnownHosts(jsch, properties);
+                }
                 if (entity.getSshPrivateKey() != null && !entity.getSshPrivateKey().isBlank()) {
                     byte[] keyBytes = entity.getSshPrivateKey().getBytes(StandardCharsets.UTF_8);
                     byte[] passphrase = entity.getSshPassphrase() != null && !entity.getSshPassphrase().isBlank()
@@ -112,8 +149,9 @@ public class SshTunnelManager {
                 if (entity.getSshPassword() != null && !entity.getSshPassword().isBlank()) {
                     session.setPassword(entity.getSshPassword());
                 }
-                session.setConfig("StrictHostKeyChecking", "no");
+                session.setConfig("StrictHostKeyChecking", SshKnownHostsSupport.strictHostKeyCheckingMode(properties));
                 session.connect(timeoutMs);
+                SshKnownHostsSupport.persistKnownHosts(jsch, properties);
                 int localPort = session.setPortForwardingL(
                         LOCAL_BIND_HOST,
                         0,

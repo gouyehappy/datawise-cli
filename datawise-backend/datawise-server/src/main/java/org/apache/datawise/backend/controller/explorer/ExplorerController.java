@@ -31,6 +31,7 @@ import org.apache.datawise.backend.domain.RedisKeyDetailDto;
 import org.apache.datawise.backend.domain.RedisKeysScanResultDto;
 import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.domain.TreePayload;
+import org.apache.datawise.backend.security.HeadlessSqlAuth;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -177,6 +178,7 @@ public class ExplorerController {
             @RequestBody ExecuteRedisCommandRequest request,
             @RequestParam(required = false) Integer database
     ) {
+        HeadlessSqlAuth.requireSqlAccess();
         return ApiResponse.ok(redisService.executeRedisCommand(connectionId, request.command(), database));
     }
 

@@ -51,7 +51,7 @@ final class FederatedJoinExecutor {
             totalDuration += partial.durationMs();
         }
 
-        List<Map<String, Object>> joinedRows = joinRows(plan, partialResults);
+        List<Map<String, Object>> joinedRows = joinRows(plan, partialResults, maxRows);
         List<Map<String, Object>> outputColumns = buildOutputColumns(plan, joinedRows);
         List<Map<String, Object>> projectedRows = projectRows(plan, joinedRows, outputColumns);
 
@@ -72,7 +72,8 @@ final class FederatedJoinExecutor {
 
     private static List<Map<String, Object>> joinRows(
             FederatedJoinPlan plan,
-            Map<String, ExecuteSqlResult> partialResults
+            Map<String, ExecuteSqlResult> partialResults,
+            int maxRows
     ) {
         FederatedJoinStep first = plan.steps().get(0);
         ExecuteSqlResult firstResult = partialResults.get(first.sourceAlias());
@@ -90,7 +91,7 @@ final class FederatedJoinExecutor {
                     step.tableAlias(),
                     rightResult.columns()
             );
-            current = innerJoin(current, rightRows, step.onCondition());
+            current = innerJoin(current, rightRows, step.onCondition(), maxRows);
         }
         return current;
     }
@@ -98,7 +99,8 @@ final class FederatedJoinExecutor {
     private static List<Map<String, Object>> innerJoin(
             List<Map<String, Object>> leftRows,
             List<Map<String, Object>> rightRows,
-            String onCondition
+            String onCondition,
+            int maxRows
     ) {
         List<Map<String, Object>> joined = new ArrayList<>();
         for (Map<String, Object> left : leftRows) {
@@ -107,6 +109,9 @@ final class FederatedJoinExecutor {
                 combined.putAll(right);
                 if (matchesOn(combined, onCondition)) {
                     joined.add(combined);
+                    if (joined.size() >= maxRows) {
+                        return joined;
+                    }
                 }
             }
         }

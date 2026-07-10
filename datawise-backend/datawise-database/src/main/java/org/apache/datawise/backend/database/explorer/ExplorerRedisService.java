@@ -47,6 +47,7 @@ public class ExplorerRedisService {
 
     /** Executes raw Redis command text through connector native command capability. */
     public RedisCommandResultDto executeRedisCommand(String connectionId, String command, Integer database) {
+        RedisExplorerCommandPolicy.requireAllowed(command);
         ConnectionEntity connection = resolveRedisConnection(requireAvailableExplorerConnection(connectionId), database);
         return connectorFacade.nativeAccess().executeCommand(connection, command);
     }

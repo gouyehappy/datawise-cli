@@ -1,26 +1,37 @@
 package org.apache.datawise.backend.service;
 
 import org.apache.datawise.backend.common.ConnectionAccessDeniedException;
+import org.apache.datawise.backend.configstore.ConnectionStore;
 import org.apache.datawise.backend.configstore.TeamStore;
+import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.TeamEntity;
 import org.apache.datawise.backend.model.TeamMemberEntity;
 import org.apache.datawise.backend.common.support.ConnectionAccessLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class ConnectionAccessServiceTest {
 
     @TempDir
     Path tempDir;
+
+    @Mock
+    private ConnectionStore connectionStore;
 
     private TeamStore teamStore;
     private ConnectionAccessService service;
@@ -28,12 +39,28 @@ class ConnectionAccessServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         teamStore = TestTeamStoreFactory.create(tempDir);
-        service = new ConnectionAccessService(teamStore);
+        service = new ConnectionAccessService(teamStore, connectionStore);
     }
 
     @Test
-    void nonSharedConnectionDefaultsToDdl() {
-        assertEquals(ConnectionAccessLevel.DDL, service.resolveAccess(2L, "conn-private"));
+    void unknownConnectionDefaultsToReadonly() {
+        when(connectionStore.findConnectionById("conn-private")).thenReturn(Optional.empty());
+        assertEquals(ConnectionAccessLevel.READONLY, service.resolveAccess(2L, "conn-private"));
+    }
+
+    @Test
+    void ownedConnectionDefaultsToDdl() {
+        ConnectionEntity owned = connection("conn-owned", 2L);
+        when(connectionStore.findConnectionById("conn-owned")).thenReturn(Optional.of(owned));
+        assertEquals(ConnectionAccessLevel.DDL, service.resolveAccess(2L, "conn-owned"));
+    }
+
+    @Test
+    void legacyConnectionDefaultsToReadonly() {
+        ConnectionEntity legacy = connection("conn-legacy", null);
+        when(connectionStore.findConnectionById("conn-legacy")).thenReturn(Optional.of(legacy));
+        assertEquals(ConnectionAccessLevel.READONLY, service.resolveAccess(2L, "conn-legacy"));
+        assertThrows(ConnectionAccessDeniedException.class, () -> service.requireDdlAccess(2L, "conn-legacy"));
     }
 
     @Test
@@ -128,5 +155,16 @@ class ConnectionAccessServiceTest {
         member.setRole(role);
         member.setJoinedAt(Instant.now());
         teamStore.saveMember(member);
+    }
+
+    private static ConnectionEntity connection(String id, Long userId) {
+        ConnectionEntity entity = new ConnectionEntity();
+        entity.setId(id);
+        entity.setGroupId("group-1");
+        entity.setUserId(userId);
+        entity.setName(id);
+        entity.setDbType("mysql");
+        entity.setSortOrder(0);
+        return entity;
     }
 }

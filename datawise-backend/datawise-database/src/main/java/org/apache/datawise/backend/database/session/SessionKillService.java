@@ -45,7 +45,7 @@ public class SessionKillService {
                         request.database(),
                         "Connection not found: " + request.connectionId()
                 );
-        connectionAccessService.requireDmlAccess(resolved.userId(), request.connectionId());
+        connectionAccessService.requireDdlAccess(resolved.userId(), request.connectionId());
 
         ConnectionEntity entity = resolved.entity();
         String dbType = entity.getDbType();

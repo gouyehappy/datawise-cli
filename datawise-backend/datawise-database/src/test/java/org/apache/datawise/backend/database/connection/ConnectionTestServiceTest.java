@@ -82,6 +82,40 @@ class ConnectionTestServiceTest {
     }
 
     @Test
+    void test_rejectsPrivateHost() {
+        ConnectionConfig config = baseConfig();
+        config.setHost("10.0.0.5");
+
+        ConnectionTestResult result = service.test(config);
+
+        assertFalse(result.ok());
+        assertTrue(result.message().contains("private or link-local"));
+        verify(catalogAccess, never()).testConnection(any());
+    }
+
+    @Test
+    void test_allowsLocalhost() throws Exception {
+        ConnectionConfig config = baseConfig();
+        when(connectorFacade.catalog()).thenReturn(catalogAccess);
+        when(datasourceCatalogService.findById("mysql")).thenReturn(Optional.of(mysqlDatasource()));
+        when(jdbcDriverService.resolve(any(JdbcDriverResolveRequest.class)))
+                .thenReturn(new org.apache.datawise.backend.domain.JdbcDriverResolveResult(
+                        "com.mysql:mysql-connector-j:8.4.0",
+                        "com.mysql.cj.jdbc.Driver",
+                        "/tmp/driver.jar",
+                        false,
+                        true
+                ));
+        when(catalogAccess.testConnection(any())).thenReturn(new ConnectionTestResult(true, "OK", 12));
+
+        ConnectionTestResult result = service.test(config);
+
+        assertTrue(result.ok());
+        assertEquals("OK", result.message());
+        verify(catalogAccess).testConnection(any());
+    }
+
+    @Test
     void test_delegatesToCatalogWhenDatasourceAvailable() throws Exception {
         ConnectionConfig config = baseConfig();
         when(connectorFacade.catalog()).thenReturn(catalogAccess);

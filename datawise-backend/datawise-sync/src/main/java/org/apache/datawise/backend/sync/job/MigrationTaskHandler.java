@@ -36,7 +36,6 @@ public class MigrationTaskHandler implements TaskHandler {
             throw ex;
         } catch (Exception ex) {
             ExceptionLogging.error(log, "migration.task.failed jobId=" + jobId, ex);
-            context.ack();
             throw ex;
         }
     }

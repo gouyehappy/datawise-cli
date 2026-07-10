@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.database.connection;
 
+import org.apache.datawise.backend.common.support.ConnectionProbeTargetPolicy;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
 import org.apache.datawise.backend.domain.ConnectionConfig;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
@@ -35,6 +36,11 @@ public class ConnectionTestService {
         if (config.getHost() == null || config.getHost().isBlank()) {
             return new ConnectionTestResult(false, "Host is required", 0);
         }
+        try {
+            ConnectionProbeTargetPolicy.requireAllowedProbeHost(config.getHost(), "Host");
+        } catch (IllegalArgumentException ex) {
+            return new ConnectionTestResult(false, ex.getMessage(), 0);
+        }
         if (!"redis".equalsIgnoreCase(config.getDbType())
                 && config.getAuth() != null
                 && !"NONE".equalsIgnoreCase(config.getAuth())
@@ -57,6 +63,14 @@ public class ConnectionTestService {
             } catch (SshTunnelException ex) {
                 return new ConnectionTestResult(false, ex.getMessage(), 0);
             }
+        }
+
+        try {
+            if (Boolean.TRUE.equals(config.getSshEnabled()) && config.getSshHost() != null && !config.getSshHost().isBlank()) {
+                ConnectionProbeTargetPolicy.requireAllowedProbeHost(config.getSshHost(), "SSH host");
+            }
+        } catch (IllegalArgumentException ex) {
+            return new ConnectionTestResult(false, ex.getMessage(), 0);
         }
 
         if (datasource.jdbcDriverRequired()) {

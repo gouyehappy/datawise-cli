@@ -2,6 +2,8 @@ package org.apache.datawise.backend.service;
 
 import org.apache.datawise.backend.configstore.ApiTokenStore;
 import org.apache.datawise.backend.model.ApiTokenEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,10 @@ import java.util.Optional;
 public class ApiTokenService {
 
     private static final int LAST_USED_TOUCH_INTERVAL_SECONDS = 60;
+    /** Caps bcrypt work on lookup miss to avoid DoS via legacy token table scans. */
+    private static final int MAX_LEGACY_TOKEN_SCANS = 32;
+
+    private static final Logger log = LoggerFactory.getLogger(ApiTokenService.class);
 
     private final ApiTokenStore apiTokenStore;
     private final PasswordEncoder passwordEncoder;
@@ -40,9 +46,17 @@ public class ApiTokenService {
             }
             return Optional.empty();
         }
+        int legacyScanned = 0;
         for (ApiTokenEntity entity : apiTokenStore.listAll()) {
             if (entity.getTokenLookup() != null && !entity.getTokenLookup().isBlank()) {
                 continue;
+            }
+            if (legacyScanned++ >= MAX_LEGACY_TOKEN_SCANS) {
+                log.warn(
+                        "Stopped legacy API token scan after {} entries; regenerate tokens to populate lookup index",
+                        MAX_LEGACY_TOKEN_SCANS
+                );
+                break;
             }
             if (matchesToken(token, entity)) {
                 backfillTokenLookup(entity, lookup);

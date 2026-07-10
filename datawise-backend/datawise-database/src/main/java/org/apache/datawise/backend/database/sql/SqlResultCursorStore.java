@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.database.sql;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SqlResultCursorStore {
 
     private static final long TTL_MS = 30L * 60L * 1000L;
+    private static final int MAX_CURSORS = 512;
 
     private final ConcurrentHashMap<String, CursorEntry> entries = new ConcurrentHashMap<>();
 
@@ -23,7 +25,7 @@ public class SqlResultCursorStore {
             int pageSize,
             int nextOffset,
             List<Map<String, Object>> columns,
-            long createdAtMs
+            long lastAccessedAtMs
     ) {
     }
 
@@ -37,7 +39,12 @@ public class SqlResultCursorStore {
             int nextOffset,
             List<Map<String, Object>> columns
     ) {
+        evictExpired();
+        if (entries.size() >= MAX_CURSORS) {
+            evictOldest();
+        }
         String id = UUID.randomUUID().toString();
+        long now = System.currentTimeMillis();
         entries.put(
                 id,
                 new CursorEntry(
@@ -49,7 +56,7 @@ public class SqlResultCursorStore {
                         pageSize,
                         nextOffset,
                         columns,
-                        System.currentTimeMillis()
+                        now
                 )
         );
         return id;
@@ -63,11 +70,12 @@ public class SqlResultCursorStore {
         if (entry.userId() != userId) {
             throw new IllegalArgumentException("SQL cursor not found or expired");
         }
-        if (System.currentTimeMillis() - entry.createdAtMs() > TTL_MS) {
+        if (System.currentTimeMillis() - entry.lastAccessedAtMs() > TTL_MS) {
             entries.remove(cursorId);
             throw new IllegalArgumentException("SQL cursor not found or expired");
         }
-        return entry;
+        touch(cursorId, entry);
+        return entries.get(cursorId);
     }
 
     public void updateOffset(String cursorId, int nextOffset) {
@@ -80,11 +88,44 @@ public class SqlResultCursorStore {
                 entry.pageSize(),
                 nextOffset,
                 entry.columns(),
-                entry.createdAtMs()
+                System.currentTimeMillis()
         ));
     }
 
     public void remove(String cursorId) {
         entries.remove(cursorId);
+    }
+
+    @Scheduled(fixedRate = 60_000)
+    void evictExpiredScheduled() {
+        evictExpired();
+    }
+
+    private void evictExpired() {
+        long cutoff = System.currentTimeMillis() - TTL_MS;
+        entries.entrySet().removeIf(entry -> entry.getValue().lastAccessedAtMs() < cutoff);
+    }
+
+    private void evictOldest() {
+        entries.entrySet().stream()
+                .min((left, right) -> Long.compare(
+                        left.getValue().lastAccessedAtMs(),
+                        right.getValue().lastAccessedAtMs()
+                ))
+                .ifPresent(oldest -> entries.remove(oldest.getKey()));
+    }
+
+    private void touch(String cursorId, CursorEntry entry) {
+        entries.put(cursorId, new CursorEntry(
+                entry.userId(),
+                entry.connectionId(),
+                entry.database(),
+                entry.sql(),
+                entry.sessionKey(),
+                entry.pageSize(),
+                entry.nextOffset(),
+                entry.columns(),
+                System.currentTimeMillis()
+        ));
     }
 }
