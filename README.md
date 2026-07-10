@@ -2,83 +2,108 @@
 
 [简体中文](./README.zh-CN.md)
 
-**AI-driven team data workbench** — connect your data estate, ask questions in natural language, and ship governed SQL and insights together.
+**AI-native team data workbench** — connect databases and lakes, explore schema, write governed SQL, and turn questions into insights in one place.
 
-DataWise is not a thin database GUI. It is a workspace where AI analysis, semantic metrics, federated views, and production-safe team workflows sit on top of 30+ data sources — in the browser, as a Windows desktop app, or from your IDE via MCP.
+DataWise is a full-stack workspace (Vue 3 + Spring Boot), not a thin SQL client. It combines Explorer, Monaco SQL console, semantic metrics, federated views, team governance, and streaming AI analysis on top of 30+ connectors — in the browser, as a Windows desktop app, or from your IDE via MCP.
+
+---
+
+## Overview
+
+| Layer | What it does |
+|-------|----------------|
+| **Client** | `datawise-frontend` — Explorer, workspace tabs, AI chat, settings, Electron desktop shell |
+| **API** | `datawise-backend` — connections, SQL execution, AI, platform jobs, team sharing |
+| **Editor** | `sql-editor` — embeddable `@datawise/sql-editor` with grammar completion & hint bar |
+| **Agents** | `datawise-mcp` — MCP tools for Cursor / Claude Desktop (schema, read-only SQL) |
+| **Automation** | `headless-cli` — migrations, SQL runs, Query Library CI |
+| **Config** | `config/` — local connections, plugins, drivers, secrets (not committed) |
+
+---
+
+## Capabilities
+
+### Data & SQL
+
+- Unified **Explorer** for connections, schemas, tables, views, scripts, Redis/Kafka workbenches
+- **SQL console** with Monaco, execution plans, sessions/transactions, history, bookmarks
+- First-party **SQL editor** — dialect-aware completion, snippets, FK JOIN helpers, formatter
+- Schema compare, table migration, CSV import/export, cross-environment sampling
+
+### AI & semantics
+
+- Table-scoped **AI chat**, Text-to-SQL, streaming analysis plans, reports & canvas
+- **Semantic metrics** catalog per database; auto-generation from schema
+- RAG / knowledge base hooks for domain context
+
+### Team & governance
+
+- Shared connections with **read / read-write / DDL** access levels
+- Query library, production **approval** flow, SQL review before dangerous execution
+- Team audit, shared queries, environment labels (dev / staging / prod)
+
+### Platform
+
+- Federated virtual views, scheduled tasks, schema drift monitoring
+- Plugin center for optional Explorer / AI / export capabilities
+- Connector JARs hot-loaded from `config/plugins/`
+
+### How to run
+
+| Mode | Use when |
+|------|----------|
+| **Web dev** | Local backend + Vite frontend |
+| **Windows desktop** | All-in-one Electron bundle (`npm run dist:desktop`) |
+| **IDE agent** | [datawise-mcp](./datawise-mcp/) |
+| **VS Code link** | [datawise-vscode](./datawise-vscode/) opens desktop deep links |
+| **CI / headless** | [headless-cli](./headless-cli/) |
 
 ---
 
 ## Preview
 
-### Workbench
+Screenshots from the Vue client (mocked API). Regenerate:
 
-Screenshots from the Vue client (mocked API). Regenerate: `npm run capture:demos --prefix datawise-frontend`.
+```bash
+npm run capture:demos --prefix datawise-frontend
+```
 
-| | | |
+| Dashboard | Explorer | SQL console |
 |:---:|:---:|:---:|
-| **Dashboard** | **Explorer** | **SQL console** |
 | ![Dashboard](docs/assets/screenshots/01-dashboard.png) | ![Explorer](docs/assets/screenshots/02-explorer.png) | ![SQL console](docs/assets/screenshots/03-sql-console.png) |
-| **AI analysis** | | |
-| ![AI analysis](docs/assets/screenshots/04-ai-analysis.png) | | |
 
-### SQL editor ([`@datawise/sql-editor`](./sql-editor/))
+| AI analysis |
+|:---:|
+| ![AI analysis](docs/assets/screenshots/04-ai-analysis.png) |
 
-Grammar-driven completion, schema-aware hints, FK JOIN snippets:
+**SQL editor** ([`@datawise/sql-editor`](./sql-editor/)) — grammar completion, schema hints, JOIN snippets:
 
-![SQL editor demo — CTE, JOIN, completion](sql-editor/docs/demo.gif)
-
-> Clone the repo and follow **Quick start** below to run the full workbench locally (browser or Windows desktop).
-
----
-
-## Why DataWise
-
-| | |
-|---|---|
-| **AI-native analysis** | Chat with table context, streaming plans, Text-to-SQL, analysis canvas, and reports — push generated SQL back to the console |
-| **Semantic layer** | Metrics catalog per database, auto-generation from schema, Explorer AI folder for browse & manage |
-| **Team governance** | Shared connections, query library, production approvals, environment labels, SQL review before execution |
-| **Platform capabilities** | Federated views, schema drift monitoring, scheduled tasks, cross-env compare — built into the workbench |
-| **MCP for agents** | [DataWise MCP Server](./datawise-mcp/) exposes connections, schema, review, and read-only SQL to Cursor / Claude Desktop |
-| **Data connectivity** | MySQL, PostgreSQL, Oracle, ClickHouse, Hive, Redis, Kafka, Elasticsearch, Doris, OceanBase, … — one Explorer, plugin JARs |
-| **Three ways to use** | Web dev · all-in-one Windows desktop · [VS Code extension](./datawise-vscode/) / [headless CLI](./headless-cli/) |
-
----
-
-## What you can do
-
-- **Analyze with AI** — pick tables as context; get SQL, charts, summaries, and reusable analysis canvas  
-- **Build semantics** — define metrics, auto-generate from schema, browse under Explorer → AI  
-- **Collaborate as a team** — shared queries, bookmarks, approvals, and capability-gated production access  
-- **Govern execution** — SQL review, drift monitors, scheduled jobs, federated virtual views  
-- **Query when needed** — Monaco console, execution plans, sessions, history, first-party SQL editor  
-- **Move data safely** — migrations, schema compare, cross-env sampling, CSV import/export  
+![SQL editor demo](sql-editor/docs/demo.gif)
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  datawise-frontend (Vue 3 · Electron)                   │
-│  AI · Explorer · Workspace · Platform Hub · Dashboard │
-└──────────────────────────┬──────────────────────────────┘
-                           │ REST / SSE
-┌──────────────────────────▼──────────────────────────────┐
-│  datawise-server (Spring Boot)                          │
-│  ai · platform · workspace · database · connectors      │
-└──────────────────────────┬──────────────────────────────┘
-                           │ JDBC / plugin SPI
-┌──────────────────────────▼──────────────────────────────┐
+┌──────────────────────────────────────────────────────────┐
+│  datawise-frontend (Vue 3 · Pinia · Vite · Electron)      │
+│  Explorer · Workspace · AI · Settings · Dashboard         │
+└────────────────────────────┬─────────────────────────────┘
+                             │ REST / SSE
+┌────────────────────────────▼─────────────────────────────┐
+│  datawise-server (Spring Boot 3)                          │
+│  database · workspace · ai · platform · connectors        │
+└────────────────────────────┬─────────────────────────────┘
+                             │ JDBC / connector SPI
+┌────────────────────────────▼─────────────────────────────┐
 │  config/plugins/*.jar  +  config/drivers/*.jar            │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                    datawise-mcp/  ──►  IDE agents (Cursor, Claude)
-
-sql-editor/  ──►  standalone npm package (grammar completion)
+└────────────────────────────┬─────────────────────────────┘
+                             │
+         datawise-mcp/ ──────┴──────► IDE agents (Cursor, Claude)
+         sql-editor/   ─────────────► npm package (MIT)
 ```
 
-Local runtime config lives in `config/` (connections, plugins, secrets — not committed).
+Monorepo: frontend, backend, and editor are developed together. Runtime state lives under `config/` on your machine.
 
 ---
 
@@ -97,15 +122,28 @@ cd ../sql-editor && npm install && npm run build
 
 # 3. Frontend
 cd ../datawise-frontend
-cp .env.development.example .env.development   # first time
+cp .env.development.example .env.development   # first time only
 npm install && npm run dev
 # → http://localhost:28413
 ```
 
-Configure `config/connections.xml` (see example) and place connector JARs under `config/plugins/`.  
-Details: [docs/README.md](./docs/README.md).
+**First-time config**
 
-**Query Library CI** (validate SQL manifests in Git without a running server):
+```bash
+cp config/connections.xml.example config/connections.xml
+cp config/users.json.example config/users.json
+```
+
+Place connector JARs in `config/plugins/` and JDBC drivers in `config/drivers/`. Details: [config/README.md](./config/README.md) and [docs/README.md](./docs/README.md).
+
+**Windows desktop**
+
+```bash
+cd datawise-frontend
+npm run dist:desktop    # requires JAVA_HOME + Maven; output in release/
+```
+
+**Query Library CI** (validate SQL manifests without a running server):
 
 ```bash
 cd headless-cli && npm install && npm run build
@@ -114,44 +152,48 @@ node dist/main.js query-library validate -m ../examples/query-library/query-libr
 
 See [examples/query-library/README.md](./examples/query-library/README.md).
 
-**Desktop (Windows)**:
-
-```bash
-cd datawise-frontend
-npm run dist:desktop    # needs JAVA_HOME + Maven; output in release/
-```
-
 ---
 
-## Repository layout
+## Repository map
 
-| Path | Description |
-|------|-------------|
-| [datawise-frontend/](./datawise-frontend/) | Vue 3 client & Electron packaging |
-| [datawise-backend/](./datawise-backend/) | Spring Boot API, AI & platform services |
+| Path | Role |
+|------|------|
+| [datawise-frontend/](./datawise-frontend/) | Vue 3 UI & Electron packaging |
+| [datawise-backend/](./datawise-backend/) | Spring Boot API (multi-module) |
+| [sql-editor/](./sql-editor/) | Embeddable SQL editor package (MIT) |
 | [datawise-mcp/](./datawise-mcp/) | MCP server for IDE agents |
-| [sql-editor/](./sql-editor/) | Embeddable SQL editor (MIT) |
-| [datawise-vscode/](./datawise-vscode/) | VS Code deep link to desktop |
-| [headless-cli/](./headless-cli/) | CLI for migration, SQL, and Query Library CI |
-| [docs/](./docs/) | Setup & plugin notes |
+| [datawise-vscode/](./datawise-vscode/) | VS Code extension (deep links) |
+| [headless-cli/](./headless-cli/) | CLI for SQL, migration, CI |
+| [config/](./config/) | Local runtime config (examples only in Git) |
+| [docs/](./docs/) | Setup, connectors, plugins |
+
+Backend entry: `datawise-server`. Connectors: `datawise-backend/datawise-connectors/`.
 
 ---
 
-## Stack
-
-Vue 3 · Pinia · Vite · Monaco · Electron · Spring Boot 3 · Spring AI · JDBC
-
----
-
-## Contributing & license
-
-Issues and PRs welcome. Before submitting:
+## Development
 
 ```bash
+# Pre-commit sanity check
 node scripts/pre-commit-check.mjs
+
+# Frontend
 cd datawise-frontend && npm run typecheck && npm run test
+
+# Backend
 cd datawise-backend && mvn test
+
+# SQL editor
+cd sql-editor && npm run typecheck && npm test
 ```
 
-- Main project: [Apache License 2.0](./LICENSE)  
-- SQL editor: MIT (see [NOTICE](./NOTICE))
+Do **not** commit secrets: `config/connections.xml`, `config/users/*/app.xml`, `.env` with keys, or runtime JSON/XML under `config/`.
+
+---
+
+## License
+
+- Main repository: [Apache License 2.0](./LICENSE)
+- SQL editor (`sql-editor/`): MIT — see [NOTICE](./NOTICE)
+
+Issues and pull requests are welcome.
