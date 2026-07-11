@@ -24,7 +24,9 @@ public final class AiAnalysisIntentDetector {
     );
 
     private static final Pattern NON_ANALYSIS = Pattern.compile(
-            "(解释|优化|explain|optimize|fix|翻译|translate)",
+            "(解释|优化|explain|optimize|fix|翻译|translate|"
+                    + "summarize|summary|摘要|"
+                    + "Summarize this SQL query result)",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
     );
 

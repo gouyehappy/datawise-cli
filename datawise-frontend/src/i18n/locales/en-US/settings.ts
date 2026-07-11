@@ -231,6 +231,8 @@ export default {
         defaultGridPageSizeHint: 'Applies to SQL result grids, schema table lists, and other paginated views. Auto uses the smallest option in the current list (50 by default).',
         slowQueryThresholdMs: 'Slow query threshold',
         slowQueryThresholdMsHint: 'SQL runs at or above this duration are highlighted in logs and results. Default 3000ms (3s).',
+        productionPerfMode: 'Production performance mode',
+        productionPerfModeHint: 'For connections tagged as production: cap each fetch at 2000 rows, cursor memory window at 8000, and emit [PERF] console logs in release builds. Disable here if not needed.',
         lineNumbers: 'Show Line Numbers',
         lineNumbersHint: 'When enabled, line numbers appear on the left to help track position and reference errors.',
         minimap: 'Show Minimap',

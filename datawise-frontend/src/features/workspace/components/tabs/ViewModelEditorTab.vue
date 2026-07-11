@@ -4,6 +4,7 @@ import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
 import {SqlEditor} from '@datawise/sql-editor'
 import type {SqlEditorExpose} from '@datawise/sql-editor'
+import {ensureSqlEditorPlugin} from '@/features/workspace/services/ensure-sql-editor-plugin'
 import {
     AiPromptBar,
     ConsoleCtxBar,
@@ -62,6 +63,7 @@ const {readOnly: guestReadOnly, hint: guestReadOnlyHint} = useResourceWriteGuard
 const {connectionHealthById} = storeToRefs(explorer)
 
 const editorRef = ref<SqlEditorExpose>()
+const editorReady = ref(false)
 const splitRef = ref<HTMLElement>()
 const aiSelectionSql = ref('')
 const showPreview = ref(false)
@@ -377,7 +379,9 @@ useWorkspaceSqlShortcutHandlers(() => ({
     onAiPrompt: consoleAiEnabled.value ? openAiInput : undefined,
 }))
 
-onMounted(() => {
+onMounted(async () => {
+    await ensureSqlEditorPlugin()
+    editorReady.value = true
     syncFromTab(props.tab)
     if (!splitRef.value) return
     editorHeight.value = clampEditorHeight(
@@ -518,6 +522,7 @@ onMounted(() => {
         />
         <div class="editor-surface">
           <SqlEditor
+              v-if="editorReady"
               ref="editorRef"
               v-model="sql"
               :connection-id="connectionId || tab.connectionId"

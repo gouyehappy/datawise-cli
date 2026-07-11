@@ -1,10 +1,13 @@
 /** Dev-only structured timing logs (browser console). */
+import {shouldEmitPerfLog} from '@/features/settings/services/perf-diagnostics.service'
+
 export function perfNow(): number {
     return performance.now()
 }
 
 export function logPerf(operation: string, startedAt: number, details?: Record<string, unknown>): void {
-    if (!import.meta.env.DEV) {
+    const connectionId = typeof details?.connectionId === 'string' ? details.connectionId : undefined
+    if (!shouldEmitPerfLog(connectionId)) {
         return
     }
     const durationMs = Math.round(performance.now() - startedAt)

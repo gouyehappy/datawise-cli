@@ -70,6 +70,8 @@ export interface SqlEditorActionsOptions {
     beforeExecute?: (sql: string) => Promise<boolean>
     /** 将参数占位符替换为实际值 */
     applyParameters?: (sql: string) => string
+    /** 当前连接是否启用生产环境性能模式收紧策略 */
+    getProductionPerfActive?: () => boolean
 }
 
 async function jumpEditorToErrorLine(editor: SqlEditorExpose | null, line: number) {
@@ -220,8 +222,8 @@ export function useSqlEditorActions(options: SqlEditorActionsOptions) {
         const trimmedExecutable = executable.trim()
         const resolvedSql = options.applyParameters?.(trimmedExecutable) ?? trimmedExecutable
         const tabId = options.getTabId()
-            const pageSize = resolveSqlPageSize()
-            const maxRows = resolveClientMaxResultRows()
+            const pageSize = resolveSqlPageSize(options.getProductionPerfActive?.() ?? false)
+            const maxRows = resolveClientMaxResultRows(options.getProductionPerfActive?.() ?? false)
             const connection = {
                 connectionId,
                 database: options.getDatabase(),

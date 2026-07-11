@@ -1,5 +1,6 @@
 import type {TreeNode} from '@/core/types'
 import type {SqlColumnMeta, SqlForeignKey} from '@datawise/sql-editor/types'
+import {runWithConcurrencyLimit} from '@/core/utils/concurrency-limit'
 import type {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {
     findExplorerScopeNode,
@@ -73,6 +74,9 @@ export interface SqlTableLoadResult {
     foreignKeys: SqlForeignKey[]
 }
 
+/** 补全预加载 catalog 子节点时的并发上限 */
+const CATALOG_CHILD_LOAD_CONCURRENCY = 3
+
 /** 懒加载 catalog / schema 索引，供 SQL 编辑器补全 */
 export async function ensureCatalogSchemaIndexLoaded(
     explorer: ExplorerStore,
@@ -85,7 +89,9 @@ export async function ensureCatalogSchemaIndexLoaded(
     }
     const dbType = resolveConnectionDbType(explorer.tree, connectionId) ?? connection.dbType
     const catalogNodes = (connection.children ?? []).filter((catalogNode) => catalogNode.type === 'database')
-    await Promise.all(catalogNodes.map((catalogNode) => explorer.ensureChildrenLoaded(catalogNode.id)))
+    await runWithConcurrencyLimit(catalogNodes, CATALOG_CHILD_LOAD_CONCURRENCY, async (catalogNode) => {
+        await explorer.ensureChildrenLoaded(catalogNode.id)
+    })
     const refreshed = explorer.findNode(connectionId)
     if (!refreshed) {
         return {catalogs: [], schemasByCatalog: {}}

@@ -46,6 +46,9 @@ export default {
     clearFilters: 'Clear filters',
     loadMore: 'Load more',
     loadingMore: 'Loading…',
+    loadedRowsWarning: '{count} rows loaded — add WHERE or export',
+    cursorWindowTrimmed: 'Oldest {count} rows dropped from memory; row numbers offset',
+    productionPerfActive: 'Production perf mode: stricter row limits applied',
     audit: {
         title: 'Change history (time-travel)',
         loading: 'Loading audit entries…',

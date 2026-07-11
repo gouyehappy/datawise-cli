@@ -43,6 +43,7 @@ const {
   submitChanges,
   tableHasMore,
   cursorLoading,
+  productionPerfActive,
   loadMore,
   refresh,
   databaseName,
@@ -135,6 +136,8 @@ function onRequestAiSummary() {
         :on-submit-changes="onSubmitChanges"
         :result-has-more="tableHasMore"
         :cursor-loading="cursorLoading"
+        :cursor-trimmed-rows="tableData.cursorTrimmedRows"
+        :production-perf-active="productionPerfActive"
         @refresh="refresh"
         @load-more="loadMore"
         @request-ai-summary="onRequestAiSummary"

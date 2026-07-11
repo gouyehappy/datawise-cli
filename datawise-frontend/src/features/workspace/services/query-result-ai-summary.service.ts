@@ -170,7 +170,7 @@ export function formatQueryResultSummaryPrompt(
         `Rows: ${payload.rowCount} total (${payload.loadedRowCount} loaded in UI)`,
         `Columns: ${payload.columnCount}`,
         `Duration: ${payload.durationMs}ms`,
-        `Analysis mode: ${payload.mode}`,
+        `Sampling mode: ${payload.mode}`,
         '',
         'Column statistics:',
         formatColumnStatLines(payload.columns),

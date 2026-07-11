@@ -360,6 +360,8 @@ export interface TableDataResult {
     hasMore?: boolean
     pageOffset?: number
     pageSize?: number
+    /** 滑动窗口已从内存丢弃的最早行数 */
+    cursorTrimmedRows?: number
 }
 
 export interface TableDataFetchOptions {

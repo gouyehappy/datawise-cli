@@ -15,6 +15,8 @@ const {
   loading,
   cursorLoading,
   hasMore,
+  cursorTrimmedRows,
+  productionPerfActive,
   errorMessage,
   refresh,
   loadMore,
@@ -52,6 +54,8 @@ watch(
         :export-suggest-mask="exportSuggestMask()"
         :result-has-more="hasMore"
         :cursor-loading="cursorLoading || loading"
+        :cursor-trimmed-rows="cursorTrimmedRows"
+        :production-perf-active="productionPerfActive"
         @refresh="refresh"
         @load-more="loadMore"
     />

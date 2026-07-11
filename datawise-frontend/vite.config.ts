@@ -44,8 +44,31 @@ export default defineConfig(async () => {
         build: enableElectron
             ? {
                 modulePreload: false,
+                rollupOptions: {
+                    output: {
+                        manualChunks(id) {
+                            if (id.includes('node_modules/monaco-editor')) return 'monaco'
+                            if (id.includes('node_modules/echarts')) return 'echarts'
+                            if (id.includes('node_modules/exceljs') || id.includes('node_modules/xlsx')) {
+                                return 'spreadsheet'
+                            }
+                        },
+                    },
+                },
             }
-            : undefined,
+            : {
+                rollupOptions: {
+                    output: {
+                        manualChunks(id) {
+                            if (id.includes('node_modules/monaco-editor')) return 'monaco'
+                            if (id.includes('node_modules/echarts')) return 'echarts'
+                            if (id.includes('node_modules/exceljs') || id.includes('node_modules/xlsx')) {
+                                return 'spreadsheet'
+                            }
+                        },
+                    },
+                },
+            },
         worker: {
             format: 'es',
         },

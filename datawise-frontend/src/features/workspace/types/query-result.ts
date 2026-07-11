@@ -38,6 +38,8 @@ export interface QueryResultItem {
     hasMore?: boolean
     pageOffset?: number
     pageSize?: number
+    /** 滑动窗口已从内存丢弃的最早行数（用于行号偏移与提示） */
+    cursorTrimmedRows?: number
 }
 
 export interface ConsoleQueryState {

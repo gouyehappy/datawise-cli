@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, onBeforeMount, ref, shallowRef} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
 import {SqlSnippetsEditorWorkbench} from '@datawise/sql-editor'
@@ -7,6 +7,7 @@ import {UserResource} from '@/features/auth/types/user-resource.types'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
 import {useToastStore} from '@/features/layout/stores/toast-store'
 import {getAppSqlEditorShortcutsController} from '@/features/settings/services/sql-editor-shortcuts.controller'
+import {ensureSqlEditorPlugin} from '@/features/workspace/services/ensure-sql-editor-plugin'
 import {useSqlEditorShortcutsStore} from '@/features/settings/stores/sql-editor-shortcuts-store'
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
@@ -15,7 +16,8 @@ import SqlSnippetsSourcesBar from '@/features/settings/components/SqlSnippetsSou
 const {t} = useI18n()
 const toast = useToastStore()
 const store = useSqlEditorShortcutsStore()
-const controller = getAppSqlEditorShortcutsController()
+const snippetsReady = ref(false)
+const controller = shallowRef<ReturnType<typeof getAppSqlEditorShortcutsController> | null>(null)
 const workbenchRef = ref<InstanceType<typeof SqlSnippetsEditorWorkbench> | null>(null)
 const sharedFileInputRef = ref<HTMLInputElement>()
 const newSnippetSignal = ref(0)
@@ -25,6 +27,12 @@ const {readOnly: sharedReadOnly, denyIfReadOnly: denySharedWrite} =
 const {readOnly: personalReadOnly, hint: personalHint, denyIfReadOnly: denyPersonalWrite} =
     useResourceWriteGuard(UserResource.SqlSnippetsPersonal)
 const readOnly = computed(() => sharedReadOnly.value || personalReadOnly.value)
+
+onBeforeMount(async () => {
+    await ensureSqlEditorPlugin()
+    controller.value = getAppSqlEditorShortcutsController()
+    snippetsReady.value = true
+})
 
 function onAddSnippet() {
   if (denyPersonalWrite()) return
@@ -117,8 +125,9 @@ async function onSharedFileChange(event: Event) {
       </div>
 
       <SqlSnippetsEditorWorkbench
+          v-if="snippetsReady && controller"
           ref="workbenchRef"
-          :controller="controller"
+          :controller="controller!"
           :readonly="readOnly"
           :new-snippet-signal="newSnippetSignal"
       />

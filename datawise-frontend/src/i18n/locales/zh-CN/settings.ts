@@ -231,6 +231,8 @@ export default {
         defaultGridPageSizeHint: '应用于 SQL 结果网格、查看所有表等列表分页；选「自动」时使用当前列表中的最小条数（默认 50）。',
         slowQueryThresholdMs: '慢查询阈值',
         slowQueryThresholdMsHint: '耗时达到或超过此值的 SQL 会在日志与结果区标红，默认 3000ms（3 秒）',
+        productionPerfMode: '生产环境性能模式',
+        productionPerfModeHint: '连接标记为「生产」时，单次返回行数上限为 2000、游标内存窗口为 8000；正式版也会在控制台输出 [PERF] 诊断日志。可在设置中关闭。',
         lineNumbers: '显示行号',
         lineNumbersHint: '开启后，编辑器左侧显示行号，便于跟踪代码位置与定位错误。',
         minimap: '显示缩略图',

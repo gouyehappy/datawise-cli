@@ -25,7 +25,7 @@ describe('grid-xlsx.service', () => {
     it('round-trips grid data through xlsx buffer', async () => {
         const buffer = await serializeGridToXlsxBuffer(columns, rows)
         assert.ok(buffer.byteLength > 0)
-        const parsed = parseXlsxBuffer(buffer)
+        const parsed = await parseXlsxBuffer(buffer)
         assert.deepEqual(parsed.headers, ['id', 'amount', 'name'])
         assert.equal(parsed.rows.length, 2)
         assert.equal(parsed.rows[0]?.[0], '1')

@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends object">
-import {computed, useSlots, watch} from 'vue'
+import {computed, ref, toRef, useSlots, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {EmptyState} from '@/core/components/ui'
 import PillSelect from '@/core/components/PillSelect.vue'
@@ -12,6 +12,7 @@ import {
   resolveDwDataGridRowKey,
   useDwDataGridState,
 } from '@/core/components/useDwDataGridState'
+import {useGridVirtualWindow} from '@/core/composables/useGridVirtualWindow'
 import {GRID_PAGE_SIZE_OPTIONS} from '@/features/settings/constants/editor-presets'
 import {minGridPageSizeOption, resolveGridPageSizeOption} from '@/features/settings/services/grid-pagination.service'
 import {DwIcon} from '@/core/icons'
@@ -258,6 +259,20 @@ function cellClass(column: DwDataGridColumn<T>): string[] {
 }
 
 const columnCount = computed(() => props.columns.length + (props.selectable ? 1 : 0))
+
+const gridBodyRef = ref<HTMLElement | null>(null)
+const pagedRowsRef = toRef(pagedRows)
+const virtualEnabled = computed(() => !props.shellOnly)
+const {
+  useVirtual: useGridVirtual,
+  visibleRows: virtualPagedRows,
+  paddingTop: virtualPaddingTop,
+  paddingBottom: virtualPaddingBottom,
+} = useGridVirtualWindow(gridBodyRef, pagedRowsRef, {enabled: virtualEnabled})
+
+watch(internalCurrentPage, () => {
+  gridBodyRef.value?.scrollTo({top: 0})
+})
 </script>
 
 <template>
@@ -385,7 +400,7 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
           <EmptyState embedded compact :title="labels.empty"/>
         </slot>
       </div>
-      <div v-else class="dw-data-grid__body">
+      <div v-else ref="gridBodyRef" class="dw-data-grid__body">
         <table class="dw-data-grid__table">
           <thead>
           <tr>
@@ -410,8 +425,11 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
           </tr>
           </thead>
           <tbody>
+          <tr v-if="useGridVirtual && virtualPaddingTop > 0" class="dw-data-grid__virtual-spacer" aria-hidden="true">
+            <td :colspan="columnCount" :style="{ height: `${virtualPaddingTop}px`, padding: 0, border: 'none' }"/>
+          </tr>
           <tr
-              v-for="row in pagedRows"
+              v-for="{ item: row } in virtualPagedRows"
               :key="resolveRowKey(row)"
               :class="{ 'is-selected': selectable && selectedSet.has(resolveRowKey(row)) }"
           >
@@ -437,6 +455,9 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
                 {{ formatCellValue(row, column) }}
               </slot>
             </td>
+          </tr>
+          <tr v-if="useGridVirtual && virtualPaddingBottom > 0" class="dw-data-grid__virtual-spacer" aria-hidden="true">
+            <td :colspan="columnCount" :style="{ height: `${virtualPaddingBottom}px`, padding: 0, border: 'none' }"/>
           </tr>
           <tr v-if="!pagedRows.length">
             <td :colspan="columnCount">
@@ -822,6 +843,13 @@ const columnCount = computed(() => props.columns.length + (props.selectable ? 1 
   min-height: 0;
   overflow: auto;
   background: var(--ddg-shell-bg);
+}
+
+tr.dw-data-grid__virtual-spacer td {
+  padding: 0 !important;
+  border: none !important;
+  line-height: 0;
+  pointer-events: none;
 }
 
 .dw-data-grid__body--custom {

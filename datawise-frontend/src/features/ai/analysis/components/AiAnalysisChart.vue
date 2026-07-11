@@ -9,6 +9,8 @@ const props = defineProps<{
 
 const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
+let resizeTimer: ReturnType<typeof setTimeout> | null = null
+let lastOptionJson = ''
 
 function render() {
   if (!chartRef.value || !props.option) return
@@ -17,22 +19,39 @@ function render() {
   chart.resize()
 }
 
+function scheduleRender() {
+  if (!props.option) return
+  const nextJson = JSON.stringify(props.option)
+  if (nextJson === lastOptionJson) return
+  lastOptionJson = nextJson
+  render()
+}
+
+function onWindowResize() {
+  if (resizeTimer) clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(() => {
+    resizeTimer = null
+    chart?.resize()
+  }, 120)
+}
+
 function dispose() {
   chart?.dispose()
   chart = null
 }
 
 onMounted(() => {
-  render()
-  window.addEventListener('resize', render)
+  scheduleRender()
+  window.addEventListener('resize', onWindowResize)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', render)
+  if (resizeTimer) clearTimeout(resizeTimer)
+  window.removeEventListener('resize', onWindowResize)
   dispose()
 })
 
-watch(() => props.option, () => render(), {deep: true})
+watch(() => props.option, () => scheduleRender())
 </script>
 
 <template>

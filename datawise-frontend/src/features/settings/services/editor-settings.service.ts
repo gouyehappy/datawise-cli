@@ -98,6 +98,9 @@ export function readStoredEditorSettings(): EditorSettings {
                 SLOW_QUERY_THRESHOLD_MIN,
                 SLOW_QUERY_THRESHOLD_MAX,
             ),
+            productionPerfMode: typeof parsed.productionPerfMode === 'boolean'
+                ? parsed.productionPerfMode
+                : DEFAULT_EDITOR_SETTINGS.productionPerfMode,
         }
     } catch {
         return {...DEFAULT_EDITOR_SETTINGS}

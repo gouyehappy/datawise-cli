@@ -320,6 +320,15 @@ function toggleSetting(key: 'lineNumbers' | 'minimap' | 'wordWrap' | 'folding') 
             <p class="field-hint">{{ t('settings.editor.maxResultRowsHint') }}</p>
             <p class="field-hint">{{ t('settings.editor.slowQueryThresholdMsHint') }}</p>
             <p class="field-hint">{{ t('settings.editor.defaultGridPageSizeHint') }}</p>
+            <DwCheckbox
+                block
+                class="production-perf-toggle"
+                :model-value="editorSettings.settings.productionPerfMode"
+                @update:model-value="preserveScrollPatch({ productionPerfMode: $event })"
+            >
+              <strong>{{ t('settings.editor.productionPerfMode') }}</strong>
+              <span class="field-note">{{ t('settings.editor.productionPerfModeHint') }}</span>
+            </DwCheckbox>
         </SettingsSectionCard>
 
         <SettingsSectionCard

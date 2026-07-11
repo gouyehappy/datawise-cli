@@ -3,6 +3,8 @@
 -->
 <script setup lang="ts">
 import {computed, defineAsyncComponent, nextTick, onMounted, ref, watch} from 'vue'
+
+defineOptions({name: 'SqlConsoleTab'})
 import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
 import {ConsoleCtxBar, ConsoleTransactionBar, QueryResultPane} from '@/features/workspace/components'
@@ -33,6 +35,9 @@ import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {sqlApi} from '@/api'
 import {mergeCursorPageIntoQueryResult} from '@/features/workspace/services/query-result-cursor.service'
+import {resolveCursorLoadedRowsMax} from '@/features/settings/services/query-limit.service'
+import {useProductionPerfMode} from '@/features/settings/composables/useProductionPerfMode'
+import {ensureSqlEditorPlugin} from '@/features/workspace/services/ensure-sql-editor-plugin'
 import {useQueryBookmarkSave} from '@/features/workspace/composables/useQueryBookmarkSave'
 import {isViewModelSelectSql} from '@/api/modules/view-model'
 import DangerousSqlPendingBar from '@/features/workspace/components/DangerousSqlPendingBar.vue'
@@ -204,6 +209,8 @@ const connectionEnvironment = computed(() => {
   return normalizeConnectionEnvironment(node?.env, node?.envCustom).env
 })
 
+const {productionPerfActive} = useProductionPerfMode(() => connectionId.value || props.tab.connectionId)
+
 const {caps: connectionCaps, hint: capabilityHint} = useConnectionCapabilities(dbDialect)
 
 const {
@@ -258,6 +265,7 @@ const {runSql, saveConsole, formatSql, formatSelection, jumpToErrorLine, running
     void transactionBarRef.value?.refreshStatus()
   },
   applyParameters: (text) => applySqlParameters(text, sqlParamValues.value),
+  getProductionPerfActive: () => productionPerfActive.value,
 })
 
 const teamStore = useTeamStore()
@@ -608,7 +616,9 @@ async function onLoadMoreResult(index: number) {
     workspace.appendConsoleQueryResultPage(
         props.tab.id,
         index,
-        mergeCursorPageIntoQueryResult(result, page),
+        mergeCursorPageIntoQueryResult(result, page, {
+          maxRows: resolveCursorLoadedRowsMax(productionPerfActive.value),
+        }),
     )
   } finally {
     cursorLoading.value = false
@@ -669,8 +679,9 @@ function clampEditorHeight(value: number) {
   return Math.min(max, Math.max(CONSOLE_EDITOR_HEIGHT_MIN, value))
 }
 
-onMounted(() => {
+onMounted(async () => {
   layout.setModule('database')
+  await ensureSqlEditorPlugin()
   if (!splitRef.value) {
     requestAnimationFrame(() => {
       editorReady.value = true
@@ -925,6 +936,7 @@ onMounted(() => {
           :enable-cross-env-compare="crossEnvCompareEnabled && Boolean((connectionId || tab.connectionId) && databaseName)"
           :db-type="dbDialect"
           :export-suggest-mask="connectionEnvironment === 'prod'"
+          :production-perf-active="productionPerfActive"
           :cursor-loading="cursorLoading"
           @collapse="collapseResultPanel"
           @update:active-view="onActiveViewChange"

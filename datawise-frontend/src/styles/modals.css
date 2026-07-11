@@ -32,6 +32,24 @@
     overflow: hidden;
 }
 
+.app-modal--constrained {
+    display: flex;
+    flex-direction: column;
+}
+
+.app-modal--constrained .app-modal-header,
+.app-modal--constrained .app-modal-footer {
+    flex-shrink: 0;
+}
+
+.app-modal--constrained .app-modal-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .app-modal-header {
     display: flex;
     align-items: flex-start;

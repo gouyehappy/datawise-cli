@@ -16,6 +16,8 @@ export interface EditorSettings {
     defaultGridPageSize: number
     /** 慢查询阈值（毫秒）；耗时 ≥ 此值时在日志与结果区标红 */
     slowQueryThresholdMs: number
+    /** 连接标记为生产环境时收紧行数上限并启用正式版性能诊断日志 */
+    productionPerfMode: boolean
 }
 
 export const SLOW_QUERY_THRESHOLD_MIN = 100
@@ -50,9 +52,10 @@ export const DEFAULT_EDITOR_SETTINGS: EditorSettings = {
     minimap: true,
     wordWrap: true,
     folding: true,
-    maxResultRows: 0,
+    maxResultRows: 5000,
     defaultGridPageSize: DEFAULT_GRID_PAGE_SIZE,
     slowQueryThresholdMs: DEFAULT_SLOW_QUERY_THRESHOLD_MS,
+    productionPerfMode: true,
 }
 
 export const EDITOR_THEME_OPTIONS: EditorThemeId[] = ['one-dark', 'github-light']

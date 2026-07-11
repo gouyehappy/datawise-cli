@@ -80,6 +80,23 @@ class AiDataAgentSupportTest {
     }
 
     @Test
+    void skipsAnalysisForQueryResultSummaryPrompt() {
+        List<AiDatabaseTargetDto> targets = List.of(new AiDatabaseTargetDto(
+                "conn-1",
+                "MySQL",
+                "admin_db",
+                "admin_db",
+                null,
+                "mysql"
+        ));
+        String prompt = """
+                Summarize this SQL query result for a data analyst. Reply in Chinese using 3-6 concise bullet points.
+                Sampling mode: sample
+                """;
+        assertTrue(!AiAnalysisIntentDetector.isAnalysisIntent(prompt, targets));
+    }
+
+    @Test
     void skipsAnalysisForExplainPrompt() {
         List<AiDatabaseTargetDto> targets = List.of(new AiDatabaseTargetDto(
                 "conn-1",

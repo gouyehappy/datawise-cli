@@ -63,6 +63,8 @@ const props = withDefaults(
       gridStateScope?: string
       resultHasMore?: boolean
       cursorLoading?: boolean
+      cursorTrimmedRows?: number
+      productionPerfActive?: boolean
       enableDmlGenerate?: boolean
       dbType?: DbType
       enableAiFix?: boolean
@@ -138,6 +140,7 @@ const normalizedResults = computed<QueryResultItem[]>(() => {
       orderBy: props.orderBy,
       durationMs: 0,
       status: 'success' as const,
+      cursorTrimmedRows: props.cursorTrimmedRows,
     },
   ]
 })
@@ -415,6 +418,10 @@ const gridHasMore = computed(() => {
 })
 
 const gridCursorLoading = computed(() => props.cursorLoading ?? false)
+
+const gridCursorTrimmedRows = computed(
+    () => props.cursorTrimmedRows ?? activeResult.value?.cursorTrimmedRows ?? 0,
+)
 
 function onLoadMoreRows() {
   if (activeResultIndex.value < 0) {
@@ -729,6 +736,8 @@ function onRequestAiExplain() {
           full-toolbar
           :has-more="gridHasMore"
           :cursor-loading="gridCursorLoading"
+          :cursor-trimmed-rows="gridCursorTrimmedRows"
+          :production-perf-active="props.productionPerfActive"
           @exported="onExported"
           @refresh="onRefreshGrid"
           @load-more="onLoadMoreRows"

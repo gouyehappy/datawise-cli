@@ -9,7 +9,9 @@ import {useTeamStore} from '@/features/team/stores/team-store'
 import {canDmlConnection} from '@/features/team/services/connection-access.service'
 import {tableDataApi, tableDetailApi} from '@/api'
 import {resolveTableViewOptions} from '../services/table-data.service'
-import {resolveSqlPageSize} from '@/features/settings/services/query-limit.service'
+import {resolveSqlPageSize, resolveCursorLoadedRowsMax} from '@/features/settings/services/query-limit.service'
+import {appendCursorRowsWithWindow} from '@/features/workspace/services/query-result-cursor.service'
+import {useProductionPerfMode} from '@/features/settings/composables/useProductionPerfMode'
 import {
     buildRowMutateValues,
     resolvePrimaryKeyColumns,
@@ -51,6 +53,7 @@ export function useTableDataView(tab: WorkspaceTab) {
     const changeRevision = ref(0)
 
     const databaseName = computed(() => resolveDatabaseName(tab, explorer.tree))
+    const {productionPerfActive} = useProductionPerfMode(() => tab.connectionId)
     const connectionDbType = computed(() => {
         if (!tab.connectionId) return undefined
         return explorer.findNode(tab.connectionId)?.dbType
@@ -132,7 +135,7 @@ export function useTableDataView(tab: WorkspaceTab) {
             tableData.value = await tableDataApi.fetch(tab.tableName, {
                 connectionId: tab.connectionId,
                 database: databaseName.value,
-                maxRows: resolveSqlPageSize(),
+                maxRows: resolveSqlPageSize(productionPerfActive.value),
             })
             logPerf('table.open.data', startedAt, {
                 ...details,
@@ -212,13 +215,18 @@ export function useTableDataView(tab: WorkspaceTab) {
                 database: databaseName.value,
                 cursorId,
             })
+            const windowed = appendCursorRowsWithWindow(tableData.value.rows, page.rows, {
+                previousTrimmed: tableData.value.cursorTrimmedRows ?? 0,
+                maxRows: resolveCursorLoadedRowsMax(productionPerfActive.value),
+            })
             tableData.value = {
                 ...tableData.value,
-                rows: [...tableData.value.rows, ...page.rows],
+                rows: windowed.rows,
                 cursorId: page.cursorId,
                 hasMore: page.hasMore,
                 pageOffset: page.pageOffset,
                 pageSize: page.pageSize,
+                cursorTrimmedRows: windowed.trimmedTotal,
             }
         } finally {
             cursorLoading.value = false
@@ -235,6 +243,7 @@ export function useTableDataView(tab: WorkspaceTab) {
         viewOptions,
         tableHasMore,
         cursorLoading,
+        productionPerfActive,
         loadMore,
         loading,
         mutating,

@@ -46,6 +46,9 @@ export default {
     clearFilters: '清除筛选',
     loadMore: '加载更多',
     loadingMore: '加载中…',
+    loadedRowsWarning: '已加载 {count} 行，建议加 WHERE 或导出',
+    cursorWindowTrimmed: '最早 {count} 行已从内存移除，行号已顺延',
+    productionPerfActive: '生产环境性能模式：已收紧行数上限',
     audit: {
         title: '变更历史（Time-travel）',
         loading: '加载审计记录…',

@@ -1,5 +1,8 @@
 import {computed, ref, watch, type MaybeRefOrGetter, toValue, type Ref} from 'vue'
+import {useDebouncedRef} from '@/core/utils/debounced-ref'
 import {minGridPageSizeOption} from '@/features/settings/services/grid-pagination.service'
+
+const GRID_FILTER_DEBOUNCE_MS = 180
 
 export function useDwDataGridState<T>(options: {
     rows: Ref<readonly T[]>
@@ -14,6 +17,7 @@ export function useDwDataGridState<T>(options: {
 }) {
     const pageSizeModel = ref(toValue(options.defaultPageSize))
     const currentPage = ref(1)
+    const debouncedFilter = useDebouncedRef(options.filter, GRID_FILTER_DEBOUNCE_MS)
 
     const pageSize = computed(() => {
         const parsed = Number(pageSizeModel.value)
@@ -22,8 +26,8 @@ export function useDwDataGridState<T>(options: {
     })
 
     const filteredRows = computed(() => {
-        const query = options.filter.value
-        if (!query.trim()) return [...options.rows.value]
+        const query = debouncedFilter.value
+        if (!query.trim()) return options.rows.value
         return options.rows.value.filter((row) => options.filterPredicate(row, query))
     })
 
@@ -50,7 +54,7 @@ export function useDwDataGridState<T>(options: {
         && pagedRows.value.some((row) => selectedSet.value.has(options.resolveRowKey(row))),
     )
 
-    watch([options.filter, pageSize], () => {
+    watch([debouncedFilter, pageSize], () => {
         currentPage.value = 1
     })
 
@@ -68,13 +72,13 @@ export function useDwDataGridState<T>(options: {
         }
     })
 
-    watch(
-        () => options.rows.value.map((row) => options.resolveRowKey(row)).join('\0'),
-        () => {
-            const valid = new Set(options.rows.value.map((row) => options.resolveRowKey(row)))
-            options.selectedKeys.value = options.selectedKeys.value.filter((key) => valid.has(key))
-        },
-    )
+    watch(options.rows, () => {
+        const valid = new Set(options.rows.value.map((row) => options.resolveRowKey(row)))
+        const pruned = options.selectedKeys.value.filter((key) => valid.has(key))
+        if (pruned.length !== options.selectedKeys.value.length) {
+            options.selectedKeys.value = pruned
+        }
+    })
 
     function goFirst() {
         currentPage.value = 1

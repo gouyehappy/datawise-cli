@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, nextTick, onUnmounted, ref, watch} from 'vue'
 import type {SelectOption} from '@/core/components/select.types'
 import {usePopoverEscape} from '@/core/composables/usePopoverEscape'
 import {DwIcon} from '@/core/icons'
@@ -26,6 +26,19 @@ const model = defineModel<string>({required: true})
 const rootRef = ref<HTMLElement>()
 const open = ref(false)
 
+const MENU_GAP = 6
+const MENU_MAX_HEIGHT = 280
+
+type MenuPlacement = 'bottom' | 'top'
+
+const menuPosition = ref({
+  left: 0,
+  minWidth: 0,
+  top: 0,
+  anchorTop: 0,
+  placement: 'bottom' as MenuPlacement,
+})
+
 const selectedLabel = computed(() => {
   const match = props.options.find((item) => item.value === model.value)
   if (match) return match.label
@@ -35,10 +48,75 @@ const selectedLabel = computed(() => {
 
 const isPlaceholder = computed(() => !model.value && !!props.placeholder)
 
-const menuStyle = computed(() => ({
-  minWidth: props.menuMinWidth ?? undefined,
-  width: 'max-content',
-}))
+const menuStyle = computed(() => {
+  const base: Record<string, string> = {
+    minWidth: props.menuMinWidth ?? `${menuPosition.value.minWidth}px`,
+    width: 'max-content',
+  }
+
+  if (!open.value) return base
+
+  const anchored: Record<string, string> = {
+    ...base,
+    left: `${menuPosition.value.left}px`,
+  }
+
+  if (menuPosition.value.placement === 'bottom') {
+    anchored.top = `${menuPosition.value.top}px`
+  } else {
+    anchored.bottom = `${window.innerHeight - menuPosition.value.anchorTop + MENU_GAP}px`
+  }
+
+  return anchored
+})
+
+let removePositionListeners: (() => void) | null = null
+
+function updateMenuPosition() {
+  const trigger = rootRef.value
+  if (!trigger) return
+
+  const rect = trigger.getBoundingClientRect()
+  const spaceBelow = window.innerHeight - rect.bottom - MENU_GAP
+  const spaceAbove = rect.top - MENU_GAP
+  const preferredHeight = Math.min(MENU_MAX_HEIGHT, 160)
+  const placement: MenuPlacement =
+      spaceBelow < preferredHeight && spaceAbove > spaceBelow ? 'top' : 'bottom'
+
+  menuPosition.value = {
+    left: rect.left,
+    minWidth: rect.width,
+    top: rect.bottom + MENU_GAP,
+    anchorTop: rect.top,
+    placement,
+  }
+}
+
+function bindPositionListeners() {
+  removePositionListeners?.()
+  const onReposition = () => updateMenuPosition()
+  window.addEventListener('resize', onReposition)
+  window.addEventListener('scroll', onReposition, true)
+  removePositionListeners = () => {
+    window.removeEventListener('resize', onReposition)
+    window.removeEventListener('scroll', onReposition, true)
+  }
+}
+
+watch(open, async (isOpen) => {
+  if (!isOpen) {
+    removePositionListeners?.()
+    removePositionListeners = null
+    return
+  }
+  await nextTick()
+  updateMenuPosition()
+  bindPositionListeners()
+})
+
+onUnmounted(() => {
+  removePositionListeners?.()
+})
 
 usePopoverEscape(open, () => {
   open.value = false
@@ -86,42 +164,44 @@ function select(value: string) {
       <DwIcon class="dw-select__chevron" name="chevron-down" size="sm" :stroke-width="1.5"/>
     </button>
 
-    <Transition name="dw-select-menu">
-      <ul
-          v-if="open"
-          class="dw-select__menu"
-          role="listbox"
-          :style="menuStyle"
-      >
-        <li
-            v-for="option in options"
-            :key="option.value"
-            role="option"
-            :aria-selected="option.value === model"
+    <Teleport to="body">
+      <Transition name="dw-select-menu">
+        <ul
+            v-if="open"
+            class="dw-select__menu dw-select__menu--portal"
+            role="listbox"
+            :style="menuStyle"
         >
-          <button
-              class="dw-select__item"
-              :class="{ 'is-active': option.value === model }"
-              type="button"
-              :disabled="option.disabled"
-              @click="select(option.value)"
+          <li
+              v-for="option in options"
+              :key="option.value"
+              role="option"
+              :aria-selected="option.value === model"
           >
-            <span
-                class="dw-select__item-label"
-                :style="useOptionFont ? { fontFamily: option.value } : undefined"
+            <button
+                class="dw-select__item"
+                :class="{ 'is-active': option.value === model }"
+                type="button"
+                :disabled="option.disabled"
+                @click="select(option.value)"
             >
-              {{ option.label }}
-            </span>
-            <DwIcon
-                v-if="option.value === model"
-                class="dw-select__check"
-                name="submit"
-                size="sm"
-                :stroke-width="1.6"
-            />
-          </button>
-        </li>
-      </ul>
-    </Transition>
+              <span
+                  class="dw-select__item-label"
+                  :style="useOptionFont ? { fontFamily: option.value } : undefined"
+              >
+                {{ option.label }}
+              </span>
+              <DwIcon
+                  v-if="option.value === model"
+                  class="dw-select__check"
+                  name="submit"
+                  size="sm"
+                  :stroke-width="1.6"
+              />
+            </button>
+          </li>
+        </ul>
+      </Transition>
+    </Teleport>
   </div>
 </template>

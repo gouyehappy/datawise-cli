@@ -8,82 +8,59 @@
 
  */
 
-import type {Component} from 'vue'
+import {defineAsyncComponent, type Component} from 'vue'
 
 import type {WorkspaceTabType} from '@/core/types'
 
 import {createRegistry, resolveRegistryComponent} from '@/core/registry/create-registry'
 
-import WelcomeTab from './components/tabs/WelcomeTab.vue'
-
-import SqlConsoleTab from './components/tabs/SqlConsoleTab.vue'
-
-import TableDetailTab from './components/tabs/TableDetailTab.vue'
-
-import ConnectionFormTab from './components/tabs/ConnectionFormTab.vue'
-
-import TerminalTab from './components/tabs/TerminalTab.vue'
-import SchemaCompareTab from './components/tabs/SchemaCompareTab.vue'
-import SchemaErTab from './components/tabs/SchemaErTab.vue'
-import SchemaTablesTab from './components/tabs/SchemaTablesTab.vue'
-import MetadocTab from './components/tabs/MetadocTab.vue'
-import CrossEnvCompareTab from './components/tabs/CrossEnvCompareTab.vue'
-import TableMigrationTab from './components/tabs/TableMigrationTab.vue'
-import ViewModelDataTab from './components/tabs/ViewModelDataTab.vue'
-import ViewModelEditorTab from './components/tabs/ViewModelEditorTab.vue'
-import ViewModelLineageTab from './components/tabs/ViewModelLineageTab.vue'
-import RedisKeyTab from './components/tabs/RedisKeyTab.vue'
-import RedisConsoleTab from './components/tabs/RedisConsoleTab.vue'
-import KafkaTopicsTab from './components/tabs/KafkaTopicsTab.vue'
-import KafkaTopicTab from './components/tabs/KafkaTopicTab.vue'
-import PlatformCatalogTab from './components/tabs/PlatformCatalogTab.vue'
-import KafkaConsumerGroupsTab from './components/tabs/KafkaConsumerGroupsTab.vue'
-import KafkaTablePublishTab from './components/tabs/KafkaTablePublishTab.vue'
-
+function lazyTab(loader: () => Promise<{ default: Component }>) {
+    return defineAsyncComponent(loader)
+}
 
 const definitions = [
 
-    {key: 'welcome' as const, component: WelcomeTab},
+    {key: 'welcome' as const, component: lazyTab(() => import('./components/tabs/WelcomeTab.vue'))},
 
-    {key: 'console' as const, component: SqlConsoleTab},
+    {key: 'console' as const, component: lazyTab(() => import('./components/tabs/SqlConsoleTab.vue'))},
 
-    {key: 'table' as const, component: TableDetailTab},
+    {key: 'table' as const, component: lazyTab(() => import('./components/tabs/TableDetailTab.vue'))},
 
-    {key: 'connection' as const, component: ConnectionFormTab},
+    {key: 'connection' as const, component: lazyTab(() => import('./components/tabs/ConnectionFormTab.vue'))},
 
-    {key: 'terminal' as const, component: TerminalTab},
+    {key: 'terminal' as const, component: lazyTab(() => import('./components/tabs/TerminalTab.vue'))},
 
-    {key: 'schema-compare' as const, component: SchemaCompareTab},
+    {key: 'schema-compare' as const, component: lazyTab(() => import('./components/tabs/SchemaCompareTab.vue'))},
 
-    {key: 'schema-er' as const, component: SchemaErTab},
+    {key: 'schema-er' as const, component: lazyTab(() => import('./components/tabs/SchemaErTab.vue'))},
 
-    {key: 'schema-tables' as const, component: SchemaTablesTab},
+    {key: 'schema-tables' as const, component: lazyTab(() => import('./components/tabs/SchemaTablesTab.vue'))},
 
-    {key: 'metadoc' as const, component: MetadocTab},
+    {key: 'metadoc' as const, component: lazyTab(() => import('./components/tabs/MetadocTab.vue'))},
 
-    {key: 'cross-env-compare' as const, component: CrossEnvCompareTab},
+    {key: 'cross-env-compare' as const, component: lazyTab(() => import('./components/tabs/CrossEnvCompareTab.vue'))},
 
-    {key: 'table-migration' as const, component: TableMigrationTab},
+    {key: 'table-migration' as const, component: lazyTab(() => import('./components/tabs/TableMigrationTab.vue'))},
 
-    {key: 'view_model' as const, component: ViewModelDataTab},
+    {key: 'view_model' as const, component: lazyTab(() => import('./components/tabs/ViewModelDataTab.vue'))},
 
-    {key: 'view_model_editor' as const, component: ViewModelEditorTab},
+    {key: 'view_model_editor' as const, component: lazyTab(() => import('./components/tabs/ViewModelEditorTab.vue'))},
 
-    {key: 'view_model_lineage' as const, component: ViewModelLineageTab},
+    {key: 'view_model_lineage' as const, component: lazyTab(() => import('./components/tabs/ViewModelLineageTab.vue'))},
 
-    {key: 'redis-key' as const, component: RedisKeyTab},
+    {key: 'redis-key' as const, component: lazyTab(() => import('./components/tabs/RedisKeyTab.vue'))},
 
-    {key: 'redis-console' as const, component: RedisConsoleTab},
+    {key: 'redis-console' as const, component: lazyTab(() => import('./components/tabs/RedisConsoleTab.vue'))},
 
-    {key: 'kafka-topics' as const, component: KafkaTopicsTab},
+    {key: 'kafka-topics' as const, component: lazyTab(() => import('./components/tabs/KafkaTopicsTab.vue'))},
 
-    {key: 'kafka-topic' as const, component: KafkaTopicTab},
+    {key: 'kafka-topic' as const, component: lazyTab(() => import('./components/tabs/KafkaTopicTab.vue'))},
 
-    {key: 'kafka-consumer-groups' as const, component: KafkaConsumerGroupsTab},
+    {key: 'kafka-consumer-groups' as const, component: lazyTab(() => import('./components/tabs/KafkaConsumerGroupsTab.vue'))},
 
-    {key: 'kafka-table-publish' as const, component: KafkaTablePublishTab},
+    {key: 'kafka-table-publish' as const, component: lazyTab(() => import('./components/tabs/KafkaTablePublishTab.vue'))},
 
-    {key: 'platform_catalog' as const, component: PlatformCatalogTab},
+    {key: 'platform_catalog' as const, component: lazyTab(() => import('./components/tabs/PlatformCatalogTab.vue'))},
 
 ]
 
@@ -94,4 +71,3 @@ export const WORKSPACE_TAB_REGISTRY = createRegistry(definitions)
 export function resolveWorkspaceTab(type: WorkspaceTabType): Component | null {
     return resolveRegistryComponent(WORKSPACE_TAB_REGISTRY, type)
 }
-

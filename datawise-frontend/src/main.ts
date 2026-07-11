@@ -4,7 +4,6 @@
  * 启动顺序：
  *   index.html 内联脚本 → theme-init（主题变量）→ global.css → Vue 挂载
  */
-import './monaco-electron-workers'
 import {installPluginHookHost} from './features/plugin/services/plugin-hook-host'
 
 installPluginHookHost()
@@ -17,8 +16,7 @@ import {createPinia, setActivePinia} from 'pinia'
 import App from './app/App.vue'
 import {i18n} from './i18n'
 import {setupExplorerContextMenus} from './features/explorer/setup-context-menus'
-import {installSqlEditorPlugin} from '@datawise/sql-editor'
-import {useDatawiseSqlEditorHost} from '@/features/workspace/adapters/datawise-sql-editor-host'
+import {registerSqlEditorApp} from '@/features/workspace/services/ensure-sql-editor-plugin'
 
 import {registerApiErrorNotifier} from '@/shared/api/http/api-error-notifier'
 import {HTTP_NOT_READY} from '@/shared/api/http/request'
@@ -42,5 +40,5 @@ setActivePinia(pinia)
 installUnauthorizedSessionRecovery()
 
 const app = createApp(App).use(pinia).use(i18n)
-installSqlEditorPlugin(app, {config: useDatawiseSqlEditorHost()})
+registerSqlEditorApp(app)
 app.mount('#app')

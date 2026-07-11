@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import {computed, nextTick, ref, watch} from 'vue'
+import {computed, nextTick, ref, toRef, watch, watchEffect} from 'vue'
+import {useDebouncedRef} from '@/core/utils/debounced-ref'
+import {useGridVirtualWindow} from '@/core/composables/useGridVirtualWindow'
 import {useI18n} from 'vue-i18n'
 import IconButton from '@/core/components/IconButton.vue'
 import DwDataGrid from '@/core/components/DwDataGrid.vue'
@@ -51,6 +53,7 @@ import {
 } from '@/features/workspace/services/grid-column-stats.service'
 import {CONSOLE_GRID_PAGE_SIZE_OPTIONS} from '@/features/settings/constants/editor-presets'
 import {resolveGridPageSizeOption} from '@/features/settings/services/grid-pagination.service'
+import {CURSOR_LOADED_ROWS_WARN_THRESHOLD} from '@/features/workspace/constants/query-result-limits'
 
 const {t} = useI18n()
 const pluginStore = usePluginStore()
@@ -95,6 +98,10 @@ const props = withDefaults(
       onSubmitChanges?: (batch: GridPendingBatch) => Promise<boolean>
       hasMore?: boolean
       cursorLoading?: boolean
+      /** 滑动窗口丢弃的最早行数，用于行号顺延 */
+      cursorTrimmedRows?: number
+      /** 生产环境性能模式已收紧行数策略 */
+      productionPerfActive?: boolean
       showDmlActions?: boolean
       connectionId?: string
       database?: string
@@ -163,23 +170,44 @@ function resolveFilterColumnKey(columnName: string): string {
     return column ? columnRowKey(column) : ''
 }
 
-const filterInputValue = computed({
-    get: () => {
-        if (!viewState.value) return ''
-        const columnKey = resolveFilterColumnKey(filterColumnName.value)
-        if (!columnKey) return ''
-        return viewState.value.columnFilters[columnKey] ?? ''
-    },
-    set: (value: string) => {
-        if (!viewState.value) return
-        const columnKey = resolveFilterColumnKey(filterColumnName.value)
-        if (!columnKey) return
-        const trimmed = value.trim()
-        viewState.value = {
-            ...viewState.value,
-            columnFilters: trimmed ? {[columnKey]: value} : {},
-        }
-    },
+const GRID_COLUMN_FILTER_DEBOUNCE_MS = 180
+const filterDraft = ref('')
+const debouncedFilterDraft = useDebouncedRef(filterDraft, GRID_COLUMN_FILTER_DEBOUNCE_MS)
+
+function readFilterDraftFromViewState(): string {
+    if (!viewState.value) return ''
+    const columnKey = resolveFilterColumnKey(filterColumnName.value)
+    if (!columnKey) return ''
+    return viewState.value.columnFilters[columnKey] ?? ''
+}
+
+function applyFilterDraftToViewState(value: string) {
+    if (!viewState.value) return
+    const columnKey = resolveFilterColumnKey(filterColumnName.value)
+    if (!columnKey) return
+    const trimmed = value.trim()
+    viewState.value = {
+        ...viewState.value,
+        columnFilters: trimmed ? {[columnKey]: value} : {},
+    }
+}
+
+watch(filterColumnName, () => {
+    filterDraft.value = readFilterDraftFromViewState()
+}, {immediate: true})
+
+watch(debouncedFilterDraft, (value) => {
+    applyFilterDraftToViewState(value)
+})
+
+watchEffect(() => {
+    if (!viewState.value) return
+    const columnKey = resolveFilterColumnKey(filterColumnName.value)
+    if (!columnKey) return
+    const stored = viewState.value.columnFilters[columnKey] ?? ''
+    if (stored !== debouncedFilterDraft.value && stored !== filterDraft.value) {
+        filterDraft.value = stored
+    }
 })
 
 const hasSortActive = computed(() =>
@@ -283,12 +311,33 @@ const totalPages = computed(() =>
 
 const displayTotal = computed(() => String(viewFilteredDisplayRows.value.length))
 
+const loadedRowsWarning = computed(() =>
+    gridRows.value.length >= CURSOR_LOADED_ROWS_WARN_THRESHOLD,
+)
+
+const cursorWindowTrimmed = computed(() => (props.cursorTrimmedRows ?? 0) > 0)
+
 const pagedRows = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   return viewFilteredDisplayRows.value.slice(start, start + pageSize.value)
 })
 
-const rowOffset = computed(() => (currentPage.value - 1) * pageSize.value)
+const rowOffset = computed(
+    () => (props.cursorTrimmedRows ?? 0) + (currentPage.value - 1) * pageSize.value,
+)
+
+const gridBodyRef = ref<HTMLElement | null>(null)
+const pagedRowsRef = toRef(pagedRows)
+const virtualScrollEnabled = computed(() => !wrapCells.value)
+const {
+  useVirtual: useGridVirtual,
+  visibleRows: virtualPagedRows,
+  paddingTop: virtualPaddingTop,
+  paddingBottom: virtualPaddingBottom,
+  scrollToRowIndex,
+} = useGridVirtualWindow(gridBodyRef, pagedRowsRef, {enabled: virtualScrollEnabled})
+
+const tableColumnCount = computed(() => gridColumns.value.length + 1)
 
 const exportEnabled = computed(() => pluginStore.isEnabled('p-grid-export'))
 const maskExportEnabled = computed(() => pluginStore.isEnabled('p-export-mask'))
@@ -319,6 +368,10 @@ watch(
 
 watch(pageSizeModel, () => {
   currentPage.value = 1
+})
+
+watch(currentPage, () => {
+  gridBodyRef.value?.scrollTo({top: 0})
 })
 
 watch(totalPages, (pages) => {
@@ -391,9 +444,8 @@ function sortIndicator(columnKey: string): string | null {
 function clearViewState() {
   if (!viewState.value) return
   viewState.value = clearGridViewState()
+  filterDraft.value = ''
 }
-
-const gridBodyRef = ref<HTMLElement | null>(null)
 
 async function onAddRowClick() {
   addInsertRow()
@@ -401,6 +453,10 @@ async function onAddRowClick() {
   currentPage.value = totalPages.value // 新增行在列表末尾
   await nextTick()
   cellInputRef.value?.focus()
+  if (useGridVirtual.value) {
+    scrollToRowIndex(pagedRows.value.length - 1)
+    return
+  }
   gridBodyRef.value?.scrollTo({ top: gridBodyRef.value.scrollHeight, behavior: 'smooth' })
 }
 
@@ -664,7 +720,7 @@ function dismissColumnStats() {
         shell-only
         v-model:current-page="currentPage"
         v-model:page-size="pageSizeModel"
-        v-model:filter="filterInputValue"
+        v-model:filter="filterDraft"
         v-model:filter-column="filterColumnName"
         :rows="[]"
         :columns="[]"
@@ -707,6 +763,15 @@ function dismissColumnStats() {
       </template>
 
       <template v-if="fullToolbar" #toolbar-end>
+        <span v-if="loadedRowsWarning" class="loaded-rows-hint">
+          {{ t('dataGrid.loadedRowsWarning', {count: gridRows.length}) }}
+        </span>
+        <span v-if="cursorWindowTrimmed" class="loaded-rows-hint">
+          {{ t('dataGrid.cursorWindowTrimmed', {count: cursorTrimmedRows ?? 0}) }}
+        </span>
+        <span v-if="productionPerfActive" class="loaded-rows-hint">
+          {{ t('dataGrid.productionPerfActive') }}
+        </span>
         <button
             v-if="hasMore"
             class="load-more-btn"
@@ -867,8 +932,11 @@ function dismissColumnStats() {
         </tr>
         </thead>
         <tbody>
+        <tr v-if="useGridVirtual && virtualPaddingTop > 0" class="grid-virtual-spacer" aria-hidden="true">
+          <td :colspan="tableColumnCount" :style="{ height: `${virtualPaddingTop}px`, padding: 0, border: 'none' }"/>
+        </tr>
         <tr
-            v-for="(item, idx) in pagedRows"
+            v-for="{ item, index: rowIndex } in virtualPagedRows"
             :key="item.id"
             :class="{
               'is-selected': isRowSelected(item),
@@ -879,7 +947,7 @@ function dismissColumnStats() {
             }"
         >
           <td class="index-col index-col--selectable" @click="onIndexColClick(item)">
-            {{ rowOffset + idx + 1 }}
+            {{ rowOffset + rowIndex + 1 }}
           </td>
           <td
               v-for="col in columns"
@@ -890,7 +958,7 @@ function dismissColumnStats() {
                 'is-cell-editing': isCellInputVisible(item, col.name),
               }"
               @click="onCellClick(item, col.name)"
-              @dblclick="onCellDblClick(item, col.name, $event, idx)"
+              @dblclick="onCellDblClick(item, col.name, $event, rowIndex)"
               @contextmenu="onCellContextMenu($event, item, col)"
           >
             <div class="cell-shell" :class="{ 'has-expand': canExpandCell(item, col) }">
@@ -899,7 +967,7 @@ function dismissColumnStats() {
                   class="cell-expand-btn"
                   type="button"
                   :title="t('dataGrid.viewCellDetail')"
-                  @click="onCellExpandClick($event, item, col, idx)"
+                  @click="onCellExpandClick($event, item, col, rowIndex)"
               >
                 <DwIcon name="open-external" size="xs" :stroke-width="1.4"/>
               </button>
@@ -928,6 +996,9 @@ function dismissColumnStats() {
               />
             </div>
           </td>
+        </tr>
+        <tr v-if="useGridVirtual && virtualPaddingBottom > 0" class="grid-virtual-spacer" aria-hidden="true">
+          <td :colspan="tableColumnCount" :style="{ height: `${virtualPaddingBottom}px`, padding: 0, border: 'none' }"/>
         </tr>
         </tbody>
       </table>
@@ -1309,6 +1380,13 @@ th.is-stats-active .th-label {
   min-height: 0;
 }
 
+tr.grid-virtual-spacer td {
+  padding: 0 !important;
+  border: none !important;
+  line-height: 0;
+  pointer-events: none;
+}
+
 table.grid-table {
   width: 100%;
   min-width: 100%;
@@ -1392,9 +1470,13 @@ th.is-sorted .th-label {
   cursor: pointer;
 }
 
-.clear-filters-btn:hover {
-  border-color: color-mix(in srgb, var(--dw-primary) 24%, var(--dw-border-light));
-  color: var(--dw-primary);
+.loaded-rows-hint {
+  max-width: 220px;
+  margin-right: 6px;
+  color: var(--dw-warning, #b8860b);
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: right;
 }
 
 .load-more-btn {

@@ -9,6 +9,8 @@ const props = withDefaults(
       title: string
       subtitle?: string
       width?: string
+      /** 限制弹窗最大高度；内容区内部滚动，页眉页脚固定 */
+      maxHeight?: string
       /** 点击遮罩是否关闭，默认 false */
       closeOnBackdrop?: boolean
       /** Esc 是否关闭，默认 true */
@@ -63,10 +65,14 @@ onUnmounted(() => {
           <div
               v-if="open"
               class="app-modal"
+              :class="{'app-modal--constrained': !!maxHeight}"
               role="dialog"
               aria-modal="true"
               :aria-label="title"
-              :style="{ maxWidth: width }"
+              :style="{
+                maxWidth: width,
+                maxHeight: maxHeight,
+              }"
           >
             <header class="app-modal-header">
               <div class="app-modal-heading">

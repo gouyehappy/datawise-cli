@@ -13,6 +13,9 @@ const workspace = useWorkspaceStore()
 const activeTab = computed(() => workspace.activeTab)
 const tabComponent = computed(() => (activeTab.value ? resolveWorkspaceTab(activeTab.value.type) : null))
 const isHome = computed(() => !activeTab.value)
+
+/** SQL 控制台含 Monaco 实例，排除缓存以降低内存；KeepAlive 容器需常驻以免其它 Tab 缓存被清空 */
+const KEEPALIVE_EXCLUDE = ['SqlConsoleTab']
 </script>
 
 <template>
@@ -20,7 +23,7 @@ const isHome = computed(() => !activeTab.value)
     <WorkspaceTabs v-if="workspace.hasOpenTabs"/>
     <div class="workspace-body">
       <WelcomeTab v-if="isHome"/>
-      <KeepAlive :max="10">
+      <KeepAlive :max="5" :exclude="KEEPALIVE_EXCLUDE">
         <component
             :is="tabComponent"
             v-if="activeTab && tabComponent"

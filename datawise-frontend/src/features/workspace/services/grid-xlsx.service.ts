@@ -1,5 +1,3 @@
-import ExcelJS from 'exceljs'
-import * as XLSX from 'xlsx'
 import type {TableColumn, TableRow} from '@/core/types'
 import {formatCellFullValue, unwrapCellValue} from '@/core/utils/cell-value-format'
 import {columnRowKey, readRowCell} from '@/core/utils/query-result-column'
@@ -94,6 +92,7 @@ export async function serializeGridToXlsxBuffer(
     rows: TableRow[],
     options: GridXlsxExportOptions = {},
 ): Promise<ArrayBuffer> {
+    const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
     workbook.creator = 'DataWise'
     workbook.created = new Date()
@@ -155,7 +154,8 @@ export async function serializeGridToXlsxBuffer(
     return buffer as ArrayBuffer
 }
 
-export function parseXlsxBuffer(buffer: ArrayBuffer): SpreadsheetParseResult {
+export async function parseXlsxBuffer(buffer: ArrayBuffer): Promise<SpreadsheetParseResult> {
+    const XLSX = await import('xlsx')
     const workbook = XLSX.read(buffer, {type: 'array'})
     const sheetName = workbook.SheetNames[0]
     if (!sheetName) return {headers: [], rows: []}
@@ -194,6 +194,7 @@ export async function readReportXlsxMeta(buffer: ArrayBuffer): Promise<{
     headerBold: boolean
     numericColumnFormats: string[]
 }> {
+    const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.load(buffer)
     const sheet = workbook.worksheets[0]

@@ -2,7 +2,9 @@ import {computed, ref} from 'vue'
 import type {WorkspaceTab} from '@/core/types'
 import {sqlApi} from '@/api/modules/sql'
 import type {TableColumn, TableRow} from '@/core/types'
-import {resolveSqlPageSize} from '@/features/settings/services/query-limit.service'
+import {resolveSqlPageSize, resolveCursorLoadedRowsMax} from '@/features/settings/services/query-limit.service'
+import {appendCursorRowsWithWindow} from '@/features/workspace/services/query-result-cursor.service'
+import {useProductionPerfMode} from '@/features/settings/composables/useProductionPerfMode'
 
 /** 视图模型数据 Tab：游标分页，与 SQL 控制台/表数据共用 maxResultRows 作为每批行数 */
 export function useViewModelDataView(tab: WorkspaceTab) {
@@ -13,7 +15,9 @@ export function useViewModelDataView(tab: WorkspaceTab) {
     const cursorId = ref<string | null>(null)
     const pageSize = ref(resolveSqlPageSize())
     const hasMore = ref(false)
+    const cursorTrimmedRows = ref(0)
     const errorMessage = ref<string | null>(null)
+    const {productionPerfActive} = useProductionPerfMode(() => tab.connectionId)
 
     const sql = computed(() => tab.viewModelSql?.trim() ?? '')
 
@@ -26,7 +30,8 @@ export function useViewModelDataView(tab: WorkspaceTab) {
             loading.value = true
             cursorId.value = null
             hasMore.value = false
-            pageSize.value = resolveSqlPageSize()
+            cursorTrimmedRows.value = 0
+            pageSize.value = resolveSqlPageSize(productionPerfActive.value)
         }
         errorMessage.value = null
         try {
@@ -40,7 +45,12 @@ export function useViewModelDataView(tab: WorkspaceTab) {
             const nextColumns = (result.columns ?? []) as TableColumn[]
             const nextRows = (result.rows ?? []) as TableRow[]
             if (isAppend) {
-                rows.value = [...rows.value, ...nextRows]
+                const windowed = appendCursorRowsWithWindow(rows.value, nextRows, {
+                    previousTrimmed: cursorTrimmedRows.value,
+                    maxRows: resolveCursorLoadedRowsMax(productionPerfActive.value),
+                })
+                rows.value = windowed.rows
+                cursorTrimmedRows.value = windowed.trimmedTotal
             } else {
                 columns.value = nextColumns
                 rows.value = nextRows
@@ -74,6 +84,8 @@ export function useViewModelDataView(tab: WorkspaceTab) {
         loading,
         cursorLoading,
         hasMore,
+        cursorTrimmedRows,
+        productionPerfActive,
         errorMessage,
         sql,
         refresh,
