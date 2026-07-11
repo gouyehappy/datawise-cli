@@ -5,6 +5,8 @@ import org.apache.datawise.backend.connector.facade.catalog.ConnectorCatalogAcce
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
 import org.apache.datawise.backend.model.ConnectionEntity;
+import org.apache.datawise.backend.jdbc.connection.ConnectionActivityRegistry;
+import org.apache.datawise.backend.jdbc.support.JdbcConnectionPoolManager;
 import org.apache.datawise.backend.jdbc.support.JdbcDriverConnectionFactory;
 import org.apache.datawise.backend.database.connection.JdbcConnectionPoolWarmupService;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +42,10 @@ class ExplorerConnectionLifecycleServiceTest {
     private ExplorerTreeBuilder treeBuilder;
     @Mock
     private JdbcConnectionPoolWarmupService poolWarmupService;
+    @Mock
+    private ConnectionActivityRegistry activityRegistry;
+    @Mock
+    private JdbcConnectionPoolManager poolManager;
 
     private ExplorerConnectionLifecycleService service;
 
@@ -51,7 +57,9 @@ class ExplorerConnectionLifecycleServiceTest {
                 jdbcDriverConnectionFactory,
                 schemaSessionPool,
                 treeBuilder,
-                poolWarmupService
+                poolWarmupService,
+                activityRegistry,
+                poolManager
         );
     }
 

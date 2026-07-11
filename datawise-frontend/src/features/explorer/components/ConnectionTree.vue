@@ -116,7 +116,7 @@ onUnmounted(() => {
       :highlight-node-ids="highlightNodeIds"
       :loading-node-ids="explorer.loadingNodeIds"
       :pinned-node-ids="explorer.pinnedNodeIds"
-      :connection-health="explorer.connectionHealthById"
+      :connection-health="explorer.connectionDisplayHealthById"
       :show-column-comment="explorer.showColumnComment"
       :show-table-comment="explorer.showTableComment"
       connection-drag-enabled

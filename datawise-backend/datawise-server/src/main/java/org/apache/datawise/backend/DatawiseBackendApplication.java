@@ -9,6 +9,7 @@ import org.apache.datawise.backend.config.SqlRewriteProperties;
 import org.apache.datawise.backend.ai.config.AiAnalysisProperties;
 import org.apache.datawise.backend.ai.config.AiPythonProperties;
 import org.apache.datawise.backend.ai.config.AiRagProperties;
+import org.apache.datawise.backend.config.ConnectionLifecycleProperties;
 import org.apache.datawise.backend.config.ExplorerSchemaProperties;
 import org.apache.datawise.backend.config.JdbcPoolProperties;
 import org.apache.datawise.backend.config.TableMigrationProperties;
@@ -31,6 +32,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         AiAnalysisProperties.class,
         AiPythonProperties.class,
         JdbcPoolProperties.class,
+        ConnectionLifecycleProperties.class,
         ExplorerSchemaProperties.class,
         TableMigrationProperties.class,
         SshTunnelProperties.class,

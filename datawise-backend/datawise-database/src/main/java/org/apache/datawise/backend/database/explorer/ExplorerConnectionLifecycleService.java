@@ -6,6 +6,8 @@ import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.common.support.PerfLogger;
+import org.apache.datawise.backend.jdbc.connection.ConnectionActivityRegistry;
+import org.apache.datawise.backend.jdbc.support.JdbcConnectionPoolManager;
 import org.apache.datawise.backend.jdbc.support.JdbcDriverConnectionFactory;
 
 import java.util.List;
@@ -25,6 +27,8 @@ public class ExplorerConnectionLifecycleService {
     private final ExplorerSchemaSessionPool schemaSessionPool;
     private final ExplorerTreeBuilder treeBuilder;
     private final JdbcConnectionPoolWarmupService poolWarmupService;
+    private final ConnectionActivityRegistry activityRegistry;
+    private final JdbcConnectionPoolManager poolManager;
 
     public ExplorerConnectionLifecycleService(
             ConnectionExecutionContext connectionContext,
@@ -32,7 +36,9 @@ public class ExplorerConnectionLifecycleService {
             JdbcDriverConnectionFactory jdbcDriverConnectionFactory,
             ExplorerSchemaSessionPool schemaSessionPool,
             ExplorerTreeBuilder treeBuilder,
-            JdbcConnectionPoolWarmupService poolWarmupService
+            JdbcConnectionPoolWarmupService poolWarmupService,
+            ConnectionActivityRegistry activityRegistry,
+            JdbcConnectionPoolManager poolManager
     ) {
         this.connectionContext = connectionContext;
         this.connectorFacade = connectorFacade;
@@ -40,12 +46,31 @@ public class ExplorerConnectionLifecycleService {
         this.schemaSessionPool = schemaSessionPool;
         this.treeBuilder = treeBuilder;
         this.poolWarmupService = poolWarmupService;
+        this.activityRegistry = activityRegistry;
+        this.poolManager = poolManager;
     }
 
     public void disconnect(String connectionId) {
         requireAvailableConnection(connectionId);
+        evictConnectionResources(connectionId);
+    }
+
+    /** 空闲回收：无用户上下文，仅释放服务端 JDBC 池与 schema 会话。 */
+    public void evictIdleResources(String connectionId) {
+        if (connectionId == null || connectionId.isBlank()) {
+            return;
+        }
+        evictConnectionResources(connectionId);
+    }
+
+    public java.util.List<String> listPooledConnectionIds() {
+        return poolManager.listPooledConnectionIds();
+    }
+
+    private void evictConnectionResources(String connectionId) {
         schemaSessionPool.invalidate(connectionId);
         jdbcDriverConnectionFactory.evictPool(connectionId);
+        activityRegistry.clear(connectionId);
         treeBuilder.saveSchemaChildren(connectionId, List.of());
     }
 
@@ -71,6 +96,7 @@ public class ExplorerConnectionLifecycleService {
             JdbcConnectionPoolWarmupService.WarmupResult warmup = poolWarmupService.warmupForConnect(entity);
             long latency = System.currentTimeMillis() - startedAt;
             if (warmup.warmed() > 0) {
+                activityRegistry.touch(connectionId);
                 ConnectionTestResult result = new ConnectionTestResult(
                         true,
                         String.format(
@@ -110,6 +136,9 @@ public class ExplorerConnectionLifecycleService {
                 "poolWarmed", warmup.skipped() ? 0 : warmup.warmed(),
                 "poolWarmTarget", warmup.skipped() ? 0 : warmup.target()
         );
+        if (result.ok()) {
+            activityRegistry.touch(connectionId);
+        }
         return result;
     }
 

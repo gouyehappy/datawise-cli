@@ -14,7 +14,7 @@ import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useNotificationStore} from '@/features/layout/stores/notification-store'
 
-/** 定时探测全部连接健康状态；按告警规则 toast 提醒 */
+/** 定时同步温热连接池并探测已连接库的健康；空闲回收后同步 Explorer UI */
 export function useConnectionHealthMonitor() {
     const {t} = useI18n()
     const appConfig = useAppConfigStore()
@@ -26,7 +26,7 @@ export function useConnectionHealthMonitor() {
     let timer: ReturnType<typeof setInterval> | null = null
 
     function notifyAlerts(before: Record<string, 'ok' | 'error'>) {
-        const rows = extractDashboardConnections(explorer.tree, explorer.connectionHealthById)
+        const rows = extractDashboardConnections(explorer.tree, explorer.connectionDisplayHealthById)
         const alerts = collectConnectionHealthAlerts(
             before,
             rows,
@@ -41,9 +41,10 @@ export function useConnectionHealthMonitor() {
         }
     }
 
-    async function probe(notifyOnFailure: boolean) {
-        if (!explorer.hasAttemptedConnections()) return
-        const before = {...explorer.connectionHealthById}
+    async function tick(notifyOnFailure: boolean) {
+        await explorer.syncPooledConnectionState({notifyIdleDisconnect: true})
+        if (!explorer.pooledConnectionIds.size) return
+        const before = {...explorer.connectionDisplayHealthById}
         await explorer.probeAllConnectionHealth()
         if (notifyOnFailure) notifyAlerts(before)
     }
@@ -53,11 +54,12 @@ export function useConnectionHealthMonitor() {
         const ms = resolveProbeIntervalMs(connectionHealthPreferences.value.probeIntervalMinutes)
         timer = setInterval(() => {
             if (document.visibilityState !== 'visible') return
-            void probe(true)
+            void tick(true)
         }, ms)
     }
 
     onMounted(() => {
+        void explorer.syncPooledConnectionState()
         startTimer()
     })
 

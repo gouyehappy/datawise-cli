@@ -180,6 +180,7 @@ export const API_PATHS = {
             `/api/explorer/connections/${encodeURIComponent(id)}/disconnect`,
         reconnectConnection: (id: string) =>
             `/api/explorer/connections/${encodeURIComponent(id)}/reconnect`,
+        pooledConnections: '/api/explorer/connections/pooled',
         pingConnection: (id: string) =>
             `/api/explorer/connections/${encodeURIComponent(id)}/ping`,
         nodeChildren: (connectionId: string, nodeId: string) =>

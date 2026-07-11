@@ -180,6 +180,9 @@ export function createHttpExplorerApi(): ExplorerApi {
             await postJson<void>(API_PATHS.explorer.disconnectConnection(connectionId), {})
         },
 
+        listPooledConnections: async () =>
+            getJson<string[]>(API_PATHS.explorer.pooledConnections),
+
         reconnectConnection: async (connectionId) =>
             postJson<ConnectionTestResult>(API_PATHS.explorer.reconnectConnection(connectionId), {}),
 

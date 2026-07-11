@@ -5,15 +5,11 @@
 import {computed, onUnmounted, ref, toRef} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {StatusPill} from '@/core/components'
+import ConnectionEnvBadge from './ConnectionEnvBadge.vue'
 import {DwIcon} from '@/core/icons'
 import TreeNodeIcon from '@/features/explorer/components/TreeNodeIcon.vue'
 import type {TreeNode} from '@/core/types'
 import {canExpandTreeNode} from '@/core/utils/tree'
-import {
-  normalizeConnectionEnvironment,
-  resolveConnectionEnvironmentLabel,
-  resolveConnectionEnvironmentVariant,
-} from '@/features/connection/services/connection-environment.service'
 import {isConnectionFeatureNode} from '@/features/explorer/services/flat-connection-feature-tree.service'
 import {
   isViewModelStatusMeta,
@@ -271,15 +267,6 @@ function displayNodeLabel(node: TreeNode) {
   return resolveExplorerCatalogLabel(node, t)
 }
 
-function connectionEnvForNode(node: TreeNode) {
-  return normalizeConnectionEnvironment(node.env, node.envCustom)
-}
-
-function connectionEnvLabel(node: TreeNode) {
-  const normalized = connectionEnvForNode(node)
-  return resolveConnectionEnvironmentLabel(normalized.env, normalized.envCustom, t)
-}
-
 function onCheckboxChange(node: TreeNode, event: Event) {
   event.stopPropagation()
   emit('toggleCheck', node)
@@ -393,14 +380,11 @@ function viewModelStatusLabel(node: TreeNode) {
           {{ displayNodeLabel(node) }}
         </span>
 
-        <StatusPill
+        <ConnectionEnvBadge
             v-if="node.type === 'connection'"
-            inline
-            class="tree-env-pill"
-            :variant="resolveConnectionEnvironmentVariant(connectionEnvForNode(node).env)"
-        >
-          {{ connectionEnvLabel(node) }}
-        </StatusPill>
+            :env="node.env"
+            :env-custom="node.envCustom"
+        />
 
         <StatusPill
             v-else-if="node.type === 'view_model' && isViewModelStatusMeta(node.meta)"
@@ -648,9 +632,9 @@ function viewModelStatusLabel(node: TreeNode) {
   font-weight: 500;
 }
 
-.tree-env-pill {
+.tree-vm-pill {
   flex-shrink: 0;
-  margin-left: 6px;
+  margin-left: auto;
 }
 
 .tree-node--table.is-selected .tree-label {

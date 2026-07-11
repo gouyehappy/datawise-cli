@@ -63,6 +63,7 @@ export const explorerApi = {
     fetchConnection: (connectionId: string) => api.explorer.fetchConnection(connectionId),
     connectConnection: (connectionId: string) => api.explorer.connectConnection(connectionId),
     disconnectConnection: (connectionId: string) => api.explorer.disconnectConnection(connectionId),
+    listPooledConnections: () => api.explorer.listPooledConnections(),
     reconnectConnection: (connectionId: string) => api.explorer.reconnectConnection(connectionId),
     createGroup: (label: string, parentId?: string) => api.explorer.createGroup(label, parentId),
     updateGroup: (groupId: string, label: string) => api.explorer.updateGroup(groupId, label),

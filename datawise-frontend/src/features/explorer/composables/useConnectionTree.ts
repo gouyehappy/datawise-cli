@@ -480,6 +480,7 @@ export function useConnectionTree() {
     function buildConnectionMenuItems(node: TreeNode): ContextMenuItem[] {
         const state = resolveConnectionLinkState(
             node.id,
+            explorer.pooledConnectionIds,
             explorer.connectionHealthById,
             explorer.loadingNodeIds,
         )

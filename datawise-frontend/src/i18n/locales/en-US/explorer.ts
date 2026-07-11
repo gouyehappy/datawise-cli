@@ -51,6 +51,7 @@ export default {
     folderNameRequired: 'Folder name is required',
     connectionOpened: 'Connection opened — expand databases in the tree',
     connectionDisconnected: 'Disconnected from "{name}"',
+    connectionIdleDisconnected: 'Connection "{name}" was closed due to inactivity',
     connectionDisconnectFailed: 'Failed to disconnect',
     connectionReconnected: 'Reconnected to "{name}"',
     moveConnectionTitle: 'Move data source',

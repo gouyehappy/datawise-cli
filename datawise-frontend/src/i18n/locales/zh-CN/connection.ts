@@ -80,6 +80,11 @@ export default {
         prod: '生产',
         custom: '自定义',
     },
+    envTreeShort: {
+        dev: '开发',
+        staging: '预发',
+        prod: '生产',
+    },
     hints: {
         name: '连接名称，自定义便于记忆',
         env: '选择连接环境，用于区分开发、预发与生产',

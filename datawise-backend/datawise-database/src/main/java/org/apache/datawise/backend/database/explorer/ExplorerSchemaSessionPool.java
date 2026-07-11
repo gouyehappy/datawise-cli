@@ -3,6 +3,7 @@ package org.apache.datawise.backend.database.explorer;
 import org.apache.datawise.backend.config.ExplorerSchemaProperties;
 import org.apache.datawise.backend.connector.catalog.SchemaSession;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
+import org.apache.datawise.backend.jdbc.connection.ConnectionActivityRegistry;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.common.support.DatawiseMetricsCatalog;
 import org.apache.datawise.backend.common.support.ExceptionLogging;
@@ -31,16 +32,19 @@ public class ExplorerSchemaSessionPool {
 
     private final ConnectorFacade connectorFacade;
     private final ExplorerSchemaProperties properties;
+    private final ConnectionActivityRegistry activityRegistry;
     private final ConcurrentMap<String, PooledSession> sessions = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, ReentrantLock> locks = new ConcurrentHashMap<>();
 
     public ExplorerSchemaSessionPool(
             ConnectorFacade connectorFacade,
             ExplorerSchemaProperties properties,
+            ConnectionActivityRegistry activityRegistry,
             ObjectProvider<MeterRegistry> meterRegistryProvider
     ) {
         this.connectorFacade = connectorFacade;
         this.properties = properties != null ? properties : new ExplorerSchemaProperties();
+        this.activityRegistry = activityRegistry;
         MeterRegistry meterRegistry = meterRegistryProvider.getIfAvailable();
         if (meterRegistry != null) {
             Gauge.builder(DatawiseMetricsCatalog.EXPLORER_SCHEMA_SESSIONS_ACTIVE, sessions, ConcurrentMap::size)
@@ -66,6 +70,7 @@ public class ExplorerSchemaSessionPool {
             } finally {
                 pooled.exitUse();
                 pooled.touch();
+                activityRegistry.touch(connectionId);
             }
         } finally {
             lock.unlock();

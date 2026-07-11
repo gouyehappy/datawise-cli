@@ -9,20 +9,24 @@ import {
 const t = ((key: string) => key) as never
 
 describe('explorer-connection-lifecycle.service', () => {
-    it('resolves connection link state from health and loading set', () => {
+    it('resolves connection link state from pooled ids, reachability and loading set', () => {
+        const pooled = new Set(['conn-1'])
         assert.equal(
-            resolveConnectionLinkState('conn-1', {}, new Set(['conn-1'])),
+            resolveConnectionLinkState('conn-1', pooled, {}, new Set(['conn-1'])),
             'loading',
         )
         assert.equal(
-            resolveConnectionLinkState('conn-1', { 'conn-1': 'ok' }, new Set()),
+            resolveConnectionLinkState('conn-1', pooled, {'conn-1': 'ok'}, new Set()),
             'connected',
         )
         assert.equal(
-            resolveConnectionLinkState('conn-1', { 'conn-1': 'error' }, new Set()),
+            resolveConnectionLinkState('conn-1', pooled, {'conn-1': 'error'}, new Set()),
             'error',
         )
-        assert.equal(resolveConnectionLinkState('conn-1', {}, new Set()), 'disconnected')
+        assert.equal(
+            resolveConnectionLinkState('conn-1', new Set(), {'conn-1': 'ok'}, new Set()),
+            'disconnected',
+        )
     })
 
     it('disables connect when connected and disconnect when disconnected', () => {

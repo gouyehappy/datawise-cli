@@ -38,7 +38,10 @@ class JdbcConnectionAccessorCatalogTest {
 
     @Test
     void applyCatalog_skipsSetCatalogWhenAlreadyApplied() throws Exception {
-        JdbcConnectionAccessor accessor = new JdbcConnectionAccessor(mock(org.apache.datawise.backend.jdbc.support.JdbcDriverConnectionFactory.class));
+        JdbcConnectionAccessor accessor = new JdbcConnectionAccessor(
+                mock(org.apache.datawise.backend.jdbc.support.JdbcDriverConnectionFactory.class),
+                mock(ConnectionActivityRegistry.class)
+        );
         Connection connection = mock(Connection.class);
         when(connection.isClosed()).thenReturn(false);
         when(connection.getCatalog()).thenReturn("shop");

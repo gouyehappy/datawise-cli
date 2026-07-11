@@ -14,6 +14,27 @@ export interface NormalizedConnectionEnvironment {
     envCustom?: string
 }
 
+/** Visual tone for compact connection env badges in the explorer tree. */
+export type ConnectionEnvBadgeTone = 'dev' | 'staging' | 'prod' | 'custom'
+
+const FREE_TEXT_ENV_ALIASES: Record<string, ConnectionEnvironment> = {
+    uat: 'staging',
+    sit: 'staging',
+    qa: 'staging',
+    pre: 'staging',
+    preprod: 'staging',
+    prd: 'prod',
+    预发: 'staging',
+    生产: 'prod',
+    开发: 'dev',
+}
+
+function inferEnvFromFreeText(text?: string | null): ConnectionEnvironment | undefined {
+    const trimmed = text?.trim()
+    if (!trimmed) return undefined
+    return FREE_TEXT_ENV_ALIASES[trimmed.toLowerCase()] ?? FREE_TEXT_ENV_ALIASES[trimmed]
+}
+
 function sanitizeCustom(value?: string | null): string | undefined {
     const trimmed = value?.trim()
     if (!trimmed) return undefined
@@ -43,11 +64,42 @@ export function normalizeConnectionEnvironment(
         case 'prod':
         case 'production':
             return {env: 'prod'}
-        case 'custom':
+        case 'custom': {
+            const inferred = inferEnvFromFreeText(envCustom)
+            if (inferred) return {env: inferred}
             return {env: 'custom', envCustom: sanitizeCustom(envCustom)}
-        default:
+        }
+        default: {
+            const inferred = inferEnvFromFreeText(trimmed)
+            if (inferred) return {env: inferred}
             return {env: 'custom', envCustom: sanitizeCustom(trimmed)}
+        }
     }
+}
+
+export function resolveConnectionEnvBadgeTone(
+    env?: string | null,
+    envCustom?: string | null,
+): ConnectionEnvBadgeTone {
+    const normalized = normalizeConnectionEnvironment(env, envCustom)
+    return normalized.env
+}
+
+export function resolveConnectionEnvTreeLabel(
+    env?: string | null,
+    envCustom?: string | null,
+    translate?: (key: string) => string,
+): string {
+    const normalized = normalizeConnectionEnvironment(env, envCustom)
+    if (normalized.env === 'custom') {
+        const text = normalized.envCustom?.trim()
+        if (!text) {
+            return translate ? translate('connection.envOptions.custom') : 'custom'
+        }
+        return text.length <= 6 ? text.toUpperCase() : text.slice(0, 6)
+    }
+    const key = `connection.envTreeShort.${normalized.env}`
+    return translate ? translate(key) : normalized.env
 }
 
 export function resolveConnectionEnvironmentVariant(env: ConnectionEnvironment): StatusVariant {

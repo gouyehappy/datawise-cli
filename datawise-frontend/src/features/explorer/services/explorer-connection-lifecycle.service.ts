@@ -1,18 +1,19 @@
 import type {ComposerTranslation} from 'vue-i18n'
 import type {ContextMenuItem} from '@/core/types'
+import {
+    resolveConnectionLinkState as resolveLinkState,
+    type ConnectionReachability,
+} from '@/features/explorer/services/explorer-connection-state.service'
 
 export type ConnectionLinkState = 'connected' | 'disconnected' | 'error' | 'loading'
 
 export function resolveConnectionLinkState(
     connectionId: string,
-    healthById: Record<string, 'ok' | 'error'>,
+    pooledIds: ReadonlySet<string>,
+    reachabilityById: Record<string, ConnectionReachability>,
     loadingNodeIds: ReadonlySet<string>,
 ): ConnectionLinkState {
-    if (loadingNodeIds.has(connectionId)) return 'loading'
-    const health = healthById[connectionId]
-    if (health === 'ok') return 'connected'
-    if (health === 'error') return 'error'
-    return 'disconnected'
+    return resolveLinkState(connectionId, pooledIds, reachabilityById, loadingNodeIds)
 }
 
 export function buildConnectionLifecycleMenuItems(

@@ -51,6 +51,7 @@ export default {
     folderNameRequired: '请输入目录名称',
     connectionOpened: '已进入连接「{name}」，可在树中浏览数据库',
     connectionDisconnected: '已断开连接「{name}」',
+    connectionIdleDisconnected: '连接「{name}」因长时间未操作已自动断开',
     connectionDisconnectFailed: '断开连接失败',
     connectionReconnected: '已重新连接「{name}」',
     moveConnectionTitle: '移动数据源',

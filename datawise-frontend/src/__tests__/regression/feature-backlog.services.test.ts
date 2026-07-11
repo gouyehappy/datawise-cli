@@ -12,6 +12,8 @@ import {
     normalizeConnectionEnvironment,
     resolveConnectionEnvironmentLabel,
     resolveConnectionEnvironmentVariant,
+    resolveConnectionEnvBadgeTone,
+    resolveConnectionEnvTreeLabel,
 } from '@/features/connection/services/connection-environment.service'
 import {isWorkspaceTabProduction, resolveWorkspaceTabConnectionIds} from '@/features/workspace/services/workspace-production-banner.service'
 import {
@@ -178,14 +180,25 @@ describe('connection-environment.service', () => {
 
     it('maps unknown labels to custom', () => {
         const normalized = normalizeConnectionEnvironment('QA', null)
-        assert.equal(normalized.env, 'custom')
-        assert.equal(normalized.envCustom, 'QA')
+        assert.equal(normalized.env, 'staging')
+    })
+
+    it('maps free-text UAT to staging', () => {
+        assert.equal(normalizeConnectionEnvironment('UAT', null).env, 'staging')
+        assert.equal(normalizeConnectionEnvironment('custom', 'UAT').env, 'staging')
     })
 
     it('resolves display labels and variants', () => {
         assert.equal(resolveConnectionEnvironmentLabel('prod', null), 'prod')
         assert.equal(resolveConnectionEnvironmentVariant('prod'), 'error')
         assert.equal(resolveConnectionEnvironmentVariant('dev'), 'primary')
+    })
+
+    it('resolves tree badge tone and short labels', () => {
+        assert.equal(resolveConnectionEnvBadgeTone('UAT', null), 'staging')
+        assert.equal(resolveConnectionEnvBadgeTone('custom', 'TEXT'), 'custom')
+        assert.equal(resolveConnectionEnvTreeLabel('prod', null), 'prod')
+        assert.equal(resolveConnectionEnvTreeLabel('custom', 'TEXT'), 'TEXT')
     })
 })
 

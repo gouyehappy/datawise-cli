@@ -25,4 +25,8 @@ public class JdbcDriverConnectionFactory {
     public void evictPool(String connectionId) {
         connectionPoolManager.evict(connectionId);
     }
+
+    public Connection openDirect(ConnectionEntity entity) throws SQLException {
+        return connectionPoolManager.openDirect(entity);
+    }
 }

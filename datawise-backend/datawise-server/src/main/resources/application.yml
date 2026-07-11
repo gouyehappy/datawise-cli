@@ -84,6 +84,11 @@ datawise:
       allowed-ips: []
       # 非空时仅当直连 remote 命中列表才读取 X-Forwarded-For / X-Real-IP（防伪造）
       trusted-proxy-ips: []
+  connection:
+    # 长时间无 SQL/Explorer 操作后自动回收 JDBC 连接池（毫秒）；健康探测 ping 不计入活跃
+    idle-evict-enabled: true
+    idle-evict-ms: 900000
+    idle-evict-poll-ms: 60000
   explorer:
     schema-session:
       # Explorer 懒加载树复用的 JDBC schema 会话空闲回收时间（毫秒）

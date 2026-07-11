@@ -4,6 +4,7 @@ import org.apache.datawise.backend.config.ExplorerSchemaProperties;
 import org.apache.datawise.backend.connector.catalog.SchemaSession;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
 import org.apache.datawise.backend.connector.facade.catalog.ConnectorCatalogAccess;
+import org.apache.datawise.backend.jdbc.connection.ConnectionActivityRegistry;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,9 @@ class ExplorerSchemaSessionPoolTest {
     @Mock
     private SchemaSession schemaSession;
 
+    @Mock
+    private ConnectionActivityRegistry activityRegistry;
+
     private ExplorerSchemaSessionPool pool;
     private ConnectionEntity entity;
 
@@ -48,7 +52,7 @@ class ExplorerSchemaSessionPoolTest {
         ObjectProvider<io.micrometer.core.instrument.MeterRegistry> meterRegistryProvider =
                 mock(ObjectProvider.class);
         when(meterRegistryProvider.getIfAvailable()).thenReturn(null);
-        pool = new ExplorerSchemaSessionPool(connectorFacade, properties, meterRegistryProvider);
+        pool = new ExplorerSchemaSessionPool(connectorFacade, properties, activityRegistry, meterRegistryProvider);
 
         entity = new ConnectionEntity();
         entity.setId("conn-1");

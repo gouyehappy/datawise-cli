@@ -841,6 +841,8 @@ export interface ExplorerApi {
 
     disconnectConnection(connectionId: string): Promise<void>
 
+    listPooledConnections(): Promise<string[]>
+
     reconnectConnection(connectionId: string): Promise<ConnectionTestResult>
 
     createGroup(label: string, parentId?: string): Promise<ExplorerGroupResult>

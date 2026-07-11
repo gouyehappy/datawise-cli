@@ -36,7 +36,17 @@ public class JdbcConnectionPoolManager {
     private final JdbcConnectionTargetResolver targetResolver;
     private final MeterRegistry meterRegistry;
     private final JdbcPoolProperties poolProperties;
-    private final ConcurrentMap<String, ManagedJdbcPool> pools = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PoolEntry> pools = new ConcurrentHashMap<>();
+
+    private static final class PoolEntry {
+        private final ManagedJdbcPool pool;
+        private final long createdAtMs;
+
+        private PoolEntry(ManagedJdbcPool pool) {
+            this.pool = pool;
+            this.createdAtMs = System.currentTimeMillis();
+        }
+    }
 
     public JdbcConnectionPoolManager(
             JdbcDriverLoader jdbcDriverLoader,
@@ -57,10 +67,27 @@ public class JdbcConnectionPoolManager {
         }
     }
 
+    /** Opens a one-off JDBC connection without caching a pool (health probes). */
+    public Connection openDirect(ConnectionEntity entity) throws SQLException {
+        return openDirectConnection(entity);
+    }
+
+    public java.util.List<String> listPooledConnectionIds() {
+        return java.util.List.copyOf(pools.keySet());
+    }
+
+    public long getPoolCreatedAtMs(String connectionId) {
+        if (connectionId == null || connectionId.isBlank()) {
+            return Long.MAX_VALUE;
+        }
+        PoolEntry entry = pools.get(connectionId);
+        return entry != null ? entry.createdAtMs : Long.MAX_VALUE;
+    }
+
     /** Borrows a connection from pool, or opens a one-off direct connection when id is absent. */
     public Connection open(ConnectionEntity entity) throws SQLException {
         if (entity.getId() == null || entity.getId().isBlank()) {
-            return openDirect(entity);
+            return openDirectConnection(entity);
         }
         String fingerprint = JdbcConnectionFingerprint.of(entity);
         try {
@@ -93,9 +120,9 @@ public class JdbcConnectionPoolManager {
         if (connectionId == null || connectionId.isBlank()) {
             return;
         }
-        ManagedJdbcPool removed = pools.remove(connectionId);
+        PoolEntry removed = pools.remove(connectionId);
         if (removed != null) {
-            removed.closeQuietly();
+            removed.pool.closeQuietly();
             log.info("Evicted JDBC pool for connectionId={}", connectionId);
         }
         targetResolver.evictTunnel(entityForEvict(connectionId));
@@ -108,15 +135,15 @@ public class JdbcConnectionPoolManager {
     }
 
     private ManagedJdbcPool resolvePool(ConnectionEntity entity, String fingerprint) {
-        ManagedJdbcPool pool = pools.compute(entity.getId(), (id, existing) -> {
-            if (existing != null && existing.fingerprint().equals(fingerprint)) {
+        PoolEntry poolEntry = pools.compute(entity.getId(), (id, existing) -> {
+            if (existing != null && existing.pool.fingerprint().equals(fingerprint)) {
                 return existing;
             }
             if (existing != null) {
-                existing.closeQuietly();
+                existing.pool.closeQuietly();
             }
             try {
-                return ManagedJdbcPool.create(
+                ManagedJdbcPool created = ManagedJdbcPool.create(
                         entity,
                         fingerprint,
                         jdbcDriverLoader,
@@ -125,6 +152,7 @@ public class JdbcConnectionPoolManager {
                         meterRegistry,
                         poolProperties
                 );
+                return new PoolEntry(created);
             } catch (SQLException ex) {
                 ExceptionLogging.error(
                         log,
@@ -135,10 +163,10 @@ public class JdbcConnectionPoolManager {
                 throw new PoolCreationException(ex);
             }
         });
-        if (pool == null) {
+        if (poolEntry == null) {
             throw new PoolCreationException(new SQLException("Failed to create JDBC connection pool"));
         }
-        return pool;
+        return poolEntry.pool;
     }
 
     private Connection borrowConnection(ConnectionEntity entity, ManagedJdbcPool pool) throws SQLException {
@@ -147,8 +175,10 @@ public class JdbcConnectionPoolManager {
                 return pool.dataSource().getConnection();
             } catch (SQLException ex) {
                 if (attempt == 0 && JdbcConnectionErrors.isTransientConnectionFailure(ex)) {
-                    pools.remove(entity.getId(), pool);
-                    pool.closeQuietly();
+                    PoolEntry removed = pools.remove(entity.getId());
+                    if (removed != null) {
+                        removed.pool.closeQuietly();
+                    }
                     log.warn(
                             "Evicted JDBC pool after transient getConnection failure connectionId={}",
                             entity.getId()
@@ -165,7 +195,7 @@ public class JdbcConnectionPoolManager {
         ));
     }
 
-    private Connection openDirect(ConnectionEntity entity) throws SQLException {
+    private Connection openDirectConnection(ConnectionEntity entity) throws SQLException {
         String url = targetResolver.resolve(entity).jdbcUrl();
         Properties properties = JdbcPoolDriverResolver.buildConnectionProperties(entity);
         JdbcPoolDriverResolver.ResolvedDriver driver = JdbcPoolDriverResolver.resolve(entity, defaultsProvider);

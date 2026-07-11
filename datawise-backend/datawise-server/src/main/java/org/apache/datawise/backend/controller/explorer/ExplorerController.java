@@ -109,6 +109,11 @@ public class ExplorerController {
         return ApiResponse.ok(null);
     }
 
+    @GetMapping("/connections/pooled")
+    public ApiResponse<List<String>> listPooledConnections() {
+        return ApiResponse.ok(connectionLifecycleService.listPooledConnectionIds());
+    }
+
     @PostMapping("/connections/{connectionId}/reconnect")
     public ApiResponse<ConnectionTestResult> reconnectConnection(@PathVariable String connectionId) {
         return ApiResponse.ok(connectionLifecycleService.reconnect(connectionId));

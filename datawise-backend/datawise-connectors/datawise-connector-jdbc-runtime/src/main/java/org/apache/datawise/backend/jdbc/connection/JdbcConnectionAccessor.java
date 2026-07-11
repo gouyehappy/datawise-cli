@@ -4,6 +4,7 @@ import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.schema.CatalogSchemaScope;
 import org.apache.datawise.backend.jdbc.support.JdbcConnectionCallback;
 import org.apache.datawise.backend.jdbc.error.JdbcConnectionErrors;
+import org.apache.datawise.backend.jdbc.connection.ConnectionActivityRegistry;
 import org.apache.datawise.backend.jdbc.support.JdbcDriverConnectionFactory;
 import org.apache.datawise.backend.jdbc.support.DbTypeFamilies;
 import org.springframework.stereotype.Component;
@@ -19,13 +20,19 @@ import java.util.Objects;
 public class JdbcConnectionAccessor {
 
     private final JdbcDriverConnectionFactory connectionFactory;
+    private final ConnectionActivityRegistry activityRegistry;
 
-    public JdbcConnectionAccessor(JdbcDriverConnectionFactory connectionFactory) {
+    public JdbcConnectionAccessor(
+            JdbcDriverConnectionFactory connectionFactory,
+            ConnectionActivityRegistry activityRegistry
+    ) {
         this.connectionFactory = connectionFactory;
+        this.activityRegistry = activityRegistry;
     }
 
     /** Opens a pooled JDBC connection without switching catalog/schema. */
     public Connection openConnection(ConnectionEntity entity) throws SQLException {
+        activityRegistry.touch(entity.getId());
         return connectionFactory.open(entity);
     }
 
@@ -57,9 +64,11 @@ public class JdbcConnectionAccessor {
         return withTransientRetry(entity, () -> runWithConnection(entity, database, callback));
     }
 
-    /** Quick health check used by connection test flow. */
+    /** Quick health check used by connection test flow; does not warm or touch pooled connections. */
     public boolean canConnect(ConnectionEntity entity) throws SQLException {
-        return withConnection(entity, null, connection -> connection.isValid(3));
+        try (Connection connection = connectionFactory.openDirect(entity)) {
+            return connection.isValid(3);
+        }
     }
 
     /** Switches PostgreSQL schema or JDBC catalog for other families. */

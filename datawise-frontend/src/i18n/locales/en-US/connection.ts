@@ -80,6 +80,11 @@ export default {
         prod: 'Production',
         custom: 'Custom',
     },
+    envTreeShort: {
+        dev: 'DEV',
+        staging: 'UAT',
+        prod: 'PROD',
+    },
     hints: {
         name: 'Custom connection name for easy recall',
         env: 'Environment label shown in the connection tree',
