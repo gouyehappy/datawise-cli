@@ -1,48 +1,34 @@
 /**
- * 为桌面版后端生成 AppCDS 类共享缓存（datawise.jsa），缩短 JVM 冷启动。
- *
- * 训练一次完整启动 → 健康检查通过 → 正常退出写入 .jsa
- * 运行时 java 加 -XX:SharedArchiveFile=... 加载（见 backend-service.ts）
- *
- * 由 prepare-desktop-bundle.mjs 在 JAR + JRE 就绪后调用。
+ * Generate AppCDS class archive for bundled backend JVM startup.
  */
 import {spawn, execSync} from 'node:child_process'
 import {existsSync, rmSync, statSync, readFileSync} from 'node:fs'
 import http from 'node:http'
 import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {backendBundleOut, configBundleOut, frontendRoot} from './paths.mjs'
+import {log, sleep, isDirectRun} from './lib.mjs'
 
-const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const ports = JSON.parse(readFileSync(join(frontendRoot, 'runtime-ports.json'), 'utf8'))
-const backendOut = join(frontendRoot, 'resources/desktop/backend')
-const configDir = join(frontendRoot, 'resources/desktop/config-bundle')
-const jar = join(backendOut, 'datawise-server.jar')
+const jar = join(backendBundleOut, 'datawise-server.jar')
 const java = join(
-    backendOut,
+    backendBundleOut,
     'jre',
     'bin',
     process.platform === 'win32' ? 'java.exe' : 'java',
 )
 const jcmd = join(
-    backendOut,
+    backendBundleOut,
     'jre',
     'bin',
     process.platform === 'win32' ? 'jcmd.exe' : 'jcmd',
 )
-const archivePath = join(backendOut, 'datawise.jsa')
+const archivePath = join(backendBundleOut, 'datawise.jsa')
 
 const TRAIN_PORT = ports.cdsTrain
 const HEALTH_URL = `http://127.0.0.1:${TRAIN_PORT}/api/health`
 const STARTUP_TIMEOUT_MS = 180_000
 const POLL_MS = 400
-
-function log(msg) {
-    console.log(`[build-app-cds] ${msg}`)
-}
-
-function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-}
 
 function sharedJvmArgs() {
     return [
@@ -113,7 +99,7 @@ function exitJvmGracefully(proc) {
         execSync(`"${jcmd}" ${proc.pid} VM.exit 0`, {stdio: 'ignore', windowsHide: true})
         return
     } catch {
-        // jcmd attach can fail on some Windows setups — fall back to OS signal
+        // jcmd attach can fail on some Windows setups
     }
 
     try {
@@ -136,19 +122,19 @@ async function waitForExit(proc, timeoutMs = 30_000) {
     })
 }
 
-async function main() {
+export async function buildAppCds() {
     if (!existsSync(jar)) {
-        throw new Error(`missing ${jar} — run prepare-desktop-bundle first`)
+        throw new Error(`missing ${jar} — bundle backend first`)
     }
     if (!existsSync(java)) {
         throw new Error(`missing bundled java ${java}`)
     }
-    if (!existsSync(configDir)) {
-        throw new Error(`missing training config ${configDir}`)
+    if (!existsSync(configBundleOut)) {
+        throw new Error(`missing training config ${configBundleOut}`)
     }
 
     rmSync(archivePath, {force: true})
-    log(`training with ArchiveClassesAtExit → ${archivePath}`)
+    log('build-cds', `training with ArchiveClassesAtExit → ${archivePath}`)
 
     const args = [
         ...sharedJvmArgs(),
@@ -157,7 +143,7 @@ async function main() {
         jar,
         `--server.port=${TRAIN_PORT}`,
         '--server.address=127.0.0.1',
-        `--datawise.config.dir=${configDir}`,
+        `--datawise.config.dir=${configBundleOut}`,
         '--spring.profiles.active=desktop',
         '--management.endpoint.shutdown.enabled=true',
         '--management.endpoints.web.exposure.include=health,shutdown',
@@ -165,7 +151,7 @@ async function main() {
     ]
 
     const proc = spawn(java, args, {
-        cwd: backendOut,
+        cwd: backendBundleOut,
         env: {...process.env, JAVA_TOOL_OPTIONS: ''},
         stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true,
@@ -175,11 +161,11 @@ async function main() {
     proc.stderr?.on('data', (chunk) => process.stderr.write(chunk))
 
     await waitForReady(proc)
-    log('backend ready — requesting graceful shutdown for CDS dump')
+    log('build-cds', 'backend ready — requesting graceful shutdown for CDS dump')
 
     const shutdownStatus = await requestShutdown(TRAIN_PORT)
     if (shutdownStatus < 200 || shutdownStatus >= 300) {
-        log(`actuator shutdown returned ${shutdownStatus}, trying jcmd/signal fallback`)
+        log('build-cds', `actuator shutdown returned ${shutdownStatus}, trying jcmd/signal fallback`)
         exitJvmGracefully(proc)
     }
 
@@ -192,14 +178,15 @@ async function main() {
     }
 
     const sizeMb = statSync(archivePath).size / (1024 * 1024)
-    log(`wrote ${archivePath} (${sizeMb.toFixed(1)} MB)`)
+    log('build-cds', `wrote ${archivePath} (${sizeMb.toFixed(1)} MB)`)
 }
 
-try {
-    await main()
-} catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    console.warn(`[build-app-cds] skipped: ${message}`)
-    rmSync(archivePath, {force: true})
-    process.exit(0)
+if (isDirectRun()) {
+    try {
+        await buildAppCds()
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        log('build-cds', `skipped: ${message}`)
+        rmSync(archivePath, {force: true})
+    }
 }

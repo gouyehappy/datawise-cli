@@ -1,7 +1,7 @@
-import {existsSync, mkdirSync} from 'node:fs'
-import {join} from 'node:path'
+import {existsSync} from 'node:fs'
 import {ipcMain, shell} from 'electron'
 import {resolveRuntimeConfigDir} from './backend-service'
+import {resolveRuntimeLogPath, RUNTIME_LOG_FILE} from './runtime-log'
 
 export interface OpenRuntimeLogResult {
     ok: boolean
@@ -9,18 +9,10 @@ export interface OpenRuntimeLogResult {
     error?: 'missing' | 'open_failed'
 }
 
-function resolveRuntimeLogPath(): string {
-    const configDir = resolveRuntimeConfigDir()
-    const logDir = join(configDir, 'logs')
-    if (!existsSync(logDir)) {
-        mkdirSync(logDir, {recursive: true})
-    }
-    return join(logDir, 'datawise.log')
-}
-
 export function registerRuntimeLogIpc() {
     ipcMain.handle('logs:openRuntime', async (): Promise<OpenRuntimeLogResult> => {
-        const logPath = resolveRuntimeLogPath()
+        const configDir = resolveRuntimeConfigDir()
+        const logPath = resolveRuntimeLogPath(configDir)
         if (!existsSync(logPath)) {
             return {ok: false, path: logPath, error: 'missing'}
         }
@@ -31,3 +23,5 @@ export function registerRuntimeLogIpc() {
         return {ok: true, path: logPath}
     })
 }
+
+export {RUNTIME_LOG_FILE}

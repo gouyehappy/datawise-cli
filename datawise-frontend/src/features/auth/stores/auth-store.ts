@@ -96,6 +96,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function recoverFromStaleSession(wasGuest: boolean) {
+        cancelDeferredConfigServerWrites()
         clearSession()
         sessionId.value = null
         user.value = null
@@ -171,6 +172,20 @@ export const useAuthStore = defineStore('auth', () => {
         await resetUserScopedState()
     }
 
+    async function handleUnauthorizedAccess() {
+        cancelDeferredConfigServerWrites()
+        clearSession()
+        sessionId.value = null
+        user.value = null
+        openLoginDialog()
+        useToastStore().show(t('auth.sessionExpired'))
+        try {
+            await loginAsGuest()
+        } catch {
+            bootstrapGuestSession()
+        }
+    }
+
     async function signOut() {
         cancelDeferredConfigServerWrites()
         try {
@@ -201,6 +216,7 @@ export const useAuthStore = defineStore('auth', () => {
         closeLoginDialog,
         login,
         loginAsGuest,
+        handleUnauthorizedAccess,
         signOut,
     }
 })

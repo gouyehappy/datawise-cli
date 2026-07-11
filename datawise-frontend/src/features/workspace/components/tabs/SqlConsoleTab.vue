@@ -2,10 +2,10 @@
   SQL 控制台 Tab — 业务逻辑在 composables / services，本组件负责布局与事件绑定。
 -->
 <script setup lang="ts">
-import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
+import {computed, defineAsyncComponent, nextTick, onMounted, ref, watch} from 'vue'
 import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
-import {AiPromptBar, ConsoleCtxBar, ConsoleTransactionBar, QueryResultPane} from '@/features/workspace/components'
+import {ConsoleCtxBar, ConsoleTransactionBar, QueryResultPane} from '@/features/workspace/components'
 import {ContextMenuHost} from '@/core/context-menu'
 import EditorFullscreenButton from '@/core/components/EditorFullscreenButton.vue'
 import IconButton from '@/core/components/IconButton.vue'
@@ -18,20 +18,6 @@ import {shortcutTooltip} from '@/features/layout/composables/useAppShortcutListe
 import {useWorkspaceSqlShortcutHandlers} from '@/features/workspace/composables/useWorkspaceSqlShortcutHandlers'
 import type {WorkspaceTab} from '@/core/types'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
-import {
-  CONSOLE_EDITOR_HEIGHT_DEFAULT,
-  CONSOLE_EDITOR_HEIGHT_MAX,
-  CONSOLE_EDITOR_HEIGHT_MIN,
-  CONSOLE_EDITOR_HEIGHT_RATIO,
-  CONSOLE_RESULT_MIN_HEIGHT
-} from '@/features/workspace/constants/defaults'
-import {useAiPromptPanel} from '@/features/workspace/composables/useAiPromptPanel'
-import {useAiSqlFix} from '@/features/workspace/composables/useAiSqlFix'
-import {useAiIndexSuggest} from '@/features/workspace/composables/useAiIndexSuggest'
-import {useQueryResultAiSummary} from '@/features/workspace/composables/useQueryResultAiSummary'
-import {useExplainPlanAiInterpret} from '@/features/workspace/composables/useExplainPlanAiInterpret'
-import AiSqlFixDialog from '@/features/workspace/components/AiSqlFixDialog.vue'
-import IndexSuggestDialog from '@/features/workspace/components/IndexSuggestDialog.vue'
 import {useConsoleConnectionContext} from '@/features/workspace/composables/useConsoleConnectionContext'
 import {useEditorContextMenu} from '@/features/workspace/composables/useEditorContextMenu'
 import {useConnectionCapabilities} from '@/shared/capabilities/useConnectionCapabilities'
@@ -42,14 +28,12 @@ import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWrit
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import type {QueryResultRefreshRequest} from '@/features/workspace/services/query-result-refresh.service'
 import {resolveConsoleInstanceLabel, buildExplorerScopedLabelResolver} from '@/features/workspace/services/resolve-console-instance'
-import {appendConsoleAiSql} from '@/features/workspace/services/console-ai-sql.service'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {sqlApi} from '@/api'
 import {mergeCursorPageIntoQueryResult} from '@/features/workspace/services/query-result-cursor.service'
 import {useQueryBookmarkSave} from '@/features/workspace/composables/useQueryBookmarkSave'
-import SaveBookmarkDialog from '@/features/workspace/components/SaveBookmarkDialog.vue'
 import {isViewModelSelectSql} from '@/api/modules/view-model'
 import DangerousSqlPendingBar from '@/features/workspace/components/DangerousSqlPendingBar.vue'
 import ConsoleSqlCancelDialog from '@/features/workspace/components/ConsoleSqlCancelDialog.vue'
@@ -62,11 +46,7 @@ import {splitSqlStatements} from '@/features/workspace/services/split-sql-statem
 import {resolveExecutableSql} from '@/features/workspace/services/resolve-executable-sql'
 import {useConsoleSqlCancel} from '@/features/workspace/composables/useConsoleSqlCancel'
 import {useTeamStore} from '@/features/team/stores/team-store'
-import {subscribeTeamSharedQueryStream, type TeamSharedQueryViewer} from '@/features/team/services/team-shared-query-stream'
-import TeamSharedQueryConflictDialog from '@/features/team/components/TeamSharedQueryConflictDialog.vue'
-import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {resolveProductionApprovalTeams} from '@/features/team/services/production-approval-policy.service'
-import SubmitProductionApprovalDialog from '@/features/workspace/components/SubmitProductionApprovalDialog.vue'
 import {canDmlConnection} from '@/features/team/services/connection-access.service'
 import {applySqlParameters, extractSqlParameters} from '@/features/workspace/services/sql-parameters.service'
 import {
@@ -76,6 +56,27 @@ import {
 import {validateCrossEnvCompareSql, buildCrossEnvCompareScope} from '@/features/cross-env-compare/services/cross-env-compare.service'
 import {reviewSql} from '@/features/platform/services/sql-review.service'
 import type {SqlReviewFinding} from '@/features/platform/types/platform.types'
+
+import {
+  CONSOLE_EDITOR_HEIGHT_DEFAULT,
+  CONSOLE_EDITOR_HEIGHT_MAX,
+  CONSOLE_EDITOR_HEIGHT_MIN,
+  CONSOLE_EDITOR_HEIGHT_RATIO,
+  CONSOLE_RESULT_MIN_HEIGHT
+} from '@/features/workspace/constants/defaults'
+
+const SqlConsoleAiLayer = defineAsyncComponent(
+    () => import('@/features/workspace/components/tabs/SqlConsoleAiLayer.vue'),
+)
+const SqlConsoleTeamCollabLayer = defineAsyncComponent(
+    () => import('@/features/workspace/components/tabs/SqlConsoleTeamCollabLayer.vue'),
+)
+const SaveBookmarkDialog = defineAsyncComponent(
+    () => import('@/features/workspace/components/SaveBookmarkDialog.vue'),
+)
+const SubmitProductionApprovalDialog = defineAsyncComponent(
+    () => import('@/features/workspace/components/SubmitProductionApprovalDialog.vue'),
+)
 
 const {t} = useI18n()
 const {readOnly: guestReadOnly, hint: guestReadOnlyHint} = useResourceWriteGuard(UserResource.WorkspaceScripts)
@@ -91,6 +92,7 @@ const {consoleQueryByTabId} = storeToRefs(workspace)
 const sql = ref(props.tab.sql ?? '')
 const sqlParamValues = ref<Record<string, string>>({})
 const editorReady = ref(false)
+let syncingSqlFromStore = false
 const parameterNames = computed(() => extractSqlParameters(sql.value))
 const aiSelectionSql = ref('')
 const splitRef = ref<HTMLElement>()
@@ -116,6 +118,27 @@ const dmlGenerateEnabled = computed(() => pluginStore.isEnabled('p-dml-generate'
 const explainPlanEnabled = computed(() => pluginStore.isEnabled('p-explain-plan'))
 const crossEnvCompareEnabled = computed(() => pluginStore.isEnabled('p-cross-env-compare'))
 const bookmarksEnabled = computed(() => pluginStore.isEnabled('p-sql-bookmarks'))
+const anyAiFeatureEnabled = computed(() =>
+    consoleAiEnabled.value
+    || aiSqlFixEnabled.value
+    || indexSuggestEnabled.value
+    || aiResultSummaryEnabled.value
+    || aiExplainEnabled.value,
+)
+const teamCollabEnabled = computed(() => Boolean(props.tab.teamSharedQuery?.teamId && props.tab.teamSharedQuery?.queryId))
+const aiLayerRef = ref<InstanceType<typeof SqlConsoleAiLayer> | null>(null)
+
+function getSqlEditor() {
+  return editorRef.value
+}
+
+function setConsoleSql(value: string) {
+  sql.value = value
+}
+
+function getConsoleSql() {
+  return sql.value
+}
 
 function collapseResultPanel() {
   appConfig.setShowConsoleResultPanel(false)
@@ -160,16 +183,17 @@ function openSaveViewModelDialog() {
   })
 }
 
-const databaseName = computed(() =>
-    resolveConsoleInstanceLabel({
-      activeInstanceLabel: activeInstance.value?.label,
-      instanceId: instanceId.value,
-      tabInstanceId: props.tab.instanceId,
-      tabDatabase: props.tab.database,
-      findNodeLabel: (nodeId) => explorer.findNode(nodeId)?.label,
-      resolveScopedLabel: buildExplorerScopedLabelResolver(explorer.tree, (nodeId) => explorer.findNode(nodeId)),
-    }),
-)
+const databaseName = computed(() => {
+  void explorer.treeVersion
+  return resolveConsoleInstanceLabel({
+    activeInstanceLabel: activeInstance.value?.label,
+    instanceId: instanceId.value,
+    tabInstanceId: props.tab.instanceId,
+    tabDatabase: props.tab.database,
+    findNodeLabel: (nodeId) => explorer.findNode(nodeId)?.label,
+    resolveScopedLabel: buildExplorerScopedLabelResolver(explorer.tree, (nodeId) => explorer.findNode(nodeId)),
+  })
+})
 
 const dbDialect = computed(() => source.value?.dbType)
 
@@ -181,39 +205,6 @@ const connectionEnvironment = computed(() => {
 })
 
 const {caps: connectionCaps, hint: capabilityHint} = useConnectionCapabilities(dbDialect)
-
-async function resolveAiSqlRequest() {
-  const connId = connectionId.value || props.tab.connectionId
-  const db = databaseName.value
-  if (!connId || !db) return undefined
-
-  return {
-    connectionId: connId,
-    database: db,
-    prefs: appConfig.aiPreferences,
-  }
-}
-
-const {
-  visible: showAiInput,
-  prompt: aiPrompt,
-  generating: aiGenerating,
-  panelRef: aiPanelRef,
-  btnRef: aiBtnRef,
-  open: openAiInput,
-  toggle: toggleAiInput,
-  close: closeAiInput,
-  submit: submitAiPrompt,
-} = useAiPromptPanel(({prompt, sql: generated}) => {
-  const {text, focusLine} = appendConsoleAiSql(sql.value, prompt, generated)
-  sql.value = text
-  void nextTick(() => {
-    requestAnimationFrame(() => {
-      editorRef.value?.goToLine(focusLine, false)
-      editorRef.value?.layout()
-    })
-  })
-}, {resolveRequest: resolveAiSqlRequest})
 
 const {
   pending: dangerousSqlPending,
@@ -269,113 +260,7 @@ const {runSql, saveConsole, formatSql, formatSelection, jumpToErrorLine, running
   applyParameters: (text) => applySqlParameters(text, sqlParamValues.value),
 })
 
-const {
-  fixDialogOpen,
-  fixOriginal,
-  fixSuggested,
-  fixing: aiFixLoading,
-  requestFix: requestAiSqlFix,
-  applyFix,
-} = useAiSqlFix({
-  getSql: () => sql.value,
-  setSql: (value) => {
-    sql.value = value
-  },
-  focusEditorLine: (line) => {
-    void nextTick(() => {
-      requestAnimationFrame(() => {
-        editorRef.value?.goToLine(line, false)
-        editorRef.value?.layout()
-      })
-    })
-  },
-  getConnectionId: () => connectionId.value || props.tab.connectionId,
-  getDatabase: () => databaseName.value,
-  getDbType: () => dbDialect.value,
-  getConnectionLabel: () => source.value?.label ?? t('common.unnamedConnection'),
-  getSelection: () => editorRef.value?.getSelectedText()?.trim() || aiSelectionSql.value || undefined,
-  resolveAiPrefs: () => appConfig.aiPreferences,
-})
-
-const {
-  dialogOpen: indexSuggestDialogOpen,
-  originalSql: indexSuggestQuery,
-  suggestedSql: indexSuggestDraft,
-  loading: aiIndexSuggestLoading,
-  requestSuggest: requestAiIndexSuggest,
-  applySuggest: applyIndexSuggest,
-} = useAiIndexSuggest({
-  getConnectionId: () => connectionId.value || props.tab.connectionId,
-  getDatabase: () => databaseName.value,
-  getDbType: () => dbDialect.value,
-  getConnectionLabel: () => source.value?.label ?? t('common.unnamedConnection'),
-  resolveAiPrefs: () => appConfig.aiPreferences,
-  openConsole: (options) => workspace.openConsole(options),
-  buildConsoleTitle: () => t('queryResult.indexSuggestConsoleTitle'),
-})
-
-const {
-  summaryOpen: aiSummaryOpen,
-  summaryText: aiSummaryText,
-  loading: aiSummaryLoading,
-  summarize: summarizeActiveResult,
-  closeSummary: closeAiSummary,
-} = useQueryResultAiSummary({
-  getConnectionId: () => connectionId.value || props.tab.connectionId,
-  getDatabase: () => databaseName.value,
-  getDbType: () => dbDialect.value,
-  getConnectionLabel: () => source.value?.label ?? t('common.unnamedConnection'),
-  resolveAiPrefs: () => appConfig.aiPreferences,
-})
-
-function onRequestAiSummary() {
-  const view = consoleQuery.value.activeView
-  if (view === 'overview') return
-  const result = consoleQuery.value.results[view]
-  if (result) void summarizeActiveResult(result)
-}
-
-const {
-  interpretOpen: aiExplainOpen,
-  interpretText: aiExplainText,
-  loading: aiExplainLoading,
-  interpret: interpretActiveExplainPlan,
-  closeInterpret: closeAiExplain,
-} = useExplainPlanAiInterpret({
-  getConnectionId: () => connectionId.value || props.tab.connectionId,
-  getDatabase: () => databaseName.value,
-  getDbType: () => dbDialect.value,
-  getConnectionLabel: () => source.value?.label ?? t('common.unnamedConnection'),
-  resolveAiPrefs: () => appConfig.aiPreferences,
-})
-
-function onRequestAiExplain() {
-  const view = consoleQuery.value.activeView
-  if (view === 'overview') return
-  const result = consoleQuery.value.results[view]
-  if (!result?.explainPlan?.length || !result.sql?.trim()) return
-  void interpretActiveExplainPlan({
-    sql: result.sql,
-    explainPlan: result.explainPlan,
-    explainMode: result.explainMode,
-  })
-}
-
 const teamStore = useTeamStore()
-const authStore = useAuthStore()
-const collabPulling = ref(false)
-const collabPushing = ref(false)
-const collabRemoteChanged = ref(false)
-const collabLastRemoteUpdatedAt = ref<string | null>(null)
-const collabStreamLive = ref(false)
-const collabViewers = ref<TeamSharedQueryViewer[]>([])
-const collabBaseSql = ref('')
-const collabRemoteSqlPreview = ref<string | null>(null)
-const collabConflictDialogOpen = ref(false)
-const collabConflictLoading = ref(false)
-let collabPollTimer: number | null = null
-let collabStreamStop: (() => void) | null = null
-let collabStreamReconnectTimer: number | null = null
 const productionApprovalDialogOpen = ref(false)
 const productionApprovalSubmitting = ref(false)
 const sqlReviewFindings = ref<SqlReviewFinding[]>([])
@@ -396,28 +281,6 @@ const productionApprovalTeams = computed(() => {
 })
 
 const needsProductionApproval = computed(() => productionApprovalTeams.value.length > 0)
-const teamSharedQueryMeta = computed(() => props.tab.teamSharedQuery ?? null)
-const teamCollabEnabled = computed(() => Boolean(teamSharedQueryMeta.value?.teamId && teamSharedQueryMeta.value?.queryId))
-const teamCollabConflictHint = computed(() => {
-  if (collabRemoteChanged.value) {
-    return t('team.sharedQueries.collabConflictHint')
-  }
-  if (collabStreamLive.value) {
-    return t('team.sharedQueries.collabLiveHint')
-  }
-  return t('team.sharedQueries.collabSyncedHint')
-})
-
-function collabViewerInitial(name: string) {
-  const trimmed = name.trim()
-  return (trimmed.charAt(0) || '?').toUpperCase()
-}
-
-const collabViewerTooltip = computed(() => {
-  if (!collabViewers.value.length) return ''
-  const names = collabViewers.value.map((viewer) => viewer.userName).join(', ')
-  return t('team.sharedQueries.collabViewers', {names})
-})
 
 const dangerousSqlSubmitTitle = computed(() =>
     needsProductionApproval.value
@@ -612,254 +475,6 @@ async function onSubmitProductionApproval(teamId: string) {
   }
 }
 
-async function pullTeamSharedQuery() {
-  const meta = teamSharedQueryMeta.value
-  if (!meta || collabPulling.value) return
-  if (collabRemoteChanged.value) {
-    await openCollabConflictReview()
-    return
-  }
-  collabPulling.value = true
-  try {
-    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
-    sql.value = detail.sql ?? ''
-    collabLastRemoteUpdatedAt.value = detail.updatedAt || null
-    collabBaseSql.value = detail.sql ?? ''
-    collabRemoteChanged.value = false
-    collabRemoteSqlPreview.value = null
-    layout.showToast(t('team.sharedQueries.collabPulled'))
-  } catch (error) {
-    const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
-    layout.showToast(message)
-  } finally {
-    collabPulling.value = false
-  }
-}
-
-async function prefetchCollabRemoteSql() {
-  const meta = teamSharedQueryMeta.value
-  if (!meta) return
-  collabConflictLoading.value = true
-  try {
-    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
-    collabRemoteSqlPreview.value = detail.sql ?? ''
-    if (!collabBaseSql.value) {
-      collabBaseSql.value = sql.value
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
-    layout.showToast(message)
-  } finally {
-    collabConflictLoading.value = false
-  }
-}
-
-async function openCollabConflictReview() {
-  if (!collabRemoteSqlPreview.value) {
-    await prefetchCollabRemoteSql()
-  }
-  if (!collabBaseSql.value) {
-    collabBaseSql.value = sql.value
-  }
-  if (collabRemoteSqlPreview.value != null) {
-    collabConflictDialogOpen.value = true
-  }
-}
-
-async function acceptCollabRemote() {
-  const meta = teamSharedQueryMeta.value
-  if (!meta || collabPulling.value) return
-  collabPulling.value = true
-  try {
-    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
-    sql.value = detail.sql ?? ''
-    collabLastRemoteUpdatedAt.value = detail.updatedAt || null
-    collabBaseSql.value = detail.sql ?? ''
-    collabRemoteChanged.value = false
-    collabRemoteSqlPreview.value = null
-    collabConflictDialogOpen.value = false
-    layout.showToast(t('team.sharedQueries.collabPulled'))
-  } catch (error) {
-    const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
-    layout.showToast(message)
-  } finally {
-    collabPulling.value = false
-  }
-}
-
-function keepCollabLocal() {
-  collabConflictDialogOpen.value = false
-}
-
-async function pushTeamSharedQuery() {
-  const meta = teamSharedQueryMeta.value
-  if (!meta || collabPushing.value) return
-  collabPushing.value = true
-  try {
-    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
-    const updated = await teamStore.updateSharedQuery(meta.teamId, meta.queryId, {
-      title: detail.title,
-      description: detail.description ?? undefined,
-      connectionId: connectionId.value || props.tab.connectionId || detail.connectionId || undefined,
-      connectionName: source.value?.label || detail.connectionName || undefined,
-      database: databaseName.value || detail.database || undefined,
-      sql: sql.value,
-      tags: detail.tags ?? [],
-      expectedUpdatedAt: collabLastRemoteUpdatedAt.value || detail.updatedAt || undefined,
-    })
-    collabLastRemoteUpdatedAt.value = updated.updatedAt || null
-    collabBaseSql.value = sql.value
-    collabRemoteChanged.value = false
-    layout.showToast(t('team.sharedQueries.collabPushed'))
-  } catch (error) {
-    const fallback = t('team.sharedQueries.collabPushFailed')
-    const message = error instanceof Error ? error.message : fallback
-    if (message.includes('pull latest')) {
-      collabRemoteChanged.value = true
-      layout.showToast(t('team.sharedQueries.collabConflictSave'))
-    } else {
-      layout.showToast(message)
-    }
-  } finally {
-    collabPushing.value = false
-  }
-}
-
-async function pollTeamSharedQuery() {
-  const meta = teamSharedQueryMeta.value
-  if (!meta || collabPulling.value || collabPushing.value) return
-  try {
-    const detail = await teamStore.getSharedQuery(meta.teamId, meta.queryId)
-    applyRemoteSharedQueryState(detail.updatedAt, detail.sql ?? '')
-  } catch {
-    // polling is best-effort; explicit pull/push handles user-facing errors
-  }
-}
-
-function applyRemoteSharedQueryState(updatedAt: string | null | undefined, remoteSql: string) {
-  if (!collabLastRemoteUpdatedAt.value) {
-    collabLastRemoteUpdatedAt.value = updatedAt || null
-    return
-  }
-  const remoteUpdated = (updatedAt || '').trim()
-  const localSeen = (collabLastRemoteUpdatedAt.value || '').trim()
-  if (remoteUpdated && remoteUpdated !== localSeen && remoteSql !== sql.value) {
-    collabRemoteChanged.value = true
-    collabRemoteSqlPreview.value = remoteSql
-    if (!collabBaseSql.value) {
-      collabBaseSql.value = sql.value
-    }
-  }
-}
-
-function handleRemoteSharedQueryUpdated(
-    updatedAt: string | null | undefined,
-    updatedByUserId?: number | null,
-) {
-  if (updatedByUserId != null && updatedByUserId === authStore.user?.userId) {
-    collabLastRemoteUpdatedAt.value = updatedAt || collabLastRemoteUpdatedAt.value
-    return
-  }
-  const remoteUpdated = (updatedAt || '').trim()
-  const localSeen = (collabLastRemoteUpdatedAt.value || '').trim()
-  if (!remoteUpdated || remoteUpdated === localSeen) {
-    return
-  }
-  collabRemoteChanged.value = true
-  void prefetchCollabRemoteSql()
-}
-
-function stopCollabStreamReconnect() {
-  if (collabStreamReconnectTimer != null) {
-    window.clearTimeout(collabStreamReconnectTimer)
-    collabStreamReconnectTimer = null
-  }
-}
-
-function stopCollabStream() {
-  stopCollabStreamReconnect()
-  if (collabStreamStop != null) {
-    collabStreamStop()
-    collabStreamStop = null
-  }
-  collabStreamLive.value = false
-  collabViewers.value = []
-}
-
-function scheduleCollabStreamReconnect() {
-  if (!teamCollabEnabled.value || collabStreamReconnectTimer != null) return
-  collabStreamReconnectTimer = window.setTimeout(() => {
-    collabStreamReconnectTimer = null
-    startCollabStream()
-  }, 5000)
-}
-
-function startCollabStream() {
-  stopCollabStream()
-  const meta = teamSharedQueryMeta.value
-  if (!meta) return
-  collabStreamStop = subscribeTeamSharedQueryStream(meta.teamId, meta.queryId, {
-    onConnected: (event) => {
-      collabStreamLive.value = true
-      if (!collabLastRemoteUpdatedAt.value && event.updatedAt) {
-        collabLastRemoteUpdatedAt.value = event.updatedAt
-      }
-    },
-    onUpdated: (event) => {
-      handleRemoteSharedQueryUpdated(event.updatedAt, event.updatedByUserId)
-    },
-    onPresence: (event) => {
-      collabViewers.value = event.viewers ?? []
-    },
-    onDisconnected: () => {
-      collabStreamLive.value = false
-      scheduleCollabStreamReconnect()
-    },
-  })
-}
-
-function stopCollabPolling() {
-  if (collabPollTimer != null) {
-    window.clearInterval(collabPollTimer)
-    collabPollTimer = null
-  }
-}
-
-function startCollabPolling() {
-  stopCollabPolling()
-  if (!teamCollabEnabled.value) return
-  collabPollTimer = window.setInterval(() => {
-    void pollTeamSharedQuery()
-  }, collabStreamLive.value ? 60000 : 15000)
-}
-
-watch(collabStreamLive, () => {
-  if (!teamCollabEnabled.value) return
-  startCollabPolling()
-})
-
-watch(teamCollabEnabled, (enabled) => {
-  if (!enabled) {
-    collabRemoteChanged.value = false
-    collabLastRemoteUpdatedAt.value = null
-    collabViewers.value = []
-    collabBaseSql.value = ''
-    collabRemoteSqlPreview.value = null
-    collabConflictDialogOpen.value = false
-    stopCollabPolling()
-    stopCollabStream()
-    return
-  }
-  void pollTeamSharedQuery()
-  startCollabStream()
-  startCollabPolling()
-}, {immediate: true})
-
-onUnmounted(() => {
-  stopCollabPolling()
-  stopCollabStream()
-})
-
 function rollbackDangerousSql() {
   disarmDangerousSqlPending()
 }
@@ -914,7 +529,7 @@ const {
       const lines = prefill.split('\n')
       aiSelectionSql.value = lines.slice(1).join('\n').trim()
     }
-    void openAiInput(prefill)
+    void aiLayerRef.value?.openAiInput(prefill)
   },
   getDbType: () => dbDialect.value,
   getCapabilities: () => connectionCaps.value,
@@ -922,7 +537,7 @@ const {
   getExplainPlanEnabled: () => explainPlanEnabled.value,
   getIndexSuggestEnabled: () => indexSuggestEnabled.value,
   requestIndexSuggest: (targetSql) => {
-    void requestAiIndexSuggest({sql: targetSql})
+    void aiLayerRef.value?.requestAiIndexSuggest({sql: targetSql})
   },
 })
 
@@ -931,9 +546,19 @@ function onEditorContextMenu(payload: { x: number; y: number; selectedText: stri
   showEditorContextMenu(payload)
 }
 
-const aiContextLabel = computed(
-    () => activeInstance.value?.label ?? source.value?.label ?? null,
-)
+function onRequestAiSummary() {
+  const view = consoleQuery.value.activeView
+  if (view === 'overview') return
+  const result = consoleQuery.value.results[view]
+  if (result) aiLayerRef.value?.onRequestAiSummary(result)
+}
+
+function onRequestAiExplain() {
+  const view = consoleQuery.value.activeView
+  if (view === 'overview') return
+  const result = consoleQuery.value.results[view]
+  if (result) aiLayerRef.value?.onRequestAiExplain(result)
+}
 
 const consoleQuery = computed(() => {
   const state = consoleQueryByTabId.value[props.tab.id]
@@ -944,7 +569,11 @@ watch(
     () => props.tab.sql,
     (value) => {
       if (value !== undefined && value !== sql.value) {
+        syncingSqlFromStore = true
         sql.value = value
+        void nextTick(() => {
+          syncingSqlFromStore = false
+        })
       }
     },
 )
@@ -986,53 +615,14 @@ async function onLoadMoreResult(index: number) {
   }
 }
 
-const aiQuickActions = computed(() => {
-  if (!aiSelectionSql.value.trim()) return []
-  const actions = [
-    {id: 'explain', label: t('console.editorMenu.explain')},
-    {id: 'optimize', label: t('console.editorMenu.optimize')},
-    {id: 'rewrite', label: t('console.editorMenu.rewrite')},
-    {id: 'generate-insert', label: t('console.editorMenu.generateInsert')},
-  ]
-  if (indexSuggestEnabled.value) {
-    actions.push({id: 'suggest-index', label: t('console.editorMenu.suggestIndex')})
-  }
-  return actions
-})
-
-function applyConsoleAiQuickAction(actionId: string) {
-  const selected = aiSelectionSql.value.trim()
-  if (!selected) return
-  if (actionId === 'suggest-index') {
-    void requestAiIndexSuggest({sql: selected})
-    return
-  }
-  const promptByAction: Record<string, string> = {
-    explain: t('console.explainPrompt', {sql: selected}),
-    optimize: t('console.optimizePrompt', {sql: selected}),
-    rewrite: t('console.rewritePrompt', {sql: selected}),
-    'generate-insert': t('console.generateInsertPrompt', {sql: selected}),
-  }
-  const prompt = promptByAction[actionId]
-  if (!prompt) return
-  aiPrompt.value = prompt
-  void submitAiPrompt()
-}
-
-watch(showAiInput, async (visible) => {
-  if (visible) {
-    aiSelectionSql.value = editorRef.value?.getSelectedText()?.trim() ?? ''
-  }
-  await nextTick()
-  editorRef.value?.layout()
-})
-
 watch(isEditorFullscreen, async () => {
   await nextTick()
   editorRef.value?.layout()
 })
 
 watch(sql, (value) => {
+  if (syncingSqlFromStore) return
+  if (value === props.tab.sql) return
   workspace.updateTabSql(props.tab.id, value)
   if (dangerousSqlPending.value) {
     disarmDangerousSqlPending()
@@ -1049,17 +639,25 @@ watch(
 )
 
 watch([connectionId, instanceId], ([conn, inst]) => {
+  const database = activeInstance.value?.label ?? props.tab.database
+  if (
+      conn === (props.tab.connectionId ?? '')
+      && (inst ?? null) === (props.tab.instanceId ?? null)
+      && database === props.tab.database
+  ) {
+    return
+  }
   workspace.updateTabContext(props.tab.id, {
     connectionId: conn,
     instanceId: inst,
-    database: activeInstance.value?.label ?? props.tab.database,
+    database,
   })
-})
+}, {flush: 'post'})
 
 useWorkspaceSqlShortcutHandlers(() => ({
   onRun: () => executeSql(undefined, {perfSource: 'shortcut'}),
   onSave: saveConsole,
-  onAiPrompt: consoleAiEnabled.value ? openAiInput : undefined,
+  onAiPrompt: consoleAiEnabled.value ? () => void aiLayerRef.value?.openAiInput() : undefined,
 }))
 
 function clampEditorHeight(value: number) {
@@ -1183,12 +781,12 @@ onMounted(() => {
             @click="toggleEditorFullscreen"
         />
         <span class="dw-console-divider" aria-hidden="true"/>
-        <div v-if="consoleAiEnabled" ref="aiBtnRef" class="ai-btn-wrap">
+        <div v-if="consoleAiEnabled" class="ai-btn-wrap">
           <IconButton
               class="console-ai-btn"
               :title="shortcutTooltip(t('console.ai'), 'workspace.aiPrompt')"
-              :active="showAiInput"
-              @click="toggleAiInput"
+              :active="aiLayerRef?.showAiInput"
+              @click="aiLayerRef?.toggleAiInput()"
           >
             <ConsoleToolbarIcon name="ai"/>
           </IconButton>
@@ -1239,45 +837,14 @@ onMounted(() => {
         :sql-review-rewrite-loading="sqlReviewRewriteLoading"
         @apply-suggested-sql="applySqlReviewSuggestion"
     />
-    <div v-if="teamCollabEnabled" class="team-collab-banner">
-      <span class="team-collab-banner__text">
-        {{ t('team.sharedQueries.collabBanner', { title: teamSharedQueryMeta?.title || tab.title }) }}
-      </span>
-      <div
-          v-if="collabViewers.length"
-          class="team-collab-banner__viewers"
-          :title="collabViewerTooltip"
-      >
-        <span
-            v-for="viewer in collabViewers"
-            :key="viewer.userId"
-            class="team-collab-banner__avatar"
-            :class="{'is-self': viewer.userId === authStore.user?.userId}"
-        >
-          {{ collabViewerInitial(viewer.userName) }}
-        </span>
-      </div>
-      <span class="team-collab-banner__hint" :class="{ 'is-warning': collabRemoteChanged }">
-        {{ teamCollabConflictHint }}
-      </span>
-      <div class="team-collab-banner__actions">
-        <button
-            v-if="collabRemoteChanged"
-            type="button"
-            class="dw-btn dw-btn--ghost"
-            :disabled="collabPulling || collabPushing || collabConflictLoading"
-            @click="openCollabConflictReview"
-        >
-          {{ collabConflictLoading ? t('common.loading') : t('team.sharedQueries.reviewChanges') }}
-        </button>
-        <button type="button" class="dw-btn dw-btn--ghost" :disabled="collabPulling || collabPushing" @click="pullTeamSharedQuery">
-          {{ collabPulling ? t('common.loading') : t('team.sharedQueries.pullLatest') }}
-        </button>
-        <button type="button" class="dw-btn dw-btn--primary" :disabled="collabPulling || collabPushing" @click="pushTeamSharedQuery">
-          {{ collabPushing ? t('common.saving') : t('team.sharedQueries.pushCurrent') }}
-        </button>
-      </div>
-    </div>
+    <SqlConsoleTeamCollabLayer
+        v-if="teamCollabEnabled"
+        v-model:sql="sql"
+        :tab="tab"
+        :connection-id="connectionId || tab.connectionId || ''"
+        :database-name="databaseName ?? ''"
+        :source-label="source?.label ?? ''"
+    />
 
     <div ref="splitRef" class="split">
       <div
@@ -1288,16 +855,24 @@ onMounted(() => {
         }"
           :style="!isEditorFullscreen && showResultPanel ? { height: `${editorHeight}px` } : undefined"
       >
-        <AiPromptBar
-            v-if="showAiInput && consoleAiEnabled"
-            ref="aiPanelRef"
-            v-model="aiPrompt"
-            :generating="aiGenerating"
-            :context-label="aiContextLabel"
-            :quick-actions="aiQuickActions"
-            @submit="submitAiPrompt"
-            @close="closeAiInput"
-            @quick-action="applyConsoleAiQuickAction"
+        <SqlConsoleAiLayer
+            v-if="editorReady && anyAiFeatureEnabled"
+            ref="aiLayerRef"
+            v-model:selection-sql="aiSelectionSql"
+            :tab="tab"
+            :get-sql="getConsoleSql"
+            :set-sql="setConsoleSql"
+            :connection-id="connectionId || tab.connectionId || ''"
+            :database-name="databaseName ?? ''"
+            :db-dialect="dbDialect"
+            :source-label="source?.label ?? ''"
+            :active-instance-label="activeInstance?.label ?? null"
+            :console-ai-enabled="consoleAiEnabled"
+            :ai-sql-fix-enabled="aiSqlFixEnabled"
+            :index-suggest-enabled="indexSuggestEnabled"
+            :ai-result-summary-enabled="aiResultSummaryEnabled"
+            :ai-explain-enabled="aiExplainEnabled"
+            :get-editor="getSqlEditor"
         />
         <SqlParameterPanel
             :parameter-names="parameterNames"
@@ -1336,17 +911,17 @@ onMounted(() => {
           closable-results
           :enable-dml-generate="dmlGenerateEnabled"
           :enable-ai-fix="aiSqlFixEnabled"
-          :ai-fix-loading="aiFixLoading"
+          :ai-fix-loading="aiLayerRef?.aiFixLoading ?? false"
           :enable-ai-summary="aiResultSummaryEnabled"
-          :ai-summary-loading="aiSummaryLoading"
-          :ai-summary-open="aiSummaryOpen"
-          :ai-summary-text="aiSummaryText"
+          :ai-summary-loading="aiLayerRef?.aiSummaryLoading ?? false"
+          :ai-summary-open="aiLayerRef?.aiSummaryOpen ?? false"
+          :ai-summary-text="aiLayerRef?.aiSummaryText ?? ''"
           :enable-ai-index-suggest="indexSuggestEnabled"
-          :ai-index-suggest-loading="aiIndexSuggestLoading"
+          :ai-index-suggest-loading="aiLayerRef?.aiIndexSuggestLoading ?? false"
           :enable-ai-explain="aiExplainEnabled"
-          :ai-explain-loading="aiExplainLoading"
-          :ai-explain-open="aiExplainOpen"
-          :ai-explain-text="aiExplainText"
+          :ai-explain-loading="aiLayerRef?.aiExplainLoading ?? false"
+          :ai-explain-open="aiLayerRef?.aiExplainOpen ?? false"
+          :ai-explain-text="aiLayerRef?.aiExplainText ?? ''"
           :enable-cross-env-compare="crossEnvCompareEnabled && Boolean((connectionId || tab.connectionId) && databaseName)"
           :db-type="dbDialect"
           :export-suggest-mask="connectionEnvironment === 'prod'"
@@ -1357,31 +932,15 @@ onMounted(() => {
           @close-other-results="onCloseOtherResults"
           @close-all-results="onCloseAllResults"
           @jump-to-error-line="jumpToErrorLine"
-          @request-ai-fix="requestAiSqlFix"
+          @request-ai-fix="(payload) => aiLayerRef?.requestAiSqlFix(payload)"
           @request-ai-summary="onRequestAiSummary"
-          @close-ai-summary="closeAiSummary"
+          @close-ai-summary="aiLayerRef?.closeAiSummary()"
           @request-ai-explain="onRequestAiExplain"
-          @close-ai-explain="closeAiExplain"
-          @request-index-suggest="requestAiIndexSuggest"
+          @close-ai-explain="aiLayerRef?.closeAiExplain()"
+          @request-index-suggest="(payload) => aiLayerRef?.requestAiIndexSuggest(payload)"
           @open-cross-env-compare="openCrossEnvCompareFromResult"
           @refresh="refreshActiveResult"
           @load-more="onLoadMoreResult"
-      />
-      <AiSqlFixDialog
-          v-if="aiSqlFixEnabled"
-          v-model:open="fixDialogOpen"
-          :original-sql="fixOriginal"
-          :suggested-sql="fixSuggested"
-          :loading="aiFixLoading"
-          @apply="applyFix"
-      />
-      <IndexSuggestDialog
-          v-if="indexSuggestEnabled"
-          v-model:open="indexSuggestDialogOpen"
-          :query-sql="indexSuggestQuery"
-          :suggested-sql="indexSuggestDraft"
-          :loading="aiIndexSuggestLoading"
-          @apply="applyIndexSuggest"
       />
       <button
           v-if="!isEditorFullscreen && !showResultPanel"
@@ -1404,6 +963,7 @@ onMounted(() => {
     />
 
     <SaveBookmarkDialog
+        v-if="bookmarksEnabled"
         v-model:open="bookmarkDialogOpen"
         :default-name="bookmarkDefaults.name"
         :default-connection-name="bookmarkDefaults.connectionName"
@@ -1420,17 +980,6 @@ onMounted(() => {
         :database="databaseName"
         :teams="productionApprovalTeams"
         @submit="onSubmitProductionApproval"
-    />
-
-    <TeamSharedQueryConflictDialog
-        v-model:open="collabConflictDialogOpen"
-        :base-sql="collabBaseSql"
-        :local-sql="sql"
-        :remote-sql="collabRemoteSqlPreview ?? ''"
-        :loading="collabConflictLoading"
-        :applying="collabPulling"
-        @accept-remote="acceptCollabRemote"
-        @keep-local="keepCollabLocal"
     />
 
     <ConsoleSqlCancelDialog
@@ -1632,60 +1181,5 @@ onMounted(() => {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-}
-
-.team-collab-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--dw-border-light);
-  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-panel));
-}
-
-.team-collab-banner__text {
-  font-size: 12px;
-  color: var(--dw-text-secondary);
-}
-
-.team-collab-banner__viewers {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.team-collab-banner__avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--dw-text-on-primary, #fff);
-  background: color-mix(in srgb, var(--dw-primary) 72%, #334155);
-  border: 1px solid var(--dw-border-light);
-}
-
-.team-collab-banner__avatar.is-self {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dw-primary) 35%, transparent);
-}
-
-.team-collab-banner__actions {
-  display: inline-flex;
-  gap: 6px;
-}
-
-.team-collab-banner__hint {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--dw-text-muted);
-}
-
-.team-collab-banner__hint.is-warning {
-  color: var(--dw-danger, #c0392b);
-  font-weight: 600;
 }
 </style>

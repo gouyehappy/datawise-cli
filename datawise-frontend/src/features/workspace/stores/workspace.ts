@@ -189,31 +189,46 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         title?: string
         explorerNodeId?: string
         teamSharedQuery?: WorkspaceTab['teamSharedQuery']
+        skipEnsureScriptFile?: boolean
     }) {
         const explorer = useExplorerStore()
-        if (!options?.connectionId) {
+        const resolved = resolveOpenConsoleOptions(options)
+
+        if (!resolved.connectionId) {
             await probeAllConnections(explorer.tree, (connectionId) =>
                 explorer.ensureChildrenLoaded(connectionId),
             )
+        } else {
+            const sources = extractDataSources(explorer.tree)
+            const source = findDataSource(sources, resolved.connectionId)
+            if (!source?.instances.length) {
+                await explorer.ensureChildrenLoaded(resolved.connectionId)
+            }
         }
 
-        const resolved = resolveOpenConsoleOptions(options)
+        const finalResolved = resolveOpenConsoleOptions({
+            ...options,
+            connectionId: resolved.connectionId,
+            instanceId: resolved.instanceId,
+            database: resolved.database,
+            connectionName: resolved.connectionName,
+        })
 
-        if (resolved.connectionId && resolved.instanceId && resolved.sqlFile) {
+        if (finalResolved.connectionId && finalResolved.instanceId && finalResolved.sqlFile) {
             const existing = tabs.value.find(
                 (item) =>
                     item.type === 'console' &&
-                    item.connectionId === resolved.connectionId &&
-                    item.instanceId === resolved.instanceId &&
-                    item.sqlFile === resolved.sqlFile,
+                    item.connectionId === finalResolved.connectionId &&
+                    item.instanceId === finalResolved.instanceId &&
+                    item.sqlFile === finalResolved.sqlFile,
             )
             if (existing) {
-                if (resolved.sql !== undefined) existing.sql = resolved.sql
-                if (resolved.database !== undefined) existing.database = resolved.database
-                if (resolved.explorerNodeId) existing.explorerNodeId = resolved.explorerNodeId
+                if (finalResolved.sql !== undefined) existing.sql = finalResolved.sql
+                if (finalResolved.database !== undefined) existing.database = finalResolved.database
+                if (finalResolved.explorerNodeId) existing.explorerNodeId = finalResolved.explorerNodeId
                 const nextTitle = resolveConsoleTabTitle({
                     sqlFile: existing.sqlFile,
-                    connectionName: resolved.connectionName,
+                    connectionName: finalResolved.connectionName,
                     kind: 'script',
                 })
                 if (nextTitle) existing.title = nextTitle
@@ -223,18 +238,44 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             }
         }
 
+        if (
+            finalResolved.connectionId &&
+            finalResolved.instanceId &&
+            !finalResolved.sqlFile
+        ) {
+            const existingPlaceholder = tabs.value.find(
+                (item) =>
+                    item.type === 'console' &&
+                    item.connectionId === finalResolved.connectionId &&
+                    item.instanceId === finalResolved.instanceId &&
+                    !getBoundConsoleSqlFile(item),
+            )
+            if (existingPlaceholder) {
+                if (finalResolved.sql !== undefined) existingPlaceholder.sql = finalResolved.sql
+                if (finalResolved.database !== undefined) {
+                    existingPlaceholder.database = finalResolved.database
+                }
+                if (finalResolved.explorerNodeId) {
+                    existingPlaceholder.explorerNodeId = finalResolved.explorerNodeId
+                }
+                activeTabId.value = existingPlaceholder.id
+                ensureConsoleQueryState(existingPlaceholder.id)
+                return existingPlaceholder.id
+            }
+        }
+
         const id = nextTabId('console')
-        const sqlFile = resolved.sqlFile
+        const sqlFile = finalResolved.sqlFile
         const title =
-            resolved.title ??
+            finalResolved.title ??
             (sqlFile
                 ? resolveConsoleTabTitle({
                     sqlFile,
-                    connectionName: resolved.connectionName,
+                    connectionName: finalResolved.connectionName,
                     kind: 'script',
                 })
                 : resolveConsoleTabTitle({
-                    connectionName: resolved.connectionName,
+                    connectionName: finalResolved.connectionName,
                     kind: 'console',
                 })) ??
             t('console.consoleTitle', {n: tabCounter})
@@ -243,20 +284,20 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             title,
             type: 'console',
             closable: true,
-            connectionId: resolved.connectionId,
-            instanceId: resolved.instanceId,
-            database: resolved.database,
-            sql: resolved.sql ?? '',
-            savedSql: resolved.sql ?? '',
+            connectionId: finalResolved.connectionId,
+            instanceId: finalResolved.instanceId,
+            database: finalResolved.database,
+            sql: finalResolved.sql ?? '',
+            savedSql: finalResolved.sql ?? '',
             sqlFile,
-            explorerNodeId: resolved.explorerNodeId,
-            teamSharedQuery: resolved.teamSharedQuery,
+            explorerNodeId: finalResolved.explorerNodeId,
+            teamSharedQuery: finalResolved.teamSharedQuery,
         }
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
         tabs.value.push(tab)
         activeTabId.value = id
         ensureConsoleQueryState(id)
-        if (!sqlFile && resolved.connectionId) {
+        if (!sqlFile && finalResolved.connectionId && !options?.skipEnsureScriptFile) {
             ensureConsoleTabScriptFile(tab)
         }
         return id
@@ -1554,7 +1595,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     function updateTabSql(tabId: string, sql: string) {
         const tab = tabs.value.find((item) => item.id === tabId)
-        if (tab) tab.sql = sql
+        if (tab && tab.sql !== sql) tab.sql = sql
     }
 
     function updateConsoleSqlFile(options: {
@@ -1596,13 +1637,22 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     ) {
         const tab = tabs.value.find((item) => item.id === tabId)
         if (!tab) return
+        const prevConnectionId = tab.connectionId
+        const prevInstanceId = tab.instanceId
+        const prevDatabase = tab.database
+
         if (ctx.connectionId !== undefined) tab.connectionId = ctx.connectionId
         if (ctx.instanceId !== undefined) tab.instanceId = ctx.instanceId
         if (ctx.database !== undefined) tab.database = ctx.database
         if (ctx.explorerNodeId !== undefined) tab.explorerNodeId = ctx.explorerNodeId ?? undefined
         if (ctx.kafkaTopic !== undefined) tab.kafkaTopic = ctx.kafkaTopic
 
-        if (tab.type === 'console' && tab.connectionId) {
+        const contextChanged =
+            (ctx.connectionId !== undefined && ctx.connectionId !== prevConnectionId)
+            || (ctx.instanceId !== undefined && ctx.instanceId !== prevInstanceId)
+            || (ctx.database !== undefined && ctx.database !== prevDatabase)
+
+        if (tab.type === 'console' && tab.connectionId && contextChanged && !getBoundConsoleSqlFile(tab)) {
             ensureConsoleTabScriptFile(tab)
             const nextTitle = syncConsoleTabTitle(tab, resolveConnectionLabel(tab.connectionId))
             if (nextTitle && nextTitle !== tab.title) tab.title = nextTitle

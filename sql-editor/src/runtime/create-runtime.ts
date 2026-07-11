@@ -66,10 +66,12 @@ export function createSqlEditorRuntime(options: SqlEditorRuntimeOptions = {}): S
         })
     }
 
-    function sync() {
+    function sync(options?: { publishLayers?: boolean }) {
         if (disposed) return
         setSqlCompletionDialect(dialect)
-        syncLayers()
+        if (options?.publishLayers !== false) {
+            syncLayers()
+        }
         locale = normalizeSqlEditorLocale(effectiveSettings().locale)
     }
 

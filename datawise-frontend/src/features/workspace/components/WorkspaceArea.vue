@@ -2,7 +2,7 @@
   工作区：首页无 Tab 栏；打开控制台/表等后才显示 Tab
 -->
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, KeepAlive} from 'vue'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {resolveWorkspaceTab} from '../tab-registry'
 import WorkspaceTabs from './WorkspaceTabs.vue'
@@ -20,12 +20,14 @@ const isHome = computed(() => !activeTab.value)
     <WorkspaceTabs v-if="workspace.hasOpenTabs"/>
     <div class="workspace-body">
       <WelcomeTab v-if="isHome"/>
-      <component
-          :is="tabComponent"
-          v-else-if="activeTab && tabComponent"
-          :key="activeTab.id"
-          :tab="activeTab"
-      />
+      <KeepAlive :max="10">
+        <component
+            :is="tabComponent"
+            v-if="activeTab && tabComponent"
+            :key="activeTab.id"
+            :tab="activeTab"
+        />
+      </KeepAlive>
     </div>
   </main>
 </template>

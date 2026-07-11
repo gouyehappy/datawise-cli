@@ -7,7 +7,9 @@ export interface ApiErrorToastContext {
 }
 
 function isUnauthorizedApiError(error: unknown): boolean {
-    return error instanceof ApiError && error.message.trim() === 'UNAUTHORIZED'
+    if (!(error instanceof ApiError)) return false
+    const message = error.message.trim()
+    return message === 'UNAUTHORIZED' || message === 'HTTP 401'
 }
 
 function isServiceUnavailableError(error: unknown): boolean {

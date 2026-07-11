@@ -23,7 +23,7 @@ cp config/users.json.example config/users.json
 | `sql-history.json` | SQL 执行历史 |
 | `scripts/` | 各连接下的 SQL 脚本 |
 | `cache/` | Schema 缓存 |
-| `logs/` | 运行日志 |
+| `logs/datawise.log` | 统一运行日志（后端 + 桌面版 Electron；历史归档在 `logs/archive/`） |
 | `ai-checkpoints/` | AI 分析断点 |
 | `plugins/*.jar` / `drivers/` | 插件与驱动 |
 

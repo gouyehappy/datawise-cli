@@ -13,7 +13,7 @@ export default {
     generate: 'Generate',
     send: 'Send',
     rows: '{count} rows',
-    nullValue: '<null>',
+    nullValue: '(null)',
     ready: 'Ready.',
     unnamedConnection: 'Unnamed connection',
     inDevelopment: 'In development',

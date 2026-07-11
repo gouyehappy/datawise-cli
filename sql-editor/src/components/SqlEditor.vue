@@ -303,7 +303,8 @@ watch(
         personal: readPersonalSqlEditorLayer(),
         external: sharedRuntime.getSnippetLayers().external,
       })
-      runtime.sync()
+      // Global settings already published the cache bump; do not republish from each tab.
+      runtime.sync({publishLayers: false})
     },
 )
 

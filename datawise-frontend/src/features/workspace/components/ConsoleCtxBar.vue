@@ -93,26 +93,33 @@ watch(
         if (!showInstanceSelector.value || !source.instances.length) {
           return
         }
-        instanceId.value = resolveBoundInstanceId({
+        const nextInstanceId = resolveBoundInstanceId({
           instances: source.instances,
           tabInstanceId: instanceId.value,
           tabDatabase: props.boundDatabaseLabel,
           preserveBinding: true,
         })
+        if (instanceId.value !== nextInstanceId) {
+          instanceId.value = nextInstanceId
+        }
         return
       }
       if (!source) {
+        if (connectionId.value) return
         if (props.dataSources.length) connectionId.value = props.dataSources[0].id
         return
       }
       if (!showInstanceSelector.value || !source.instances.length) {
         return
       }
-      instanceId.value = resolveBoundInstanceId({
+      const nextInstanceId = resolveBoundInstanceId({
         instances: source.instances,
         tabInstanceId: instanceId.value,
         tabDatabase: props.boundDatabaseLabel,
       })
+      if (instanceId.value !== nextInstanceId) {
+        instanceId.value = nextInstanceId
+      }
     },
     {immediate: true},
 )

@@ -2,7 +2,7 @@ import {computed, onMounted, onUnmounted, ref, type Ref} from 'vue'
 import type {TreeNode} from '@/core/types'
 
 export const EXPLORER_TREE_ROW_HEIGHT = 28
-export const EXPLORER_TREE_VIRTUAL_THRESHOLD = 150
+export const EXPLORER_TREE_VIRTUAL_THRESHOLD = 80
 const VIRTUAL_BUFFER_ROWS = 8
 
 export type FlatTreeEntry = { node: TreeNode; depth: number }

@@ -84,10 +84,8 @@ export async function ensureCatalogSchemaIndexLoaded(
         return {catalogs: [], schemasByCatalog: {}}
     }
     const dbType = resolveConnectionDbType(explorer.tree, connectionId) ?? connection.dbType
-    for (const catalogNode of connection.children ?? []) {
-        if (catalogNode.type !== 'database') continue
-        await explorer.ensureChildrenLoaded(catalogNode.id)
-    }
+    const catalogNodes = (connection.children ?? []).filter((catalogNode) => catalogNode.type === 'database')
+    await Promise.all(catalogNodes.map((catalogNode) => explorer.ensureChildrenLoaded(catalogNode.id)))
     const refreshed = explorer.findNode(connectionId)
     if (!refreshed) {
         return {catalogs: [], schemasByCatalog: {}}

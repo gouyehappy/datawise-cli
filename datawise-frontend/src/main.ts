@@ -25,6 +25,7 @@ import {HTTP_NOT_READY} from '@/shared/api/http/request'
 import {useToastStore} from '@/features/layout/stores/toast-store'
 import {shouldSuppressApiErrorToast} from '@/features/layout/services/api-error-toast-policy.service'
 import {markBackendOffline} from '@/features/layout/services/backend-health.service'
+import {installUnauthorizedSessionRecovery} from '@/features/auth/services/auth-session-recovery.service'
 
 registerApiErrorNotifier((message, error) => {
     if (shouldSuppressApiErrorToast(error)) return
@@ -38,6 +39,7 @@ setupExplorerContextMenus()
 
 const pinia = createPinia()
 setActivePinia(pinia)
+installUnauthorizedSessionRecovery()
 
 const app = createApp(App).use(pinia).use(i18n)
 installSqlEditorPlugin(app, {config: useDatawiseSqlEditorHost()})

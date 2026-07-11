@@ -47,7 +47,7 @@ datawise:
       # 允许连接测试探测内网地址（10.x / 192.168.x 等）；内网部署保持 true
       allow-private-networks: true
   logging:
-    # 分类日志目录（见 logback-spring.xml）
+    # 统一运行日志：config/logs/datawise.log（含异常堆栈）
     dir: config/logs
   jdbc:
     # 启动时预加载 config/drivers/ 下已存在的 JDBC 驱动 JAR

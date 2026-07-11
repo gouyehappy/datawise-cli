@@ -2,6 +2,13 @@ import type {ApiResponse} from '@/shared/api/types'
 import {readApiBaseUrl} from '@/shared/api/mode'
 import {notifyApiError} from '@/shared/api/http/api-error-notifier'
 import {resolveApiErrorMessage} from '@/shared/api/http/api-error-message'
+import {
+    maybeRejectBlockedRequest,
+    notifyUnauthorizedIfNeeded,
+} from '@/shared/api/http/session-guard'
+import {ApiError} from '@/shared/api/http/api-error'
+
+export {ApiError} from '@/shared/api/http/api-error'
 
 export const HTTP_NOT_READY =
     'HTTP API request failed. Ensure the backend is running and Vite proxy is configured.'
@@ -11,6 +18,8 @@ export type HttpRequestOptions = {
     silent?: boolean
     /** 请求超时（毫秒）；0 表示不限制 */
     timeoutMs?: number
+    /** 会话失效拦截期间仍允许调用（登录/游客登录/退出） */
+    authBypass?: boolean
 }
 
 const DEFAULT_FETCH_TIMEOUT_MS = 60_000
@@ -20,22 +29,14 @@ function fetchSignal(timeoutMs = DEFAULT_FETCH_TIMEOUT_MS): AbortSignal | undefi
     return AbortSignal.timeout(timeoutMs)
 }
 
-/** 带结构化 data 的 API 错误（如 SQL errorLine） */
-export class ApiError extends Error {
-    readonly data?: unknown
-
-    constructor(message: string, data?: unknown) {
-        super(message)
-        this.name = 'ApiError'
-        this.data = data
-    }
-}
-
-async function readApiPayload<T>(response: Response): Promise<ApiResponse<T>> {
+async function readApiPayload<T>(response: Response, options?: HttpRequestOptions): Promise<ApiResponse<T>> {
     try {
         return (await response.json()) as ApiResponse<T>
     } catch {
-        throw new ApiError(response.ok ? HTTP_NOT_READY : `HTTP ${response.status}`)
+        const message = response.ok ? HTTP_NOT_READY : `HTTP ${response.status}`
+        const error = new ApiError(message)
+        notifyUnauthorizedIfNeeded(error, options)
+        throw error
     }
 }
 
@@ -45,6 +46,7 @@ function rejectApiError(
 ): never {
     const message = payload.msg?.trim() || HTTP_NOT_READY
     const error = new ApiError(message, payload.data)
+    notifyUnauthorizedIfNeeded(error, options)
     notifyApiError(error, options)
     throw error
 }
@@ -53,7 +55,7 @@ async function ensureApiSuccess<T>(
     response: Response,
     options?: HttpRequestOptions,
 ): Promise<ApiResponse<T>> {
-    const payload = await readApiPayload<T>(response)
+    const payload = await readApiPayload<T>(response, options)
     if (!response.ok || payload.code !== 0) {
         rejectApiError(payload, options)
     }
@@ -64,6 +66,7 @@ async function runFetch<T>(
     execute: (signal?: AbortSignal) => Promise<Response>,
     options?: HttpRequestOptions,
 ): Promise<T> {
+    maybeRejectBlockedRequest(options)
     const signal = fetchSignal(options?.timeoutMs)
     let response: Response
     try {

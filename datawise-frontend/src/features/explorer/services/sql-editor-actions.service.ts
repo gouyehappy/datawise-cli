@@ -61,12 +61,30 @@ async function resolveDatabaseConsoleContext(
 
 async function loadLatestSqlIntoTab(ctx: DatabaseConsoleContext, placeholderTabId: string) {
     const workspace = useWorkspaceStore()
+
+    function closeSiblingPlaceholders(keepTabId: string) {
+        for (const item of [...workspace.tabs]) {
+            if (
+                item.id !== keepTabId
+                && item.type === 'console'
+                && item.connectionId === ctx.connectionId
+                && item.instanceId === ctx.databaseNode.id
+                && !getBoundConsoleSqlFile(item)
+            ) {
+                workspace.closeTab(item.id)
+            }
+        }
+    }
+
     try {
         const result = await instanceSqlApi.readLatest({
             connectionId: ctx.connectionId,
             instanceName: ctx.databaseNode.label,
         })
-        if (!result.relativePath) return
+        if (!result.relativePath) {
+            closeSiblingPlaceholders(placeholderTabId)
+            return
+        }
 
         const existing = workspace.tabs.find(
             (item) =>
@@ -80,6 +98,7 @@ async function loadLatestSqlIntoTab(ctx: DatabaseConsoleContext, placeholderTabI
             existing.sql = result.sql
             existing.savedSql = result.sql
             workspace.activeTabId = existing.id
+            closeSiblingPlaceholders(existing.id)
             workspace.closeTab(placeholderTabId)
             return
         }
@@ -89,6 +108,7 @@ async function loadLatestSqlIntoTab(ctx: DatabaseConsoleContext, placeholderTabI
         if (getBoundConsoleSqlFile(placeholder) === result.fileName) {
             placeholder.sql = result.sql
             placeholder.savedSql = result.sql
+            closeSiblingPlaceholders(placeholderTabId)
             return
         }
         applySqlToConsoleTab(placeholderTabId, result.sql, {
@@ -96,6 +116,7 @@ async function loadLatestSqlIntoTab(ctx: DatabaseConsoleContext, placeholderTabI
             connectionName: ctx.connectionName,
             connectionHost: ctx.connectionHost,
         })
+        closeSiblingPlaceholders(placeholderTabId)
     } catch {
         // keep placeholder tab
     }
@@ -118,8 +139,9 @@ export async function openLatestSqlEditor(
             instanceId: ctx.databaseNode.id,
             database: ctx.databaseNode.label,
             explorerNodeId: ctx.databaseNode.id,
+            skipEnsureScriptFile: true,
         })
-        void loadLatestSqlIntoTab(ctx, placeholderTabId)
+        await loadLatestSqlIntoTab(ctx, placeholderTabId)
     })
 }
 

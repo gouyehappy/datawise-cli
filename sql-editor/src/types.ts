@@ -379,8 +379,8 @@ export interface SqlEditorRuntime {
 
     invokeAiAssist(payload: SqlEditorAiAssistPayload): void
 
-    /** 将当前状态写入补全 Provider */
-    sync(): void
+    /** 将当前状态写入补全 Provider；publishLayers=false 时仅刷新方言/语言，不写回全局片段缓存 */
+    sync(options?: { publishLayers?: boolean }): void
 
     dispose(): void
 }

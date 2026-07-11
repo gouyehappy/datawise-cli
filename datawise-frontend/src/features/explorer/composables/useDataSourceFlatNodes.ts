@@ -17,9 +17,10 @@ export function useDataSourceFlatNodes(search: Ref<string>) {
         return readPinnedTableFavorites()
     })
 
-    const filteredTree = computed(() =>
-        filterExplorerTreeAiFolders(explorer.tree, explorer.showSemanticLayer),
-    )
+    const filteredTree = computed(() => {
+        void explorer.treeVersion
+        return filterExplorerTreeAiFolders(explorer.tree, explorer.showSemanticLayer)
+    })
 
     const searchVisibility = computed(() => {
         const query = search.value.trim()

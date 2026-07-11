@@ -3,13 +3,22 @@
  * 开发模式不托管后端（沿用 mvn spring-boot:run + dev:electron）。
  */
 import {type ChildProcess, spawn} from 'node:child_process'
-import {createWriteStream, existsSync, mkdirSync, cpSync, writeFileSync, readFileSync, appendFileSync} from 'node:fs'
+import {existsSync, mkdirSync, cpSync, writeFileSync, readFileSync} from 'node:fs'
 import http from 'node:http'
 import {dirname, isAbsolute, join} from 'node:path'
 import {app, dialog} from 'electron'
 import {readDesktopPreferences} from './desktop-preferences'
 import {touchRecentWorkspace} from './workspace-preferences'
 import {ensureWindowsFirewallRule} from './win-firewall'
+import {
+    appendRuntimeLog,
+    appendRuntimeLogBlock,
+    closeBackendRuntimeLog,
+    getBackendLogFilePath,
+    openBackendRuntimeLog,
+    resolveRuntimeLogPath,
+    writeBackendProcessLine,
+} from './runtime-log'
 import ports from '../runtime-ports.json' with {type: 'json'}
 
 const BACKEND_PACKAGED_PORT = ports.backendPackaged
@@ -19,8 +28,6 @@ const HEALTH_POLL_MS = 150
 const CDS_ARCHIVE_NAME = 'datawise.jsa'
 
 let backendProcess: ChildProcess | null = null
-let backendLogStream: ReturnType<typeof createWriteStream> | null = null
-let backendLogPath = ''
 let runtimeConfigDir = ''
 const backendLogTail: string[] = []
 const BACKEND_LOG_TAIL_MAX = 40
@@ -141,11 +148,7 @@ function seedConfigDirectoryFromTemplate(configDir: string) {
     cpSync(template, configDir, {recursive: true})
     const logDir = join(configDir, 'logs')
     mkdirSync(logDir, {recursive: true})
-    appendFileSync(
-        join(logDir, 'desktop-startup.log'),
-        `workspaceInitializedFromTemplate=${template}\n`,
-        'utf8',
-    )
+    appendRuntimeLog(configDir, 'desktop', `workspaceInitializedFromTemplate=${template}`)
 }
 
 function ensureConfigSubdirectories(configDir: string) {
@@ -219,46 +222,34 @@ function repairBundledConfigFiles(configDir: string) {
 }
 
 function writeStartupDiagnostics(configDir: string, java: string, jar: string) {
-    const logPath = join(configDir, 'logs', 'desktop-startup.log')
-    mkdirSync(join(configDir, 'logs'), {recursive: true})
-    const lines = [
-        `time=${new Date().toISOString()}`,
+    appendRuntimeLogBlock(configDir, 'desktop', [
+        'backend startup diagnostics',
         `execPath=${process.execPath}`,
         `appPath=${app.getAppPath()}`,
         `configDir=${configDir}`,
         `java=${java}`,
         `jar=${jar}`,
         `cdsArchive=${resolveCdsArchivePath() ?? 'none'}`,
-        `backendLog=${join(configDir, 'logs', 'electron-backend.log')}`,
-        `datawiseLog=${join(configDir, 'logs', 'datawise.log')}`,
-        '',
-    ]
-    appendFileSync(logPath, lines.join('\n'), 'utf8')
+        `runtimeLog=${resolveRuntimeLogPath(configDir)}`,
+    ])
 }
 
 export function appendDesktopStartupLog(message: string): void {
     try {
         const configDir = runtimeConfigDir || resolveRuntimeConfigDir()
-        const logPath = join(configDir, 'logs', 'desktop-startup.log')
-        mkdirSync(join(configDir, 'logs'), {recursive: true})
-        appendFileSync(logPath, `${new Date().toISOString()} ${message}\n`, 'utf8')
+        appendRuntimeLog(configDir, 'desktop', message)
     } catch {
         // ignore logging failures
     }
 }
 
 function openBackendLog(configDir: string) {
-    const logDir = join(configDir, 'logs')
-    mkdirSync(logDir, {recursive: true})
-    backendLogPath = join(logDir, 'electron-backend.log')
-    backendLogStream = createWriteStream(backendLogPath, {flags: 'a'})
+    openBackendRuntimeLog(configDir)
 }
 
-function logBackendLine(prefix: string, chunk: Buffer) {
-    const line = chunk.toString()
-    process.stdout.write(`[backend] ${line}`)
-    backendLogStream?.write(`[${prefix}] ${line}`)
-    for (const part of line.split(/\r?\n/)) {
+function logBackendLine(prefix: 'stdout' | 'stderr', chunk: Buffer) {
+    writeBackendProcessLine(prefix, chunk)
+    for (const part of chunk.toString().split(/\r?\n/)) {
         if (!part.trim()) continue
         backendLogTail.push(part)
     }
@@ -369,8 +360,8 @@ function spawnBundledBackendProcess(java: string, args: string[]): void {
         windowsHide: true,
     })
 
-    backendProcess.stdout?.on('data', (chunk: Buffer) => logBackendLine('out', chunk))
-    backendProcess.stderr?.on('data', (chunk: Buffer) => logBackendLine('err', chunk))
+    backendProcess.stdout?.on('data', (chunk: Buffer) => logBackendLine('stdout', chunk))
+    backendProcess.stderr?.on('data', (chunk: Buffer) => logBackendLine('stderr', chunk))
     backendProcess.on('exit', (code) => {
         if (code !== null && code !== 0) {
             console.error(`[backend] exited with code ${code}`)
@@ -399,17 +390,14 @@ export async function startBundledBackendInBackground(): Promise<boolean> {
         console.error('[backend] startup failed:', message)
 
         const configDir = runtimeConfigDir || resolveRuntimeConfigDir()
-        const logHint = backendLogPath || join(configDir, 'logs', 'electron-backend.log')
-        const startupLog = join(configDir, 'logs', 'desktop-startup.log')
+        const logHint = getBackendLogFilePath() || resolveRuntimeLogPath(configDir)
         const tail = backendLogTail.slice(-6).join('\n')
         const detail = [
             message,
             '',
             `配置目录：\n${configDir}`,
             '',
-            `启动日志：\n${startupLog}`,
-            '',
-            `后端输出：\n${logHint}`,
+            `运行日志：\n${logHint}`,
             tail ? `\n最近输出：\n${tail}` : '',
         ].join('\n')
 
@@ -446,8 +434,7 @@ export async function startBundledBackend(): Promise<string> {
 }
 
 export function stopBundledBackend(): void {
-    backendLogStream?.end()
-    backendLogStream = null
+    closeBackendRuntimeLog()
 
     if (!backendProcess || backendProcess.killed) {
         backendProcess = null

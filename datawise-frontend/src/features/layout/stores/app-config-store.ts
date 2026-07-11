@@ -90,6 +90,8 @@ export const useAppConfigStore = defineStore('app-config', () => {
 
     const config = ref<AppConfigFile>(readAppConfig())
     let syncing = false
+    let heavyPersistTimer: ReturnType<typeof setTimeout> | null = null
+    const HEAVY_PERSIST_DELAY_MS = 700
 
     const preferences = computed(() => config.value.layout)
     const aiPreferences = computed(() => config.value.ai ?? DEFAULT_AI_PREFERENCES)
@@ -254,6 +256,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
     }
 
     async function persistConfigNowAsync() {
+        flushHeavyPersist()
         config.value = captureConfig()
         persistAppConfig(config.value)
         await pushLocalAppConfigToServer(config.value)
@@ -374,7 +377,29 @@ export const useAppConfigStore = defineStore('app-config', () => {
         schedulePersistAppConfig(config.value)
     }
 
+    /** Explorer 树 / Workspace Tab SQL 等高频变更：合并 capture，避免每次按键全量序列化 */
+    function persistHeavySoon() {
+        if (syncing) return
+        if (heavyPersistTimer) clearTimeout(heavyPersistTimer)
+        heavyPersistTimer = setTimeout(() => {
+            heavyPersistTimer = null
+            if (syncing) return
+            config.value = captureConfig()
+            schedulePersistAppConfig(config.value)
+        }, HEAVY_PERSIST_DELAY_MS)
+    }
+
+    function flushHeavyPersist() {
+        if (!heavyPersistTimer) return
+        clearTimeout(heavyPersistTimer)
+        heavyPersistTimer = null
+        if (syncing) return
+        config.value = captureConfig()
+        schedulePersistAppConfig(config.value)
+    }
+
     function persistNow() {
+        flushHeavyPersist()
         config.value = captureConfig()
         persistAppConfig(config.value)
     }
@@ -476,8 +501,8 @@ export const useAppConfigStore = defineStore('app-config', () => {
     watch(() => explorer.showColumnComment, () => persistSoon())
     watch(() => explorer.showTableComment, () => persistSoon())
     watch(() => explorer.showSemanticLayer, () => persistSoon())
-    watch(() => explorer.tree, () => persistSoon(), {deep: true})
-    watch(() => workspace.tabs, () => persistSoon(), {deep: true})
+    watch(() => explorer.treeVersion, () => persistHeavySoon())
+    watch(() => workspace.tabs, () => persistHeavySoon(), {deep: true})
     watch(() => workspace.activeTabId, () => persistSoon())
     watch(() => theme.appearance, () => persistSoon())
     watch(() => theme.backgroundTone, () => persistSoon())
@@ -489,6 +514,15 @@ export const useAppConfigStore = defineStore('app-config', () => {
     watch(() => shortcutSettings.bindings, () => persistSoon(), {deep: true})
     watch(() => sqlEditorShortcuts.sharedSettings, () => persistSoon(), {deep: true})
     watch(() => sqlEditorShortcuts.personalSettings, () => persistSoon(), {deep: true})
+
+    if (typeof window !== 'undefined') {
+        const flushOnExit = () => flushHeavyPersist()
+        window.addEventListener('pagehide', flushOnExit)
+        window.addEventListener('beforeunload', flushOnExit)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') flushOnExit()
+        })
+    }
 
     const showSideRailStrip = computed(() => preferences.value.showSideRailStrip !== false)
     const showShortcutRailStrip = computed(() => preferences.value.showShortcutRailStrip !== false)

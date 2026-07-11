@@ -17,12 +17,13 @@ describe('auth session bootstrap helpers', () => {
 
     it('isUnauthorizedApiError detects backend UNAUTHORIZED payload', () => {
         assert.equal(isUnauthorizedApiError(new ApiError('UNAUTHORIZED')), true)
-        assert.equal(isUnauthorizedApiError(new ApiError('HTTP 401')), false)
+        assert.equal(isUnauthorizedApiError(new ApiError('HTTP 401')), true)
         assert.equal(isUnauthorizedApiError(new Error('UNAUTHORIZED')), false)
     })
 
-    it('shouldRecoverStaleSession only reacts to UNAUTHORIZED ApiError', () => {
+    it('shouldRecoverStaleSession reacts to UNAUTHORIZED and HTTP 401', () => {
         assert.equal(shouldRecoverStaleSession(new ApiError('UNAUTHORIZED')), true)
+        assert.equal(shouldRecoverStaleSession(new ApiError('HTTP 401')), true)
         assert.equal(shouldRecoverStaleSession(new ApiError('HTTP API request failed.')), false)
     })
 

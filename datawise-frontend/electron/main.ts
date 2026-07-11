@@ -241,8 +241,9 @@ function bindRendererDiagnostics(contents: WebContents) {
         )
     })
     contents.on('console-message', (_event, level, message, line, sourceId) => {
-        if (level >= 2) {
-            appendDesktopStartupLog(`renderer console level=${level} ${message} (${sourceId}:${line})`)
+        // 仅记录渲染进程 error，避免 Vue/Monaco warn 刷屏
+        if (level >= 3) {
+            appendDesktopStartupLog(`renderer error ${message} (${sourceId}:${line})`)
         }
     })
 }

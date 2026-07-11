@@ -65,6 +65,8 @@ export async function activateOrCreateConsoleTab(options: {
     explorerNodeId?: string
     title?: string
     connectionHost?: string
+    /** 打开最近脚本时由 loadLatest 绑定 sqlFile，避免与 ensureConsoleTabScriptFile 竞态 */
+    skipEnsureScriptFile?: boolean
 }): Promise<string> {
     const workspace = useWorkspaceStore()
     const title =
@@ -87,5 +89,6 @@ export async function activateOrCreateConsoleTab(options: {
         sqlFile: options.sqlFile,
         explorerNodeId: options.explorerNodeId,
         title,
+        skipEnsureScriptFile: options.skipEnsureScriptFile,
     })
 }

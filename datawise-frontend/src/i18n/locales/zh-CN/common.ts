@@ -12,7 +12,7 @@ export default {
     generate: '生成',
     send: '发送',
     rows: '{count} 行',
-    nullValue: '<null>',
+    nullValue: '(null)',
     ready: '就绪。',
     unnamedConnection: '未命名连接',
     inDevelopment: '功能开发中',

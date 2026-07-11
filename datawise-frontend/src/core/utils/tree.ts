@@ -186,31 +186,54 @@ export function findAncestorByType(
     return search(tree, [])
 }
 
-/** 将展开状态的树扁平化为渲染列表 */
+/** 将展开状态的树扁平化为渲染列表（迭代实现，避免大树递归 spread 开销） */
 export function flattenVisibleTree(
     nodes: TreeNode[],
     depth = 0,
     searchVisibility: SearchTreeVisibility | null = null,
 ): { node: TreeNode; depth: number }[] {
     const result: { node: TreeNode; depth: number }[] = []
-    for (const node of nodes) {
+    const stack: { node: TreeNode; depth: number }[] = []
+
+    for (let index = nodes.length - 1; index >= 0; index -= 1) {
+        stack.push({node: nodes[index], depth})
+    }
+
+    while (stack.length > 0) {
+        const current = stack.pop()!
+        const {node, depth: nodeDepth} = current
         if (searchVisibility && !searchVisibility.visibleIds.has(node.id)) {
             continue
         }
-        result.push({node, depth})
+        result.push({node, depth: nodeDepth})
         const expanded = searchVisibility?.forceExpandIds.has(node.id) || node.expanded
-        if (expanded && node.children?.length) {
-            result.push(...flattenVisibleTree(node.children, depth + 1, searchVisibility))
+        const children = expanded ? node.children : undefined
+        if (!children?.length) continue
+        for (let index = children.length - 1; index >= 0; index -= 1) {
+            stack.push({node: children[index], depth: nodeDepth + 1})
         }
     }
+
     return result
 }
 
 /** 构建 nodeId → TreeNode 索引，供高频 findNode 使用 */
 export function buildTreeNodeIndex(nodes: TreeNode[]): Map<string, TreeNode> {
     const index = new Map<string, TreeNode>()
+    mergeTreeNodeIndex(index, nodes)
+    return index
+}
+
+/** 将子树节点写入索引（同 id 覆盖） */
+export function mergeTreeNodeIndex(index: Map<string, TreeNode>, nodes: TreeNode[]): void {
     walkTree(nodes, (node) => {
         index.set(node.id, node)
     })
-    return index
+}
+
+/** 从索引中移除子树全部节点 id */
+export function pruneTreeNodeIndexSubtree(index: Map<string, TreeNode>, roots: TreeNode[]): void {
+    walkTree(roots, (node) => {
+        index.delete(node.id)
+    })
 }

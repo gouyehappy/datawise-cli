@@ -15,13 +15,14 @@ export function createHttpAuthApi(): AuthApi {
     return {
         login: async (userName, userPassword) => {
             const body = new URLSearchParams({userName, userPassword})
-            return postForm<LoginResult>(API_PATHS.auth.login, body)
+            return postForm<LoginResult>(API_PATHS.auth.login, body, {authBypass: true})
         },
 
-        loginAsGuest: async () => postForm<LoginResult>(API_PATHS.auth.loginGuest, new URLSearchParams()),
+        loginAsGuest: async () =>
+            postForm<LoginResult>(API_PATHS.auth.loginGuest, new URLSearchParams(), {authBypass: true}),
 
         signOut: async () => {
-            await postForm<void>(API_PATHS.auth.signOut, new URLSearchParams())
+            await postForm<void>(API_PATHS.auth.signOut, new URLSearchParams(), {authBypass: true})
         },
 
         getCurrentSession: async (options) =>

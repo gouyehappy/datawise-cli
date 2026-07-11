@@ -63,7 +63,11 @@ const activeIndex = ref(0)
 const knowledgeEntries = ref<AiKnowledgeEntry[]>([])
 const knowledgeLoaded = ref(false)
 
-const indexedEntries = computed(() => indexGlobalObjectSearchEntries(explorer.tree))
+const indexedEntries = computed(() => {
+    if (!globalObjectSearchOpen.value) return []
+    void explorer.treeVersion
+    return indexGlobalObjectSearchEntries(explorer.tree)
+})
 
 const commandMode = computed(() => isPaletteCommandMode(query.value))
 const knowledgeMode = computed(() => isPaletteKnowledgeMode(query.value))

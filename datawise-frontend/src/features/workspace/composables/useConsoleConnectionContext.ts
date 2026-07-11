@@ -21,7 +21,10 @@ export function useConsoleConnectionContext(tab: WorkspaceTab) {
 
     const workspaceBound = computed(() => Boolean(getBoundConsoleSqlFile(tab)))
 
-    const dataSources = computed(() => extractDataSources(explorer.tree))
+    const dataSources = computed(() => {
+        void explorer.treeVersion
+        return extractDataSources(explorer.tree)
+    })
     const selectableDataSources = computed(() =>
         filterSelectableDataSources(dataSources.value, connectionHealthById.value),
     )
@@ -61,7 +64,7 @@ export function useConsoleConnectionContext(tab: WorkspaceTab) {
     })
 
     watch(
-        [dataSources, connectionHealthById],
+        () => [explorer.treeVersion, connectionHealthById.value] as const,
         () => {
             if (workspaceBound.value) {
                 const pinnedId = tab.connectionId || connectionId.value
@@ -74,23 +77,34 @@ export function useConsoleConnectionContext(tab: WorkspaceTab) {
                 if (isCatalogSchemaDbType(activeSource?.dbType)) {
                     return
                 }
-                instanceId.value = resolveBoundInstanceId({
+                const nextInstanceId = resolveBoundInstanceId({
                     instances: activeSource?.instances ?? [],
                     tabInstanceId: instanceId.value ?? tab.instanceId,
                     tabDatabase: tab.database,
                     preserveBinding: true,
                 })
+                if (instanceId.value !== nextInstanceId) {
+                    instanceId.value = nextInstanceId
+                }
                 return
             }
 
             const sources = selectableDataSources.value
             const preferredId = connectionId.value || tab.connectionId
-            const next = pickDefaultDataSource(dataSources.value, connectionHealthById.value, preferredId)
+            const currentStillValid =
+                Boolean(preferredId && findDataSource(dataSources.value, preferredId))
+            const next = currentStillValid && preferredId
+                ? findDataSource(dataSources.value, preferredId)
+                : pickDefaultDataSource(dataSources.value, connectionHealthById.value, preferredId)
 
             if (next) {
-                connectionId.value = next.id
+                if (connectionId.value !== next.id) {
+                    connectionId.value = next.id
+                }
             } else if (!sources.length) {
-                connectionId.value = ''
+                if (connectionId.value !== '') {
+                    connectionId.value = ''
+                }
             }
 
             const activeSource = connectionId.value
@@ -99,13 +113,17 @@ export function useConsoleConnectionContext(tab: WorkspaceTab) {
             if (isCatalogSchemaDbType(activeSource?.dbType)) {
                 return
             }
-            instanceId.value = resolveBoundInstanceId({
+            const nextInstanceId = resolveBoundInstanceId({
                 instances: activeSource?.instances ?? [],
                 tabInstanceId: instanceId.value ?? tab.instanceId,
                 tabDatabase: tab.database,
+                preserveBinding: workspaceBound.value,
             })
+            if (instanceId.value !== nextInstanceId) {
+                instanceId.value = nextInstanceId
+            }
         },
-        {immediate: true, deep: true},
+        {immediate: true},
     )
 
     return {

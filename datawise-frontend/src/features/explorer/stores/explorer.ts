@@ -1,7 +1,16 @@
 import {defineStore} from 'pinia'
-import {computed, ref} from 'vue'
+import {computed, ref, shallowRef} from 'vue'
 import type {ConnectionConfig, TreeNode, WorkspaceTab} from '@/core/types'
-import {findNodeById, findParentNode, resolveConnectionId, walkTree, buildTreeNodeIndex, findAncestorByType} from '@/core/utils/tree'
+import {
+    findNodeById,
+    findParentNode,
+    resolveConnectionId,
+    walkTree,
+    buildTreeNodeIndex,
+    findAncestorByType,
+    mergeTreeNodeIndex,
+    pruneTreeNodeIndexSubtree,
+} from '@/core/utils/tree'
 import {logPerf, perfNow} from '@/core/utils/perf-log'
 import {scrollExplorerNodeIntoView} from '@/core/shortcuts/action-registry'
 import {resolveConsoleInstanceLabel, buildExplorerScopedLabelResolver} from '@/features/workspace/services/resolve-console-instance'
@@ -91,8 +100,19 @@ function resolveExplorerLoadPerfOperation(
 }
 
 /** Explorer 全局状态（Pinia Store） */
+type RebuildNodeIndexOptions = {
+    mode?: 'full'
+    parent?: TreeNode
+    /** merge/replace 前的 children 快照，用于从索引剔除旧子树 */
+    previousChildren?: TreeNode[]
+    /** 分页追加时仅索引本批 loaded 节点 */
+    loadedNodes?: TreeNode[]
+}
+
 export const useExplorerStore = defineStore('explorer', () => {
-    const tree = ref<TreeNode[]>([])
+    const tree = shallowRef<TreeNode[]>([])
+    /** 树结构或 expanded 等 UI 状态变更时递增，供 derived computed 订阅 */
+    const treeVersion = ref(0)
     const treeReady = ref(false)
     const searchQuery = ref('')
     const debouncedSearchQuery = useDebouncedRef(searchQuery, 200)
@@ -130,6 +150,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     })
 
     const connectionCount = computed(() => {
+        void treeVersion.value
         let count = 0
         walkTree(tree.value, (node) => {
             if (node.type === 'connection') count++
@@ -137,8 +158,28 @@ export const useExplorerStore = defineStore('explorer', () => {
         return count
     })
 
-    function rebuildNodeIndex() {
-        nodeIndex.value = buildTreeNodeIndex(tree.value)
+    function touchTree() {
+        treeVersion.value += 1
+    }
+
+    function rebuildNodeIndex(options?: RebuildNodeIndexOptions) {
+        if (options?.mode === 'full' || !options?.parent) {
+            nodeIndex.value = buildTreeNodeIndex(tree.value)
+            touchTree()
+            return
+        }
+        const parent = options.parent
+        const next = new Map(nodeIndex.value)
+        next.set(parent.id, parent)
+        if (options.previousChildren?.length) {
+            pruneTreeNodeIndexSubtree(next, options.previousChildren)
+        }
+        const nodesToMerge = options.loadedNodes ?? parent.children ?? []
+        if (nodesToMerge.length) {
+            mergeTreeNodeIndex(next, nodesToMerge)
+        }
+        nodeIndex.value = next
+        touchTree()
     }
 
     function findNode(nodeId: string): TreeNode | null {
@@ -246,16 +287,21 @@ export const useExplorerStore = defineStore('explorer', () => {
             if (latest) {
                 if (options?.append) {
                     appendTablePageChildren(latest, result.tree)
+                    rebuildNodeIndex({parent: latest, loadedNodes: result.tree})
                 } else {
+                    const previousChildren = latest.children?.length ? [...latest.children] : undefined
                     mergeLoadedChildren(latest, result.tree)
-                }
-                if (latest.type === 'connection') {
-                    migrateExplorerTreeAiStructure(tree.value)
-                } else if (latest.type === 'database' || latest.type === 'schema') {
-                    ensureAiFolderInScopeChildren(latest, connectionId)
+                    if (latest.type === 'connection') {
+                        migrateExplorerTreeAiStructure(tree.value)
+                        rebuildNodeIndex({mode: 'full'})
+                    } else {
+                        if (latest.type === 'database' || latest.type === 'schema') {
+                            ensureAiFolderInScopeChildren(latest, connectionId)
+                        }
+                        rebuildNodeIndex({parent: latest, previousChildren})
+                    }
                 }
                 markExplorerFolderLoadedIfNeeded(latest)
-                rebuildNodeIndex()
             }
             logPerf(resolveExplorerLoadPerfOperation(connectionId, nodeId, latest), startedAt, {
                 connectionId,
@@ -279,14 +325,19 @@ export const useExplorerStore = defineStore('explorer', () => {
                     refresh: true,
                 })
                 const connection = findNode(connectionId)
-                if (connection) mergeLoadedChildren(connection, databases.tree)
+                if (connection) {
+                    const previousChildren = connection.children?.length ? [...connection.children] : undefined
+                    mergeLoadedChildren(connection, databases.tree)
+                    rebuildNodeIndex({parent: connection, previousChildren})
+                }
                 const children = await explorerApi.loadChildren(connectionId, nodeId, silent)
                 const latest = findNode(nodeId)
                 if (latest) {
+                    const previousChildren = latest.children?.length ? [...latest.children] : undefined
                     mergeLoadedChildren(latest, children.tree)
                     markExplorerFolderLoadedIfNeeded(latest)
+                    rebuildNodeIndex({parent: latest, previousChildren})
                 }
-                rebuildNodeIndex()
                 if (children.etag) {
                     childEtags.set(etagKey, children.etag)
                 }
@@ -368,6 +419,7 @@ export const useExplorerStore = defineStore('explorer', () => {
             await ensureChildrenLoaded(nodeId, {notify: options?.notify})
         }
         node.expanded = true
+        touchTree()
     }
 
     /** 从根到目标：逐层 load + expand，避免 expandToNode 只改 UI 标志导致空节点 */
@@ -428,11 +480,15 @@ export const useExplorerStore = defineStore('explorer', () => {
                 }
             }),
         )
+        touchTree()
     }
 
     function collapseNode(nodeId: string) {
         const node = findNode(nodeId)
-        if (node) node.expanded = false
+        if (node) {
+            node.expanded = false
+            touchTree()
+        }
     }
 
     async function toggleExpand(nodeId: string, options?: {notify?: boolean}) {
@@ -464,6 +520,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     /** @deprecated 仅用于 group 等无懒加载节点；连接/schema 请用 expandPathToNode */
     function expandToNode(nodeId: string) {
         markExpandedPath(tree.value, nodeId)
+        touchTree()
     }
 
     function locatePathNeedsFetch(activeTab: WorkspaceTab): boolean {
@@ -544,7 +601,10 @@ export const useExplorerStore = defineStore('explorer', () => {
         const databaseNode = findDatabaseNode(connectionId, instanceLabel, instanceId)
         if (!databaseNode) return null
         await ensureChildrenLoaded(databaseNode.id)
-        if (!databaseNode.expanded) databaseNode.expanded = true
+        if (!databaseNode.expanded) {
+            databaseNode.expanded = true
+            touchTree()
+        }
         return findDatabaseNode(connectionId, instanceLabel, instanceId)
     }
 
@@ -558,7 +618,10 @@ export const useExplorerStore = defineStore('explorer', () => {
         )
         if (!folder) return
         await ensureChildrenLoaded(folder.id)
-        if (!folder.expanded) folder.expanded = true
+        if (!folder.expanded) {
+            folder.expanded = true
+            touchTree()
+        }
     }
 
     async function ensureLocatePathLoaded(activeTab: WorkspaceTab): Promise<void> {
@@ -702,7 +765,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     function commitExplorerTree(nextRoots: TreeNode[]) {
         tree.value = applyExplorerTreeStructure(nextRoots, tree.value)
         migrateExplorerTreeAiStructure(tree.value)
-        rebuildNodeIndex()
+        rebuildNodeIndex({mode: 'full'})
         backfillPinnedTableMetadata(tree.value)
         applyPinnedSortInTree(tree.value)
         const validConnectionIds = collectConnectionIdsFromTree()
@@ -838,8 +901,9 @@ export const useExplorerStore = defineStore('explorer', () => {
         loadingNodeIds.value.add(node.id)
         try {
             const result = await explorerApi.loadChildren(connectionId, node.id)
+            const previousChildren = node.children?.length ? [...node.children] : undefined
             mergeLoadedChildren(node, result.tree)
-            rebuildNodeIndex()
+            rebuildNodeIndex({parent: node, previousChildren})
             return result.tree
         } finally {
             loadingNodeIds.value.delete(node.id)
@@ -866,6 +930,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         folder.children = []
         await forceLoadChildren(connectionId, folder)
         folder.expanded = true
+        touchTree()
     }
 
     async function reloadWorkspacesFolder(
@@ -877,6 +942,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         if (connectionNode && !connectionNode.children?.length) {
             await forceLoadChildren(connectionId, connectionNode)
             connectionNode.expanded = true
+            touchTree()
         }
 
         let scopeNode = findDatabaseNode(connectionId, instanceLabel, instanceId)
@@ -895,6 +961,7 @@ export const useExplorerStore = defineStore('explorer', () => {
 
         await forceLoadChildren(connectionId, folder)
         folder.expanded = true
+        touchTree()
         await expandPathToNode(folder.id)
     }
 
@@ -907,6 +974,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         if (connectionNode && !connectionNode.children?.length) {
             await forceLoadChildren(connectionId, connectionNode)
             connectionNode.expanded = true
+            touchTree()
         }
 
         let scopeNode = findDatabaseNode(connectionId, instanceLabel, instanceId)
@@ -926,6 +994,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         folder.children = []
         await forceLoadChildren(connectionId, folder)
         folder.expanded = true
+        touchTree()
         await expandPathToNode(folder.id)
     }
 
@@ -1027,8 +1096,10 @@ export const useExplorerStore = defineStore('explorer', () => {
     function clearConnectionLoadedState(connectionId: string) {
         const node = findNode(connectionId)
         if (!node || node.type !== 'connection') return
+        const previousChildren = node.children?.length ? [...node.children] : undefined
         node.children = undefined
         node.expanded = false
+        rebuildNodeIndex({parent: node, previousChildren})
         setConnectionHealth(connectionId, null)
         for (const key of [...loadChildPromises.keys()]) {
             if (key.startsWith(`${connectionId}:`)) {
@@ -1146,9 +1217,11 @@ export const useExplorerStore = defineStore('explorer', () => {
         loadingNodeIds.value.add(connectionId)
         try {
             const result = await explorerApi.loadChildren(connectionId, connectionId, {pattern, refresh: true})
+            const previousChildren = connection.children?.length ? [...connection.children] : undefined
             mergeLoadedChildren(connection, result.tree)
-            rebuildNodeIndex()
+            rebuildNodeIndex({parent: connection, previousChildren})
             connection.expanded = true
+            touchTree()
             setConnectionHealth(connectionId, 'ok')
         } finally {
             loadingNodeIds.value.delete(connectionId)
@@ -1191,6 +1264,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         const parent = findParentNode(tree.value, nodeId)
         if (parent) {
             applyPinnedSortToNodeChildren(parent)
+            touchTree()
         }
         return pinned
     }
@@ -1206,10 +1280,14 @@ export const useExplorerStore = defineStore('explorer', () => {
         writeFavoritesGroupExpanded(true)
     }
 
-    const visibleTree = computed(() => tree.value)
+    const visibleTree = computed(() => {
+        void treeVersion.value
+        return tree.value
+    })
 
     return {
         tree,
+        treeVersion,
         treeReady,
         searchQuery,
         debouncedSearchQuery,

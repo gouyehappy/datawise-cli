@@ -1,7 +1,7 @@
 import {describe, it} from 'node:test'
 import assert from 'node:assert/strict'
 import type {TreeNode} from '@/core/types'
-import {buildTreeNodeIndex, flattenVisibleTree} from '@/core/utils/tree'
+import {buildTreeNodeIndex, flattenVisibleTree, mergeTreeNodeIndex, pruneTreeNodeIndexSubtree} from '@/core/utils/tree'
 import {
     EXPLORER_TREE_VIRTUAL_THRESHOLD,
     resolveLastFlatNodeIndex,
@@ -34,7 +34,27 @@ describe('explorer-tree-perf', () => {
         assert.equal(resolveLastFlatNodeIndex(flat, 'missing'), -1)
     })
 
-    it('virtual threshold is above typical first-page table count', () => {
-        assert.ok(EXPLORER_TREE_VIRTUAL_THRESHOLD > 100)
+    it('incremental node index replaces subtree without full walk', () => {
+        const parent = node('parent', [node('old-child')])
+        const tree = [parent]
+        const index = buildTreeNodeIndex(tree)
+        assert.equal(index.size, 2)
+
+        const previousChildren = parent.children ? [...parent.children] : []
+        parent.children = [node('new-child', [node('grand')])]
+        const next = new Map(index)
+        next.set(parent.id, parent)
+        pruneTreeNodeIndexSubtree(next, previousChildren)
+        mergeTreeNodeIndex(next, parent.children ?? [])
+
+        assert.equal(next.has('old-child'), false)
+        assert.equal(next.get('new-child')?.label, 'new-child')
+        assert.equal(next.get('grand')?.label, 'grand')
+        assert.equal(next.size, 3)
+    })
+
+    it('virtual threshold keeps medium trees on virtual scroll', () => {
+        assert.ok(EXPLORER_TREE_VIRTUAL_THRESHOLD >= 50)
+        assert.ok(EXPLORER_TREE_VIRTUAL_THRESHOLD <= 120)
     })
 })
