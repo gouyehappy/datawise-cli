@@ -32,18 +32,24 @@ export function useConnectionTest(
             return
         }
 
-        const result = await connectionApi.test(payload)
-        testOk.value = result.ok
-        testMessage.value = result.ok
-            ? t('connection.testSuccess', {message: result.message, latency: result.latencyMs})
-            : result.message
-        if (result.ok) {
-            const connectionId = getConnectionId?.()
-            if (connectionId) {
-                registerConnectionHealthCheck(connectionId, 'ok')
+        try {
+            const result = await connectionApi.test(payload)
+            testOk.value = result.ok
+            testMessage.value = result.ok
+                ? t('connection.testSuccess', {message: result.message, latency: result.latencyMs})
+                : result.message
+            if (result.ok) {
+                const connectionId = getConnectionId?.()
+                if (connectionId) {
+                    registerConnectionHealthCheck(connectionId, 'ok')
+                }
             }
+        } catch (error) {
+            testOk.value = false
+            testMessage.value = error instanceof Error ? error.message : t('connection.testFailed')
+        } finally {
+            testing.value = false
         }
-        testing.value = false
     }
 
     return {testing, testMessage, testOk, testConnection}

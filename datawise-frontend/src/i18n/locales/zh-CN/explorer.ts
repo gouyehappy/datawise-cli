@@ -1,5 +1,8 @@
 export default {
     title: '数据库',
+    statusPath: {
+        label: '当前对象路径',
+    },
     locate: '定位',
     locateActiveTab: '定位当前 Tab（表 / 脚本文件）',
     locateActiveTabFailed: '当前 Tab 没有可定位的树节点',

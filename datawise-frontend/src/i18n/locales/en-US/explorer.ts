@@ -1,5 +1,8 @@
 export default {
     title: 'Database',
+    statusPath: {
+        label: 'Current object path',
+    },
     locate: 'Locate',
     locateActiveTab: 'Locate active tab (table / script file)',
     locateActiveTabFailed: 'No tree node to locate for the active tab',

@@ -3,6 +3,7 @@ import {findAncestorByType} from '@/core/utils/tree'
 import {ApiError} from '@/shared/api/http/request'
 import {isCatalogSchemaDbType} from '@/shared/db-type-families'
 import {applyPinnedSortToNodeChildren} from '@/features/explorer/services/explorer-pinned-sort.service'
+import {syncFolderChildCount} from '@/features/explorer/services/explorer-folder-count.service'
 
 export {isCatalogSchemaDbType} from '@/shared/db-type-families'
 
@@ -219,11 +220,13 @@ export function mergeLoadedChildren(node: TreeNode, loaded: TreeNode[]) {
         if (node.children === undefined) {
             node.children = next
             applyPinnedSortToNodeChildren(node)
+            syncFolderChildCount(node)
         }
         return
     }
     node.children = next
     applyPinnedSortToNodeChildren(node)
+    syncFolderChildCount(node)
 }
 
 /** 表文件夹分页：追加新页并更新 load_more 节点 */
@@ -233,6 +236,7 @@ export function appendTablePageChildren(node: TreeNode, loaded: TreeNode[]) {
     const existing = (node.children ?? []).filter((child) => child.type !== 'load_more')
     node.children = loadMore ? [...existing, ...tables, loadMore] : [...existing, ...tables]
     applyPinnedSortToNodeChildren(node)
+    syncFolderChildCount(node)
 }
 
 export function resolveTablesFolderIdFromLoadMore(loadMoreNode: TreeNode): string | null {

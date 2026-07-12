@@ -58,6 +58,43 @@ test('resolveRunGutterContextLine uses gutter hover only on blank cursor line', 
     assert.equal(resolveRunGutterContextLine(sampleSql, 2, 2), null)
 })
 
+test('resolveRunGutterContextLine keeps cursor statement when gutter hovers another statement', () => {
+    const sql = [
+        'DELETE FROM cdp_tag ct',
+        'WHERE',
+        '  ct.id = 15;',
+        '',
+        '-- AI: stats',
+        'SELECT',
+        '  t.id',
+        'FROM cdp_tag t;',
+    ].join('\n')
+    assert.equal(resolveRunGutterContextLine(sql, 6, 1), 6)
+    const statement = resolveRunGutterStatement(sql, 6, 1)
+    assert.ok(statement)
+    assert.equal(statement.anchorLine, 6)
+    assert.match(statement.sql, /^SELECT/)
+})
+
+test('resolveRunGutterStatement shows button on anchor when cursor is on continuation line', () => {
+    const sql = [
+        'SELECT',
+        '  t.id',
+        'FROM cdp_tag t',
+        'LEFT JOIN cdp_segment t2 ON t1.id = t2.tag_ids;',
+        '',
+        'SELECT SUM(t1.user_count) FROM cdp_tag t1 LEFT JOIN cdp_segment t2 ON t1.id = t2.tag_ids;',
+    ].join('\n')
+    const onJoinLine = resolveRunGutterStatement(sql, 4, null)
+    assert.ok(onJoinLine)
+    assert.equal(onJoinLine.displayLine, 1)
+    assert.equal(onJoinLine.anchorLine, 1)
+    const onSingleLine = resolveRunGutterStatement(sql, 6, null)
+    assert.ok(onSingleLine)
+    assert.equal(onSingleLine.displayLine, 6)
+    assert.equal(onSingleLine.anchorLine, 6)
+})
+
 test('resolveRunGutterStatement on line 3 shows button on statement anchor', () => {
     const statement = resolveRunGutterStatement(sampleSql, 3, 1)
     assert.ok(statement)

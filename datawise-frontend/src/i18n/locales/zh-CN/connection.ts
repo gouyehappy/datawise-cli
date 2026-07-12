@@ -69,6 +69,7 @@ export default {
     loadFailed: '加载连接信息失败',
     testHostRequired: '请填写主机地址',
     testUserRequired: '请填写用户名',
+    testFailed: '连接测试失败',
     testSuccessMsg: '连接 {name}@{host}:{port} 成功',
     storageOptions: {
         local: '本地 (LOCAL)',

@@ -21,11 +21,15 @@ export function createHttpWorkspaceApi(): WorkspaceApi {
         fetchSqlLogs: () => getJson<SqlLogEntry[]>(API_PATHS.workspace.sqlLogs),
 
         appendSqlLog: (entry, connectionId) =>
-            postJson<SqlLogEntry>(API_PATHS.workspace.sqlLogs, {
-                ...entry,
-                connectionId,
-                database: entry.database,
-            }),
+            postJson<SqlLogEntry>(
+                API_PATHS.workspace.sqlLogs,
+                {
+                    ...entry,
+                    connectionId,
+                    database: entry.database,
+                },
+                {silent: true},
+            ),
 
         fetchSavedConsoles: () => getJson<SavedConsole[]>(API_PATHS.workspace.savedConsoles),
 

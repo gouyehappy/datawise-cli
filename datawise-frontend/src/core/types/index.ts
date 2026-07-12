@@ -111,6 +111,8 @@ export interface TreeNode {
     /** 中文业务说明，显示在名称后 */
     comment?: string
     expanded?: boolean
+    /** 文件夹子项数量（懒加载未展开时由后端或同步逻辑填充） */
+    childCount?: number
 }
 
 /** 控制台上下文：数据源及其下属实例（库/Schema） */

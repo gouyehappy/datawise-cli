@@ -103,6 +103,14 @@ declare global {
                     progress: number
                 }) => void) => () => void
             }
+            splash?: {
+                notifyReady: () => void
+                notifyBarPainted: (progress: number) => void
+                waitBarComplete: (progress?: number) => Promise<boolean>
+                reportProgress: (payload: { progress: number; status: string }) => void
+                onProgress: (callback: (payload: { progress: number; status?: string }) => void) => () => void
+                getMeta: () => { version: string; tagline: string; isPackaged: boolean }
+            }
             registerPluginHooks?: (pluginId: string, handlers: PluginHookHandlers) => void
             unregisterPluginHooks?: (pluginId: string) => void
         }

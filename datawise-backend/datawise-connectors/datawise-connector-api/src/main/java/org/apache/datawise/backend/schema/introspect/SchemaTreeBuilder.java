@@ -43,6 +43,7 @@ public final class SchemaTreeBuilder {
         List<TreeNode> folders = new ArrayList<>();
         TreeNode tables = folderNode("tables", connectionId, catalog, "folder-tables");
         tables.setChildren(new ArrayList<>(tableNodes));
+        tables.setChildCount(tableNodes.size());
         folders.add(tables);
         folders.add(emptyFolder("models", connectionId, catalog, "folder-models"));
         folders.add(emptyFolder("views", connectionId, catalog, "folder-views"));
@@ -68,6 +69,7 @@ public final class SchemaTreeBuilder {
         List<TreeNode> folders = new ArrayList<>();
         TreeNode tables = schemaFolderNode("tables", connectionId, catalog, schema, "folder-tables");
         tables.setChildren(new ArrayList<>(tableNodes));
+        tables.setChildCount(tableNodes.size());
         folders.add(tables);
         folders.add(schemaEmptyFolder("models", connectionId, catalog, schema, "folder-models"));
         folders.add(schemaEmptyFolder("views", connectionId, catalog, schema, "folder-views"));
@@ -206,6 +208,7 @@ public final class SchemaTreeBuilder {
         folder.setType("folder");
         folder.setExpanded(false);
         folder.setChildren(new ArrayList<>());
+        folder.setChildCount(0);
         return folder;
     }
 
@@ -220,6 +223,7 @@ public final class SchemaTreeBuilder {
         folder.setType("folder");
         folder.setExpanded(false);
         folder.setChildren(new ArrayList<>());
+        folder.setChildCount(0);
         return folder;
     }
 

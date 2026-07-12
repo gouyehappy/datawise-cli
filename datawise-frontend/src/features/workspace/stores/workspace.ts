@@ -1427,7 +1427,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     function setExecutionResult(rows: number, durationMs: number) {
         status.value = {
-            message: t('workspace.executionSuccess'),
+            message: '',
             duration: `${durationMs}ms`,
             durationMs,
             rowCount: t('workspace.rowCount', {count: rows}),

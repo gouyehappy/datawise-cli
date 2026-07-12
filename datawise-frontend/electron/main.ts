@@ -29,6 +29,14 @@ import {
     showMainWindow,
 } from './tray-service'
 import {
+    closeSplashAndShowMain,
+    createSplashWindow,
+    disposeSplashWindow,
+    registerSplashBarIpc,
+    sendSplashProgress,
+    sendSplashProgressFromBackend,
+} from './splash-window'
+import {
     bindDeepLinkWindowLoad,
     deliverDeepLink,
     handleStartupDeepLink,
@@ -133,6 +141,27 @@ function bindWindowStateEvents(win: BrowserWindow) {
     })
 }
 
+function registerSplashIpc() {
+    registerSplashBarIpc()
+    ipcMain.on('splash:ready', () => {
+        void closeSplashAndShowMain(mainWindow)
+    })
+    ipcMain.on('splash:progress', (_event, payload: {progress?: number; status?: string}) => {
+        if (!payload) return
+        sendSplashProgress({
+            progress: payload.progress ?? 0,
+            status: payload.status,
+        })
+    })
+    ipcMain.on('splash:getMeta', (event) => {
+        event.returnValue = {
+            version: APP_VERSION,
+            tagline: '连接、查询、分析、导出 — 一站完成',
+            isPackaged: app.isPackaged,
+        }
+    })
+}
+
 function registerBackendStartupIpc() {
     ipcMain.handle('backend:getStartupState', () => getBackendStartupState())
 }
@@ -208,7 +237,7 @@ function registerWindowIpc() {
         return mainWindow.isMaximized()
     })
     ipcMain.handle('window:close', () => {
-        hideMainWindowToTray(mainWindow)
+        hideMainWindowToTray(mainWindow, () => mainWindow)
         return true
     })
     ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
@@ -258,6 +287,7 @@ function createWindow() {
         height: 900,
         minWidth: 1100,
         minHeight: 680,
+        show: false,
         title: 'DataWise CLI',
         icon: windowIcon.isEmpty() ? undefined : windowIcon,
         backgroundColor: '#ffffff',
@@ -274,7 +304,7 @@ function createWindow() {
     bindRendererDiagnostics(mainWindow.webContents)
     bindWindowStateEvents(mainWindow)
     bindDeepLinkWindowLoad(mainWindow)
-    bindCloseToTray(mainWindow)
+    bindCloseToTray(mainWindow, () => mainWindow)
     const windowContents = mainWindow.webContents
     windowContents.on('destroyed', () => {
         disposeTerminalSessionsForWebContents(windowContents)
@@ -303,6 +333,7 @@ function createWindow() {
 function startPackagedBackendAsync() {
     setBackendStartupProgressListener((event) => {
         mainWindow?.webContents.send('backend:startup-progress', event)
+        sendSplashProgressFromBackend(event)
     })
 
     void startBundledBackendInBackground()
@@ -395,6 +426,7 @@ app.whenReady().then(async () => {
     if (!gotSingleInstanceLock) return
 
     registerWindowIpc()
+    registerSplashIpc()
     registerBackendStartupIpc()
     registerUpdaterIpc()
     registerTerminalIpc()
@@ -407,6 +439,7 @@ app.whenReady().then(async () => {
         registerRendererProtocol()
     }
 
+    createSplashWindow(resolvePreloadPath)
     createWindow()
     setupSystemTray(() => mainWindow)
 
@@ -430,6 +463,7 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
     markAppQuitting()
+    disposeSplashWindow()
     disposeTray()
     stopBundledBackend()
     disposeAllTerminalSessions()

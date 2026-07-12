@@ -20,6 +20,7 @@ import {
   isExplorerFavoritesViewAllId,
 } from '@/features/explorer/services/explorer-favorites.constants'
 import {resolveExplorerCatalogLabel} from '@/features/explorer/services/explorer-catalog-label.service'
+import {resolveFolderItemCount} from '@/features/explorer/services/explorer-folder-count.service'
 import {resolvePlatformFeatureId} from '@/features/explorer/services/explorer-ai-tree.service'
 import {platformFeatureTreeLabel} from '@/features/platform/services/platform-catalog.service'
 import {
@@ -283,6 +284,10 @@ function viewModelStatusLabel(node: TreeNode) {
   if (node.meta === 'draft') return t('viewModel.treeBadgeDraft')
   return t('viewModel.treeBadgePublished')
 }
+
+function folderItemCount(node: TreeNode): number | null {
+  return resolveFolderItemCount(node)
+}
 </script>
 
 <template>
@@ -378,6 +383,12 @@ function viewModelStatusLabel(node: TreeNode) {
 
         <span class="tree-label" :title="displayNodeLabel(node)">
           {{ displayNodeLabel(node) }}
+          <span
+              v-if="folderItemCount(node) != null"
+              class="tree-folder-count"
+          >
+            {{ folderItemCount(node) }}
+          </span>
         </span>
 
         <ConnectionEnvBadge
@@ -757,11 +768,19 @@ function viewModelStatusLabel(node: TreeNode) {
 .tree-label {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex-shrink: 1;
   min-width: 0;
+}
+
+.tree-folder-count {
+  color: var(--dw-text-muted);
+  font-size: 11px;
+  font-weight: 400;
+  flex-shrink: 0;
 }
 
 .tree-comment {

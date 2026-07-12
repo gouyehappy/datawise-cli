@@ -140,4 +140,21 @@ contextBridge.exposeInMainWorld('__datawiseDesktopBridge', {
             return () => ipcRenderer.removeListener('backend:startup-progress', listener)
         },
     },
+    splash: {
+        notifyReady: () => ipcRenderer.send('splash:ready'),
+        notifyBarPainted: (progress: number) => ipcRenderer.send('splash:bar-painted', progress),
+        waitBarComplete: (progress = 100): Promise<boolean> =>
+            ipcRenderer.invoke('splash:waitBarComplete', progress),
+        reportProgress: (payload: { progress: number; status: string }) =>
+            ipcRenderer.send('splash:progress', payload),
+        onProgress: (callback: (payload: { progress: number; status?: string }) => void) => {
+            const listener = (
+                _event: Electron.IpcRendererEvent,
+                payload: { progress: number; status?: string },
+            ) => callback(payload)
+            ipcRenderer.on('splash:progress', listener)
+            return () => ipcRenderer.removeListener('splash:progress', listener)
+        },
+        getMeta: (): { version: string; tagline: string; isPackaged: boolean } => ipcRenderer.sendSync('splash:getMeta'),
+    },
 })

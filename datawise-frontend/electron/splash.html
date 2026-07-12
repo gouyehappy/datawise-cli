@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DataWise CLI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #f8fafc;
+      border-radius: 14px;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    .splash {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #f8fafc;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      position: relative;
+      isolation: isolate;
+    }
+
+    .splash__wave {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .splash__wave--a {
+      width: 78%;
+      height: 150%;
+      top: -48%;
+      left: -20%;
+      background: radial-gradient(
+          ellipse at 42% 58%,
+          rgba(109, 114, 248, 0.16) 0%,
+          rgba(109, 114, 248, 0.04) 44%,
+          transparent 70%
+      );
+      transform: rotate(-10deg);
+    }
+
+    .splash__wave--b {
+      width: 62%;
+      height: 120%;
+      right: -14%;
+      bottom: -34%;
+      background: radial-gradient(
+          ellipse at 55% 45%,
+          rgba(34, 211, 238, 0.12) 0%,
+          rgba(82, 72, 232, 0.05) 40%,
+          transparent 72%
+      );
+      transform: rotate(14deg);
+    }
+
+    .splash__main {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 36px 40px 20px;
+    }
+
+    .splash__brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .splash__logo {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 4px 10px rgba(99, 102, 241, 0.28));
+    }
+
+    .splash__title {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #0f172a;
+      line-height: 1;
+    }
+
+    .splash__tagline {
+      font-size: 15px;
+      font-weight: 500;
+      color: #94a3b8;
+    }
+
+    .splash__footer {
+      position: relative;
+      z-index: 1;
+      padding: 0 40px 30px;
+    }
+
+    .splash__status {
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.45;
+      min-height: 1.45em;
+    }
+
+    .splash__progress {
+      height: 2px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .splash__progress-fill {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #6d72f8 0%, #5248e8 100%);
+      transition: width 0.75s ease-out;
+    }
+
+    .splash__version {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="splash" role="status" aria-live="polite">
+    <div class="splash__wave splash__wave--a" aria-hidden="true"></div>
+    <div class="splash__wave splash__wave--b" aria-hidden="true"></div>
+
+    <div class="splash__main">
+      <div class="splash__brand">
+        <svg class="splash__logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="dw-flat-bg" x1="16" y1="0" x2="16" y2="32" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#6d72f8"/>
+              <stop offset="100%" stop-color="#5248e8"/>
+            </linearGradient>
+            <linearGradient id="dw-d-fill" x1="4" y1="4" x2="20" y2="26" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="100%" stop-color="#e9d5ff"/>
+            </linearGradient>
+            <linearGradient id="dw-w-stroke" x1="11" y1="16" x2="29" y2="29" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#a5f3fc"/>
+              <stop offset="45%" stop-color="#22d3ee"/>
+              <stop offset="100%" stop-color="#34d399"/>
+            </linearGradient>
+          </defs>
+          <circle cx="16" cy="16" r="16" fill="url(#dw-flat-bg)"/>
+          <path fill="url(#dw-d-fill)" fill-rule="evenodd" d="M3.6 4.2h10.5c5.75 0 10.2 4.2 10.2 9.45 0 5.25-4.45 9.45-10.2 9.45H3.6V4.2Zm3.65 3.4v12.1h4.05c3.45 0 6-2.6 6-5.85 0-3.25-2.55-5.85-6-5.85H7.25V7.6Z"/>
+          <path d="M11.4 16.8c.8.2 2.1 10.8 5.4 9.8 1.8-.6 2.1-4.2 3.2-3.8 1.2.4 2.2 5.8 5.2 6.2 3.2.4 4.6-9.8 5.2-10.2" stroke="url(#dw-w-stroke)" stroke-width="3.85" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <h1 class="splash__title">DataWise CLI</h1>
+      </div>
+      <p class="splash__tagline">连接、查询、分析、导出 — 一站完成</p>
+    </div>
+
+    <div class="splash__footer">
+      <p class="splash__status" id="status">正在启动 DataWise 桌面客户端…</p>
+      <div class="splash__progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <span class="splash__progress-fill" id="progress"></span>
+      </div>
+      <p class="splash__version" id="version">版本号：V1.0.0</p>
+    </div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status')
+    const progressEl = document.getElementById('progress')
+    const versionEl = document.getElementById('version')
+    const progressBar = progressEl?.parentElement
+
+    let meta = null
+    const bridge = window.__datawiseDesktopBridge
+    if (bridge?.splash?.getMeta) {
+      meta = bridge.splash.getMeta()
+      if (meta?.version && versionEl) {
+        versionEl.textContent = '版本号：V' + meta.version
+      }
+      if (meta?.tagline && document.querySelector('.splash__tagline')) {
+        document.querySelector('.splash__tagline').textContent = meta.tagline
+      }
+    }
+
+    const phaseText = {
+      idle: '正在启动 DataWise 桌面客户端…',
+      config: meta?.isPackaged
+        ? '正在准备工作区目录与配置文件…'
+        : '正在加载开发环境工作区配置…',
+      spawning: meta?.isPackaged
+        ? '正在启动内嵌 Java 服务 (datawise-server.jar)…'
+        : '正在连接本地后端服务 (127.0.0.1:18421)…',
+      warming: meta?.isPackaged
+        ? '正在等待 Spring Boot 服务就绪 (127.0.0.1:18423/api/health)…'
+        : '正在探测后端健康检查 (127.0.0.1:18421/api/health)…',
+      session: '正在建立用户会话与鉴权令牌…',
+      sync: '正在同步连接、SQL 片段与编辑器设置…',
+      ready: '正在加载主界面与资源树…',
+      complete: '启动完成，正在进入工作台…',
+      failed: '服务启动失败，请查看运行日志',
+    }
+
+    function applyProgress(payload) {
+      if (!payload) return
+      const incoming = Math.max(0, Math.min(100, Number(payload.progress) || 0))
+      const progress = Math.max(paintedProgress, incoming)
+      paintedProgress = progress
+      if (progressEl) progressEl.style.width = progress + '%'
+      if (progressBar) progressBar.setAttribute('aria-valuenow', String(progress))
+      if (payload.status && statusEl) statusEl.textContent = payload.status
+      if (progress >= 100) {
+        requestAnimationFrame(() => {
+          window.setTimeout(() => notifyBarPainted(100), 680)
+        })
+      }
+    }
+
+    function notifyBarPainted(progress) {
+      bridge?.splash?.notifyBarPainted?.(progress)
+    }
+
+    let paintedProgress = 0
+    progressEl?.addEventListener('transitionend', (event) => {
+      if (event.propertyName !== 'width') return
+      notifyBarPainted(paintedProgress)
+    })
+
+    function applyBackendEvent(event) {
+      if (!event) return
+      applyProgress({
+        progress: event.progress,
+        status: phaseText[event.phase] || phaseText.idle,
+      })
+    }
+
+    if (bridge?.splash?.onProgress) {
+      bridge.splash.onProgress(applyProgress)
+    }
+
+    if (bridge?.backend?.getStartupState) {
+      bridge.backend.getStartupState().then(applyBackendEvent).catch(() => undefined)
+    }
+    if (bridge?.backend?.onStartupProgress) {
+      bridge.backend.onStartupProgress(applyBackendEvent)
+    }
+  </script>
+</body>
+</html>

@@ -18,6 +18,7 @@ public class TreeNode {
     private String meta;
     private String comment;
     private Boolean expanded;
+    private Integer childCount;
     private List<TreeNode> children = new ArrayList<>();
 
     public String getId() {
@@ -90,6 +91,14 @@ public class TreeNode {
 
     public void setExpanded(Boolean expanded) {
         this.expanded = expanded;
+    }
+
+    public Integer getChildCount() {
+        return childCount;
+    }
+
+    public void setChildCount(Integer childCount) {
+        this.childCount = childCount;
     }
 
     public List<TreeNode> getChildren() {

@@ -186,6 +186,18 @@ export function findAncestorByType(
     return search(tree, [])
 }
 
+/** 从根到目标节点的祖先链（含目标节点） */
+export function findNodeAncestorChain(tree: TreeNode[], nodeId: string): TreeNode[] {
+    let chain: TreeNode[] | null = null
+    walkTree(tree, (node, parents) => {
+        if (node.id === nodeId) {
+            chain = [...parents, node]
+            return true
+        }
+    })
+    return chain ?? []
+}
+
 /** 将展开状态的树扁平化为渲染列表（迭代实现，避免大树递归 spread 开销） */
 export function flattenVisibleTree(
     nodes: TreeNode[],

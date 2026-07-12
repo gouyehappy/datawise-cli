@@ -69,6 +69,7 @@ export default {
     loadFailed: 'Failed to load connection',
     testHostRequired: 'Host is required',
     testUserRequired: 'Username is required',
+    testFailed: 'Connection test failed',
     testSuccessMsg: 'Connected to {name}@{host}:{port}',
     storageOptions: {
         local: 'Local (LOCAL)',

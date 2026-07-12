@@ -7,19 +7,40 @@
  */
 import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue'
-import {resolve} from 'path'
+import {copyFileSync, mkdirSync} from 'node:fs'
+import {resolve, dirname, join} from 'path'
+import {fileURLToPath} from 'node:url'
 import {sqlEditorAliasPlugin} from './vite/sql-editor-alias'
 import {electronBuildPlugin} from './vite/electron-build-plugin'
 import ports from './runtime-ports.json' with {type: 'json'}
 
 const enableElectron = process.env.ELECTRON === 'true'
 const backendOrigin = `http://127.0.0.1:${ports.backend}`
+const projectRoot = dirname(fileURLToPath(import.meta.url))
+
+function copyElectronStaticAssets() {
+    const copySplash = () => {
+        const outDir = join(projectRoot, 'dist-electron')
+        mkdirSync(outDir, {recursive: true})
+        copyFileSync(join(projectRoot, 'electron/splash.html'), join(outDir, 'splash.html'))
+    }
+    return {
+        name: 'copy-electron-static-assets',
+        buildStart() {
+            if (process.env.ELECTRON === 'true') copySplash()
+        },
+        closeBundle() {
+            if (process.env.ELECTRON === 'true') copySplash()
+        },
+    } satisfies import('vite').Plugin
+}
 
 export default defineConfig(async () => {
     const plugins = [vue(), sqlEditorAliasPlugin()]
 
     if (enableElectron) {
         plugins.push(electronBuildPlugin())
+        plugins.push(copyElectronStaticAssets())
         const electron = (await import('vite-plugin-electron/simple')).default
         plugins.push(
             electron({
