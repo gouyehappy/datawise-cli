@@ -6,6 +6,7 @@ import org.apache.datawise.backend.database.explorer.ExplorerConnectionAdminServ
 import org.apache.datawise.backend.database.explorer.ExplorerConnectionLifecycleService;
 import org.apache.datawise.backend.database.explorer.ExplorerKafkaService;
 import org.apache.datawise.backend.database.explorer.ExplorerRedisService;
+import org.apache.datawise.backend.database.explorer.ExplorerYarnService;
 import org.apache.datawise.backend.database.explorer.ExplorerLoadOptions;
 import org.apache.datawise.backend.database.explorer.ExplorerSchemaService;
 import org.apache.datawise.backend.database.explorer.ExplorerChildLoadOutcome;
@@ -31,6 +32,16 @@ import org.apache.datawise.backend.domain.ExecuteRedisCommandRequest;
 import org.apache.datawise.backend.domain.RedisCommandResultDto;
 import org.apache.datawise.backend.domain.RedisKeyDetailDto;
 import org.apache.datawise.backend.domain.RedisKeysScanResultDto;
+import org.apache.datawise.backend.domain.YarnAppDetailDto;
+import org.apache.datawise.backend.domain.YarnKillApplicationRequest;
+import org.apache.datawise.backend.domain.YarnMoveApplicationQueueRequest;
+import org.apache.datawise.backend.domain.YarnMutationResultDto;
+import org.apache.datawise.backend.domain.YarnRemoveQueueRequest;
+import org.apache.datawise.backend.domain.YarnUpdateQueueRequest;
+import org.apache.datawise.backend.domain.YarnAppsResultDto;
+import org.apache.datawise.backend.domain.YarnClusterInfoDto;
+import org.apache.datawise.backend.domain.YarnNodesResultDto;
+import org.apache.datawise.backend.domain.YarnQueuesResultDto;
 import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.domain.TreePayload;
 import org.apache.datawise.backend.security.HeadlessSqlAuth;
@@ -64,6 +75,7 @@ public class ExplorerController {
     private final ExplorerLoadMetrics explorerLoadMetrics;
     private final ExplorerRedisService redisService;
     private final ExplorerKafkaService kafkaService;
+    private final ExplorerYarnService yarnService;
     private final ExplorerConnectionAdminService connectionAdminService;
     private final ExplorerConnectionLifecycleService connectionLifecycleService;
     private final FeaturePermissionAccess featurePermissionAccess;
@@ -73,6 +85,7 @@ public class ExplorerController {
             ExplorerLoadMetrics explorerLoadMetrics,
             ExplorerRedisService redisService,
             ExplorerKafkaService kafkaService,
+            ExplorerYarnService yarnService,
             ExplorerConnectionAdminService connectionAdminService,
             ExplorerConnectionLifecycleService connectionLifecycleService,
             FeaturePermissionAccess featurePermissionAccess
@@ -81,6 +94,7 @@ public class ExplorerController {
         this.explorerLoadMetrics = explorerLoadMetrics;
         this.redisService = redisService;
         this.kafkaService = kafkaService;
+        this.yarnService = yarnService;
         this.connectionAdminService = connectionAdminService;
         this.connectionLifecycleService = connectionLifecycleService;
         this.featurePermissionAccess = featurePermissionAccess;
@@ -269,6 +283,81 @@ public class ExplorerController {
             @RequestParam(required = false) String topic
     ) {
         return ApiResponse.ok(kafkaService.describeConsumerGroupMetrics(connectionId, groupId, topic));
+    }
+
+    @GetMapping("/connections/{connectionId}/yarn/info")
+    public ApiResponse<YarnClusterInfoDto> yarnClusterInfo(@PathVariable String connectionId) {
+        return ApiResponse.ok(yarnService.clusterInfo(connectionId));
+    }
+
+    @GetMapping("/connections/{connectionId}/yarn/apps")
+    public ApiResponse<YarnAppsResultDto> listYarnApplications(
+            @PathVariable String connectionId,
+            @RequestParam(required = false) String state,
+            @RequestParam(required = false) String user,
+            @RequestParam(required = false) String queue,
+            @RequestParam(required = false) Integer limit
+    ) {
+        return ApiResponse.ok(yarnService.listApplications(connectionId, state, user, queue, limit));
+    }
+
+    @GetMapping("/connections/{connectionId}/yarn/apps/{appId}")
+    public ApiResponse<YarnAppDetailDto> describeYarnApplication(
+            @PathVariable String connectionId,
+            @PathVariable String appId
+    ) {
+        return ApiResponse.ok(yarnService.describeApplication(connectionId, appId));
+    }
+
+    @GetMapping("/connections/{connectionId}/yarn/nodes")
+    public ApiResponse<YarnNodesResultDto> listYarnNodes(
+            @PathVariable String connectionId,
+            @RequestParam(required = false) Integer limit
+    ) {
+        return ApiResponse.ok(yarnService.listNodes(connectionId, limit));
+    }
+
+    @GetMapping("/connections/{connectionId}/yarn/queues")
+    public ApiResponse<YarnQueuesResultDto> listYarnQueues(@PathVariable String connectionId) {
+        return ApiResponse.ok(yarnService.listQueues(connectionId));
+    }
+
+    @PutMapping("/connections/{connectionId}/yarn/apps/{appId}/state")
+    public ApiResponse<YarnMutationResultDto> killYarnApplication(
+            @PathVariable String connectionId,
+            @PathVariable String appId,
+            @RequestBody(required = false) YarnKillApplicationRequest request
+    ) {
+        featurePermissionAccess.requireExplorerContextExport();
+        return ApiResponse.ok(yarnService.killApplication(connectionId, appId, request));
+    }
+
+    @PutMapping("/connections/{connectionId}/yarn/apps/{appId}/queue")
+    public ApiResponse<YarnMutationResultDto> moveYarnApplicationQueue(
+            @PathVariable String connectionId,
+            @PathVariable String appId,
+            @RequestBody YarnMoveApplicationQueueRequest request
+    ) {
+        featurePermissionAccess.requireExplorerContextExport();
+        return ApiResponse.ok(yarnService.moveApplicationQueue(connectionId, appId, request));
+    }
+
+    @PutMapping("/connections/{connectionId}/yarn/queues")
+    public ApiResponse<YarnMutationResultDto> updateYarnQueue(
+            @PathVariable String connectionId,
+            @RequestBody YarnUpdateQueueRequest request
+    ) {
+        featurePermissionAccess.requireExplorerContextExport();
+        return ApiResponse.ok(yarnService.updateQueue(connectionId, request));
+    }
+
+    @PostMapping("/connections/{connectionId}/yarn/queues/remove")
+    public ApiResponse<YarnMutationResultDto> removeYarnQueue(
+            @PathVariable String connectionId,
+            @RequestBody YarnRemoveQueueRequest request
+    ) {
+        featurePermissionAccess.requireExplorerContextExport();
+        return ApiResponse.ok(yarnService.removeQueue(connectionId, request));
     }
 
     @PostMapping("/groups")

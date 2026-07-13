@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.connector;
 
 import org.apache.datawise.backend.connector.operation.ConnectorCatalogOperations;
+import org.apache.datawise.backend.connector.operation.ConnectorClusterManagerOperations;
 import org.apache.datawise.backend.connector.operation.ConnectorConnectionOperations;
 import org.apache.datawise.backend.connector.operation.ConnectorDdlOperations;
 import org.apache.datawise.backend.connector.operation.ConnectorDocumentOperations;
@@ -62,5 +63,9 @@ public interface DataSourceConnector {
 
     default ConnectorDocumentOperations document() {
         throw new UnsupportedConnectorOperationException(id(), "document");
+    }
+
+    default ConnectorClusterManagerOperations clusterManager() {
+        throw new UnsupportedConnectorOperationException(id(), "clusterManager");
     }
 }

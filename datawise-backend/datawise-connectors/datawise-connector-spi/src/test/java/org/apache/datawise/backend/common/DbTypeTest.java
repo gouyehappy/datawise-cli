@@ -92,9 +92,10 @@ class DbTypeTest {
         assertTrue(DbType.GENERIC.isCatalogListed());
         assertTrue(DbType.OTHER.isCatalogListed());
         assertTrue(DbType.FLINK.isCatalogListed());
+        assertTrue(DbType.YARN.isCatalogListed());
         assertTrue(DbType.GAUSSDB.isCatalogListed());
         assertEquals(DbType.DM, DbType.find("dameng").orElseThrow());
-        assertEquals(37, DbType.catalogListed().size());
+        assertEquals(38, DbType.catalogListed().size());
     }
 
     @Test
@@ -105,6 +106,7 @@ class DbTypeTest {
     @Test
     void find_resolvesKafka() {
         assertEquals(DbType.KAFKA, DbType.find("kafka").orElseThrow());
+        assertEquals(DbType.YARN, DbType.find("yarn").orElseThrow());
     }
 
     @Test

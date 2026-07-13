@@ -18,6 +18,7 @@ export type DbType =
     | 'db2'
     | 'redis'
     | 'kafka'
+    | 'yarn'
     | 'mongodb'
     | 'sqlite'
     | 'hive'
@@ -96,6 +97,7 @@ export type TreeNodeType =
     | 'redis-feature'
     | 'kafka-feature'
     | 'kafka-topic'
+    | 'yarn-feature'
     | 'load_more'
 
 export interface TreeNode {
@@ -173,6 +175,9 @@ export type WorkspaceTabType =
     | 'kafka-topic'
     | 'kafka-consumer-groups'
     | 'kafka-table-publish'
+    | 'yarn-applications'
+    | 'yarn-nodes'
+    | 'yarn-queues'
     | 'platform_catalog'
 
 export interface WorkspaceTab {

@@ -44,6 +44,7 @@ export const DB_TYPE_IDENTIFIER_QUOTES: Record<DbType, string> = {
     dameng: '"',
     gaussdb: '"',
     flink: '"',
+    yarn: '"',
 }
 
 const UPPERCASE_IDENTIFIER_DB_TYPES = new Set<DbType>(['oracle', 'dm', 'dameng'])

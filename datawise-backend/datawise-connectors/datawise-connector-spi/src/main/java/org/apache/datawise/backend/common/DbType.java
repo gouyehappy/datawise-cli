@@ -50,6 +50,7 @@ public enum DbType {
     TIDB,
     REDIS,
     FLINK,
+    YARN,
     GAUSSDB,
     OTHER,
     ;

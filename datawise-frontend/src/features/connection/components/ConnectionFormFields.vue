@@ -71,7 +71,7 @@ const authOptions = computed(() =>
 
     <ConnectionFormField
         :label="t('connection.host')"
-        :hint="dbType === 'kafka' ? t('connection.hints.kafkaBootstrap') : undefined"
+        :hint="dbType === 'kafka' ? t('connection.hints.kafkaBootstrap') : dbType === 'yarn' ? t('connection.hints.yarnResourceManager') : undefined"
     >
       <DwInput
           v-model="form.host"
@@ -98,7 +98,7 @@ const authOptions = computed(() =>
     </ConnectionFormField>
 
     <ConnectionFormField
-        v-else-if="dbType !== 'oracle' && dbType !== 'kafka'"
+        v-else-if="dbType !== 'oracle' && dbType !== 'kafka' && dbType !== 'yarn'"
         wide
         :label="t('connection.database')"
         :hint="t('connection.hints.database')"

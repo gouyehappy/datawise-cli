@@ -60,6 +60,10 @@ export function workspaceTabDwIcon(type: WorkspaceTabType): DwIconName {
         case 'kafka-consumer-groups':
         case 'kafka-table-publish':
             return 'tab-kafka'
+        case 'yarn-applications':
+        case 'yarn-nodes':
+        case 'yarn-queues':
+            return 'tab-yarn'
         case 'platform_catalog':
             return 'ai'
         default:

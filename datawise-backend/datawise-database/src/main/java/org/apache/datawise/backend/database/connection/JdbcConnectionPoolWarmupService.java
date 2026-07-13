@@ -187,7 +187,7 @@ public class JdbcConnectionPoolWarmupService {
             return false;
         }
         return switch (dbType.toLowerCase()) {
-            case "redis", "kafka", "mongodb" -> false;
+            case "redis", "kafka", "yarn", "mongodb" -> false;
             default -> true;
         };
     }

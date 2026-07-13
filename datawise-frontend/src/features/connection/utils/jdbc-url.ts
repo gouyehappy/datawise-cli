@@ -65,6 +65,8 @@ export function buildJdbcUrl(
             return `jdbc:redis://${host}:${port}/`
         case 'kafka':
             return host.includes(',') ? `kafka://${host}` : `kafka://${host}:${port}`
+        case 'yarn':
+            return `yarn://${host}:${port}`
         case 'mongodb': {
             const db = extra?.database?.trim()
             return db ? `mongodb://${host}:${port}/${db}` : `mongodb://${host}:${port}/`

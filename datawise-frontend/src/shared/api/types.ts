@@ -849,6 +849,51 @@ export interface ExplorerApi {
         options?: { topic?: string },
     ): Promise<import('@/features/explorer/services/kafka-topic.service').KafkaConsumerGroupMetrics>
 
+    fetchYarnClusterInfo(
+        connectionId: string,
+    ): Promise<import('@/features/explorer/services/yarn-applications.service').YarnClusterInfo>
+
+    fetchYarnApplications(
+        connectionId: string,
+        options?: { state?: string; user?: string; queue?: string; limit?: number },
+    ): Promise<import('@/features/explorer/services/yarn-applications.service').YarnAppsResult>
+
+    fetchYarnApplicationDetail(
+        connectionId: string,
+        appId: string,
+    ): Promise<import('@/features/explorer/services/yarn-applications.service').YarnAppDetail>
+
+    fetchYarnNodes(
+        connectionId: string,
+        options?: { limit?: number },
+    ): Promise<import('@/features/explorer/services/yarn-applications.service').YarnNodesResult>
+
+    fetchYarnQueues(
+        connectionId: string,
+    ): Promise<import('@/features/explorer/services/yarn-applications.service').YarnQueuesResult>
+
+    killYarnApplication(
+        connectionId: string,
+        appId: string,
+        payload?: { diagnostics?: string },
+    ): Promise<import('@/features/explorer/services/yarn-applications.service').YarnMutationResult>
+
+    moveYarnApplicationQueue(
+        connectionId: string,
+        appId: string,
+        payload: { queue: string },
+    ): Promise<import('@/features/explorer/services/yarn-applications.service').YarnMutationResult>
+
+    updateYarnQueue(
+        connectionId: string,
+        payload: { queueName: string; params: Record<string, string> },
+    ): Promise<import('@/features/explorer/services/yarn-applications.service').YarnMutationResult>
+
+    removeYarnQueue(
+        connectionId: string,
+        payload: { queueName: string },
+    ): Promise<import('@/features/explorer/services/yarn-applications.service').YarnMutationResult>
+
     fetchConnection(connectionId: string): Promise<ConnectionConfig>
 
     connectConnection(connectionId: string): Promise<ConnectionTestResult>

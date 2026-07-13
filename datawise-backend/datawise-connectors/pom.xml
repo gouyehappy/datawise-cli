@@ -27,6 +27,7 @@
         <module>datawise-connector-doris</module>
         <module>datawise-connector-redis</module>
         <module>datawise-connector-kafka</module>
+        <module>datawise-connector-yarn</module>
         <module>datawise-connector-mongodb</module>
         <module>datawise-connector-sqlserver</module>
         <module>datawise-connector-oracle</module>

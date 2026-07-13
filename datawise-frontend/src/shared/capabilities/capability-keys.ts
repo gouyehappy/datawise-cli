@@ -18,6 +18,7 @@ export const CONNECTOR_CAPABILITY = {
     KEY_VALUE: 'KEY_VALUE',
     MESSAGE_BROKER: 'MESSAGE_BROKER',
     DOCUMENT_READ: 'DOCUMENT_READ',
+    CLUSTER_MANAGER: 'CLUSTER_MANAGER',
 } as const
 
 export type ConnectorCapabilityName = (typeof CONNECTOR_CAPABILITY)[keyof typeof CONNECTOR_CAPABILITY]

@@ -210,6 +210,11 @@ const CUSTOM_ICONS: Record<string, DbBrandIconSource> = {
             },
         ],
     },
+    yarn: {
+        title: 'YARN',
+        hex: '#FF9900',
+        label: 'YRN',
+    },
 }
 
 const SIMPLE_ICON_MAP: Record<string, SimpleIcon> = {

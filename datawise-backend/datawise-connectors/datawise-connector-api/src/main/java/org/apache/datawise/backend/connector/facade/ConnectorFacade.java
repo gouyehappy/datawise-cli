@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.connector.facade;
 
+import org.apache.datawise.backend.connector.facade.clustermanager.ConnectorClusterManagerAccess;
 import org.apache.datawise.backend.connector.facade.catalog.ConnectorCatalogAccess;
 import org.apache.datawise.backend.connector.facade.ddl.ConnectorDdlAccess;
 import org.apache.datawise.backend.connector.facade.document.ConnectorDocumentAccess;
@@ -24,6 +25,7 @@ public class ConnectorFacade {
     private final ConnectorCatalogAccess catalog;
     private final ConnectorNativeAccess nativeAccess;
     private final ConnectorMessageBrokerAccess messageBroker;
+    private final ConnectorClusterManagerAccess clusterManager;
     private final ConnectorDdlAccess ddl;
     private final ConnectorDocumentAccess document;
 
@@ -35,6 +37,7 @@ public class ConnectorFacade {
             ConnectorCatalogAccess catalog,
             ConnectorNativeAccess nativeAccess,
             ConnectorMessageBrokerAccess messageBroker,
+            ConnectorClusterManagerAccess clusterManager,
             ConnectorDdlAccess ddl,
             ConnectorDocumentAccess document
     ) {
@@ -45,6 +48,7 @@ public class ConnectorFacade {
         this.catalog = catalog;
         this.nativeAccess = nativeAccess;
         this.messageBroker = messageBroker;
+        this.clusterManager = clusterManager;
         this.ddl = ddl;
         this.document = document;
     }
@@ -75,6 +79,10 @@ public class ConnectorFacade {
 
     public ConnectorMessageBrokerAccess messageBroker() {
         return messageBroker;
+    }
+
+    public ConnectorClusterManagerAccess clusterManager() {
+        return clusterManager;
     }
 
     public ConnectorDdlAccess ddl() {

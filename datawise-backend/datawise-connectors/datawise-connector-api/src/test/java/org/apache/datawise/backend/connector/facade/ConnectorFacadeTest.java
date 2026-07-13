@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.connector.facade;
 
 import org.apache.datawise.backend.connector.ConnectorPluginContributionHolder;
+import org.apache.datawise.backend.connector.facade.clustermanager.ConnectorClusterManagerAccess;
 import org.apache.datawise.backend.connector.facade.catalog.ConnectorCatalogAccess;
 import org.apache.datawise.backend.connector.facade.ddl.ConnectorDdlAccess;
 import org.apache.datawise.backend.connector.facade.document.ConnectorDocumentAccess;
@@ -61,6 +62,7 @@ class ConnectorFacadeTest {
                 catalogAccess,
                 new ConnectorNativeAccess(catalogAccess),
                 new ConnectorMessageBrokerAccess(catalogAccess),
+                new ConnectorClusterManagerAccess(catalogAccess),
                 new ConnectorDdlAccess(crossDialectDdlTranslator),
                 new ConnectorDocumentAccess(catalogAccess)
         );
@@ -73,6 +75,7 @@ class ConnectorFacadeTest {
         assertNotNull(facade.catalog());
         assertNotNull(facade.nativeAccess());
         assertNotNull(facade.messageBroker());
+        assertNotNull(facade.clusterManager());
         assertNotNull(facade.ddl());
         assertNotNull(facade.document());
     }

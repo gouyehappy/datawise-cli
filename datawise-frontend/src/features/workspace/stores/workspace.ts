@@ -538,6 +538,87 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         return id
     }
 
+    function openYarnApplications(options: {
+        connectionId: string
+        connectionName?: string
+        explorerNodeId?: string
+    }) {
+        const existing = tabs.value.find(
+            (tab) => tab.type === 'yarn-applications' && tab.connectionId === options.connectionId,
+        )
+        if (existing) {
+            activeTabId.value = existing.id
+            return existing.id
+        }
+        const label = options.connectionName ?? resolveConnectionLabel(options.connectionId)
+        const id = nextTabId('yarn-applications')
+        tabs.value.push({
+            id,
+            title: label ? t('explorer.yarnApps.tabTitle', {name: label}) : t('explorer.yarnApps.title'),
+            type: 'yarn-applications',
+            closable: true,
+            connectionId: options.connectionId,
+            dbType: 'yarn',
+            explorerNodeId: options.explorerNodeId,
+        })
+        activeTabId.value = id
+        return id
+    }
+
+    function openYarnNodes(options: {
+        connectionId: string
+        connectionName?: string
+        explorerNodeId?: string
+    }) {
+        const existing = tabs.value.find(
+            (tab) => tab.type === 'yarn-nodes' && tab.connectionId === options.connectionId,
+        )
+        if (existing) {
+            activeTabId.value = existing.id
+            return existing.id
+        }
+        const label = options.connectionName ?? resolveConnectionLabel(options.connectionId)
+        const id = nextTabId('yarn-nodes')
+        tabs.value.push({
+            id,
+            title: label ? t('explorer.yarnNodes.tabTitle', {name: label}) : t('explorer.yarnNodes.title'),
+            type: 'yarn-nodes',
+            closable: true,
+            connectionId: options.connectionId,
+            dbType: 'yarn',
+            explorerNodeId: options.explorerNodeId,
+        })
+        activeTabId.value = id
+        return id
+    }
+
+    function openYarnQueues(options: {
+        connectionId: string
+        connectionName?: string
+        explorerNodeId?: string
+    }) {
+        const existing = tabs.value.find(
+            (tab) => tab.type === 'yarn-queues' && tab.connectionId === options.connectionId,
+        )
+        if (existing) {
+            activeTabId.value = existing.id
+            return existing.id
+        }
+        const label = options.connectionName ?? resolveConnectionLabel(options.connectionId)
+        const id = nextTabId('yarn-queues')
+        tabs.value.push({
+            id,
+            title: label ? t('explorer.yarnQueues.tabTitle', {name: label}) : t('explorer.yarnQueues.title'),
+            type: 'yarn-queues',
+            closable: true,
+            connectionId: options.connectionId,
+            dbType: 'yarn',
+            explorerNodeId: options.explorerNodeId,
+        })
+        activeTabId.value = id
+        return id
+    }
+
     function openKafkaTablePublish(options: {
         kafkaConnectionId?: string
         kafkaConnectionName?: string
@@ -1687,6 +1768,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (type === 'kafka-topic') return 'kafka-topic'
         if (type === 'kafka-consumer-groups') return 'kafka-consumer-groups'
         if (type === 'kafka-table-publish') return 'kafka-table-publish'
+        if (type === 'yarn-applications') return 'yarn-applications'
+        if (type === 'yarn-nodes') return 'yarn-nodes'
+        if (type === 'yarn-queues') return 'yarn-queues'
         if (type === 'platform_catalog') return 'platform-catalog'
         if (type === 'view_model_lineage') return 'lineage'
         return 'tab'
@@ -1777,6 +1861,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         openKafkaTopic,
         openKafkaConsumerGroups,
         openKafkaTablePublish,
+        openYarnApplications,
+        openYarnNodes,
+        openYarnQueues,
         closeTab,
         closeConsoleTabsForSqlFile,
         closeTableTabs,

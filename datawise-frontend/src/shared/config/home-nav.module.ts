@@ -1,8 +1,6 @@
-import type {LayoutPreferences} from '@/shared/config/app-config.types'
+import type {LayoutPreferences, RestorableNavModule} from '@/shared/config/app-config.types'
 import type {SideRailItemId} from '@/features/layout/constants/side-rail-nav'
 import {SIDE_RAIL_NAV_DEFS} from '@/features/layout/constants/side-rail-nav'
-
-export type RestorableNavModule = SideRailItemId
 
 export const HOME_NAV_MODULE: RestorableNavModule = 'database'
 

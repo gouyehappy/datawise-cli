@@ -59,6 +59,9 @@ const definitions = [
     {key: 'kafka-consumer-groups' as const, component: lazyTab(() => import('./components/tabs/KafkaConsumerGroupsTab.vue'))},
 
     {key: 'kafka-table-publish' as const, component: lazyTab(() => import('./components/tabs/KafkaTablePublishTab.vue'))},
+    {key: 'yarn-applications' as const, component: lazyTab(() => import('./components/tabs/YarnApplicationsTab.vue'))},
+    {key: 'yarn-nodes' as const, component: lazyTab(() => import('./components/tabs/YarnNodesTab.vue'))},
+    {key: 'yarn-queues' as const, component: lazyTab(() => import('./components/tabs/YarnQueuesTab.vue'))},
 
     {key: 'platform_catalog' as const, component: lazyTab(() => import('./components/tabs/PlatformCatalogTab.vue'))},
 

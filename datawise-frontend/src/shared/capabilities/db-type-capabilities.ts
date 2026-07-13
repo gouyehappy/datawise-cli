@@ -251,6 +251,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         sshTunnel: false,
     },
     kafka: DEFAULT_CAPABILITY,
+    yarn: DEFAULT_CAPABILITY,
     mongodb: {
         supported: true,
         csvImport: false,

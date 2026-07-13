@@ -45,6 +45,10 @@
         </dependency>
         <dependency>
             <groupId>org.apache.datawise</groupId>
+            <artifactId>datawise-connector-yarn</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.datawise</groupId>
             <artifactId>datawise-connector-mongodb</artifactId>
         </dependency>
         <dependency>

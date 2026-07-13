@@ -102,6 +102,7 @@ export default {
         redisUsername: 'Redis 6+ ACL 用户名；留空表示仅密码或无认证',
         redisPassword: 'requirepass 密码；无认证时可留空',
         kafkaBootstrap: 'Bootstrap 地址；多 broker 可在高级配置写 bootstrap.servers=host1:9092,host2:9092',
+        yarnResourceManager: 'Resource Manager 地址，默认端口 8088；HTTPS 可在高级配置写 useHttps=true',
         url: '连接 URL，选填；会根据上方信息自动生成',
         driverMaven: '格式 groupId:artifactId:version，保存连接时由服务端从 Maven Central 下载',
         sshPrivateKey: '基于密钥认证时粘贴 PEM 私钥；仅用 SSH 密码时可留空',

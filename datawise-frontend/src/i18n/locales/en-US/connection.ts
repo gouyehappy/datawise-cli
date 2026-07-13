@@ -102,6 +102,7 @@ export default {
         redisUsername: 'Redis 6+ ACL username; leave empty for password-only or no auth',
         redisPassword: 'requirepass password; leave empty if no authentication',
         kafkaBootstrap: 'Bootstrap host; for multiple brokers set bootstrap.servers=host1:9092,host2:9092 in advanced config',
+        yarnResourceManager: 'Resource Manager host, default port 8088; set useHttps=true in advanced config for HTTPS',
         url: 'Auto-generated from fields above if left as-is',
         driverMaven: 'Format groupId:artifactId:version; server downloads from Maven Central on connect',
         sshPrivateKey: 'PEM private key for key-based auth; leave blank when using SSH password only',

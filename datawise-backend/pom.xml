@@ -104,6 +104,11 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.datawise</groupId>
+                <artifactId>datawise-connector-yarn</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.datawise</groupId>
                 <artifactId>datawise-connector-mongodb</artifactId>
                 <version>${project.version}</version>
             </dependency>

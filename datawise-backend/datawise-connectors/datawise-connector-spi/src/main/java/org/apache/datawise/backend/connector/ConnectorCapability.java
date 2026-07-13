@@ -28,5 +28,7 @@ public enum ConnectorCapability {
     KEY_VALUE,
     MESSAGE_BROKER,
     /** 文档型存储（MongoDB 等）集合/文档分页读取，非 JDBC SELECT */
-    DOCUMENT_READ
+    DOCUMENT_READ,
+    /** 集群资源管理（YARN Resource Manager 等） */
+    CLUSTER_MANAGER
 }

@@ -1,14 +1,16 @@
 import type {TreeNode} from '@/core/types'
 import {ensureKafkaConnectionFeatureChildren} from '@/features/explorer/services/kafka-feature-tree.service'
 import {ensureRedisConnectionFeatureChildren} from '@/features/explorer/services/redis-feature-tree.service'
+import {ensureYarnConnectionFeatureChildren} from '@/features/explorer/services/yarn-feature-tree.service'
 
-/** Kafka / Redis 连接展开时注入虚拟功能子节点 */
+/** Kafka / Redis / YARN 连接展开时注入虚拟功能子节点 */
 export function ensureFlatConnectionFeatureChildren(node: TreeNode): void {
     if (node.type !== 'connection') return
     if (node.dbType === 'kafka') ensureKafkaConnectionFeatureChildren(node)
     if (node.dbType === 'redis') ensureRedisConnectionFeatureChildren(node)
+    if (node.dbType === 'yarn') ensureYarnConnectionFeatureChildren(node)
 }
 
 export function isConnectionFeatureNode(node: Pick<TreeNode, 'type'>): boolean {
-    return node.type === 'kafka-feature' || node.type === 'redis-feature'
+    return node.type === 'kafka-feature' || node.type === 'redis-feature' || node.type === 'yarn-feature'
 }

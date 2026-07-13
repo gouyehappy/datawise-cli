@@ -62,6 +62,7 @@ import {
 } from '@/features/explorer/services/kafka-table-publish.service'
 import {parseRedisFeatureId} from '@/features/explorer/services/redis-feature-tree.service'
 import {parseKafkaFeatureId} from '@/features/explorer/services/kafka-feature-tree.service'
+import {parseYarnFeatureId} from '@/features/explorer/services/yarn-feature-tree.service'
 import {isPinnableExplorerNode} from '@/features/explorer/services/explorer-pinned-sort.service'
 import {
     isExplorerFavoritesTreeNode,
@@ -461,6 +462,20 @@ export function useConnectionTree() {
             }
             return
         }
+        if (node.type === 'yarn-feature') {
+            const connectionId = findConnectionId(node)
+            if (!connectionId) return
+            const feature = parseYarnFeatureId(node)
+            const connectionName = findConnectionLabel(connectionId) ?? connectionId
+            if (feature === 'applications') {
+                workspace.openYarnApplications({connectionId, connectionName, explorerNodeId: connectionId})
+            } else if (feature === 'nodes') {
+                workspace.openYarnNodes({connectionId, connectionName, explorerNodeId: connectionId})
+            } else if (feature === 'queues') {
+                workspace.openYarnQueues({connectionId, connectionName, explorerNodeId: connectionId})
+            }
+            return
+        }
         if (node.type === 'connection') {
             if (!canManageExplorerConnectionLifecycle(auth.isGuest)) return
             await explorer.connectConnection(node.id, {notify: true})
@@ -513,6 +528,18 @@ export function useConnectionTree() {
                 {id: 'open-kafka-topics', label: t('explorer.context.openKafkaTopics'), icon: 'open'},
                 {id: 'open-kafka-consumer-groups', label: t('explorer.context.openKafkaConsumerGroups'), icon: 'open'},
                 {id: 'publish-table-data', label: t('explorer.context.publishTableData'), icon: 'export'},
+                {id: 'edit', label: t('explorer.context.editConnection'), icon: 'edit', shortcut: 'F4'},
+                {id: 'move', label: t('explorer.context.moveConnection'), icon: 'file'},
+                {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
+                {id: 'divider-1', label: '', divider: true},
+                {id: 'delete', label: t('explorer.context.deleteConnection'), icon: 'delete', shortcut: 'Delete', danger: true},
+            ]), lifecycleItems)
+        }
+        if (node.dbType === 'yarn') {
+            return prependConnectionLifecycleMenu(withMove([
+                {id: 'open-yarn-applications', label: t('explorer.context.openYarnApplications'), icon: 'open'},
+                {id: 'open-yarn-nodes', label: t('explorer.context.openYarnNodes'), icon: 'open'},
+                {id: 'open-yarn-queues', label: t('explorer.context.openYarnQueues'), icon: 'open'},
                 {id: 'edit', label: t('explorer.context.editConnection'), icon: 'edit', shortcut: 'F4'},
                 {id: 'move', label: t('explorer.context.moveConnection'), icon: 'file'},
                 {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
@@ -1162,6 +1189,36 @@ export function useConnectionTree() {
             return
         }
 
+        if (id === 'open-yarn-applications' && node.type === 'connection' && node.dbType === 'yarn') {
+            workspace.openYarnApplications({
+                connectionId: node.id,
+                connectionName: node.label,
+                explorerNodeId: node.id,
+            })
+            closeMenu()
+            return
+        }
+
+        if (id === 'open-yarn-nodes' && node.type === 'connection' && node.dbType === 'yarn') {
+            workspace.openYarnNodes({
+                connectionId: node.id,
+                connectionName: node.label,
+                explorerNodeId: node.id,
+            })
+            closeMenu()
+            return
+        }
+
+        if (id === 'open-yarn-queues' && node.type === 'connection' && node.dbType === 'yarn') {
+            workspace.openYarnQueues({
+                connectionId: node.id,
+                connectionName: node.label,
+                explorerNodeId: node.id,
+            })
+            closeMenu()
+            return
+        }
+
         if (id === 'publish-table-data' && node.type === 'connection' && node.dbType === 'kafka') {
             openKafkaTablePublishFromKafkaConnection(node.id)
             closeMenu()
@@ -1761,9 +1818,9 @@ export function useConnectionTree() {
 
     function runShortcutDeleteSelected() {
         if (isExplorerDialogOpen()) return
-        if (!canRunExplorerContextMenuAction('delete', {nodeType: node.type})) return
         const node = explorer.selectedNode
         if (!node) return
+        if (!canRunExplorerContextMenuAction('delete', {nodeType: node.type})) return
 
         if (node.type === 'table') {
             pendingTableAction.value = {

@@ -216,6 +216,10 @@ export default {
             name: 'Kafka connections',
             description: 'Add Kafka in the connection wizard; browse topics and consumer groups.',
         },
+        'p-yarn-explorer': {
+            name: 'YARN connections',
+            description: 'Add YARN in the connection wizard; browse applications, nodes, and queues.',
+        },
         'p-mongo-explorer': {
             name: 'MongoDB connections',
             description: 'Add MongoDB in the connection wizard; browse collections and documents.',
@@ -530,6 +534,7 @@ export default {
             NATIVE_COMMAND: 'Native command',
             KEY_VALUE: 'Key-value',
             MESSAGE_BROKER: 'Message broker',
+            CLUSTER_MANAGER: 'Cluster manager',
             DOCUMENT_READ: 'Document read',
         },
     },

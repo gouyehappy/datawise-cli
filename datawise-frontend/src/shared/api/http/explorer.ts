@@ -167,6 +167,40 @@ export function createHttpExplorerApi(): ExplorerApi {
                 topic: options?.topic,
             }),
 
+        fetchYarnClusterInfo: async (connectionId) =>
+            getJson(API_PATHS.explorer.yarnInfo(connectionId)),
+
+        fetchYarnApplications: async (connectionId, options) =>
+            getJson(API_PATHS.explorer.yarnApps(connectionId), {
+                state: options?.state,
+                user: options?.user,
+                queue: options?.queue,
+                limit: options?.limit != null ? String(options.limit) : undefined,
+            }),
+
+        fetchYarnApplicationDetail: async (connectionId, appId) =>
+            getJson(API_PATHS.explorer.yarnApp(connectionId, appId)),
+
+        fetchYarnNodes: async (connectionId, options) =>
+            getJson(API_PATHS.explorer.yarnNodes(connectionId), {
+                limit: options?.limit != null ? String(options.limit) : undefined,
+            }),
+
+        fetchYarnQueues: async (connectionId) =>
+            getJson(API_PATHS.explorer.yarnQueues(connectionId)),
+
+        killYarnApplication: async (connectionId, appId, payload) =>
+            putJson(API_PATHS.explorer.yarnKillApp(connectionId, appId), payload ?? {}),
+
+        moveYarnApplicationQueue: async (connectionId, appId, payload) =>
+            putJson(API_PATHS.explorer.yarnMoveAppQueue(connectionId, appId), payload),
+
+        updateYarnQueue: async (connectionId, payload) =>
+            putJson(API_PATHS.explorer.yarnQueues(connectionId), payload),
+
+        removeYarnQueue: async (connectionId, payload) =>
+            postJson(API_PATHS.explorer.yarnRemoveQueue(connectionId), payload),
+
         fetchConnection: async (connectionId) =>
             getJson<ConnectionConfig>(API_PATHS.explorer.connection(connectionId)),
 

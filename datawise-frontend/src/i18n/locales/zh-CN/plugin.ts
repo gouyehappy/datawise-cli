@@ -216,6 +216,10 @@ export default {
             name: 'Kafka 连接',
             description: '在新建连接时可选 Kafka，浏览 Topic 与 Consumer Group。',
         },
+        'p-yarn-explorer': {
+            name: 'YARN 连接',
+            description: '在新建连接时可选 YARN，浏览应用、节点与队列。',
+        },
         'p-mongo-explorer': {
             name: 'MongoDB 连接',
             description: '在新建连接时可选 MongoDB，浏览集合与文档。',
@@ -530,6 +534,7 @@ export default {
             NATIVE_COMMAND: '原生命令',
             KEY_VALUE: '键值存储',
             MESSAGE_BROKER: '消息队列',
+            CLUSTER_MANAGER: '集群管理',
             DOCUMENT_READ: '文档读取',
         },
     },

@@ -12,6 +12,7 @@ export const PLUGIN_IDS = [
     'p-sql-monitor',
     'p-redis-explorer',
     'p-kafka-explorer',
+    'p-yarn-explorer',
     'p-mongo-explorer',
     'p-starrocks-explorer',
     'p-doris-explorer',
@@ -85,6 +86,7 @@ export const LEGACY_PLUGIN_ID_MAP: Record<string, PluginId> = {
 const DB_TYPE_PLUGIN_MAP: Partial<Record<DbType, PluginId>> = {
     redis: 'p-redis-explorer',
     kafka: 'p-kafka-explorer',
+    yarn: 'p-yarn-explorer',
     mongodb: 'p-mongo-explorer',
     starrocks: 'p-starrocks-explorer',
     doris: 'p-doris-explorer',
@@ -201,6 +203,11 @@ export const PLUGIN_REGISTRY: Record<PluginId, PluginRegistryMeta> = {
         openModule: 'database',
     },
     'p-kafka-explorer': {
+        tone: 'amber',
+        surfaces: ['connectionForm', 'explorer'],
+        openModule: 'database',
+    },
+    'p-yarn-explorer': {
         tone: 'amber',
         surfaces: ['connectionForm', 'explorer'],
         openModule: 'database',

@@ -214,6 +214,22 @@ export const API_PATHS = {
             `/api/explorer/connections/${encodeURIComponent(connectionId)}/kafka/consumer-groups`,
         kafkaConsumerGroupMetrics: (connectionId: string, groupId: string) =>
             `/api/explorer/connections/${encodeURIComponent(connectionId)}/kafka/consumer-groups/${encodeURIComponent(groupId)}/metrics`,
+        yarnInfo: (connectionId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/info`,
+        yarnApps: (connectionId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/apps`,
+        yarnApp: (connectionId: string, appId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/apps/${encodeURIComponent(appId)}`,
+        yarnNodes: (connectionId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/nodes`,
+        yarnQueues: (connectionId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/queues`,
+        yarnKillApp: (connectionId: string, appId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/apps/${encodeURIComponent(appId)}/state`,
+        yarnMoveAppQueue: (connectionId: string, appId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/apps/${encodeURIComponent(appId)}/queue`,
+        yarnRemoveQueue: (connectionId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/queues/remove`,
     },
     workspace: {
         sqlLogs: '/api/workspace/sql-logs',

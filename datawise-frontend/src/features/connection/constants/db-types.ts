@@ -14,6 +14,7 @@ export const DB_TYPE_LABELS: Record<DbType, string> = {
     db2: 'DB2',
     redis: 'Redis',
     kafka: 'Kafka',
+    yarn: 'YARN',
     mongodb: 'MongoDB',
     sqlite: 'SQLite',
     hive: 'Hive',
@@ -49,6 +50,7 @@ export const PRIMARY_DB_TYPES: DbType[] = [
     'sqlserver',
     'redis',
     'kafka',
+    'yarn',
     'mongodb',
     'clickhouse',
     'starrocks',
@@ -84,6 +86,7 @@ export const ALL_DB_TYPES: DbType[] = [
     'generic',
     'other',
     'flink',
+    'yarn',
 ]
 
 export const DEFAULT_PORTS: Partial<Record<DbType, string>> = {
@@ -100,6 +103,7 @@ export const DEFAULT_PORTS: Partial<Record<DbType, string>> = {
     db2: '50000',
     redis: '6379',
     kafka: '9092',
+    yarn: '8088',
     mongodb: '27017',
     sqlite: '',
     hive: '10000',

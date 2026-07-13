@@ -60,6 +60,32 @@ export const explorerApi = {
         groupId: string,
         options?: { topic?: string },
     ) => api.explorer.fetchKafkaConsumerGroupMetrics(connectionId, groupId, options),
+    fetchYarnClusterInfo: (connectionId: string) => api.explorer.fetchYarnClusterInfo(connectionId),
+    fetchYarnApplications: (
+        connectionId: string,
+        options?: { state?: string; user?: string; queue?: string; limit?: number },
+    ) => api.explorer.fetchYarnApplications(connectionId, options),
+    fetchYarnApplicationDetail: (connectionId: string, appId: string) =>
+        api.explorer.fetchYarnApplicationDetail(connectionId, appId),
+    fetchYarnNodes: (connectionId: string, options?: { limit?: number }) =>
+        api.explorer.fetchYarnNodes(connectionId, options),
+    fetchYarnQueues: (connectionId: string) => api.explorer.fetchYarnQueues(connectionId),
+    killYarnApplication: (
+        connectionId: string,
+        appId: string,
+        payload?: { diagnostics?: string },
+    ) => api.explorer.killYarnApplication(connectionId, appId, payload),
+    moveYarnApplicationQueue: (
+        connectionId: string,
+        appId: string,
+        payload: { queue: string },
+    ) => api.explorer.moveYarnApplicationQueue(connectionId, appId, payload),
+    updateYarnQueue: (
+        connectionId: string,
+        payload: { queueName: string; params: Record<string, string> },
+    ) => api.explorer.updateYarnQueue(connectionId, payload),
+    removeYarnQueue: (connectionId: string, payload: { queueName: string }) =>
+        api.explorer.removeYarnQueue(connectionId, payload),
     fetchConnection: (connectionId: string) => api.explorer.fetchConnection(connectionId),
     connectConnection: (connectionId: string) => api.explorer.connectConnection(connectionId),
     disconnectConnection: (connectionId: string) => api.explorer.disconnectConnection(connectionId),

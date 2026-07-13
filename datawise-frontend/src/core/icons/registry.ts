@@ -218,6 +218,7 @@ export type DwIconName =
     | 'tab-redis-key'
     | 'tab-redis-console'
     | 'tab-kafka'
+    | 'tab-yarn'
     | 'tab-file'
     | 'ellipsis'
 
@@ -342,6 +343,7 @@ export const DW_ICON_REGISTRY: Record<DwIconName, Component> = {
     'tab-redis-key': Key,
     'tab-redis-console': Terminal,
     'tab-kafka': MessageSquare,
+    'tab-yarn': Cpu,
     'tab-file': File,
     ellipsis: Ellipsis,
 }

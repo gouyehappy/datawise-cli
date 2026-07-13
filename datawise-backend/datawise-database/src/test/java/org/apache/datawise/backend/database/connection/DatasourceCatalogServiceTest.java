@@ -137,6 +137,7 @@ class DatasourceCatalogServiceTest {
                     null,
                     null,
                     null,
+                    null,
                     null
             );
         } catch (IOException ex) {

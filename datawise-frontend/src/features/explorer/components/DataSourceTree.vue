@@ -261,6 +261,11 @@ function displayNodeLabel(node: TreeNode) {
     if (node.meta === 'consumer-groups') return t('explorer.kafkaFeatures.consumerGroups')
     if (node.meta === 'table-publish') return t('explorer.kafkaFeatures.tablePublish')
   }
+  if (node.type === 'yarn-feature') {
+    if (node.meta === 'applications') return t('explorer.yarnFeatures.applications')
+    if (node.meta === 'nodes') return t('explorer.yarnFeatures.nodes')
+    if (node.meta === 'queues') return t('explorer.yarnFeatures.queues')
+  }
   if (node.type === 'load_more') return 'Load more'
   if (node.type === 'platform_feature') {
     return platformFeatureTreeLabel(resolvePlatformFeatureId(node) as import('@/features/platform/types/platform.types').PlatformFeatureId, t)

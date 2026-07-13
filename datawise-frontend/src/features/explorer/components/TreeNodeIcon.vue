@@ -40,6 +40,9 @@ function resolveTreeIcon(type: TreeNodeType, expanded?: boolean, feature?: strin
   if (type === 'kafka-feature') {
     return feature === 'consumer-groups' ? 'users' : feature === 'table-publish' ? 'export' : 'tab-kafka'
   }
+  if (type === 'yarn-feature') {
+    return feature === 'nodes' ? 'cpu' : feature === 'queues' ? 'menu-group' : 'tab-yarn'
+  }
   if (type === 'redis-browser' || type === 'redis-feature') {
     return feature === 'command' ? 'console' : 'search'
   }

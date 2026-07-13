@@ -46,7 +46,7 @@ export function shouldAffirmConnectionHealthForCachedChildren(
 
 /** Kafka / Redis 不在 Explorer 树中展示 Topic 或 Key，仅保留连接节点。 */
 export function isFlatConnectionCatalog(dbType?: DbType): boolean {
-    return dbType === 'kafka' || dbType === 'redis'
+    return dbType === 'kafka' || dbType === 'redis' || dbType === 'yarn'
 }
 
 /** 过滤不应出现在连接树中的缓存子节点（历史 Topic / Key 等）。 */
