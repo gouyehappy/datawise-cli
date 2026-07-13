@@ -55,4 +55,10 @@ public class UserStore {
                 .filter(user -> user != null && !user.isGuest())
                 .toList();
     }
+
+    public java.util.List<UserEntity> listAllUsers() {
+        return users.stream()
+                .filter(user -> user != null)
+                .toList();
+    }
 }

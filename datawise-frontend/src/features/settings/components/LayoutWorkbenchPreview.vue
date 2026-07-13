@@ -24,7 +24,7 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
       <span class="preview-dot"/>
       <span class="preview-dot"/>
       <span class="preview-dot"/>
-      <span class="preview-title">DataWise Workbench</span>
+      <span class="preview-title">Workbench</span>
     </div>
 
     <div class="preview-body">

@@ -2,7 +2,7 @@
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {TeamSharedQueryDetail, TeamSharedQuerySummary} from '@/core/types'
-import {AppDrawer, DwButton, EmptyState, ModalActions} from '@/core/components'
+import {AppDrawer, ConfirmDialog, DwButton, EmptyState, ModalActions} from '@/core/components'
 import StatusPill from '@/core/components/ui/StatusPill.vue'
 import ToolWindowShell from '@/features/layout/components/ToolWindowShell.vue'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -38,6 +38,8 @@ const commentDraft = ref('')
 const commentSaving = ref(false)
 const favoriteSaving = ref(false)
 const openingConsole = ref(false)
+const deleteCommentConfirmOpen = ref(false)
+const pendingCommentId = ref<string | null>(null)
 
 const subtitle = computed(() => {
     if (!detail.value) return ''
@@ -139,9 +141,14 @@ async function submitComment() {
 }
 
 async function removeComment(commentId: string) {
+    pendingCommentId.value = commentId
+    deleteCommentConfirmOpen.value = true
+}
+
+async function confirmRemoveComment() {
     const summary = props.summary
-    if (!summary || !detail.value) return
-    if (!window.confirm(t('team.sharedQueries.deleteCommentConfirm'))) return
+    const commentId = pendingCommentId.value
+    if (!summary || !commentId || !detail.value) return
     try {
         await teamStore.deleteSharedQueryComment(props.teamId, summary.id, commentId)
         detail.value = {
@@ -152,6 +159,8 @@ async function removeComment(commentId: string) {
         emit('summaryUpdated', mergeSharedQuerySummary(summary, {
             commentCount: Math.max(0, summary.commentCount - 1),
         }))
+        deleteCommentConfirmOpen.value = false
+        pendingCommentId.value = null
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.commentDeleteFailed')
         layout.showToast(message)
@@ -279,4 +288,12 @@ watch(
       </div>
     </ToolWindowShell>
   </AppDrawer>
+
+  <ConfirmDialog
+      v-model:open="deleteCommentConfirmOpen"
+      :title="t('team.sharedQueries.deleteCommentAction')"
+      :message="t('team.sharedQueries.deleteCommentConfirm')"
+      :confirm-label="t('team.sharedQueries.deleteCommentAction')"
+      @confirm="confirmRemoveComment"
+  />
 </template>

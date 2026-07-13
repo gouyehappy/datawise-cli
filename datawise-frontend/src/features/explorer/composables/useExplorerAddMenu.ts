@@ -1,11 +1,19 @@
+import {computed} from 'vue'
 import type {ConnectionConfig, DbType} from '@/core/types'
 import {
+    filterExplorerAddMenuItems,
     getExplorerAddMenuItems,
     parseDbTypeMenuId,
 } from '@/features/explorer/constants/explorer-add-menu'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {
+    canImportExplorerConnections,
+    canMutateConnectionCatalog,
+} from '@/features/auth/services/feature-permission.service'
+import {resolveConnectionCatalogErrorMessage} from '@/features/connection/services/connection-catalog.service'
 import {useI18n} from 'vue-i18n'
 
 /** 工具栏「+」添加数据源菜单逻辑 */
@@ -17,8 +25,11 @@ export function useExplorerAddMenu(options?: {
     const explorer = useExplorerStore()
     const layout = useLayoutStore()
     const workspace = useWorkspaceStore()
+    const auth = useAuthStore()
 
-    const menuItems = getExplorerAddMenuItems(t)
+    const menuItems = computed(() =>
+        filterExplorerAddMenuItems(getExplorerAddMenuItems(t), auth.isGuest),
+    )
 
     function close() {
         options?.onClose?.()
@@ -41,8 +52,8 @@ export function useExplorerAddMenu(options?: {
                 const list = Array.isArray(parsed) ? parsed : [parsed]
                 const count = await explorer.importConnections(list)
                 layout.showToast(t('explorer.importSuccess', {count}))
-            } catch {
-                layout.showToast(t('explorer.importFailed'))
+            } catch (error) {
+                layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'save'))
             }
             close()
         }
@@ -56,11 +67,21 @@ export function useExplorerAddMenu(options?: {
             return
         }
         if (id === 'new-folder') {
+            if (!canMutateConnectionCatalog(auth.isGuest)) {
+                layout.showErrorToast(t('auth.permissionDenied'))
+                close()
+                return
+            }
             close()
             options?.onCreateFolder?.()
             return
         }
         if (id === 'import-connections') {
+            if (!canImportExplorerConnections(auth.isGuest)) {
+                layout.showErrorToast(t('auth.permissionDenied'))
+                close()
+                return
+            }
             importConnections()
             return
         }

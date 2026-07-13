@@ -31,6 +31,7 @@ import {useShortcutPanelStore} from '@/features/layout/stores/shortcut-panel-sto
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
+import {canAccessFeature} from '@/features/auth/services/feature-permission.service'
 import {usePluginPresetSummary} from '@/features/plugin/composables/usePluginPresetSummary'
 import {
     buildPaletteNavigationEntries,
@@ -100,6 +101,8 @@ const navigationEntries = computed(() =>
             alignToReferencePreset: () => pluginStore.alignToReferencePreset(),
             openPluginPresetDiff: () => pluginStore.openPluginPresetDiff(),
             getReferencePresetId: () => pluginStore.referencePresetId(),
+            canAccessFeature,
+            canAccessNavModule: (module) => layout.canAccessNavModule(module),
         }),
         query.value,
     ),

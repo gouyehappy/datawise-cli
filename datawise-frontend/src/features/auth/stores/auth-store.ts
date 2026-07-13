@@ -1,5 +1,5 @@
 import {defineStore} from 'pinia'
-import {computed, ref} from 'vue'
+import {computed, nextTick, ref} from 'vue'
 import {authApi, type AuthUser} from '@/api'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useToastStore} from '@/features/layout/stores/toast-store'
@@ -23,7 +23,13 @@ import {
 } from '@/features/auth/services/auth-session-persist.service'
 import {resetUserScopedState} from '@/features/auth/services/user-session-reset.service'
 import {cancelDeferredConfigServerWrites} from '@/shared/config/app-config.service'
-import type {SessionInfo} from '@/shared/api/types'
+import type {SessionInfo, LoginResult} from '@/shared/api/types'
+import {
+    setActiveFeaturePermissions,
+    createPreset,
+    normalizeFeaturePermissionMap,
+} from '@/features/auth/services/feature-permission.service'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 import {t} from '@/i18n'
 
 function createLocalSessionId(prefix: string): string {
@@ -39,8 +45,33 @@ export const useAuthStore = defineStore('auth', () => {
     const sessionId = ref<string | null>(null)
     const user = ref<AuthUser | null>(null)
     const loginDialogOpen = ref(false)
+    const isAdmin = ref(false)
 
     const isGuest = computed(() => user.value?.isGuest ?? true)
+
+    function applyPermissionsFromSession(
+        session: {
+            admin?: boolean
+            featurePermissions?: SessionInfo['featurePermissions']
+            guest?: boolean
+        },
+    ) {
+        isAdmin.value = session.admin === true
+        if (session.admin) {
+            setActiveFeaturePermissions(createPreset('full'))
+        } else if (session.guest === true) {
+            const permissions = session.featurePermissions && Object.keys(session.featurePermissions).length > 0
+                ? normalizeFeaturePermissionMap(session.featurePermissions)
+                : createPreset('workbench')
+            permissions[FeaturePermission.NavDatabase] = true
+            setActiveFeaturePermissions(permissions)
+        } else if (session.featurePermissions && Object.keys(session.featurePermissions).length > 0) {
+            setActiveFeaturePermissions(normalizeFeaturePermissionMap(session.featurePermissions))
+        } else {
+            setActiveFeaturePermissions(createPreset('full'))
+        }
+        void nextTick(() => useLayoutStore().ensureAccessibleModule())
+    }
 
     function applyUserProfile(next: AuthUser) {
         user.value = next
@@ -49,30 +80,45 @@ export const useAuthStore = defineStore('auth', () => {
         layout.profileEmail = next.email
     }
 
-    function buildUser(userName: string, isGuestUser: boolean, userId?: number | null): AuthUser {
+    function buildUser(
+        userName: string,
+        isGuestUser: boolean,
+        userId?: number | null,
+        admin = false,
+    ): AuthUser {
         const profile = authApi.resolveUserProfile(userName, isGuestUser)
         return {
             userName,
-            userId: isGuestUser ? null : userId ?? null,
+            userId: userId ?? null,
             displayName: isGuestUser ? t('auth.guestDisplayName') : profile.displayName,
             email: profile.email,
             isGuest: isGuestUser,
+            isAdmin: admin,
         }
     }
 
     function applySessionInfo(session: SessionInfo) {
         persistAuthSession(session)
         sessionId.value = session.sessionId
-        applyUserProfile(buildUser(session.userName, session.guest, session.userId))
+        applyPermissionsFromSession(session)
+        applyUserProfile(buildUser(session.userName, session.guest, session.userId, session.admin === true))
     }
 
-    function applyGuestSession(nextSessionId: string, userName = 'guest', expiresAtEpochMs?: number | null) {
-        persistSession(nextSessionId, userName, true, expiresAtEpochMs, null)
+    function applyGuestSession(
+        nextSessionId: string,
+        userName = 'guest',
+        expiresAtEpochMs?: number | null,
+        userId?: number | null,
+        featurePermissions?: SessionInfo['featurePermissions'],
+        admin = false,
+    ) {
+        persistSession(nextSessionId, userName, true, expiresAtEpochMs, userId ?? null)
         sessionId.value = nextSessionId
-        applyUserProfile(buildUser(userName, true, null))
+        applyPermissionsFromSession({guest: true, admin, featurePermissions})
+        applyUserProfile(buildUser(userName, true, userId, admin))
     }
 
-    function restoreSession() {
+    function restoreSession(applyFallbackPermissions = false) {
         if (!isLoggedIn()) return false
         const storedSessionId = localStorage.getItem(SESSION_KEY)
         if (!isBackendSessionId(storedSessionId)) {
@@ -82,7 +128,10 @@ export const useAuthStore = defineStore('auth', () => {
         const userName = localStorage.getItem(USERNAME_KEY) ?? 'guest'
         const guest = readGuestFlag()
         sessionId.value = storedSessionId
-        applyUserProfile(buildUser(userName, guest, readUserId()))
+        if (applyFallbackPermissions) {
+            applyPermissionsFromSession({guest, admin: false})
+        }
+        applyUserProfile(buildUser(userName, guest, readUserId(), false))
         return true
     }
 
@@ -91,7 +140,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     function bootstrap() {
-        if (restoreSession()) return
+        if (restoreSession(true)) return
         bootstrapGuestSession()
     }
 
@@ -112,7 +161,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function bootstrapAsync(backendConnected = true) {
-        const hadSession = restoreSession()
+        const hadSession = restoreSession(false)
         const guest = readGuestFlag()
 
         if (!hadSession) {
@@ -127,6 +176,8 @@ export const useAuthStore = defineStore('auth', () => {
         if (!shouldValidateBackendSession(hadSession, backendConnected)) {
             if (isLocalSessionExpired()) {
                 await recoverFromStaleSession(guest)
+            } else {
+                applyPermissionsFromSession({guest, admin: false})
             }
             return
         }
@@ -159,7 +210,12 @@ export const useAuthStore = defineStore('auth', () => {
         }
         persistLoginResult(result, result.userName ?? userName, false)
         sessionId.value = result.sessionId
-        applyUserProfile(buildUser(result.userName ?? userName, false, result.userId))
+        applyPermissionsFromSession({
+            guest: false,
+            admin: result.admin === true,
+            featurePermissions: result.featurePermissions,
+        })
+        applyUserProfile(buildUser(result.userName ?? userName, false, result.userId, result.admin === true))
         await resetUserScopedState()
     }
 
@@ -168,8 +224,26 @@ export const useAuthStore = defineStore('auth', () => {
         if (!result.sessionId) {
             throw new Error(t('auth.guestFailed'))
         }
-        applyGuestSession(result.sessionId, result.userName ?? 'guest', result.expiresAtEpochMs)
+        applyGuestSession(
+            result.sessionId,
+            result.userName ?? 'guest',
+            result.expiresAtEpochMs,
+            result.userId,
+            result.featurePermissions,
+            result.admin === true,
+        )
         await resetUserScopedState()
+    }
+
+    /** 从服务端重新拉取当前会话权限（管理员改权限后立即生效）。 */
+    async function refreshSessionPermissions() {
+        if (!sessionId.value || !isBackendSessionId(sessionId.value)) return
+        try {
+            const session = await authApi.getCurrentSession({silent: true})
+            applySessionInfo(session)
+        } catch {
+            // 静默失败：保留现有权限
+        }
     }
 
     async function handleUnauthorizedAccess() {
@@ -207,6 +281,7 @@ export const useAuthStore = defineStore('auth', () => {
         sessionId,
         user,
         isGuest,
+        isAdmin,
         loginDialogOpen,
         restoreSession,
         bootstrap,
@@ -216,6 +291,7 @@ export const useAuthStore = defineStore('auth', () => {
         closeLoginDialog,
         login,
         loginAsGuest,
+        refreshSessionPermissions,
         handleUnauthorizedAccess,
         signOut,
     }

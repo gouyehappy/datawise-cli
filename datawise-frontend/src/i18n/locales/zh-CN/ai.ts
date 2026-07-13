@@ -8,7 +8,7 @@ export default {
         search: '搜索模型…',
         noMatch: '没有匹配的模型',
     },
-    welcomeTitle: '你好，我是 DataWise AI 助手',
+    welcomeTitle: '你好，我是 AI 助手',
     welcomeIntro: '我可以帮你更高效地使用数据库工作台：',
     capabilities: [
         {title: '生成 SQL', desc: '用自然语言描述查询需求'},
@@ -71,7 +71,7 @@ export default {
         shareFailed: '分享失败',
     },
     welcome:
-        '你好，我是 DataWise AI 助手。\n\n你可以：\n- 描述查询需求，我会生成 SQL\n- 粘贴 SQL 让我解释或优化\n- 点击「在控制台打开」将 SQL 写入编辑器',
+        '你好，我是 AI 助手。\n\n你可以：\n- 描述查询需求，我会生成 SQL\n- 粘贴 SQL 让我解释或优化\n- 点击「在控制台打开」将 SQL 写入编辑器',
     openInConsole: '在控制台打开',
     templates: {
         title: '分析模板',

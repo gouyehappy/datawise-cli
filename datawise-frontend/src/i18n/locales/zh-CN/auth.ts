@@ -1,7 +1,7 @@
 export default {
     heroKicker: '本地数据库工作台',
     heroHeadline: '连接、查询、导出，一站完成',
-    heroDesc: 'DataWise CLI 提供 SQL 控制台、连接管理与 AI 辅助，适合日常数据开发与探索。',
+    heroDesc: 'SQL 控制台、连接管理与 AI 辅助，适合日常数据开发与探索。',
     featureConsoleTitle: 'SQL 控制台',
     featureConsoleDesc: 'Monaco 编辑器、执行计划与结果网格，贴近 IDE 体验。',
     featureConnectTitle: '多源连接',
@@ -38,4 +38,7 @@ export default {
     invalidCredentials: '用户名或密码错误',
     sessionExpired: '登录会话已失效，请重新登录',
     serviceUnavailable: '登录后可用',
+    permissionDenied: '当前账号没有此操作权限',
+    guestNotAllowed: '访客模式下无法执行此操作，请登录账号',
+    adminRequired: '需要管理员权限',
 }

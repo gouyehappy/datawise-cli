@@ -24,6 +24,8 @@ import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
+import {useFeaturePermission} from '@/features/auth/composables/useFeaturePermission'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
@@ -60,6 +62,7 @@ const appConfig = useAppConfigStore()
 const pluginStore = usePluginStore()
 const schemaProvider = useExplorerSqlSchemaProvider()
 const {readOnly: guestReadOnly, hint: guestReadOnlyHint} = useResourceWriteGuard(UserResource.WorkspaceScripts)
+const {can} = useFeaturePermission()
 const {connectionHealthById} = storeToRefs(explorer)
 
 const editorRef = ref<SqlEditorExpose>()
@@ -437,6 +440,7 @@ onMounted(async () => {
     <div class="dw-console-toolbar">
       <div class="dw-console-actions dw-btn-group">
         <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleRun)"
             class="console-run-btn"
             :disabled="!canPreview || previewLoading"
             :title="previewDisabledReason || shortcutTooltip(t('viewModel.preview'), 'workspace.runSql')"
@@ -446,6 +450,7 @@ onMounted(async () => {
         </IconButton>
         <span class="dw-console-divider" aria-hidden="true"/>
         <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleSave)"
             :disabled="guestReadOnly || saving || draftSaving || !scopeReady"
             :title="guestReadOnly ? guestReadOnlyHint : t('viewModel.publish')"
             @click="onPublish"
@@ -453,6 +458,7 @@ onMounted(async () => {
           <ConsoleToolbarIcon name="save"/>
         </IconButton>
         <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleSave)"
             :disabled="guestReadOnly || saving || draftSaving || !scopeReady"
             :title="guestReadOnly ? guestReadOnlyHint : t('viewModel.saveDraft')"
             @click="onSaveDraft"
@@ -460,19 +466,20 @@ onMounted(async () => {
           <ConsoleToolbarIcon name="save" muted/>
         </IconButton>
         <IconButton
-            v-if="sqlFormatEnabled"
+            v-if="sqlFormatEnabled && can(FeaturePermission.WorkbenchConsoleFormat)"
             :title="t('console.format')"
             @click="formatSql"
         >
           <ConsoleToolbarIcon name="format"/>
         </IconButton>
         <EditorFullscreenButton
+            v-if="can(FeaturePermission.WorkbenchConsoleFullscreen)"
             variant="toolbar"
             :active="isEditorFullscreen"
             @click="toggleEditorFullscreen"
         />
         <span class="dw-console-divider" aria-hidden="true"/>
-        <div v-if="consoleAiEnabled" ref="aiBtnRef" class="ai-btn-wrap">
+        <div v-if="consoleAiEnabled && can(FeaturePermission.WorkbenchConsoleAi)" ref="aiBtnRef" class="ai-btn-wrap">
           <IconButton
               class="console-ai-btn"
               :title="shortcutTooltip(t('console.ai'), 'workspace.aiPrompt')"

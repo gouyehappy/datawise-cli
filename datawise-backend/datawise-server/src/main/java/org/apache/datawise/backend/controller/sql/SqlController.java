@@ -17,6 +17,8 @@ import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.connector.api.support.SqlWriteClassifier;
 import org.apache.datawise.backend.security.HeadlessSqlAuth;
 import org.apache.datawise.backend.service.TeamService;
+import org.apache.datawise.backend.service.FeaturePermissionAccess;
+import org.apache.datawise.backend.domain.UserFeaturePermission;
 import org.apache.datawise.backend.common.support.ApiRequestLogger;
 import org.apache.datawise.backend.common.support.PerfLogger;
 import org.slf4j.Logger;
@@ -40,6 +42,7 @@ public class SqlController {
     private final SessionKillService sessionKillService;
     private final ConsoleSqlCancelService consoleSqlCancelService;
     private final TeamService teamService;
+    private final FeaturePermissionAccess featurePermissionAccess;
 
     public SqlController(
             SqlService sqlService,
@@ -47,7 +50,8 @@ public class SqlController {
             LockWaitService lockWaitService,
             SessionKillService sessionKillService,
             ConsoleSqlCancelService consoleSqlCancelService,
-            TeamService teamService
+            TeamService teamService,
+            FeaturePermissionAccess featurePermissionAccess
     ) {
         this.sqlService = sqlService;
         this.activeSessionService = activeSessionService;
@@ -55,11 +59,13 @@ public class SqlController {
         this.sessionKillService = sessionKillService;
         this.consoleSqlCancelService = consoleSqlCancelService;
         this.teamService = teamService;
+        this.featurePermissionAccess = featurePermissionAccess;
     }
 
     @PostMapping("/execute")
     public ApiResponse<ExecuteSqlResult> executeSql(@RequestBody ExecuteSqlRequest request) {
         HeadlessSqlAuth.requireSqlAccess();
+        featurePermissionAccess.requireSqlExecute(request.sql());
         int sqlLen = request.sql() != null ? request.sql().length() : 0;
         ApiRequestLogger.logEntry(
                 log,
@@ -179,6 +185,7 @@ public class SqlController {
     @PostMapping("/kill-session")
     public ApiResponse<KillSessionResultDto> killSession(@RequestBody KillSessionRequest request) {
         HeadlessSqlAuth.requireSqlAccess();
+        featurePermissionAccess.requirePermission(UserFeaturePermission.WORKBENCH_CONSOLE_DANGEROUS_SQL);
         ApiRequestLogger.logEntry(
                 log,
                 "POST /api/sql/kill-session",

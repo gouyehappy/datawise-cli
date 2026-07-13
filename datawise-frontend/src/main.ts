@@ -20,6 +20,7 @@ import {registerSqlEditorApp} from '@/features/workspace/services/ensure-sql-edi
 
 import {registerApiErrorNotifier} from '@/shared/api/http/api-error-notifier'
 import {HTTP_NOT_READY} from '@/shared/api/http/request'
+import {resolveDisplayApiErrorMessage} from '@/shared/api/http/api-error-message'
 import {useToastStore} from '@/features/layout/stores/toast-store'
 import {shouldSuppressApiErrorToast} from '@/features/layout/services/api-error-toast-policy.service'
 import {markBackendOffline} from '@/features/layout/services/backend-health.service'
@@ -30,7 +31,8 @@ registerApiErrorNotifier((message, error) => {
     if (message === HTTP_NOT_READY || message.startsWith('HTTP API request failed')) {
         markBackendOffline()
     }
-    useToastStore().showError(message)
+    const display = resolveDisplayApiErrorMessage(error, (key) => String(i18n.global.t(key)))
+    useToastStore().showError(display)
 })
 
 setupExplorerContextMenus()

@@ -30,7 +30,7 @@ const {testing, testMessage, testOk, testConnection} = useConnectionTest(
     getPayload,
     () => props.tab.connectionId,
 )
-const {saveConnection, cancel, saving} = useConnectionTabActions({
+const {saveConnection, cancel, saving, canSave} = useConnectionTabActions({
   tabId: props.tab.id,
   form,
   getPayload,
@@ -38,6 +38,12 @@ const {saveConnection, cancel, saving} = useConnectionTabActions({
   editingConnectionId: () => props.tab.connectionId,
   targetGroupId: () => props.tab.targetGroupId,
 })
+
+const busy = computed(() => saving.value || testing.value)
+const readOnly = computed(() => !canSave.value)
+const busyHint = computed(() =>
+    saving.value ? t('connection.savingHint') : t('connection.testingHint'),
+)
 
 onMounted(() => {
   if (!props.tab.connectionId || isUnsavedConnectionId(props.tab.connectionId)) return
@@ -79,21 +85,24 @@ onMounted(() => {
       <div v-if="loading" class="conn-loading">{{ t('connection.loading') }}</div>
 
       <div v-else class="conn-body-wrap">
-        <div class="conn-body" :class="{'conn-body--saving': saving}">
+        <p v-if="readOnly" class="conn-readonly-hint" role="status">{{ t('connection.formReadOnlyHint') }}</p>
+        <div class="conn-body" :class="{'conn-body--busy': busy, 'conn-body--readonly': readOnly}">
           <ConnectionFormFields
               v-model:form="form"
               :db-type="dbType"
+              :read-only="readOnly"
           />
         </div>
-        <div v-if="saving" class="conn-saving" role="status" aria-live="polite">
-          <span class="conn-saving__spinner" aria-hidden="true"/>
-          <p class="conn-saving__text">{{ t('connection.savingHint') }}</p>
+        <div v-if="busy" class="conn-busy" role="status" aria-live="polite">
+          <span class="conn-busy__spinner" aria-hidden="true"/>
+          <p class="conn-busy__text">{{ busyHint }}</p>
         </div>
       </div>
 
       <ConnectionFormFooter
           :testing="testing"
           :saving="saving"
+          :save-disabled="!canSave"
           :test-message="testMessage"
           :test-ok="testOk"
           @test="testConnection"
@@ -179,12 +188,25 @@ onMounted(() => {
   transition: opacity 0.2s ease;
 }
 
-.conn-body--saving {
+.conn-body--busy {
   pointer-events: none;
   opacity: 0.45;
 }
 
-.conn-saving {
+.conn-readonly-hint {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 24px 0;
+  color: var(--dw-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.conn-body--readonly:not(.conn-body--busy) {
+  opacity: 0.92;
+}
+
+.conn-busy {
   position: absolute;
   inset: 0;
   z-index: 2;
@@ -199,16 +221,16 @@ onMounted(() => {
   backdrop-filter: blur(2px);
 }
 
-.conn-saving__spinner {
+.conn-busy__spinner {
   width: 24px;
   height: 24px;
   border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;
-  animation: conn-saving-spin 0.75s linear infinite;
+  animation: conn-busy-spin 0.75s linear infinite;
 }
 
-.conn-saving__text {
+.conn-busy__text {
   margin: 0;
   max-width: 240px;
   color: var(--dw-text-muted);
@@ -216,7 +238,7 @@ onMounted(() => {
   line-height: 1.45;
 }
 
-@keyframes conn-saving-spin {
+@keyframes conn-busy-spin {
   to {
     transform: rotate(360deg);
   }

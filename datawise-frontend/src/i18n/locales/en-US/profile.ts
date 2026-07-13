@@ -19,11 +19,11 @@ export default {
     changePasswordSuccess: 'Password updated',
     changePasswordSaving: 'Saving…',
     toggleTheme: 'Toggle theme',
-    defaultName: 'DataWise User',
+    defaultName: 'User',
     menu: {
         profile: 'Profile',
         settings: 'Settings',
-        createOrJoinTeam: 'Create or join a team',
+        createOrJoinTeam: 'Team collaboration',
         signOut: 'Sign out',
         onboarding: 'Getting started',
         new: 'New',

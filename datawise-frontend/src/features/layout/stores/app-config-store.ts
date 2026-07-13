@@ -9,7 +9,7 @@
  */
 import {defineStore} from 'pinia'
 import {computed, ref, toRaw, watch} from 'vue'
-import type {ShortcutPanel} from '@/core/types'
+import type {SettingsSection, ShortcutPanel} from '@/core/types'
 import {currentLocale, setLocale, type AppLocale} from '@/i18n'
 import type {SideRailItemId} from '@/features/layout/constants/side-rail-nav'
 import {SIDE_RAIL_NAV_DEFS} from '@/features/layout/constants/side-rail-nav'
@@ -35,6 +35,7 @@ import type {
     DashboardPreferences,
     LayoutPreferences,
     PluginPreferences,
+    RestorableNavModule,
     WindowPreferences
 } from '@/shared/config/app-config.types'
 import {
@@ -50,26 +51,37 @@ import {replaceDashboardWidgets} from '@/features/dashboard/services/dashboard-w
 import {createAiEmbeddingProfile, createAiLlmProfile} from '@/features/settings/constants/ai-presets'
 import {aiApi} from '@/api'
 import {mergePluginsOnAppConfigImport} from '@/features/plugin/services/plugin-app-config-merge.service'
+import {
+    isShortcutPanelEnabled,
+    resolvePluginEnabled,
+} from '@/features/plugin/services/plugin-registry.service'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {
     applyAppConfigFile,
     bootstrapSqlEditorLayersFromStoredAppConfig,
     exportAppConfigDownload,
     fetchAppConfigFromServer,
-    hasVisibleShortcutRailItem,
     isShortcutRailItemVisible,
     isSideRailItemVisible,
     migrateLegacyStorageKeysOnce,
     normalizeAppConfig,
     parseAppConfigFile,
     persistAppConfig,
-    pickRestorableModule,
+    pickAccessibleNavModule,
     pushLocalAppConfigToServer,
     readAppConfig,
+    resolveHomeNavModule,
     sanitizeEditorSettings,
     schedulePersistAppConfig,
 } from '@/shared/config/app-config.service'
 import {readGuestFlag} from '@/shared/auth/session'
+import {
+    canAccessFeature,
+    settingsSectionFeatureKey,
+    shortcutFeatureKey,
+    sideRailFeatureKey,
+} from '@/features/auth/services/feature-permission.service'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 import {syncSqlEditorLayersFromServer} from '@/features/settings/services/sql-editor-shortcuts.service'
 import {syncUpdatePreferencesFromServer} from '@/features/settings/services/about-settings.service'
 import {useUpdateSettingsStore} from '@/features/settings/stores/update-settings'
@@ -91,7 +103,14 @@ export const useAppConfigStore = defineStore('app-config', () => {
     const config = ref<AppConfigFile>(readAppConfig())
     let syncing = false
     let heavyPersistTimer: ReturnType<typeof setTimeout> | null = null
+    let lightPersistTimer: ReturnType<typeof setTimeout> | null = null
     const HEAVY_PERSIST_DELAY_MS = 700
+    const LIGHT_PERSIST_DELAY_MS = 320
+
+    /** 读 config 内插件开关，避免 init 期间 app-config ↔ plugin store 循环依赖 */
+    function isPluginEnabledFromConfig(pluginId: string): boolean {
+        return resolvePluginEnabled(pluginId, [], config.value.plugins?.enabled ?? {})
+    }
 
     const preferences = computed(() => config.value.layout)
     const aiPreferences = computed(() => config.value.ai ?? DEFAULT_AI_PREFERENCES)
@@ -321,22 +340,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
                 primary: theme.primaryTone,
             },
             editor: {...editor.settings},
-            layout: {
-                ...config.value.layout,
-                explorerWidth: explorer.width,
-                showTerminalPanel: layout.showTerminalPanel,
-                terminalHeight: layout.terminalHeight,
-                lastModule:
-                    layout.activeModule === 'database'
-                    || layout.activeModule === 'dashboard'
-                    || layout.activeModule === 'ai'
-                    || layout.activeModule === 'plugin'
-                    || layout.activeModule === 'pluginDev'
-                    || layout.activeModule === 'connectorMarket'
-                        ? layout.activeModule
-                        : config.value.layout.lastModule,
-                lastShortcutPanel: layout.activeShortcutPanel,
-            },
+            layout: snapshotLayoutPreferences(),
             explorer: {
                 selectedNodeId: explorer.selectedNodeId,
                 searchQuery: explorer.searchQuery,
@@ -377,6 +381,87 @@ export const useAppConfigStore = defineStore('app-config', () => {
         schedulePersistAppConfig(config.value)
     }
 
+    function resolvePersistedLastModule() {
+        const module = layout.activeModule
+        if (
+            module === 'database'
+            || module === 'dashboard'
+            || module === 'ai'
+            || module === 'plugin'
+            || module === 'pluginDev'
+            || module === 'connectorMarket'
+        ) {
+            return resolveHomeNavModule(module as RestorableNavModule)
+        }
+        return config.value.layout.lastModule
+    }
+
+    function snapshotLayoutPreferences(): LayoutPreferences {
+        return {
+            ...config.value.layout,
+            explorerWidth: explorer.width,
+            showTerminalPanel: layout.showTerminalPanel,
+            terminalHeight: layout.terminalHeight,
+            lastModule: resolvePersistedLastModule(),
+            lastShortcutPanel: layout.activeShortcutPanel,
+        }
+    }
+
+    /** 导航/布局切换：只更新 layout，避免每次点击全量 capture 工作区 SQL。 */
+    function scheduleLayoutPersist() {
+        if (syncing) return
+        if (lightPersistTimer) clearTimeout(lightPersistTimer)
+        lightPersistTimer = setTimeout(() => {
+            lightPersistTimer = null
+            if (syncing) return
+            config.value = {
+                ...config.value,
+                layout: snapshotLayoutPreferences(),
+            }
+            schedulePersistAppConfig(config.value)
+        }, LIGHT_PERSIST_DELAY_MS)
+    }
+
+    /** Explorer 选中/搜索等：只更新 explorer 字段，不遍历整棵树。 */
+    function scheduleExplorerPersist() {
+        if (syncing) return
+        if (lightPersistTimer) clearTimeout(lightPersistTimer)
+        lightPersistTimer = setTimeout(() => {
+            lightPersistTimer = null
+            if (syncing) return
+            const current = config.value.explorer
+            config.value = {
+                ...config.value,
+                explorer: {
+                    selectedNodeId: explorer.selectedNodeId,
+                    searchQuery: explorer.searchQuery,
+                    expandedNodeIds: current?.expandedNodeIds ?? [],
+                    showColumnComment: explorer.showColumnComment,
+                    showTableComment: explorer.showTableComment,
+                    showSemanticLayer: explorer.showSemanticLayer,
+                },
+            }
+            schedulePersistAppConfig(config.value)
+        }, LIGHT_PERSIST_DELAY_MS)
+    }
+
+    function scheduleProfilePersist() {
+        if (syncing) return
+        if (lightPersistTimer) clearTimeout(lightPersistTimer)
+        lightPersistTimer = setTimeout(() => {
+            lightPersistTimer = null
+            if (syncing) return
+            config.value = {
+                ...config.value,
+                profile: {
+                    name: layout.profileName,
+                    email: layout.profileEmail,
+                },
+            }
+            schedulePersistAppConfig(config.value)
+        }, LIGHT_PERSIST_DELAY_MS)
+    }
+
     /** Explorer 树 / Workspace Tab SQL 等高频变更：合并 capture，避免每次按键全量序列化 */
     function persistHeavySoon() {
         if (syncing) return
@@ -404,22 +489,34 @@ export const useAppConfigStore = defineStore('app-config', () => {
         persistAppConfig(config.value)
     }
 
+    function isMainModuleAccessible(id: SideRailItemId, prefs: LayoutPreferences = preferences.value): boolean {
+        if (!isSideRailItemVisible(prefs, id)) return false
+        if (id === 'ai' && !isPluginEnabledFromConfig('p-ai-workbench')) return false
+        const feature = sideRailFeatureKey(id)
+        if (feature && !canAccessFeature(feature)) return false
+        return true
+    }
+
+    function pickAccessibleModule(prefs: LayoutPreferences = preferences.value): RestorableNavModule {
+        return pickAccessibleNavModule(prefs, (id) => isMainModuleAccessible(id, prefs))
+    }
+
     function applyLayoutEffects(next: LayoutPreferences) {
         config.value = {...config.value, layout: next}
         explorer.width = next.explorerWidth
         layout.showTerminalPanel = next.showTerminalPanel
         layout.setTerminalHeight(next.terminalHeight)
 
-        if (next.lastShortcutPanel && isShortcutRailItemVisible(next, next.lastShortcutPanel)) {
+        if (next.lastShortcutPanel && isShortcutAccessible(next.lastShortcutPanel, next)) {
             layout.activeShortcutPanel = next.lastShortcutPanel
         } else if (
             layout.activeShortcutPanel
-            && !isShortcutRailItemVisible(next, layout.activeShortcutPanel)
+            && !isShortcutAccessible(layout.activeShortcutPanel, next)
         ) {
             layout.activeShortcutPanel = null
         }
 
-        const module = pickRestorableModule(next)
+        const module = pickAccessibleModule(next)
         if (layout.activeModule !== 'settings' && layout.activeModule !== 'team') {
             layout.setModule(module)
         }
@@ -460,6 +557,8 @@ export const useAppConfigStore = defineStore('app-config', () => {
                 config.value.workspace = workspacePrefs
                 if (workspacePrefs.restoreSession && workspacePrefs.tabs.length) {
                     workspace.restoreSession(workspacePrefs.tabs, workspacePrefs.activeTabIndex)
+                } else {
+                    workspace.closeAllClosable()
                 }
             },
             applyProfile: (profile) => {
@@ -491,16 +590,16 @@ export const useAppConfigStore = defineStore('app-config', () => {
         },
     })
 
-    watch(() => explorer.width, () => persistSoon())
-    watch(() => layout.showTerminalPanel, () => persistSoon())
-    watch(() => layout.terminalHeight, () => persistSoon())
-    watch(() => layout.activeModule, () => persistSoon())
-    watch(() => layout.activeShortcutPanel, () => persistSoon())
-    watch(() => explorer.selectedNodeId, () => persistSoon())
-    watch(() => explorer.searchQuery, () => persistSoon())
-    watch(() => explorer.showColumnComment, () => persistSoon())
-    watch(() => explorer.showTableComment, () => persistSoon())
-    watch(() => explorer.showSemanticLayer, () => persistSoon())
+    watch(() => explorer.width, () => scheduleLayoutPersist())
+    watch(() => layout.showTerminalPanel, () => scheduleLayoutPersist())
+    watch(() => layout.terminalHeight, () => scheduleLayoutPersist())
+    watch(() => layout.activeModule, () => scheduleLayoutPersist())
+    watch(() => layout.activeShortcutPanel, () => scheduleLayoutPersist())
+    watch(() => explorer.selectedNodeId, () => scheduleExplorerPersist())
+    watch(() => explorer.searchQuery, () => scheduleExplorerPersist())
+    watch(() => explorer.showColumnComment, () => scheduleExplorerPersist())
+    watch(() => explorer.showTableComment, () => scheduleExplorerPersist())
+    watch(() => explorer.showSemanticLayer, () => scheduleExplorerPersist())
     watch(() => explorer.treeVersion, () => persistHeavySoon())
     watch(() => workspace.tabs, () => persistHeavySoon(), {deep: true})
     watch(() => workspace.activeTabId, () => persistSoon())
@@ -509,8 +608,8 @@ export const useAppConfigStore = defineStore('app-config', () => {
     watch(() => theme.primaryTone, () => persistSoon())
     watch(() => editor.settings, () => persistSoon(), {deep: true})
     watch(currentLocale, () => persistSoon())
-    watch(() => layout.profileName, () => persistSoon())
-    watch(() => layout.profileEmail, () => persistSoon())
+    watch(() => layout.profileName, () => scheduleProfilePersist())
+    watch(() => layout.profileEmail, () => scheduleProfilePersist())
     watch(() => shortcutSettings.bindings, () => persistSoon(), {deep: true})
     watch(() => sqlEditorShortcuts.sharedSettings, () => persistSoon(), {deep: true})
     watch(() => sqlEditorShortcuts.personalSettings, () => persistSoon(), {deep: true})
@@ -526,10 +625,6 @@ export const useAppConfigStore = defineStore('app-config', () => {
 
     const showSideRailStrip = computed(() => preferences.value.showSideRailStrip !== false)
     const showShortcutRailStrip = computed(() => preferences.value.showShortcutRailStrip !== false)
-    const hasShortcutRailItems = computed(() => hasVisibleShortcutRailItem(preferences.value))
-    const showShortcutRail = computed(
-        () => showShortcutRailStrip.value && hasShortcutRailItems.value,
-    )
 
     function setShowSideRailStrip(visible: boolean) {
         applyLayoutState({...snapshotLayout(), showSideRailStrip: visible})
@@ -588,6 +683,8 @@ export const useAppConfigStore = defineStore('app-config', () => {
     }
 
     function isSideRailVisible(id: SideRailItemId) {
+        const feature = sideRailFeatureKey(id)
+        if (feature && !canAccessFeature(feature)) return false
         return isSideRailItemVisible(preferences.value, id)
     }
 
@@ -596,8 +693,36 @@ export const useAppConfigStore = defineStore('app-config', () => {
         return isSideRailVisible('pluginDev')
     }
 
+    function isShortcutAccessible(
+        id: ShortcutPanel,
+        layoutPrefs: LayoutPreferences = preferences.value,
+    ): boolean {
+        if (!canAccessFeature(shortcutFeatureKey(id))) return false
+        if (!isShortcutRailItemVisible(layoutPrefs, id)) return false
+        return isShortcutPanelEnabled(id, isPluginEnabledFromConfig)
+    }
+
     function isShortcutVisible(id: ShortcutPanel) {
-        return isShortcutRailItemVisible(preferences.value, id)
+        return isShortcutAccessible(id)
+    }
+
+    const hasShortcutRailItems = computed(() =>
+        SHORTCUT_RAIL_NAV_DEFS.some((item) => isShortcutAccessible(item.id)),
+    )
+    const showShortcutRail = computed(
+        () => showShortcutRailStrip.value && hasShortcutRailItems.value,
+    )
+
+    watch(showShortcutRail, (visible) => {
+        if (visible) return
+        if (layout.activeShortcutPanel) {
+            layout.activeShortcutPanel = null
+        }
+    })
+
+    function canOpenSettingsSection(section: SettingsSection): boolean {
+        if (!canAccessFeature(FeaturePermission.NavSettings)) return false
+        return canAccessFeature(settingsSectionFeatureKey(section))
     }
 
     function setSideRailVisible(id: SideRailItemId, visible: boolean) {
@@ -612,7 +737,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
                 (id === 'database' || id === 'dashboard' || id === 'ai' || id === 'plugin' || id === 'pluginDev' || id === 'connectorMarket')
                 && layout.activeModule === id
             ) {
-                layout.setModule(pickRestorableModule(next))
+                layout.setModule(pickAccessibleModule(next))
             }
         }
     }
@@ -622,6 +747,9 @@ export const useAppConfigStore = defineStore('app-config', () => {
         next.shortcutRailVisibility[id] = visible
         applyLayoutState(next)
         if (!visible && layout.activeShortcutPanel === id) {
+            layout.activeShortcutPanel = null
+        }
+        if (!hasShortcutRailItems.value && layout.activeShortcutPanel) {
             layout.activeShortcutPanel = null
         }
     }
@@ -702,7 +830,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
     const shortcutRailItems = computed(() =>
         SHORTCUT_RAIL_NAV_DEFS.map((item) => ({
             ...item,
-            visible: isShortcutRailItemVisible(preferences.value, item.id),
+            visible: isShortcutAccessible(item.id),
         })),
     )
 
@@ -761,6 +889,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
         isSideRailVisible,
         isPluginDevToolsVisible,
         isShortcutVisible,
+        canOpenSettingsSection,
         setSideRailVisible,
         setShortcutVisible,
         setShowExplorerPanel,
@@ -795,5 +924,6 @@ export const useAppConfigStore = defineStore('app-config', () => {
         applyFocusMode,
         syncFromServer,
         reloadForCurrentScope,
+        pickAccessibleModule,
     }
 })

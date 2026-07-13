@@ -66,6 +66,7 @@ const {
   confirmRenameViewModel,
   confirmDeleteViewModel,
   confirmMigrateViewModel,
+  connectionDragEnabled,
 } = useConnectionTree()
 
 const dataSourceTreeRef = ref<InstanceType<typeof DataSourceTree> | null>(null)
@@ -119,7 +120,7 @@ onUnmounted(() => {
       :connection-health="explorer.connectionDisplayHealthById"
       :show-column-comment="explorer.showColumnComment"
       :show-table-comment="explorer.showTableComment"
-      connection-drag-enabled
+      :connection-drag-enabled="connectionDragEnabled"
       :can-move-connection-to-group="(connectionId, groupId) => canMoveConnectionToGroup(explorer.tree, connectionId, groupId)"
       @select="onSelect"
       @open="onOpen"

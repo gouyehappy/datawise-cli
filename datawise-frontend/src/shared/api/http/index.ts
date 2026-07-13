@@ -18,11 +18,13 @@ import {createHttpMigrationApi} from '@/shared/api/http/migration'
 import {createHttpPlatformApi} from '@/shared/api/http/platform'
 import {createHttpLineageApi} from '@/shared/api/http/lineage'
 import {createHttpDatagenApi} from '@/shared/api/http/datagen'
+import {createHttpUserAdminApi} from '@/shared/api/http/user-admin'
 
 /** HTTP 实现：按域组装，路径见 http/paths.ts */
 export function createHttpApiClient(): ApiClient {
     return {
         auth: createHttpAuthApi(),
+        userAdmin: createHttpUserAdminApi(),
         sql: createHttpSqlApi(),
         ai: createHttpAiApi(),
         datagen: createHttpDatagenApi(),

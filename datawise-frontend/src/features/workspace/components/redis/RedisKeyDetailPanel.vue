@@ -1,10 +1,10 @@
 <script setup lang="ts">
 
-import {computed, watch} from 'vue'
+import {computed, ref, watch} from 'vue'
 
 import {useI18n} from 'vue-i18n'
 
-import {DwButton, EmptyState} from '@/core/components'
+import {ConfirmDialog, DwButton, EmptyState} from '@/core/components'
 
 import {useLayoutStore} from '@/features/layout/stores/layout'
 
@@ -69,6 +69,8 @@ const loading = defineModel<boolean>('loading', {default: false})
 const detail = defineModel<RedisKeyDetail | null>('detail', {default: null})
 
 const error = defineModel<string | null>('error', {default: null})
+
+const deleteConfirmOpen = ref(false)
 
 
 
@@ -179,8 +181,10 @@ async function copyText(text: string) {
 
 
 async function onDeleteKey() {
+    deleteConfirmOpen.value = true
+}
 
-    if (!window.confirm(t('explorer.redisConsole.deleteConfirm', {key: props.redisKey}))) return
+async function confirmDeleteKey() {
 
     try {
 
@@ -201,6 +205,8 @@ async function onDeleteKey() {
             return
 
         }
+
+        deleteConfirmOpen.value = false
 
         emit('deleted', props.redisKey)
 
@@ -343,6 +349,14 @@ watch(
     <pre v-if="detail" class="redis-key-detail-panel__preview">{{ detail.preview || t('explorer.redisKey.emptyValue') }}</pre>
 
   </section>
+
+  <ConfirmDialog
+      v-model:open="deleteConfirmOpen"
+      :title="t('explorer.redisConsole.deleteKey')"
+      :message="t('explorer.redisConsole.deleteConfirm', {key: redisKey})"
+      :confirm-label="t('explorer.redisConsole.deleteKey')"
+      @confirm="confirmDeleteKey"
+  />
 
 </template>
 

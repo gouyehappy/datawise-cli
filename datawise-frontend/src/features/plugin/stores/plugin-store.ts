@@ -1,5 +1,4 @@
 import {defineStore} from 'pinia'
-import {storeToRefs} from 'pinia'
 import {computed, ref} from 'vue'
 import type {NavModule, PluginItem, SettingsSection, ShortcutPanel} from '@/core/types'
 import {pluginsApi} from '@/api'
@@ -61,27 +60,28 @@ export const usePluginStore = defineStore('plugin', () => {
     const devToolsRequestedTab = ref<PluginDevTab | null>(null)
     const devToolsTabRevision = ref(0)
     const appConfig = useAppConfigStore()
-    const {config} = storeToRefs(appConfig)
     const toast = useToastStore()
 
+    const pluginOverrides = computed(() => appConfig.config.plugins?.enabled ?? {})
+
     const items = computed(() =>
-        mergePluginCatalog(catalog.value, config.value.plugins?.enabled ?? {}),
+        mergePluginCatalog(catalog.value, pluginOverrides.value),
     )
 
     const enabledCount = computed(() => items.value.filter((item) => item.enabled).length)
 
     function isEnabled(id: PluginId | string): boolean {
-        return resolvePluginEnabled(id, catalog.value, config.value.plugins?.enabled ?? {})
+        return resolvePluginEnabled(id, catalog.value, pluginOverrides.value)
     }
 
     function applyRuntimeGates(id: string) {
         if (isSqlSnippetPluginId(normalizePluginId(id))) {
-            syncSqlSnippetPluginGates(catalog.value, config.value.plugins?.enabled ?? {})
+            syncSqlSnippetPluginGates(catalog.value, pluginOverrides.value)
         }
     }
 
     function syncAllRuntimeGates() {
-        syncSqlSnippetPluginGates(catalog.value, config.value.plugins?.enabled ?? {})
+        syncSqlSnippetPluginGates(catalog.value, pluginOverrides.value)
     }
 
     function showToggleToast(id: string, enabled: boolean) {
@@ -108,7 +108,7 @@ export const usePluginStore = defineStore('plugin', () => {
         const preset = findPluginPreset(presetId)
         if (!preset) return
 
-        const next = mergePresetIntoOverrides(config.value.plugins?.enabled ?? {}, preset)
+        const next = mergePresetIntoOverrides(pluginOverrides.value, preset)
         appConfig.patchPlugins({enabled: next, referencePresetId: presetId})
         syncAllRuntimeGates()
         closeDisabledShortcutPanels(next)
@@ -129,7 +129,7 @@ export const usePluginStore = defineStore('plugin', () => {
     }
 
     function referencePresetId(): PluginPresetId {
-        return normalizeReferencePresetId(config.value.plugins?.referencePresetId)
+        return normalizeReferencePresetId(appConfig.config.plugins?.referencePresetId)
     }
 
     function alignToReferencePreset(): number {
@@ -143,7 +143,7 @@ export const usePluginStore = defineStore('plugin', () => {
             return 0
         }
 
-        const next = mergePresetIntoOverrides(config.value.plugins?.enabled ?? {}, preset)
+        const next = mergePresetIntoOverrides(pluginOverrides.value, preset)
         appConfig.patchPlugins({enabled: next})
         syncAllRuntimeGates()
         closeDisabledShortcutPanels(next)
@@ -170,7 +170,7 @@ export const usePluginStore = defineStore('plugin', () => {
     }
 
     function isSnippetLayerEnabled(layer: SqlSnippetLayerId): boolean {
-        return resolveSqlSnippetLayerEnabled(layer, catalog.value, config.value.plugins?.enabled ?? {})
+        return resolveSqlSnippetLayerEnabled(layer, catalog.value, pluginOverrides.value)
     }
 
     function satisfyPluginRequires(id: PluginId): PluginId[] {
@@ -187,9 +187,9 @@ export const usePluginStore = defineStore('plugin', () => {
     function exportPluginConfig() {
         downloadPluginConfigJson(
             buildPluginConfigExport(
-                config.value.plugins?.enabled ?? {},
+                pluginOverrides.value,
                 exportPluginUsageSnapshot(),
-                normalizeReferencePresetId(config.value.plugins?.referencePresetId),
+                normalizeReferencePresetId(appConfig.config.plugins?.referencePresetId),
             ),
         )
     }
@@ -205,7 +205,7 @@ export const usePluginStore = defineStore('plugin', () => {
         if (!imported) return false
 
         const merged = mergeImportedPluginOverrides(
-            config.value.plugins?.enabled ?? {},
+            pluginOverrides.value,
             imported.enabled,
         )
         const patch: Partial<{enabled: Record<string, boolean>; referencePresetId: PluginPresetId}> = {
@@ -228,7 +228,7 @@ export const usePluginStore = defineStore('plugin', () => {
 
     function setEnabled(id: string, enabled: boolean) {
         const key = normalizePluginId(id)
-        const nextEnabled = {...(config.value.plugins?.enabled ?? {}), [key]: enabled}
+        const nextEnabled = {...pluginOverrides.value, [key]: enabled}
         appConfig.patchPlugins({enabled: nextEnabled})
         applyRuntimeGates(key)
         recordPluginToggle(key, enabled)

@@ -1,4 +1,6 @@
 import type {NavModule, PluginItem, SavedConsole, SettingsSection, SqlLogEntry} from '@/core/types'
+import {paletteNavigationEntryAllowed} from '@/features/auth/services/feature-permission.service'
+import type {FeaturePermissionKey} from '@/features/auth/types/feature-permission.types'
 import {mergeQueryBookmarks} from '@/features/workspace/services/query-bookmark.service'
 import {readStoredSharedSqlEditorShortcuts} from '@/features/settings/services/sql-editor-shortcuts.service'
 import {
@@ -49,6 +51,8 @@ export interface BuildPaletteNavigationParams {
     alignToReferencePreset: () => void
     openPluginPresetDiff: () => void
     getReferencePresetId: () => PluginPresetId | null
+    canAccessFeature: (key: FeaturePermissionKey) => boolean
+    canAccessNavModule: (module: NavModule) => boolean
 }
 
 export function searchPaletteNavigationEntries(
@@ -245,5 +249,7 @@ export function buildPaletteNavigationEntries(params: BuildPaletteNavigationPara
         )
     }
 
-    return list
+    return list.filter((entry) =>
+        paletteNavigationEntryAllowed(entry.id, params.canAccessFeature, params.canAccessNavModule),
+    )
 }

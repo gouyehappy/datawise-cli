@@ -8,7 +8,7 @@ export default {
     finish: 'Get started',
     steps: {
         welcome: {
-            title: 'Welcome to DataWise',
+            title: 'Welcome',
             body: 'We will highlight key areas on screen — connect to data, write SQL, and use AI in just a few steps.',
         },
         home: {

@@ -108,8 +108,15 @@ import {
 import {cancelPendingSqlSnippetServerPersists} from '@/features/settings/services/sql-editor-shortcuts.service'
 import {shouldUseBuiltinAppConfig} from '@/shared/config/app-config-read-policy'
 import {configApi} from '@/api'
+import {
+    HOME_NAV_MODULE,
+    pickAccessibleNavModule,
+    resolveHomeNavModule,
+    isSideRailItemVisible as isSideRailItemVisibleFromPrefs,
+} from '@/shared/config/home-nav.module'
 
 export {setServerConfigSyncEnabled} from '@/shared/config/config-server-sync'
+export {HOME_NAV_MODULE, resolveHomeNavModule, pickAccessibleNavModule} from '@/shared/config/home-nav.module'
 
 export {APP_CONFIG_KEY, resolveAppConfigStorageKey, setAppConfigStorageScope} from '@/shared/config/app-config-storage-scope'
 export {shouldUseBuiltinAppConfig} from '@/shared/config/app-config-read-policy'
@@ -119,6 +126,7 @@ export const LEGACY_LAYOUT_CONFIG_KEY = 'dw-layout-config'
 export const APP_CONFIG_FILENAME = 'datawise-config.xml'
 
 const RESTORABLE_MODULES: RestorableNavModule[] = ['database', 'dashboard', 'ai', 'plugin', 'pluginDev', 'connectorMarket']
+
 const SIDE_RAIL_IDS = new Set<SideRailItemId>(SIDE_RAIL_NAV_DEFS.map((item) => item.id))
 const SHORTCUT_IDS = new Set<ShortcutPanel>(SHORTCUT_RAIL_NAV_DEFS.map((item) => item.id))
 
@@ -168,9 +176,10 @@ function mergeVisibility<T extends string>(
 
 export function normalizeLayout(raw: Partial<LayoutPreferences> | undefined): LayoutPreferences {
     const base = DEFAULT_LAYOUT_PREFERENCES
-    const lastModule = RESTORABLE_MODULES.includes(raw?.lastModule as RestorableNavModule)
+    const lastModuleRaw = RESTORABLE_MODULES.includes(raw?.lastModule as RestorableNavModule)
         ? (raw!.lastModule as RestorableNavModule)
         : base.lastModule
+    const lastModule = resolveHomeNavModule(lastModuleRaw)
     const lastShortcutPanel = SHORTCUT_IDS.has(raw?.lastShortcutPanel as ShortcutPanel)
         ? (raw!.lastShortcutPanel as ShortcutPanel)
         : base.lastShortcutPanel
@@ -676,7 +685,7 @@ export function persistLayoutPreferences(prefs: LayoutPreferences) {
 }
 
 export function isSideRailItemVisible(prefs: LayoutPreferences, id: SideRailItemId): boolean {
-    return prefs.sideRailVisibility[id] !== false
+    return isSideRailItemVisibleFromPrefs(prefs, id)
 }
 
 export function isShortcutRailItemVisible(prefs: LayoutPreferences, id: ShortcutPanel): boolean {
@@ -757,11 +766,12 @@ export function applyAppConfigFile(file: AppConfigFile, handlers: ApplyAppConfig
 }
 
 export function pickRestorableModule(prefs: LayoutPreferences): RestorableNavModule {
-    if (isSideRailItemVisible(prefs, prefs.lastModule)) return prefs.lastModule
+    const restored = resolveHomeNavModule(prefs.lastModule)
+    if (isSideRailItemVisible(prefs, restored)) return restored
     const fallback = SIDE_RAIL_NAV_DEFS.find(
         (item) => item.section === 'main' && isSideRailItemVisible(prefs, item.id),
     )
-    return (fallback?.id as RestorableNavModule) ?? 'database'
+    return (fallback?.id as RestorableNavModule) ?? HOME_NAV_MODULE
 }
 
 export function sanitizeEditorSettings(

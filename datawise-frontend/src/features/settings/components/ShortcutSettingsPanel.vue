@@ -11,6 +11,8 @@ import ShortcutKeyInput from '@/features/settings/components/ShortcutKeyInput.vu
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
 import {useShortcutSettingsStore} from '@/features/settings/stores/shortcut-settings-store'
+import {canExecuteShortcutAction} from '@/features/auth/services/feature-permission.service'
+import type {ShortcutActionId} from '@/core/shortcuts/types'
 
 const {t} = useI18n()
 const shortcuts = useShortcutSettingsStore()
@@ -33,6 +35,12 @@ const categoryMeta: Record<
   app: {hintKey: 'shortcuts.categoryHints.app', tone: 'violet'},
 }
 
+function visibleDefinitions(category: ShortcutCategory) {
+  return shortcuts.groupedDefinitions[category].filter((def) =>
+      canExecuteShortcutAction(def.id as ShortcutActionId),
+  )
+}
+
 const assignedCount = computed(() => {
   const counts: Record<ShortcutCategory, number> = {
     explorer: 0,
@@ -40,7 +48,7 @@ const assignedCount = computed(() => {
     app: 0,
   }
   for (const category of categories) {
-    for (const def of shortcuts.groupedDefinitions[category]) {
+    for (const def of visibleDefinitions(category)) {
       if (shortcuts.getBinding(def.id).trim()) counts[category] += 1
     }
   }
@@ -78,6 +86,7 @@ function resetAll() {
     <div class="settings-groups">
       <section
           v-for="category in categories"
+          v-show="visibleDefinitions(category).length > 0"
           :key="category"
           class="shortcut-card"
       >
@@ -94,17 +103,17 @@ function resetAll() {
             <p class="hint">{{ t(categoryMeta[category].hintKey) }}</p>
           </div>
           <span class="count-badge">
-            {{ assignedCount[category] }}/{{ shortcuts.groupedDefinitions[category].length }}
+            {{ assignedCount[category] }}/{{ visibleDefinitions(category).length }}
           </span>
         </div>
 
-        <div class="shortcut-table">
+        <div v-if="visibleDefinitions(category).length" class="shortcut-table">
           <div class="shortcut-table__header">
             <span>{{ t('shortcuts.columnAction') }}</span>
             <span>{{ t('shortcuts.columnBinding') }}</span>
           </div>
           <div
-              v-for="def in shortcuts.groupedDefinitions[category]"
+              v-for="def in visibleDefinitions(category)"
               :key="def.id"
               class="shortcut-row"
           >

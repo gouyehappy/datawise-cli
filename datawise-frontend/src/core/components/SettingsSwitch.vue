@@ -2,6 +2,7 @@
 defineProps<{
   label: string
   hint?: string
+  disabled?: boolean
 }>()
 
 const model = defineModel<boolean>({required: true})
@@ -9,7 +10,7 @@ const model = defineModel<boolean>({required: true})
 
 <template>
   <label class="settings-switch">
-    <input v-model="model" type="checkbox"/>
+    <input v-model="model" type="checkbox" :disabled="disabled"/>
     <span class="settings-switch__body">
       <span class="settings-switch__label">{{ label }}</span>
       <span v-if="hint" class="settings-switch__hint">{{ hint }}</span>
@@ -43,9 +44,12 @@ const model = defineModel<boolean>({required: true})
   color: var(--dw-text);
 }
 
-.settings-switch__hint {
-  color: var(--dw-text-secondary);
-  font-size: 12px;
-  line-height: 1.45;
+.settings-switch input:disabled {
+  cursor: not-allowed;
+}
+
+.settings-switch:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 </style>

@@ -12,6 +12,13 @@ import {useNotificationStore} from '@/features/layout/stores/notification-store'
 import {useShortcutPanelStore} from '@/features/layout/stores/shortcut-panel-store'
 import {useToastStore} from '@/features/layout/stores/toast-store'
 import {useTeamStore} from '@/features/team/stores/team-store'
+import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
+import {canAccessFeature, sideRailFeatureKey} from '@/features/auth/services/feature-permission.service'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
+import type {SideRailItemId} from '@/features/layout/constants/side-rail-nav'
+
+/** 系统首页：工作台（database） */
+const HOME_NAV_MODULE: NavModule = 'database'
 
 export const useLayoutStore = defineStore('layout', () => {
     const toast = useToastStore()
@@ -20,7 +27,7 @@ export const useLayoutStore = defineStore('layout', () => {
 
     const settingsSection = ref<SettingsSection>('basic')
     const settingsScrollAnchor = ref<string | null>(null)
-    const activeModule = ref<NavModule>('dashboard')
+    const activeModule = ref<NavModule>('database')
     const activeShortcutPanel = ref<ShortcutPanel | null>(null)
     const showTerminalPanel = ref(false)
     const terminalHeight = ref(240)
@@ -36,6 +43,15 @@ export const useLayoutStore = defineStore('layout', () => {
         ['database', 'ai', 'dashboard', 'plugin', 'pluginDev', 'connectorMarket', 'team', 'settings'].includes(activeModule.value),
     )
 
+    function canAccessNavModule(module: NavModule): boolean {
+        if (module === 'settings') return canAccessFeature(FeaturePermission.NavSettings)
+        if (module === 'team') return canAccessFeature(FeaturePermission.NavTeam)
+        if (module === 'profile') return canAccessFeature(FeaturePermission.SettingsProfile)
+        const sideRailId = module as SideRailItemId
+        const feature = sideRailFeatureKey(sideRailId)
+        return feature ? canAccessFeature(feature) : true
+    }
+
     function setModule(module: NavModule) {
         if (module === 'profile') {
             openSettingsModule('profile')
@@ -46,6 +62,8 @@ export const useLayoutStore = defineStore('layout', () => {
     }
 
     function openSettingsModule(section: SettingsSection = 'basic', anchor?: string) {
+        const appConfig = useAppConfigStore()
+        if (!appConfig.canOpenSettingsSection(section)) return
         showProfileMenu.value = false
         settingsSection.value = section
         settingsScrollAnchor.value = anchor ?? null
@@ -69,6 +87,7 @@ export const useLayoutStore = defineStore('layout', () => {
     }
 
     function openTeamModule() {
+        if (!canAccessFeature(FeaturePermission.NavTeam)) return
         showProfileMenu.value = false
         activeModule.value = 'team'
     }
@@ -117,6 +136,26 @@ export const useLayoutStore = defineStore('layout', () => {
         activeShortcutPanel.value = 'export'
     }
 
+    /**
+     * 权限变更后校正当前模块（仅在 auth 会话就绪后调用，勿在 app-config store 初始化链路中调用）。
+     */
+    function ensureAccessibleModule() {
+        const appConfig = useAppConfigStore()
+
+        if (activeModule.value === 'settings') {
+            if (appConfig.canOpenSettingsSection(settingsSection.value)) return
+        } else if (activeModule.value === 'team' && canAccessNavModule('team')) {
+            return
+        } else if (canAccessNavModule(activeModule.value)) {
+            return
+        }
+
+        activeModule.value = appConfig.pickAccessibleModule()
+        if (!canAccessNavModule(activeModule.value)) {
+            activeModule.value = HOME_NAV_MODULE
+        }
+    }
+
     function updateProfile(name: string, email: string) {
         profileName.value = name
         profileEmail.value = email
@@ -136,6 +175,7 @@ export const useLayoutStore = defineStore('layout', () => {
         profileEmail,
         isDatabaseModule,
         isWorkbenchModule,
+        canAccessNavModule,
         setModule,
         openSettingsModule,
         clearSettingsScrollAnchor,
@@ -154,6 +194,7 @@ export const useLayoutStore = defineStore('layout', () => {
         globalRefresh,
         startExport,
         updateProfile,
+        ensureAccessibleModule,
     }
 })
 

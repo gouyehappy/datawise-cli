@@ -13,6 +13,8 @@ import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {useFeaturePermission} from '@/features/auth/composables/useFeaturePermission'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 import {parseConsoleTabTitle, sqlFileNameFromTabLabel} from '@/features/workspace/services/console-tab-title'
 import {isValidViewModelBaseName, stripViewModelDisplayName} from '@/features/explorer/services/view-model-naming'
 import {
@@ -34,6 +36,7 @@ const workspace = useWorkspaceStore()
 const layout = useLayoutStore()
 const explorer = useExplorerStore()
 const auth = useAuthStore()
+const {can} = useFeaturePermission()
 const pluginStore = usePluginStore()
 const tabBarRef = ref<InstanceType<typeof TabBar>>()
 const renameTabId = ref<string | null>(null)
@@ -415,7 +418,11 @@ function isTabProduction(tab: WorkspaceTab) {
     </template>
 
     <template #actions>
-      <TabAddButton :title="t('workspace.newConsole')" @click="workspace.openConsole()"/>
+      <TabAddButton
+          v-if="can(FeaturePermission.WorkbenchTabNew)"
+          :title="t('workspace.newConsole')"
+          @click="workspace.openConsole()"
+      />
     </template>
   </TabBar>
 

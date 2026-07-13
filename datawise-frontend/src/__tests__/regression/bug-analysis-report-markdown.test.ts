@@ -4,7 +4,7 @@ import {parseAnalysisReport} from '@/features/ai/analysis/services/analysis-repo
 
 describe('analysis-report-markdown.service', () => {
     it('splits markdown into titled sections with safe html', () => {
-        const markdown = `# DataWise Analysis Report
+        const markdown = `# Analysis Report
 
 ## Summary
 
@@ -18,7 +18,7 @@ SELECT * FROM sales
 `
         const parsed = parseAnalysisReport(markdown)
 
-        assert.equal(parsed.title, 'DataWise Analysis Report')
+        assert.equal(parsed.title, 'Analysis Report')
         assert.equal(parsed.sections.length, 2)
         assert.equal(parsed.sections[0].title, 'Summary')
         assert.ok(parsed.sections[0].html.includes('<strong>12%</strong>'))

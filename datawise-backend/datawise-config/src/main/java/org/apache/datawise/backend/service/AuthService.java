@@ -26,6 +26,7 @@ public class AuthService {
     private final GuestSessionCleanupService guestSessionCleanupService;
     private final UserAccessPolicy userAccessPolicy;
     private final UserAdminPolicy userAdminPolicy;
+    private final UserPermissionPolicy userPermissionPolicy;
 
     public AuthService(
             UserStore userStore,
@@ -34,7 +35,8 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             GuestSessionCleanupService guestSessionCleanupService,
             UserAccessPolicy userAccessPolicy,
-            UserAdminPolicy userAdminPolicy
+            UserAdminPolicy userAdminPolicy,
+            UserPermissionPolicy userPermissionPolicy
     ) {
         this.userStore = userStore;
         this.sessionStore = sessionStore;
@@ -43,6 +45,7 @@ public class AuthService {
         this.guestSessionCleanupService = guestSessionCleanupService;
         this.userAccessPolicy = userAccessPolicy;
         this.userAdminPolicy = userAdminPolicy;
+        this.userPermissionPolicy = userPermissionPolicy;
     }
 
     public LoginResult login(String userName, String password) {
@@ -85,7 +88,9 @@ public class AuthService {
                     user.getUsername(),
                     false,
                     null,
-                    userId
+                    userId,
+                    userAdminPolicy.isAdminUser(userId),
+                    userPermissionPolicy.resolveEffectivePermissions(user)
             );
         }
         SessionEntity session = sessionStore.findById(UserContext.getSessionId())
@@ -143,7 +148,9 @@ public class AuthService {
                 user.getUsername(),
                 "LOCAL",
                 toEpochMs(saved.getExpiresAt()),
-                user.getId()
+                user.getId(),
+                userAdminPolicy.isAdminUser(user.getId()),
+                userPermissionPolicy.resolveEffectivePermissions(user)
         );
     }
 
@@ -153,7 +160,9 @@ public class AuthService {
                 user.getUsername(),
                 session.isGuest(),
                 toEpochMs(session.getExpiresAt()),
-                user.getId()
+                user.getId(),
+                userAdminPolicy.isAdminUser(user.getId()),
+                userPermissionPolicy.resolveEffectivePermissions(user)
         );
     }
 

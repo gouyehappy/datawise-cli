@@ -13,6 +13,7 @@ import TitleBarMenuIcon from '@/features/layout/components/TitleBarMenuIcon.vue'
 import {DwIcon} from '@/core/icons'
 import {useTitleBarMenuDensity} from '@/features/layout/composables/useTitleBarMenuDensity'
 import {useOnboardingStore} from '@/features/onboarding/stores/onboarding-store'
+import {getActiveFeaturePermissions} from '@/features/auth/services/feature-permission.service'
 
 const {t, te} = useI18n()
 const layout = useLayoutStore()
@@ -25,8 +26,10 @@ const contentRef = ref<HTMLElement | null>(null)
 const dropdownPanelRef = ref<HTMLElement | null>(null)
 const dropdownPlacement = ref<{top: number; left: number} | null>(null)
 
-const menus = computed(() =>
-    buildTitleBarNav(
+const menus = computed(() => {
+    // Track permission changes so nav items refresh after account switch.
+    getActiveFeaturePermissions()
+    return buildTitleBarNav(
         {
             activeModule: layout.activeModule,
             settingsSection: layout.settingsSection,
@@ -50,8 +53,8 @@ const menus = computed(() =>
                 applyFocusMode: () => appConfig.applyFocusMode(),
             },
         },
-    ),
-)
+    )
+})
 
 const menuLayoutStats = computed(() => ({
     primaryCount: menus.value.length,

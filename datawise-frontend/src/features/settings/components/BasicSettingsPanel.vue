@@ -9,7 +9,7 @@ import ThemeAppearanceCard from '@/features/settings/components/ThemeAppearanceC
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import SettingsSectionCard from '@/features/settings/components/SettingsSectionCard.vue'
 import {useThemeStore} from '@/features/settings/stores/theme-store'
-import {DwButton, DwInput, FormField} from '@/core/components'
+import {DwButton, DwInput, FormField, ConfirmDialog} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import IconButton from '@/core/components/IconButton.vue'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -57,6 +57,7 @@ const resolvedPath = ref('')
 const defaultPath = ref('')
 const canChangeConfigDir = ref(false)
 const configDirSaving = ref(false)
+const restartConfirmOpen = ref(false)
 const dataDirLayout = ref<ResolvedDataDirectoryLayout | null>(null)
 
 onMounted(async () => {
@@ -94,7 +95,11 @@ function resetConfigDir() {
 async function saveConfigDir() {
     if (denyIfReadOnly()) return
     if (!canChangeConfigDir.value || configDirSaving.value) return
-    if (!window.confirm(t('settings.basic.workspaceRoot.restartConfirm'))) return
+    restartConfirmOpen.value = true
+}
+
+async function confirmSaveConfigDir() {
+    restartConfirmOpen.value = false
     configDirSaving.value = true
     try {
         const ok = await applyConfigDirectoryAndRestart(configDirInput.value.trim() || null)
@@ -329,4 +334,13 @@ async function copyDeepLinkExample() {
       </section>
     </div>
   </SettingsPageShell>
+
+  <ConfirmDialog
+      v-model:open="restartConfirmOpen"
+      :title="t('settings.basic.workspaceRoot.title')"
+      :message="t('settings.basic.workspaceRoot.restartConfirm')"
+      :confirm-label="t('common.confirm')"
+      :confirm-loading="configDirSaving"
+      @confirm="confirmSaveConfigDir"
+  />
 </template>

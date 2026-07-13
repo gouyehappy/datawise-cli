@@ -2,6 +2,7 @@ package org.apache.datawise.backend.model;
 
 
 import java.time.Instant;
+import java.util.Map;
 
 public class UserEntity {
 
@@ -16,6 +17,9 @@ public class UserEntity {
     private String email;
 
     private boolean guest = false;
+
+    /** 功能权限覆盖；null 表示使用默认策略（注册用户全量，访客工作台）。 */
+    private Map<String, Boolean> featurePermissions;
 
     private Instant createdAt;
 
@@ -68,6 +72,14 @@ public class UserEntity {
 
     public void setGuest(boolean guest) {
         this.guest = guest;
+    }
+
+    public Map<String, Boolean> getFeaturePermissions() {
+        return featurePermissions;
+    }
+
+    public void setFeaturePermissions(Map<String, Boolean> featurePermissions) {
+        this.featurePermissions = featurePermissions;
     }
 
     public Instant getCreatedAt() {

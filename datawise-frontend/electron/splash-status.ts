@@ -33,7 +33,7 @@ export function resolveBackendSplashStatus(phase: string, isPackaged: boolean): 
             return '服务启动失败，请查看运行日志'
         case 'idle':
         default:
-            return '正在启动 DataWise 桌面客户端…'
+            return '正在启动桌面客户端…'
     }
 }
 

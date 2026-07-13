@@ -2,13 +2,16 @@
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
-import {useAuthStore} from '@/features/auth/stores/auth-store'
-import {useLayoutStore} from '@/features/layout/stores/layout'
-import {useOnboardingStore} from '@/features/onboarding/stores/onboarding-store'
 import {useShortcutSettingsStore} from '@/features/settings/stores/shortcut-settings-store'
 import {formatBinding} from '@/core/shortcuts/shortcut.service'
 import {runExplorerRefresh} from '@/features/explorer/services/explorer-toolbar.actions'
 import {useWorkspaceActions} from '@/features/layout/composables/useWorkspaceActions'
+import {
+    useTitleBarAuthMenuItems,
+    useTitleBarPreferenceMenuItems,
+} from '@/features/layout/composables/useProfileMenuGroups'
+import {useFeaturePermission} from '@/features/auth/composables/useFeaturePermission'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 import type {WorkspaceListEntry} from '@/features/settings/services/config-dir-settings.service'
 
 const props = defineProps<{
@@ -20,9 +23,6 @@ const emit = defineEmits<{ close: [] }>()
 const rootRef = ref<HTMLElement | null>(null)
 
 const {t} = useI18n()
-const layout = useLayoutStore()
-const auth = useAuthStore()
-const onboarding = useOnboardingStore()
 const shortcuts = useShortcutSettingsStore()
 const {
     canSwitch,
@@ -34,6 +34,7 @@ const {
     confirmSwitch,
     useDefaultWorkspace,
 } = useWorkspaceActions()
+const {can} = useFeaturePermission()
 
 const recentOpen = ref(false)
 
@@ -46,40 +47,32 @@ const showDefaultWorkspace = computed(() => {
 
 const recentEntries = computed(() => recentWorkspaces.value.filter((entry) => !entry.active))
 
+const sectionVisible = computed(() => ({
+    workspace: canSwitch.value && can(FeaturePermission.TitleBarWorkspace),
+    preferences: preferenceMenuItems.value.length > 0,
+    auth: authMenuItems.value.length > 0,
+    exit: true,
+}))
+
+const visibleSections = computed(() =>
+    (['workspace', 'preferences', 'auth', 'exit'] as const).filter((id) => sectionVisible.value[id]),
+)
+
+function showSectionDivider(sectionId: (typeof visibleSections.value)[number]) {
+    return visibleSections.value.indexOf(sectionId) > 0
+}
+
 function closeMenu() {
     recentOpen.value = false
     emit('close')
 }
 
-function openSettings() {
-    layout.openSettingsModule('basic')
-    closeMenu()
+function onReloadExplorer() {
+    void runExplorerRefresh().finally(() => closeMenu())
 }
 
-function openProfile() {
-    layout.openSettingsModule('profile')
-    closeMenu()
-}
-
-function openOnboardingGuide() {
-    onboarding.showGuide()
-    closeMenu()
-}
-
-function openTeam() {
-    layout.openTeamModule()
-    closeMenu()
-}
-
-function openAccountLogin() {
-    auth.openLoginDialog()
-    closeMenu()
-}
-
-function signOut() {
-    void auth.signOut()
-    closeMenu()
-}
+const preferenceMenuItems = useTitleBarPreferenceMenuItems(closeMenu, onReloadExplorer)
+const authMenuItems = useTitleBarAuthMenuItems(closeMenu)
 
 function exitApp() {
     void window.datawise?.chrome?.close()
@@ -106,10 +99,6 @@ function onUseDefault() {
     closeMenu()
 }
 
-function onReloadExplorer() {
-    void runExplorerRefresh().finally(() => closeMenu())
-}
-
 defineExpose({
     containsNode(target: Node): boolean {
         return rootRef.value?.contains(target) ?? false
@@ -125,7 +114,7 @@ defineExpose({
       :style="props.menuStyle"
       @click.stop
   >
-    <section v-if="canSwitch" class="titlebar-main-menu__section">
+    <section v-if="sectionVisible.workspace" class="titlebar-main-menu__section">
       <button type="button" class="titlebar-main-menu__item" @click="onCreateWorkspace">
         <span class="titlebar-main-menu__icon" aria-hidden="true">
           <DwIcon name="plus" size="menu" :stroke-width="1.35"/>
@@ -187,71 +176,47 @@ defineExpose({
       </div>
     </section>
 
-    <div v-if="canSwitch" class="titlebar-main-menu__divider"/>
+    <div v-if="showSectionDivider('preferences')" class="titlebar-main-menu__divider"/>
 
-    <section class="titlebar-main-menu__section">
-      <button type="button" class="titlebar-main-menu__item" @click="openSettings">
+    <section v-if="sectionVisible.preferences" class="titlebar-main-menu__section">
+      <button
+          v-for="item in preferenceMenuItems"
+          :key="item.id"
+          type="button"
+          class="titlebar-main-menu__item"
+          :class="{'titlebar-main-menu__item--accent': item.accent}"
+          @click="item.onClick"
+      >
         <span class="titlebar-main-menu__icon" aria-hidden="true">
-          <DwIcon name="settings-basic" size="menu" :stroke-width="1.35"/>
+          <DwIcon :name="item.icon" size="menu" :stroke-width="item.icon === 'users' ? 1.25 : 1.35"/>
         </span>
-        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.settings') }}</span>
-        <kbd v-if="settingsShortcut" class="titlebar-main-menu__shortcut">{{ settingsShortcut }}</kbd>
-      </button>
-
-      <button type="button" class="titlebar-main-menu__item" @click="openProfile">
-        <span class="titlebar-main-menu__icon" aria-hidden="true">
-          <DwIcon name="user" size="menu" :stroke-width="1.35"/>
-        </span>
-        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.profile') }}</span>
-      </button>
-    </section>
-
-    <div class="titlebar-main-menu__divider"/>
-
-    <section class="titlebar-main-menu__section">
-      <button type="button" class="titlebar-main-menu__item" @click="onReloadExplorer">
-        <span class="titlebar-main-menu__icon" aria-hidden="true">
-          <DwIcon name="refresh" size="menu" :stroke-width="1.35"/>
-        </span>
-        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.reloadExplorer') }}</span>
-      </button>
-
-      <button type="button" class="titlebar-main-menu__item" @click="openOnboardingGuide">
-        <span class="titlebar-main-menu__icon" aria-hidden="true">
-          <DwIcon name="about" size="menu" :stroke-width="1.35"/>
-        </span>
-        <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.onboarding') }}</span>
+        <span class="titlebar-main-menu__label">{{ t(item.labelKey) }}</span>
+        <kbd v-if="item.id === 'settings' && settingsShortcut" class="titlebar-main-menu__shortcut">{{ settingsShortcut }}</kbd>
       </button>
     </section>
 
-    <div class="titlebar-main-menu__divider"/>
+    <div v-if="showSectionDivider('auth')" class="titlebar-main-menu__divider"/>
 
-    <section class="titlebar-main-menu__section">
-      <button v-if="auth.isGuest" type="button" class="titlebar-main-menu__item" @click="openAccountLogin">
+    <section v-if="sectionVisible.auth" class="titlebar-main-menu__section">
+      <button
+          v-for="item in authMenuItems"
+          :key="item.id"
+          type="button"
+          class="titlebar-main-menu__item"
+          :class="{'titlebar-main-menu__item--accent': item.accent}"
+          @click="item.onClick"
+      >
         <span class="titlebar-main-menu__icon" aria-hidden="true">
-          <DwIcon name="user" size="menu" :stroke-width="1.35"/>
+          <DwIcon :name="item.icon" size="menu" :stroke-width="item.icon === 'users' ? 1.25 : 1.35"/>
         </span>
-        <span class="titlebar-main-menu__label">{{ t('auth.accountLogin') }}</span>
-      </button>
-
-      <button type="button" class="titlebar-main-menu__item" @click="openTeam">
-        <span class="titlebar-main-menu__icon" aria-hidden="true">
-          <DwIcon name="users" size="menu" :stroke-width="1.25"/>
-        </span>
-        <span class="titlebar-main-menu__label">{{ t('profile.menu.createOrJoinTeam') }}</span>
-      </button>
-
-      <button v-if="!auth.isGuest" type="button" class="titlebar-main-menu__item" @click="signOut">
-        <span class="titlebar-main-menu__icon" aria-hidden="true">
-          <DwIcon name="log-out" size="menu" :stroke-width="1.35"/>
-        </span>
-        <span class="titlebar-main-menu__label">{{ t('auth.signOutAccount') }}</span>
+        <span class="titlebar-main-menu__label">{{ t(item.labelKey) }}</span>
+        <span v-if="item.badgeKey" class="titlebar-main-menu__badge">{{ t(item.badgeKey) }}</span>
       </button>
     </section>
 
-    <div class="titlebar-main-menu__divider"/>
+    <div v-if="showSectionDivider('exit')" class="titlebar-main-menu__divider"/>
 
-    <section class="titlebar-main-menu__section">
+    <section v-if="sectionVisible.exit" class="titlebar-main-menu__section">
       <button type="button" class="titlebar-main-menu__item" @click="exitApp">
         <span class="titlebar-main-menu__icon" aria-hidden="true"/>
         <span class="titlebar-main-menu__label">{{ t('app.titleBar.mainMenu.exit') }}</span>
@@ -313,6 +278,22 @@ defineExpose({
 .titlebar-main-menu__item:hover,
 .titlebar-main-menu__item.is-open {
   background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-hover));
+}
+
+.titlebar-main-menu__item--accent .titlebar-main-menu__label {
+  color: var(--dw-primary);
+  font-weight: 500;
+}
+
+.titlebar-main-menu__badge {
+  justify-self: end;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--dw-primary-soft);
+  color: var(--dw-primary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .titlebar-main-menu__icon {

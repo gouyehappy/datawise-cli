@@ -11,7 +11,7 @@ import {supportsSshTunnel} from '@/shared/capabilities/db-type-capabilities'
 import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource-catalog'
 import type {ConnectionConfig, DbType} from '@/core/types'
 
-const props = defineProps<{ form: ConnectionConfig }>()
+const props = defineProps<{ form: ConnectionConfig; readOnly?: boolean }>()
 
 const {t} = useI18n()
 const catalogStore = useDatasourceCatalogStore()
@@ -84,16 +84,17 @@ async function onResolveDriver() {
           <input
               v-model="form.driver"
               class="dw-input dw-input--sm more-mono"
+              :disabled="readOnly"
               :placeholder="t('connection.driverMavenPlaceholder')"
           />
         </ConnectionFormField>
         <ConnectionFormField :label="t('connection.driverClass')">
-          <input v-model="form.driverClass" class="dw-input dw-input--sm more-mono"/>
+          <input v-model="form.driverClass" class="dw-input dw-input--sm more-mono" :disabled="readOnly"/>
         </ConnectionFormField>
         <button
             class="dw-link-btn more-upload"
             type="button"
-            :disabled="resolving"
+            :disabled="resolving || readOnly"
             @click="onResolveDriver"
         >
           {{ resolving ? t('connection.driverResolving') : t('connection.downloadDriver') }}
@@ -122,23 +123,24 @@ async function onResolveDriver() {
         <SettingsSwitch
             :model-value="!!form.sshEnabled"
             :label="t('connection.sshEnable')"
+            :disabled="readOnly"
             @update:model-value="form.sshEnabled = $event"
         />
 
         <div v-if="form.sshEnabled" class="more-subpanel">
           <div class="more-grid">
             <ConnectionFormField :label="t('connection.sshHost')">
-              <input v-model="form.sshHost" class="dw-input dw-input--sm"/>
+              <input v-model="form.sshHost" class="dw-input dw-input--sm" :disabled="readOnly"/>
             </ConnectionFormField>
             <ConnectionFormField :label="t('connection.sshPort')">
-              <input v-model="form.sshPort" class="dw-input dw-input--sm"/>
+              <input v-model="form.sshPort" class="dw-input dw-input--sm" :disabled="readOnly"/>
             </ConnectionFormField>
           </div>
           <ConnectionFormField :label="t('connection.sshUser')">
-            <input v-model="form.sshUser" class="dw-input dw-input--sm"/>
+            <input v-model="form.sshUser" class="dw-input dw-input--sm" :disabled="readOnly"/>
           </ConnectionFormField>
           <ConnectionFormField :label="t('connection.sshPassword')">
-            <input v-model="form.sshPassword" class="dw-input dw-input--sm" type="password"/>
+            <input v-model="form.sshPassword" class="dw-input dw-input--sm" type="password" :disabled="readOnly"/>
           </ConnectionFormField>
           <ConnectionFormField
               :label="t('connection.sshPrivateKey')"
@@ -148,11 +150,12 @@ async function onResolveDriver() {
                 v-model="form.sshPrivateKey"
                 class="dw-input more-textarea"
                 rows="4"
+                :disabled="readOnly"
                 :placeholder="t('connection.sshPrivateKeyPlaceholder')"
             />
           </ConnectionFormField>
           <ConnectionFormField :label="t('connection.sshPassphrase')">
-            <input v-model="form.sshPassphrase" class="dw-input dw-input--sm" type="password"/>
+            <input v-model="form.sshPassphrase" class="dw-input dw-input--sm" type="password" :disabled="readOnly"/>
           </ConnectionFormField>
         </div>
       </CollapsibleSection>
@@ -169,7 +172,7 @@ async function onResolveDriver() {
         </template>
 
         <ConnectionFormField :hint="t('connection.hints.advanced')">
-          <textarea v-model="form.advancedConfig" class="dw-input more-textarea" rows="3"/>
+          <textarea v-model="form.advancedConfig" class="dw-input more-textarea" rows="3" :disabled="readOnly"/>
         </ConnectionFormField>
       </CollapsibleSection>
     </div>

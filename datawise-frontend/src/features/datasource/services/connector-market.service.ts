@@ -41,7 +41,7 @@ export function buildConnectorInstallGuide(entry: ConnectorMarketEntry): string 
         `# ${entry.label} (${entry.id})`,
         `1. Build or obtain the connector plugin JAR for "${entry.id}".`,
         `2. Copy the JAR into ${CONNECTOR_PLUGIN_DIR}/`,
-        '3. Restart the DataWise backend process.',
+        '3. Restart the backend process.',
         '4. Refresh this marketplace page.',
     ]
     if (entry.installHint) {

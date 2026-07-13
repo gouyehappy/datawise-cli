@@ -1,6 +1,6 @@
 export default {
     title: '新手指引',
-    subtitle: '跟着光点走，认识 DataWise 的核心区域',
+    subtitle: '跟着光点走，认识核心功能区域',
     stepOf: '第 {current} / {total} 步',
     skip: '跳过',
     back: '上一步',
@@ -8,7 +8,7 @@ export default {
     finish: '开始使用',
     steps: {
         welcome: {
-            title: '欢迎使用 DataWise',
+            title: '欢迎使用',
             body: '接下来会用聚光灯带你认识界面上的关键区域——连接数据、写 SQL、用 AI 分析，几步就能上手。',
         },
         home: {

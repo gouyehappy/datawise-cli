@@ -8,6 +8,10 @@ export const API_PATHS = {
         sessionPolicy: '/api/auth/session-policy',
         changePassword: '/api/auth/change-password',
     },
+    admin: {
+        users: '/api/admin/users',
+        userPermissions: (userId: number) => `/api/admin/users/${userId}/permissions`,
+    },
     sql: {
         execute: '/api/sql/execute',
         activeSessions: '/api/sql/active-sessions',

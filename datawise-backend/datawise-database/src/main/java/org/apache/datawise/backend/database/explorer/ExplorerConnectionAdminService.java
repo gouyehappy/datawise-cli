@@ -52,6 +52,11 @@ public class ExplorerConnectionAdminService {
         return nodeAdminService.moveConnection(connectionId, targetGroupId);
     }
 
+    public boolean isCatalogStructureNode(String nodeId) {
+        return connectionVisibilityService.resolveGroupEntity(nodeId).isPresent()
+                || connectionVisibilityService.resolveConnectionEntity(nodeId).isPresent();
+    }
+
     public List<TreeNode> deleteNode(String nodeId) {
         connectionContext.requireUserId();
         if (connectionVisibilityService.resolveGroupEntity(nodeId).isPresent()) {

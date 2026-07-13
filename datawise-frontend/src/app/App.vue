@@ -20,10 +20,10 @@ import ports from '../../runtime-ports.json'
 
 const DEV_BACKEND_ENDPOINT = `127.0.0.1:${ports.backend}`
 const PACKAGED_BACKEND_ENDPOINT = `127.0.0.1:${ports.backendPackaged}`
-const MAIN_SHELL_SETTLE_MS = 900
 const SPLASH_PROGRESS_STEP_MS = 850
-const SPLASH_AT_100_HOLD_MS = 1_600
-const SPLASH_FINISH_HOLD_MS = 750
+const SPLASH_BAR_TRANSITION_MS = 720
+const SPLASH_WAIT_BAR_TIMEOUT_MS = 2_500
+const SPLASH_FORCE_READY_MS = 30_000
 
 /** 从当前已显示进度平滑补到 100%，绝不回退 */
 function buildSplashFinishSteps(from: number): number[] {
@@ -109,7 +109,8 @@ function reportDesktopSplashProgress() {
 }
 
 let splashProgressTimer: ReturnType<typeof setInterval> | null = null
-let desktopStartupFinalized = false
+let desktopStartupPromise: Promise<void> | null = null
+let splashForceReadyTimer: ReturnType<typeof setTimeout> | null = null
 let lastSplashProgressSent = 0
 
 function startDesktopSplashReporter() {
@@ -150,30 +151,61 @@ async function animateSplashProgressToComplete() {
         }
     }
 
-    await bridge.splash.waitBarComplete?.(100)
-    await delay(SPLASH_AT_100_HOLD_MS)
+    bridge.splash.reportProgress({
+        progress: 100,
+        status: completeStatus,
+    })
+    lastSplashProgressSent = 100
+
+    await delay(SPLASH_BAR_TRANSITION_MS)
+    await Promise.race([
+        bridge.splash.waitBarComplete?.(100) ?? Promise.resolve(true),
+        delay(SPLASH_WAIT_BAR_TIMEOUT_MS),
+    ])
 }
 
 async function completeDesktopStartup() {
-    if (desktopStartupFinalized) return
-    desktopStartupFinalized = true
-    stopDesktopSplashReporter()
+    if (desktopStartupPromise) return desktopStartupPromise
 
-    await animateSplashProgressToComplete()
+    desktopStartupPromise = (async () => {
+        stopDesktopSplashReporter()
 
-    bootReady.value = true
-    await nextTick()
-    await waitNextPaint()
-    await delay(MAIN_SHELL_SETTLE_MS)
-    await delay(SPLASH_FINISH_HOLD_MS)
+        try {
+            await animateSplashProgressToComplete()
+        } catch (error) {
+            console.warn('[datawise] splash completion animation failed', error)
+        }
 
-    notifyDesktopSplashReady()
+        bootReady.value = true
+        notifyDesktopSplashReady()
+
+        if (splashForceReadyTimer) {
+            window.clearTimeout(splashForceReadyTimer)
+            splashForceReadyTimer = null
+        }
+
+        await nextTick()
+        await waitNextPaint()
+    })()
+
+    return desktopStartupPromise
+}
+
+function scheduleSplashForceReady() {
+    if (splashForceReadyTimer) return
+    splashForceReadyTimer = window.setTimeout(() => {
+        if (!bootReady.value) {
+            bootReady.value = true
+        }
+        notifyDesktopSplashReady()
+    }, SPLASH_FORCE_READY_MS)
 }
 
 onMounted(() => {
   if (desktopApp.value) {
     initDesktopBackendStartupListener()
     startDesktopSplashReporter()
+    scheduleSplashForceReady()
   }
 
   const BOOTSTRAP_MAX_MS = desktopApp.value ? 125_000 : 90_000
@@ -199,6 +231,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopDesktopSplashReporter()
+  if (splashForceReadyTimer) {
+    window.clearTimeout(splashForceReadyTimer)
+    splashForceReadyTimer = null
+  }
 })
 </script>
 

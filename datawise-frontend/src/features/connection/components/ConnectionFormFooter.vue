@@ -5,6 +5,7 @@ import {DwButton} from '@/core/components'
 defineProps<{
   testing: boolean
   saving: boolean
+  saveDisabled?: boolean
   testMessage: string | null
   testOk: boolean | null
 }>()
@@ -42,7 +43,13 @@ const {t} = useI18n()
       <DwButton variant="secondary" :disabled="saving" @click="emit('cancel')">
         {{ t('common.cancel') }}
       </DwButton>
-      <DwButton variant="primary" :loading="saving" :disabled="saving" @click="emit('save')">
+      <DwButton
+          variant="primary"
+          :loading="saving"
+          :disabled="saving || saveDisabled"
+          :title="saveDisabled ? t('auth.permissionDenied') : undefined"
+          @click="emit('save')"
+      >
         {{ saving ? t('common.saving') : t('common.save') }}
       </DwButton>
     </div>

@@ -28,6 +28,7 @@ export {workspacePanelApi} from '@/api/modules/workspace-panel'
 export {settingsApi} from '@/api/modules/settings'
 export {sqlApi} from '@/api/modules/sql'
 export {authApi} from '@/api/modules/auth'
+export {userAdminApi} from '@/api/modules/user-admin'
 export {aiApi} from '@/api/modules/ai'
 export type {AiLlmProfilePayload, AiDatabaseTargetPayload} from '@/api/modules/ai'
 export {

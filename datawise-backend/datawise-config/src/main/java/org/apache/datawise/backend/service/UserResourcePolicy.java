@@ -2,6 +2,9 @@ package org.apache.datawise.backend.service;
 
 import org.springframework.stereotype.Service;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 /**
  * 用户资源策略：单一事实来源，裁决各资源的读写与隔离范围。
  * <p>
@@ -25,6 +28,8 @@ public class UserResourcePolicy {
     ) {
     }
 
+    private static final Map<UserResource, ResourceRule> RULES = buildRules();
+
     private final UserAccessPolicy accessPolicy;
 
     public UserResourcePolicy(UserAccessPolicy accessPolicy) {
@@ -32,21 +37,55 @@ public class UserResourcePolicy {
     }
 
     public ResourceRule rule(UserResource resource) {
-        return switch (resource) {
-            case APP_CONFIG, AI_PREFERENCES ->
-                    new ResourceRule(StorageScope.USER, false, false);
-            case LAYOUT_MENU, SQL_SNIPPETS_PERSONAL, WORKSPACE_SCRIPTS, WORKSPACE_USER_DATA ->
-                    new ResourceRule(StorageScope.USER, true, false);
-            case AI_KNOWLEDGE, AI_TABLE_TAGS, AI_ANALYSIS_CANVAS, SEMANTIC_METRICS, FEDERATED_VIEWS,
-                    SCHEMA_DRIFT_MONITORS, SCHEDULED_TASKS, TABLE_DATA_AUDIT ->
-                    new ResourceRule(StorageScope.USER, true, false);
-            case CONNECTION_CATALOG ->
-                    new ResourceRule(StorageScope.SESSION_EPHEMERAL, true, true);
-            case SQL_SNIPPETS_SHARED, UPDATER_PREFERENCES ->
-                    new ResourceRule(StorageScope.GLOBAL, true, false);
-            case CONNECTIONS_XML_BULK ->
-                    new ResourceRule(StorageScope.GLOBAL, true, false);
-        };
+        ResourceRule rule = RULES.get(resource);
+        if (rule == null) {
+            throw new IllegalArgumentException("Unknown resource: " + resource);
+        }
+        return rule;
+    }
+
+    private static Map<UserResource, ResourceRule> buildRules() {
+        Map<UserResource, ResourceRule> rules = new EnumMap<>(UserResource.class);
+        ResourceRule userPrivate = new ResourceRule(StorageScope.USER, false, false);
+        ResourceRule userReadOnly = new ResourceRule(StorageScope.USER, true, false);
+        ResourceRule sessionCatalog = new ResourceRule(StorageScope.SESSION_EPHEMERAL, true, true);
+        ResourceRule globalReadOnly = new ResourceRule(StorageScope.GLOBAL, true, false);
+
+        putAll(rules, userPrivate, UserResource.APP_CONFIG, UserResource.AI_PREFERENCES);
+        putAll(
+                rules,
+                userReadOnly,
+                UserResource.LAYOUT_MENU,
+                UserResource.SQL_SNIPPETS_PERSONAL,
+                UserResource.WORKSPACE_SCRIPTS,
+                UserResource.WORKSPACE_USER_DATA
+        );
+        putAll(
+                rules,
+                userReadOnly,
+                UserResource.AI_KNOWLEDGE,
+                UserResource.AI_TABLE_TAGS,
+                UserResource.AI_ANALYSIS_CANVAS,
+                UserResource.SEMANTIC_METRICS,
+                UserResource.FEDERATED_VIEWS,
+                UserResource.SCHEMA_DRIFT_MONITORS,
+                UserResource.SCHEDULED_TASKS,
+                UserResource.TABLE_DATA_AUDIT
+        );
+        rules.put(UserResource.CONNECTION_CATALOG, sessionCatalog);
+        putAll(rules, globalReadOnly, UserResource.SQL_SNIPPETS_SHARED, UserResource.UPDATER_PREFERENCES);
+        rules.put(UserResource.CONNECTIONS_XML_BULK, globalReadOnly);
+        return Map.copyOf(rules);
+    }
+
+    private static void putAll(
+            Map<UserResource, ResourceRule> rules,
+            ResourceRule rule,
+            UserResource... resources
+    ) {
+        for (UserResource resource : resources) {
+            rules.put(resource, rule);
+        }
     }
 
     public boolean canRead(UserResource resource) {

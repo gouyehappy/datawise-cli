@@ -1,5 +1,5 @@
 import {isUnsavedConnectionId} from '@/features/connection/utils/connection-defaults'
-import {ApiError} from '@/shared/api/http/request'
+import {resolveApiErrorMessage, resolveDisplayApiErrorMessage} from '@/shared/api/http/api-error-message'
 
 export type ConnectionCatalogMutation = 'save' | 'delete'
 
@@ -12,11 +12,10 @@ export function resolveConnectionCatalogErrorMessage(
     translate: (key: string) => string,
     mutation: ConnectionCatalogMutation,
 ): string {
-    const raw = error instanceof ApiError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : ''
+    const localized = resolveDisplayApiErrorMessage(error, translate)
+    const raw = resolveApiErrorMessage(error)
+    if (localized !== raw) return localized
+
     if (raw.includes('CONNECTION_ACCESS_DENIED')) {
         return translate(
             mutation === 'delete'

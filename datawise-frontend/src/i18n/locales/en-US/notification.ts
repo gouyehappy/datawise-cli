@@ -31,7 +31,7 @@ export default {
     },
     messages: {
         welcome: {
-            title: 'Welcome to DataWise CLI',
+            title: 'Welcome',
             body: 'The database workbench is ready. Start from the connection tree on the left.',
         },
         exportDone: {

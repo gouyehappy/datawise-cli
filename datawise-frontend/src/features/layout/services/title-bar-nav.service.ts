@@ -5,6 +5,11 @@ import {
     type TitleBarQuickConfigHandlers,
     type TitleBarQuickConfigState,
 } from '@/features/layout/services/title-bar-config-menu.service'
+import {
+    canAccessFeature,
+    titleBarMenuChildFeatureKey,
+    titleBarMenuFeatureKey,
+} from '@/features/auth/services/feature-permission.service'
 
 export type TitleBarMenuKind = 'nav' | 'action' | 'header'
 export type TitleBarMenuMode = 'leaf' | 'dropdown'
@@ -79,6 +84,24 @@ function helpMenu(ctx: TitleBarNavContext, handlers: TitleBarNavHandlers): Title
     }
 }
 
+function filterTitleBarMenuItem(item: TitleBarMenuItem): TitleBarMenuItem | null {
+    const feature = titleBarMenuFeatureKey(item.id) ?? titleBarMenuChildFeatureKey(item.id)
+    if (feature && !canAccessFeature(feature)) {
+        return null
+    }
+    if (!item.children?.length) {
+        return item
+    }
+    const children = item.children
+        .map((child) => filterTitleBarMenuItem(child))
+        .filter((child): child is TitleBarMenuItem => child != null)
+    const actionable = children.filter((child) => !child.divider && child.kind !== 'header')
+    if (actionable.length === 0) {
+        return null
+    }
+    return {...item, children}
+}
+
 /** 桌面顶栏：工作台、仪表盘、AI、配置、帮助 */
 export function buildTitleBarNav(ctx: TitleBarNavContext, handlers: TitleBarNavHandlers): TitleBarMenuItem[] {
     return [
@@ -97,6 +120,8 @@ export function buildTitleBarNav(ctx: TitleBarNavContext, handlers: TitleBarNavH
         configMenu(ctx, handlers),
         helpMenu(ctx, handlers),
     ]
+        .map((item) => filterTitleBarMenuItem(item))
+        .filter((item): item is TitleBarMenuItem => item != null)
 }
 
 export function titleBarMenuActionableChildren(item: TitleBarMenuItem): TitleBarMenuItem[] {

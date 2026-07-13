@@ -24,6 +24,7 @@ const definitions = [
     {key: 'dataAgent' as const, component: lazyPanel(() => import('@/features/settings/components/AiDataAgentHubPanel.vue'))},
     {key: 'knowledge' as const, component: lazyPanel(() => import('@/features/settings/components/AiDataAgentHubPanel.vue'))},
     {key: 'about' as const, component: lazyPanel(() => import('@/features/settings/components/AboutSettingsPanel.vue'))},
+    {key: 'userPermissions' as const, component: lazyPanel(() => import('@/features/settings/components/UserPermissionSettingsPanel.vue'))},
 ]
 
 export const SETTINGS_SECTION_REGISTRY = createRegistry(definitions)

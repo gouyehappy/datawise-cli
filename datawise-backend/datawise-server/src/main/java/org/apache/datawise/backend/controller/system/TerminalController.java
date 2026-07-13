@@ -8,6 +8,7 @@ import org.apache.datawise.backend.domain.TerminalStatusDto;
 import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.TerminalService;
 import org.apache.datawise.backend.service.UserAccessPolicy;
+import org.apache.datawise.backend.service.FeaturePermissionAccess;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,10 +25,16 @@ public class TerminalController {
 
     private final TerminalService terminalService;
     private final UserAccessPolicy userAccessPolicy;
+    private final FeaturePermissionAccess featurePermissionAccess;
 
-    public TerminalController(TerminalService terminalService, UserAccessPolicy userAccessPolicy) {
+    public TerminalController(
+            TerminalService terminalService,
+            UserAccessPolicy userAccessPolicy,
+            FeaturePermissionAccess featurePermissionAccess
+    ) {
         this.terminalService = terminalService;
         this.userAccessPolicy = userAccessPolicy;
+        this.featurePermissionAccess = featurePermissionAccess;
     }
 
     @PostMapping("/execute")
@@ -53,5 +60,6 @@ public class TerminalController {
             throw new UnauthorizedException();
         }
         userAccessPolicy.requireRegisteredUser();
+        featurePermissionAccess.requireUtilTerminal();
     }
 }

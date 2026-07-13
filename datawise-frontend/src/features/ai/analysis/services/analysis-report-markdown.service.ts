@@ -168,5 +168,5 @@ export function parseAnalysisReport(markdown: string): ParsedAnalysisReport {
         ? plainExcerpt(summarySection.html.replace(/<[^>]+>/g, ' '))
         : plainExcerpt(normalized)
 
-    return {title: title || 'DataWise Analysis Report', sections, excerpt}
+    return {title: title || 'Analysis Report', sections, excerpt}
 }

@@ -5,6 +5,10 @@ import {
     buildTitleBarNav,
     titleBarMenuHasChildren,
 } from '@/features/layout/services/title-bar-nav.service'
+import {
+    createPreset,
+    setActiveFeaturePermissions,
+} from '@/features/auth/services/feature-permission.service'
 
 const defaultConfigState = {
     showSideRailStrip: true,
@@ -51,6 +55,7 @@ describe('title-bar-config-menu.service', () => {
 
 describe('title-bar-nav.service', () => {
     it('builds simplified primary nav with quick config menu', () => {
+        setActiveFeaturePermissions(createPreset('full'))
         const calls: string[] = []
         const menus = buildTitleBarNav(
             {
@@ -84,6 +89,7 @@ describe('title-bar-nav.service', () => {
     })
 
     it('marks help menu active on about section', () => {
+        setActiveFeaturePermissions(createPreset('full'))
         const menus = buildTitleBarNav(
             {
                 activeModule: 'settings',
@@ -95,5 +101,19 @@ describe('title-bar-nav.service', () => {
 
         const help = menus.find((item) => item.id === 'help')
         assert.equal(help?.active, true)
+    })
+
+    it('hides title bar items without permission', () => {
+        setActiveFeaturePermissions(createPreset('workbench'))
+        const menus = buildTitleBarNav(
+            {
+                activeModule: 'database',
+                settingsSection: 'basic',
+                config: defaultConfigState,
+            },
+            noopHandlers,
+        )
+
+        assert.deepEqual(menus.map((item) => item.id), ['workbench'])
     })
 })

@@ -1,6 +1,6 @@
 export default {
     title: 'Plugin center',
-    subtitle: 'Extend DataWise capabilities. Toggles take effect immediately and persist in local app config.',
+    subtitle: 'Extend app capabilities. Toggles take effect immediately and persist in local app config.',
     empty: 'No matching plugins',
     filterAll: 'All',
     filterEnabled: 'Enabled',

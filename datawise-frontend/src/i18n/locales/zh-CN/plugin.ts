@@ -1,6 +1,6 @@
 export default {
     title: '插件中心',
-    subtitle: '扩展 DataWise 能力；启用后立即在对应功能中生效，设置会保存到本地配置。',
+    subtitle: '扩展应用能力；启用后立即在对应功能中生效，设置会保存到本地配置。',
     empty: '没有匹配的插件',
     filterAll: '全部',
     filterEnabled: '已启用',

@@ -4,6 +4,7 @@ import org.apache.datawise.backend.common.ConnectionAccessDeniedException;
 import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.service.UserAccessPolicy;
 import org.apache.datawise.backend.service.UserAdminPolicy;
+import org.apache.datawise.backend.service.UserPermissionPolicy;
 
 /**
  * Maps internal exception text to stable client-facing messages (especially for API-token / CI callers).
@@ -47,6 +48,7 @@ public final class ClientErrorMessageSupport {
     private static boolean isStableCode(String message) {
         return HeadlessMigrationAuth.API_TOKEN_FORBIDDEN.equals(message)
                 || UserAdminPolicy.ADMIN_REQUIRED.equals(message)
+                || UserPermissionPolicy.PERMISSION_DENIED.equals(message)
                 || UserAccessPolicy.GUEST_NOT_ALLOWED.equals(message)
                 || ConnectionAccessDeniedException.CODE.equals(message)
                 || UnauthorizedException.CODE.equals(message);

@@ -8,25 +8,32 @@ import {formatBindingParts} from '@/core/shortcuts/shortcut.service'
 import {useShortcutSettingsStore} from '@/features/settings/stores/shortcut-settings-store'
 import type {ShortcutActionId} from '@/core/shortcuts/types'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useFeaturePermission} from '@/features/auth/composables/useFeaturePermission'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 import {DwIcon} from '@/core/icons'
 
 const {t} = useI18n()
 const workspace = useWorkspaceStore()
+const {can} = useFeaturePermission()
 
 const shortcuts = useShortcutSettingsStore()
 
 interface WelcomeAction {
   label: string
   actionId: ShortcutActionId
+  visible: boolean
 }
 
-const actions = computed<WelcomeAction[]>(() => [
-  {label: t('welcome.actions.search'), actionId: 'explorer.search'},
-  {label: t('welcome.actions.newConsole'), actionId: 'workspace.newConsole'},
-  {label: t('welcome.actions.run'), actionId: 'workspace.runSql'},
-  {label: t('welcome.actions.terminal'), actionId: 'app.toggleTerminal'},
-  {label: t('welcome.actions.settings'), actionId: 'app.openSettings'},
-])
+const actions = computed<WelcomeAction[]>(() => {
+  const items: WelcomeAction[] = [
+    {label: t('welcome.actions.search'), actionId: 'explorer.search', visible: can(FeaturePermission.WorkbenchExplorerSearch)},
+    {label: t('welcome.actions.newConsole'), actionId: 'workspace.newConsole', visible: can(FeaturePermission.WorkbenchTabNew)},
+    {label: t('welcome.actions.run'), actionId: 'workspace.runSql', visible: can(FeaturePermission.WorkbenchConsoleRun)},
+    {label: t('welcome.actions.terminal'), actionId: 'app.toggleTerminal', visible: can(FeaturePermission.UtilTerminal)},
+    {label: t('welcome.actions.settings'), actionId: 'app.openSettings', visible: can(FeaturePermission.ProfileSettings)},
+  ]
+  return items.filter((item) => item.visible)
+})
 
 function keyChips(actionId: ShortcutActionId): string[] {
   const binding = shortcuts.getBinding(actionId)
@@ -52,7 +59,12 @@ function keyChips(actionId: ShortcutActionId): string[] {
     </ul>
 
     <p class="welcome-hint">{{ t('welcome.actions.dropHint') }}</p>
-    <button class="welcome-cta" type="button" @click="workspace.openConsole()">
+    <button
+        v-if="can(FeaturePermission.WorkbenchTabNew)"
+        class="welcome-cta"
+        type="button"
+        @click="workspace.openConsole()"
+    >
       {{ t('welcome.newConsole') }}
     </button>
   </div>

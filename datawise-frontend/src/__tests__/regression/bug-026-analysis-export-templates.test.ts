@@ -32,7 +32,7 @@ describe('analysis export service', () => {
             columns: [],
             rows: [],
         })
-        assert.match(html, /<title>DataWise Analysis Report<\/title>/)
+        assert.match(html, /<title>Analysis Report<\/title>/)
         assert.match(html, /SELECT &quot;&lt;tag&gt;&quot;/)
     })
 })

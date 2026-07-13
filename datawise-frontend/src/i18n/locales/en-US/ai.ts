@@ -8,7 +8,7 @@ export default {
         search: 'Search models…',
         noMatch: 'No matching models',
     },
-    welcomeTitle: 'Hi, I am the DataWise AI assistant',
+    welcomeTitle: 'Hi, I am your AI assistant',
     welcomeIntro: 'I can help you work faster with your database:',
     capabilities: [
         {title: 'Generate SQL', desc: 'Describe what you want to query'},
@@ -71,7 +71,7 @@ export default {
         shareFailed: 'Failed to share session',
     },
     welcome:
-        'Hi, I am the DataWise AI assistant.\n\nYou can:\n- Describe a query and I will generate SQL\n- Paste SQL for explanation or optimization\n- Click "Open in console" to load SQL into the editor',
+        'Hi, I am your AI assistant.\n\nYou can:\n- Describe a query and I will generate SQL\n- Paste SQL for explanation or optimization\n- Click "Open in console" to load SQL into the editor',
     openInConsole: 'Open in console',
     templates: {
         title: 'Templates',

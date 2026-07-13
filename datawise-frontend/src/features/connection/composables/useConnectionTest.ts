@@ -3,6 +3,10 @@ import {useI18n} from 'vue-i18n'
 import type {ConnectionConfig} from '@/core/types'
 import {connectionApi} from '@/api'
 import {registerConnectionHealthCheck} from '@/features/explorer/services/register-connection-health.service'
+import {
+    resolveApiErrorMessage,
+    resolveDisplayApiErrorMessage,
+} from '@/shared/api/http/api-error-message'
 
 /** 连接测试：校验 + 调用 api.connection.test */
 export function useConnectionTest(
@@ -46,7 +50,13 @@ export function useConnectionTest(
             }
         } catch (error) {
             testOk.value = false
-            testMessage.value = error instanceof Error ? error.message : t('connection.testFailed')
+            const raw = resolveApiErrorMessage(error)
+            if (raw === 'GUEST_NOT_ALLOWED') {
+                testMessage.value = t('connection.testGuestNotAllowed')
+                return
+            }
+            const display = resolveDisplayApiErrorMessage(error, t)
+            testMessage.value = display !== raw ? display : (raw || t('connection.testFailed'))
         } finally {
             testing.value = false
         }

@@ -12,6 +12,8 @@ import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
+import {useFeaturePermission} from '@/features/auth/composables/useFeaturePermission'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 import {isProductionEnvironment} from '@/features/connection/services/connection-environment.service'
 import {useI18n} from 'vue-i18n'
 
@@ -22,6 +24,11 @@ const explorer = useExplorerStore()
 const appConfig = useAppConfigStore()
 const workspace = useWorkspaceStore()
 const pluginStore = usePluginStore()
+const {can} = useFeaturePermission()
+
+const aiResultSummaryEnabled = computed(
+    () => pluginStore.isEnabled('p-ai-result-summary') && can(FeaturePermission.WorkbenchResultAiSummary),
+)
 
 const showFakeDataAction = computed(
     () => pluginStore.isEnabled('p-fake-data') && Boolean(props.tab.tableName?.trim()),
@@ -111,7 +118,7 @@ function onRequestAiSummary() {
 <template>
   <div class="table-data-tab">
     <QueryResultPane
-        enable-ai-summary
+        :enable-ai-summary="aiResultSummaryEnabled"
         :enable-fake-data="showFakeDataAction"
         :ai-summary-loading="aiSummaryLoading"
         :ai-summary-open="aiSummaryOpen"

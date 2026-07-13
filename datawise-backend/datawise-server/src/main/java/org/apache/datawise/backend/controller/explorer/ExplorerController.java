@@ -34,6 +34,7 @@ import org.apache.datawise.backend.domain.RedisKeysScanResultDto;
 import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.domain.TreePayload;
 import org.apache.datawise.backend.security.HeadlessSqlAuth;
+import org.apache.datawise.backend.service.FeaturePermissionAccess;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -65,6 +66,7 @@ public class ExplorerController {
     private final ExplorerKafkaService kafkaService;
     private final ExplorerConnectionAdminService connectionAdminService;
     private final ExplorerConnectionLifecycleService connectionLifecycleService;
+    private final FeaturePermissionAccess featurePermissionAccess;
 
     public ExplorerController(
             ExplorerSchemaService schemaService,
@@ -72,7 +74,8 @@ public class ExplorerController {
             ExplorerRedisService redisService,
             ExplorerKafkaService kafkaService,
             ExplorerConnectionAdminService connectionAdminService,
-            ExplorerConnectionLifecycleService connectionLifecycleService
+            ExplorerConnectionLifecycleService connectionLifecycleService,
+            FeaturePermissionAccess featurePermissionAccess
     ) {
         this.schemaService = schemaService;
         this.explorerLoadMetrics = explorerLoadMetrics;
@@ -80,6 +83,7 @@ public class ExplorerController {
         this.kafkaService = kafkaService;
         this.connectionAdminService = connectionAdminService;
         this.connectionLifecycleService = connectionLifecycleService;
+        this.featurePermissionAccess = featurePermissionAccess;
     }
 
     @GetMapping("/tree")
@@ -95,6 +99,7 @@ public class ExplorerController {
 
     @PostMapping("/connections/{connectionId}/connect")
     public ApiResponse<ConnectionTestResult> connectConnection(@PathVariable String connectionId) {
+        featurePermissionAccess.requireExplorerContextConnection();
         return ApiResponse.ok(connectionLifecycleService.connect(connectionId));
     }
 
@@ -105,6 +110,7 @@ public class ExplorerController {
 
     @PostMapping("/connections/{connectionId}/disconnect")
     public ApiResponse<Void> disconnectConnection(@PathVariable String connectionId) {
+        featurePermissionAccess.requireExplorerContextConnection();
         connectionLifecycleService.disconnect(connectionId);
         return ApiResponse.ok(null);
     }
@@ -116,6 +122,7 @@ public class ExplorerController {
 
     @PostMapping("/connections/{connectionId}/reconnect")
     public ApiResponse<ConnectionTestResult> reconnectConnection(@PathVariable String connectionId) {
+        featurePermissionAccess.requireExplorerContextConnection();
         return ApiResponse.ok(connectionLifecycleService.reconnect(connectionId));
     }
 
@@ -186,6 +193,7 @@ public class ExplorerController {
             @RequestParam(required = false) Integer database
     ) {
         HeadlessSqlAuth.requireSqlAccess();
+        featurePermissionAccess.requireRedisCommand(request.command());
         return ApiResponse.ok(redisService.executeRedisCommand(connectionId, request.command(), database));
     }
 
@@ -226,6 +234,7 @@ public class ExplorerController {
             @PathVariable String topic,
             @RequestBody ProduceKafkaMessageRequest request
     ) {
+        featurePermissionAccess.requireExplorerContextExport();
         return ApiResponse.ok(kafkaService.produceMessage(
                 connectionId,
                 topic,
@@ -240,6 +249,7 @@ public class ExplorerController {
             @PathVariable String connectionId,
             @RequestBody PublishTableToKafkaRequest request
     ) {
+        featurePermissionAccess.requireExplorerContextExport();
         return ApiResponse.ok(kafkaService.publishTable(connectionId, request));
     }
 
@@ -263,6 +273,7 @@ public class ExplorerController {
 
     @PostMapping("/groups")
     public ApiResponse<GroupResult> createGroup(@RequestBody Map<String, String> body) {
+        featurePermissionAccess.requireExplorerCatalogMutation();
         String label = body.getOrDefault("label", "New group");
         String parentId = body.get("parentId");
         return ApiResponse.ok(connectionAdminService.createGroup(label, parentId));
@@ -273,12 +284,14 @@ public class ExplorerController {
             @PathVariable String groupId,
             @RequestBody Map<String, String> body
     ) {
+        featurePermissionAccess.requireExplorerCatalogMutation();
         String label = body.getOrDefault("label", "");
         return ApiResponse.ok(new TreePayload(connectionAdminService.updateGroup(groupId, label)));
     }
 
     @PostMapping("/connections")
     public ApiResponse<ConnectionResult> createConnection(@RequestBody CreateConnectionRequest request) {
+        featurePermissionAccess.requireExplorerCatalogMutation();
         return ApiResponse.ok(connectionAdminService.createConnection(request.config(), request.groupId()));
     }
 
@@ -287,6 +300,7 @@ public class ExplorerController {
             @PathVariable String connectionId,
             @RequestBody ConnectionConfig config
     ) {
+        featurePermissionAccess.requireExplorerCatalogMutation();
         return ApiResponse.ok(new TreePayload(connectionAdminService.updateConnection(connectionId, config)));
     }
 
@@ -295,6 +309,7 @@ public class ExplorerController {
             @PathVariable String connectionId,
             @RequestBody Map<String, String> body
     ) {
+        featurePermissionAccess.requireExplorerCatalogMutation();
         String groupId = body.get("groupId");
         if (groupId == null || groupId.isBlank()) {
             throw new IllegalArgumentException("groupId is required");
@@ -304,11 +319,13 @@ public class ExplorerController {
 
     @DeleteMapping("/nodes/{nodeId}")
     public ApiResponse<TreePayload> deleteNode(@PathVariable String nodeId) {
+        featurePermissionAccess.requireExplorerNodeDelete(connectionAdminService.isCatalogStructureNode(nodeId));
         return ApiResponse.ok(new TreePayload(connectionAdminService.deleteNode(nodeId)));
     }
 
     @PostMapping("/connections/import")
     public ApiResponse<ImportConnectionsResult> importConnections(@RequestBody ImportConnectionsRequest request) {
+        featurePermissionAccess.requireExplorerContextExport();
         return ApiResponse.ok(connectionAdminService.importConnections(request.configs()));
     }
 }

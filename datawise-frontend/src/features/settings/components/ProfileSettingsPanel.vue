@@ -85,7 +85,7 @@ async function saveSessionPolicy() {
         <button v-if="!auth.isGuest" class="action-btn" type="button" @click="changePassword">{{ t('profile.changePassword') }}</button>
       </div>
 
-      <section v-if="!auth.isGuest" class="setting-block session-policy">
+      <section v-if="!auth.isGuest && auth.isAdmin" class="setting-block session-policy">
         <h3>{{ t('settings.profile.sessionPolicyTitle') }}</h3>
         <p class="session-policy__hint hint">{{ t('settings.profile.sessionPolicyHint') }}</p>
         <label class="session-policy__field">

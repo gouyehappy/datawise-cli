@@ -2,7 +2,7 @@
   工作区：首页无 Tab 栏；打开控制台/表等后才显示 Tab
 -->
 <script setup lang="ts">
-import {computed, KeepAlive} from 'vue'
+import {computed, KeepAlive, nextTick, onMounted, watch} from 'vue'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {resolveWorkspaceTab} from '../tab-registry'
 import WorkspaceTabs from './WorkspaceTabs.vue'
@@ -12,21 +12,31 @@ const workspace = useWorkspaceStore()
 
 const activeTab = computed(() => workspace.activeTab)
 const tabComponent = computed(() => (activeTab.value ? resolveWorkspaceTab(activeTab.value.type) : null))
-const isHome = computed(() => !activeTab.value)
+const showWelcome = computed(() => !activeTab.value || !tabComponent.value)
+const showActiveTab = computed(() => Boolean(activeTab.value && tabComponent.value))
 
 /** SQL 控制台含 Monaco 实例，排除缓存以降低内存；KeepAlive 容器需常驻以免其它 Tab 缓存被清空 */
 const KEEPALIVE_EXCLUDE = ['SqlConsoleTab']
+
+function reconcileBrokenActiveTab() {
+    const tab = workspace.activeTab
+    if (!tab) return
+    if (resolveWorkspaceTab(tab.type)) return
+    workspace.closeTab(tab.id)
+}
+
+onMounted(() => nextTick(reconcileBrokenActiveTab))
+watch(activeTab, () => nextTick(reconcileBrokenActiveTab))
 </script>
 
 <template>
-  <main class="workspace" :class="{ 'workspace--home': isHome }" data-onboarding="workspace-main">
+  <main class="workspace" :class="{ 'workspace--home': showWelcome }" data-onboarding="workspace-main">
     <WorkspaceTabs v-if="workspace.hasOpenTabs"/>
     <div class="workspace-body">
-      <WelcomeTab v-if="isHome"/>
-      <KeepAlive :max="5" :exclude="KEEPALIVE_EXCLUDE">
+      <WelcomeTab v-if="showWelcome"/>
+      <KeepAlive v-if="showActiveTab && activeTab && tabComponent" :max="5" :exclude="KEEPALIVE_EXCLUDE">
         <component
             :is="tabComponent"
-            v-if="activeTab && tabComponent"
             :key="activeTab.id"
             :tab="activeTab"
         />

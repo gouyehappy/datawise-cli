@@ -1,5 +1,6 @@
 import {SHORTCUT_DEFINITIONS} from '@/core/shortcuts/definitions'
 import type {ShortcutActionId, ShortcutDefinition} from '@/core/shortcuts/types'
+import {canExecuteShortcutAction} from '@/features/auth/services/feature-permission.service'
 
 /** Palette 可执行的命令（复用快捷键动作，排除自身以免循环） */
 const PALETTE_COMMAND_IDS = new Set<ShortcutActionId>([
@@ -23,8 +24,12 @@ const PALETTE_COMMANDS: PaletteCommandEntry[] = SHORTCUT_DEFINITIONS.filter((def
     PALETTE_COMMAND_IDS.has(def.id),
 ).map((def) => ({id: def.id, labelKey: def.labelKey}))
 
+function accessiblePaletteCommands(): PaletteCommandEntry[] {
+    return PALETTE_COMMANDS.filter((def) => canExecuteShortcutAction(def.id))
+}
+
 export function listPaletteCommands(): PaletteCommandEntry[] {
-    return PALETTE_COMMANDS
+    return accessiblePaletteCommands()
 }
 
 export function isPaletteCommandMode(query: string): boolean {
@@ -48,7 +53,7 @@ export function searchPaletteCommands(
     labelOf: (key: string) => string,
 ): PaletteCommandEntry[] {
     const effective = isPaletteCommandMode(query) ? paletteCommandQuery(query) : query.trim()
-    return PALETTE_COMMANDS.filter((def) => matchesCommand(def, effective, labelOf))
+    return accessiblePaletteCommands().filter((def) => matchesCommand(def, effective, labelOf))
 }
 
 export function shortcutDefinitionFor(id: ShortcutActionId): ShortcutDefinition | undefined {

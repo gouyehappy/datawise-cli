@@ -4,12 +4,16 @@ on:
   push:
     paths:
       - 'datawise-frontend/**'
+      - 'datawise-backend/datawise-common/**'
+      - 'datawise-backend/datawise-config/**'
       - 'datawise-backend/datawise-workspace/src/main/resources/seed/plugins.json'
       - 'sql-editor/**'
       - '.github/workflows/frontend-tests.yml'
   pull_request:
     paths:
       - 'datawise-frontend/**'
+      - 'datawise-backend/datawise-common/**'
+      - 'datawise-backend/datawise-config/**'
       - 'datawise-backend/datawise-workspace/src/main/resources/seed/plugins.json'
       - 'sql-editor/**'
 
@@ -29,6 +33,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test
+      - run: npm run audit:feature-permissions
       - run: npm run test:analysis-stream
       - run: npx playwright install chromium --with-deps
       - run: npm run test:e2e:analysis

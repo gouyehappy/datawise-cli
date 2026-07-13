@@ -57,7 +57,7 @@ export const DEFAULT_LAYOUT_PREFERENCES: LayoutPreferences = {
     shortcutPanelMaxHeight: DEFAULT_SHORTCUT_PANEL_MAX_HEIGHT,
     showTerminalPanel: false,
     terminalHeight: DEFAULT_TERMINAL_HEIGHT,
-    lastModule: 'dashboard',
+    lastModule: 'database',
     lastShortcutPanel: null,
 }
 

@@ -27,7 +27,7 @@ export function buildAnalysisMarkdownExport(
     analysis: AiAnalysisResult,
     options?: { title?: string; generatedAt?: Date },
 ): string {
-    const title = options?.title?.trim() || 'DataWise Analysis Report'
+    const title = options?.title?.trim() || 'Analysis Report'
     const timestamp = (options?.generatedAt ?? new Date()).toISOString()
     const sections: string[] = [`# ${title}`, '', `_Generated at ${timestamp}_`, '']
 
@@ -64,7 +64,7 @@ export function buildAnalysisHtmlExport(
     analysis: AiAnalysisResult,
     options?: { title?: string; generatedAt?: Date },
 ): string {
-    const title = options?.title?.trim() || 'DataWise Analysis Report'
+    const title = options?.title?.trim() || 'Analysis Report'
     const timestamp = (options?.generatedAt ?? new Date()).toISOString()
     const parts: string[] = [
         '<!DOCTYPE html>',

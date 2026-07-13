@@ -77,6 +77,8 @@ export interface LoginResult {
     securityConfigType?: string
     expiresAtEpochMs?: number | null
     userId?: number | null
+    admin?: boolean
+    featurePermissions?: Record<string, boolean>
 }
 
 export interface SessionInfo {
@@ -85,6 +87,8 @@ export interface SessionInfo {
     guest: boolean
     expiresAtEpochMs?: number | null
     userId?: number | null
+    admin?: boolean
+    featurePermissions?: Record<string, boolean>
 }
 
 export interface AuthSessionPolicy {
@@ -98,6 +102,7 @@ export interface AuthUser {
     displayName: string
     email: string
     isGuest: boolean
+    isAdmin?: boolean
 }
 
 export interface AuthUserProfile {
@@ -121,6 +126,15 @@ export interface AuthApi {
     changePassword(currentPassword: string, newPassword: string): Promise<void>
 
     resolveUserProfile(userName: string, isGuest: boolean): AuthUserProfile
+}
+
+export interface UserAdminApi {
+    listUsers(): Promise<import('@/features/auth/types/feature-permission.types').UserPermissionSummary[]>
+
+    updateUserPermissions(
+        userId: number,
+        featurePermissions: import('@/features/auth/types/feature-permission.types').FeaturePermissionMap,
+    ): Promise<import('@/features/auth/types/feature-permission.types').UserPermissionSummary>
 }
 
 // ── SQL ─────────────────────────────────────────────────────────────────────
@@ -1402,6 +1416,7 @@ export interface PlatformApi {
 
 export interface ApiClient {
     auth: AuthApi
+    userAdmin: UserAdminApi
     sql: SqlApi
     ai: AiApi
     datagen: DatagenApi

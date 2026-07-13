@@ -2,7 +2,7 @@ export default {
     heroKicker: 'Local database workbench',
     heroHeadline: 'Connect, query, export — in one place',
     heroDesc:
-        'DataWise CLI brings SQL console, connection management, and AI assistance for daily data work.',
+        'SQL console, connection management, and AI assistance for daily data work.',
     featureConsoleTitle: 'SQL console',
     featureConsoleDesc: 'Monaco editor, execution plans, and result grids with an IDE-like feel.',
     featureConnectTitle: 'Multi-source connections',
@@ -39,4 +39,7 @@ export default {
     invalidCredentials: 'Invalid username or password',
     sessionExpired: 'Your session has expired. Please sign in again.',
     serviceUnavailable: 'Sign in to use this feature',
+    permissionDenied: 'Your account does not have permission for this action',
+    guestNotAllowed: 'Guests cannot perform this action. Sign in with an account.',
+    adminRequired: 'Administrator permission is required',
 }

@@ -29,13 +29,10 @@ export async function resetUserScopedState(): Promise<void> {
         const appConfig = useAppConfigStore()
         const workspace = useWorkspaceStore()
 
-        await explorer.refreshTree()
-
-        if (auth.isGuest) {
-            appConfig.reloadForCurrentScope(createDefaultAppConfig())
-        } else {
-            await appConfig.syncFromServer()
-        }
+        const configTask = auth.isGuest
+            ? Promise.resolve(appConfig.reloadForCurrentScope(createDefaultAppConfig()))
+            : appConfig.syncFromServer()
+        await Promise.all([explorer.refreshTree(), configTask])
 
         workspace.closeAllClosable()
         useAiChatStore().reloadForCurrentScope()

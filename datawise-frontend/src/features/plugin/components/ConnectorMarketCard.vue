@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from 'vue'
+import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DbTypeIcon from '@/core/components/DbTypeIcon.vue'
 import {DwIcon} from '@/core/icons'
@@ -14,6 +14,8 @@ import {connectorMarketAccentVars} from '@/features/datasource/services/connecto
 import type {DbType} from '@/core/types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {canMutateConnectionCatalog} from '@/features/auth/services/feature-permission.service'
 import {SETTINGS_PLUGIN_REFERENCE_PRESET_ANCHOR} from '@/features/plugin/services/plugin-navigation.service'
 
 const props = withDefaults(defineProps<{
@@ -32,7 +34,9 @@ const props = withDefaults(defineProps<{
 const {t, te} = useI18n()
 const layout = useLayoutStore()
 const workspace = useWorkspaceStore()
+const auth = useAuthStore()
 const copied = ref(false)
+const canCreateConnection = computed(() => canMutateConnectionCatalog(auth.isGuest))
 
 const capLimit = props.standalone ? (props.lead ? 6 : 5) : 4
 
@@ -81,6 +85,10 @@ function openPluginSettings(event: Event) {
 
 function openNewConnection(event?: Event) {
     event?.stopPropagation()
+    if (!canCreateConnection.value) {
+        layout.showErrorToast(t('auth.permissionDenied'))
+        return
+    }
     layout.setModule('database')
     workspace.openConnectionForm(props.entry.id as DbType)
 }
@@ -147,7 +155,7 @@ function openNewConnection(event?: Event) {
         }}
       </span>
 
-      <div v-if="entry.available" class="connector-card__footer-actions">
+      <div v-if="entry.available && canCreateConnection" class="connector-card__footer-actions">
         <button class="connector-card__link" type="button" @click="openNewConnection">
           {{ dense ? t('plugin.connectorMarket.newConnectionShort') : t('plugin.connectorMarket.newConnection') }}
           <DwIcon name="chevron-right" :size="14" :stroke-width="2"/>

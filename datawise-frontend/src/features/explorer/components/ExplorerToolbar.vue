@@ -25,10 +25,17 @@ import {
 } from '@/features/explorer/services/explorer-toolbar.actions'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useFeaturePermission} from '@/features/auth/composables/useFeaturePermission'
+import {canMutateConnectionCatalog, canUseExplorerAddMenu} from '@/features/auth/services/feature-permission.service'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 
 const {t} = useI18n()
 const explorer = useExplorerStore()
 const layout = useLayoutStore()
+const auth = useAuthStore()
+const {can} = useFeaturePermission()
+const showExplorerAdd = computed(() => canUseExplorerAddMenu(auth.isGuest))
 const icons = EXPLORER_ICONS
 /** 工具栏操作图标像素尺寸（原 sm≈12–14px，显式放大以贴近按钮可视区域） */
 const TOOLBAR_ICON_SIZE = 28
@@ -69,6 +76,10 @@ function openFolderDialog() {
 }
 
 async function confirmCreateFolder(name: string) {
+  if (!canMutateConnectionCatalog(auth.isGuest)) {
+    layout.showErrorToast(t('auth.permissionDenied'))
+    return
+  }
   try {
     await explorer.addRootFolder(name)
     layout.showToast(t('explorer.folderCreated', {name}))
@@ -132,7 +143,7 @@ onUnmounted(() => {
 <template>
   <div class="toolbar">
     <div class="actions dw-btn-group">
-      <div ref="menuRef" class="menu-wrap">
+      <div v-if="showExplorerAdd" ref="menuRef" class="menu-wrap">
         <IconButton :title="t('explorer.newDataSource')" :active="showMenu" @click="toggleMenu">
           <span class="toolbar-glyph">
             <DwIcon :name="icons.add" :size="TOOLBAR_ICON_SIZE" :stroke-width="1.35"/>
@@ -149,6 +160,7 @@ onUnmounted(() => {
       </div>
 
       <IconButton
+          v-if="can(FeaturePermission.WorkbenchExplorerRefresh)"
           :title="shortcutTooltip(t('explorer.refresh'), 'explorer.refresh')"
           :disabled="explorer.isRefreshing"
           @click="refreshTree"
@@ -159,6 +171,7 @@ onUnmounted(() => {
       </IconButton>
 
       <IconButton
+          v-if="can(FeaturePermission.WorkbenchExplorerLocate)"
           :title="shortcutTooltip(t('explorer.locateActiveTab'), 'explorer.locate')"
           @click="locateInTree"
       >
@@ -167,7 +180,7 @@ onUnmounted(() => {
         </span>
       </IconButton>
 
-      <div ref="settingsRef" class="menu-wrap">
+      <div v-if="can(FeaturePermission.WorkbenchExplorerSettings)" ref="settingsRef" class="menu-wrap">
         <IconButton
             :title="t('explorer.settings')"
             :active="settingsMenu.visible.value"
@@ -200,7 +213,7 @@ onUnmounted(() => {
         @confirm="confirmCreateFolder"
     />
 
-    <div class="search-wrap">
+    <div v-if="can(FeaturePermission.WorkbenchExplorerSearch)" class="search-wrap">
       <label class="search" :class="{ 'search--active': explorer.searchQuery.trim().length > 0 }">
         <DwIcon class="search-icon" :name="icons.search" size="sm"/>
         <input

@@ -151,15 +151,31 @@ export function reportDesktopBootstrapHealthPollProgress(elapsedMs: number, time
     setDesktopStartupTarget(Math.min(progress, DESKTOP_BACKEND_READY_PROGRESS - 2), 'warming')
 }
 
+const FINALIZE_TIMEOUT_MS = 6_000
+
+function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export async function finalizeDesktopStartup(): Promise<void> {
     setDesktopStartupTarget(100, 'ready')
     if (state.complete) return
 
-    await new Promise<void>((resolve) => {
-        finalizeWaiters.push(resolve)
-        ensureTicker()
-        tickProgress()
-    })
+    await Promise.race([
+        new Promise<void>((resolve) => {
+            finalizeWaiters.push(resolve)
+            ensureTicker()
+            tickProgress()
+        }),
+        delay(FINALIZE_TIMEOUT_MS).then(() => {
+            state.displayProgress = 100
+            state.complete = true
+            stopTicker()
+            const waiters = finalizeWaiters
+            finalizeWaiters = []
+            waiters.forEach((resolve) => resolve())
+        }),
+    ])
 }
 
 export function disposeDesktopBackendStartupListener(): void {

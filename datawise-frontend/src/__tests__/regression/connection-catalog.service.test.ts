@@ -26,4 +26,12 @@ describe('connection-catalog.service', () => {
             'connection.deleteAccessDenied',
         )
     })
+
+    it('maps permission denied via stable error code', () => {
+        const t = (key: string) => `tr:${key}`
+        assert.equal(
+            resolveConnectionCatalogErrorMessage(new Error('PERMISSION_DENIED'), t, 'save'),
+            'tr:auth.permissionDenied',
+        )
+    })
 })

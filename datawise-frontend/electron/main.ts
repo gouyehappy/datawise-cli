@@ -44,6 +44,7 @@ import {
 } from './deep-link-main.service'
 import {registerRendererProtocol, rendererAppUrl} from './renderer-protocol'
 import {registerRuntimeLogIpc} from './runtime-log-ipc'
+import {scheduleDetachedDevTools} from './devtools'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = !app.isPackaged
@@ -311,8 +312,8 @@ function createWindow() {
     })
 
     if (isDev) {
-        mainWindow.loadURL(frontendDevOrigin())
-        mainWindow.webContents.openDevTools({mode: 'detach'})
+        void mainWindow.loadURL(frontendDevOrigin())
+        scheduleDetachedDevTools(mainWindow)
     } else {
         const indexPath = resolveRendererIndexPath()
         const rendererUrl = rendererAppUrl()

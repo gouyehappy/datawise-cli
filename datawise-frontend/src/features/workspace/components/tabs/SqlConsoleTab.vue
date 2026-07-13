@@ -27,6 +27,8 @@ import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useEditorFullscreen} from '@/features/workspace/composables/useEditorFullscreen'
 import {useSqlEditorActions, type SqlRunOptions} from '@/features/workspace/composables/useSqlEditorActions'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
+import {useFeaturePermission} from '@/features/auth/composables/useFeaturePermission'
+import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import type {QueryResultRefreshRequest} from '@/features/workspace/services/query-result-refresh.service'
 import {resolveConsoleInstanceLabel, buildExplorerScopedLabelResolver} from '@/features/workspace/services/resolve-console-instance'
@@ -85,6 +87,7 @@ const SubmitProductionApprovalDialog = defineAsyncComponent(
 
 const {t} = useI18n()
 const {readOnly: guestReadOnly, hint: guestReadOnlyHint} = useResourceWriteGuard(UserResource.WorkspaceScripts)
+const {can} = useFeaturePermission()
 const props = defineProps<{ tab: WorkspaceTab }>()
 
 const workspace = useWorkspaceStore()
@@ -117,7 +120,9 @@ const sqlFormatEnabled = computed(() => pluginStore.isEnabled('p-sql-format'))
 const consoleAiEnabled = computed(() => pluginStore.isEnabled('p-console-ai'))
 const indexSuggestEnabled = computed(() => pluginStore.isEnabled('p-ai-index-suggest'))
 const aiSqlFixEnabled = computed(() => pluginStore.isEnabled('p-ai-sql-fix'))
-const aiResultSummaryEnabled = computed(() => pluginStore.isEnabled('p-ai-result-summary'))
+const aiResultSummaryEnabled = computed(
+    () => pluginStore.isEnabled('p-ai-result-summary') && can(FeaturePermission.WorkbenchResultAiSummary),
+)
 const aiExplainEnabled = computed(() => pluginStore.isEnabled('p-ai-explain'))
 const dmlGenerateEnabled = computed(() => pluginStore.isEnabled('p-dml-generate'))
 const explainPlanEnabled = computed(() => pluginStore.isEnabled('p-explain-plan'))
@@ -267,6 +272,26 @@ const {runSql, saveConsole, formatSql, formatSelection, jumpToErrorLine, running
   applyParameters: (text) => applySqlParameters(text, sqlParamValues.value),
   getProductionPerfActive: () => productionPerfActive.value,
 })
+
+const showToolbarRunGroup = computed(() =>
+    can(FeaturePermission.WorkbenchConsoleRun)
+    || (explainPlanEnabled.value && can(FeaturePermission.WorkbenchConsoleExplain))
+    || can(FeaturePermission.WorkbenchConsoleDangerousSql)
+    || (running.value && can(FeaturePermission.WorkbenchConsoleRun)),
+)
+
+const showToolbarSaveGroup = computed(() =>
+    can(FeaturePermission.WorkbenchConsoleSave)
+    || can(FeaturePermission.WorkbenchConsoleSaveAs)
+    || (bookmarksEnabled.value && can(FeaturePermission.WorkbenchConsoleBookmark))
+    || can(FeaturePermission.WorkbenchConsoleViewModel)
+    || (sqlFormatEnabled.value && can(FeaturePermission.WorkbenchConsoleFormat))
+    || can(FeaturePermission.WorkbenchConsoleFullscreen),
+)
+
+const showToolbarAiGroup = computed(() =>
+    consoleAiEnabled.value && can(FeaturePermission.WorkbenchConsoleAi),
+)
 
 const teamStore = useTeamStore()
 const productionApprovalDialogOpen = ref(false)
@@ -705,6 +730,7 @@ onMounted(async () => {
     <div class="dw-console-toolbar">
       <div class="dw-console-actions dw-btn-group">
         <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleRun)"
             class="console-run-btn"
             :class="{ 'console-run-btn--cancel': running }"
             :disabled="dangerousSqlPending && !running"
@@ -718,7 +744,7 @@ onMounted(async () => {
           <ConsoleToolbarIcon :name="running ? 'stop' : 'run'"/>
         </IconButton>
         <IconButton
-            v-if="explainPlanEnabled"
+            v-if="explainPlanEnabled && can(FeaturePermission.WorkbenchConsoleExplain)"
             :disabled="!connectionCaps.sqlExplain"
             :title="connectionCaps.sqlExplain
               ? t('console.explainMode.toolbar')
@@ -728,6 +754,7 @@ onMounted(async () => {
           <ConsoleToolbarIcon name="explainPlan"/>
         </IconButton>
         <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleDangerousSql)"
             :disabled="!dangerousSqlPending"
             :variant="dangerousSqlPending ? 'accent' : undefined"
             :title="dangerousSqlSubmitTitle"
@@ -736,6 +763,7 @@ onMounted(async () => {
           <ConsoleToolbarIcon name="submit"/>
         </IconButton>
         <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleDangerousSql)"
             :disabled="!dangerousSqlPending"
             :title="t('console.dangerousSql.rollback')"
             @click="rollbackDangerousSql"
@@ -743,15 +771,20 @@ onMounted(async () => {
           <ConsoleToolbarIcon name="rollback"/>
         </IconButton>
         <IconButton
-            v-if="running"
+            v-if="running && can(FeaturePermission.WorkbenchConsoleRun)"
             class="console-disconnect-btn"
             :title="t('console.cancelExecution.cancelConnectionHint')"
             @click="requestCancelConnection()"
         >
           <ConsoleToolbarIcon name="disconnect"/>
         </IconButton>
-        <span class="dw-console-divider" aria-hidden="true"/>
+        <span
+            v-if="showToolbarRunGroup && showToolbarSaveGroup"
+            class="dw-console-divider"
+            aria-hidden="true"
+        />
         <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleSave)"
             :disabled="guestReadOnly"
             :title="guestReadOnly ? guestReadOnlyHint : shortcutTooltip(t('console.save'), 'workspace.saveConsole')"
             @click="saveConsole"
@@ -759,6 +792,7 @@ onMounted(async () => {
           <ConsoleToolbarIcon name="save"/>
         </IconButton>
         <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleSaveAs)"
             :disabled="guestReadOnly"
             :title="guestReadOnly ? guestReadOnlyHint : t('console.saveAsFile')"
             @click="saveStatementAsFileFromToolbar"
@@ -766,13 +800,14 @@ onMounted(async () => {
           <ConsoleToolbarIcon name="saveAs"/>
         </IconButton>
         <IconButton
-            v-if="bookmarksEnabled"
+            v-if="bookmarksEnabled && can(FeaturePermission.WorkbenchConsoleBookmark)"
             :title="t('console.saveBookmark')"
             @click="openSaveBookmarkDialog"
         >
           <ConsoleToolbarIcon name="bookmark"/>
         </IconButton>
         <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleViewModel)"
             :disabled="guestReadOnly"
             :title="t('console.saveViewModel')"
             @click="openSaveViewModelDialog"
@@ -780,19 +815,24 @@ onMounted(async () => {
           <ConsoleToolbarIcon name="viewModel"/>
         </IconButton>
         <IconButton
-            v-if="sqlFormatEnabled"
+            v-if="sqlFormatEnabled && can(FeaturePermission.WorkbenchConsoleFormat)"
             :title="t('console.format')"
             @click="formatSql"
         >
           <ConsoleToolbarIcon name="format"/>
         </IconButton>
         <EditorFullscreenButton
+            v-if="can(FeaturePermission.WorkbenchConsoleFullscreen)"
             variant="toolbar"
             :active="isEditorFullscreen"
             @click="toggleEditorFullscreen"
         />
-        <span class="dw-console-divider" aria-hidden="true"/>
-        <div v-if="consoleAiEnabled" class="ai-btn-wrap">
+        <span
+            v-if="showToolbarSaveGroup && showToolbarAiGroup"
+            class="dw-console-divider"
+            aria-hidden="true"
+        />
+        <div v-if="showToolbarAiGroup" class="ai-btn-wrap">
           <IconButton
               class="console-ai-btn"
               :title="shortcutTooltip(t('console.ai'), 'workspace.aiPrompt')"
@@ -808,6 +848,7 @@ onMounted(async () => {
         <div class="dw-console-toolbar__controls">
           <SqlExecutionLimitHint/>
           <ConsoleTransactionBar
+              v-if="can(FeaturePermission.WorkbenchConsoleTransaction)"
               ref="transactionBarRef"
               :tab-id="tab.id"
               :connection-id="connectionId || tab.connectionId"

@@ -46,6 +46,8 @@ import {
 } from '@/features/workspace/services/console-workspace-instance'
 import {isCatalogSchemaDbType} from '@/features/explorer/services/explorer-lazy-load'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {canOpenConnectionCatalogForm} from '@/features/auth/services/feature-permission.service'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {instanceSqlApi} from '@/api'
 import {viewModelApi} from '@/api/modules/view-model'
 import {
@@ -352,7 +354,12 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     function openConnectionForm(
         dbType: DbType,
         options?: { connectionId?: string; connectionName?: string; groupId?: string },
-    ) {
+    ): string | null {
+        if (!canOpenConnectionCatalogForm(useAuthStore().isGuest)) {
+            useLayoutStore().showErrorToast(t('auth.permissionDenied'))
+            return null
+        }
+
         if (options?.connectionId) {
             const existing = tabs.value.find(
                 (tab) => tab.type === 'connection' && tab.connectionId === options.connectionId,

@@ -63,6 +63,7 @@ export type SettingsSection =
     | 'dataAgent'
     | 'knowledge'
     | 'about'
+    | 'userPermissions'
 
 /** 右侧快捷栏面板，对应 Chat2DB Shortcut Bar */
 export type ShortcutPanel = 'info' | 'history' | 'monitor' | 'console' | 'export' | 'migration'

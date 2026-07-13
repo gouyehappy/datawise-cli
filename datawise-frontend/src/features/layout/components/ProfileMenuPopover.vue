@@ -3,7 +3,7 @@ import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
-import {useOnboardingStore} from '@/features/onboarding/stores/onboarding-store'
+import {useProfileSidebarMenuGroups} from '@/features/layout/composables/useProfileMenuGroups'
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -14,37 +14,7 @@ const props = defineProps<{
 const {t} = useI18n()
 const layout = useLayoutStore()
 const auth = useAuthStore()
-const onboarding = useOnboardingStore()
-
-function openProfile() {
-  emit('close')
-  layout.openSettingsModule('profile')
-}
-
-function openSettings() {
-  emit('close')
-  layout.openSettingsModule('basic')
-}
-
-function openOnboardingGuide() {
-  onboarding.showGuide()
-  emit('close')
-}
-
-function openTeam() {
-  layout.openTeamModule()
-  emit('close')
-}
-
-function openAccountLogin() {
-  auth.openLoginDialog()
-  emit('close')
-}
-
-function signOut() {
-  void auth.signOut()
-  emit('close')
-}
+const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
 </script>
 
 <template>
@@ -68,39 +38,21 @@ function signOut() {
     </header>
 
     <nav class="menu-list">
-      <button v-if="auth.isGuest" class="menu-item menu-item--accent" type="button" @click="openAccountLogin">
-        <DwIcon name="user" size="menu" :stroke-width="1.4"/>
-        <span>{{ t('auth.accountLogin') }}</span>
-      </button>
-
-      <button class="menu-item" type="button" @click="openProfile">
-        <DwIcon name="user" size="menu" :stroke-width="1.4"/>
-        <span>{{ t('profile.menu.profile') }}</span>
-      </button>
-      <button class="menu-item" type="button" @click="openSettings">
-        <DwIcon name="settings-basic" size="menu" :stroke-width="1.4"/>
-        <span>{{ t('profile.menu.settings') }}</span>
-      </button>
-
-      <button class="menu-item" type="button" @click="openOnboardingGuide">
-        <DwIcon name="about" size="menu" :stroke-width="1.4"/>
-        <span>{{ t('profile.menu.onboarding') }}</span>
-      </button>
-
-      <div class="menu-divider"/>
-
-      <button class="menu-item menu-item--accent" type="button" @click="openTeam">
-        <DwIcon name="users" size="menu" :stroke-width="1.35"/>
-        <span class="menu-item-label">{{ t('profile.menu.createOrJoinTeam') }}</span>
-        <span class="menu-badge">{{ t('profile.menu.new') }}</span>
-      </button>
-
-      <div v-if="!auth.isGuest" class="menu-divider"/>
-
-      <button v-if="!auth.isGuest" class="menu-item" type="button" @click="signOut">
-        <DwIcon name="log-out" size="menu" :stroke-width="1.4"/>
-        <span>{{ t('auth.signOutAccount') }}</span>
-      </button>
+      <template v-for="(group, groupIndex) in menuGroups" :key="group[0]?.id ?? groupIndex">
+        <div v-if="groupIndex > 0" class="menu-divider"/>
+        <button
+            v-for="item in group"
+            :key="item.id"
+            class="menu-item"
+            :class="{'menu-item--accent': item.accent}"
+            type="button"
+            @click="item.onClick"
+        >
+          <DwIcon :name="item.icon" size="menu" :stroke-width="item.icon === 'users' ? 1.35 : 1.4"/>
+          <span class="menu-item-label">{{ t(item.labelKey) }}</span>
+          <span v-if="item.badgeKey" class="menu-badge">{{ t(item.badgeKey) }}</span>
+        </button>
+      </template>
     </nav>
   </div>
 </template>

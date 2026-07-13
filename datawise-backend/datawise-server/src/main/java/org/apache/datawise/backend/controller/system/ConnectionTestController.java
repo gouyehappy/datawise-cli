@@ -4,7 +4,8 @@ import org.apache.datawise.backend.common.ApiResponse;
 import org.apache.datawise.backend.domain.ConnectionConfig;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
 import org.apache.datawise.backend.database.connection.ConnectionTestService;
-import org.apache.datawise.backend.service.UserAccessPolicy;
+import org.apache.datawise.backend.service.UserResource;
+import org.apache.datawise.backend.service.UserResourcePolicy;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,16 +16,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class ConnectionTestController {
 
     private final ConnectionTestService connectionTestService;
-    private final UserAccessPolicy userAccessPolicy;
+    private final UserResourcePolicy resourcePolicy;
 
-    public ConnectionTestController(ConnectionTestService connectionTestService, UserAccessPolicy userAccessPolicy) {
+    public ConnectionTestController(
+            ConnectionTestService connectionTestService,
+            UserResourcePolicy resourcePolicy
+    ) {
         this.connectionTestService = connectionTestService;
-        this.userAccessPolicy = userAccessPolicy;
+        this.resourcePolicy = resourcePolicy;
     }
 
     @PostMapping("/test")
     public ApiResponse<ConnectionTestResult> testConnection(@RequestBody ConnectionConfig config) {
-        userAccessPolicy.requireRegisteredUser();
+        // 访客可在会话临时 catalog 中新建连接，测试探针不应要求注册用户。
+        resourcePolicy.requireSessionIdFor(UserResource.CONNECTION_CATALOG);
         return ApiResponse.ok(connectionTestService.test(config));
     }
 }

@@ -73,7 +73,7 @@ const {min: shortcutResizeMin, max: shortcutResizeMax} = useSidePanelResizeBound
         class="workbench-edge__resize panel-resize-handle--leading"
     />
 
-    <aside class="tool-stripe tool-stripe--right">
+    <aside v-if="items.length > 0" class="tool-stripe tool-stripe--right">
       <nav class="tool-stripe__group" :aria-label="t('shortcut.railLabel')">
         <button
             v-for="item in items"

@@ -1,5 +1,6 @@
 export default {
     formIntro: 'Fill in connection details, test, then save to the connection tree.',
+    formReadOnlyHint: 'Your account cannot edit connections. This form is read-only.',
     newTitle: 'New {dbType} connection',
     editTitle: 'Edit connection {name}',
     loading: 'Loading connection…',
@@ -58,6 +59,7 @@ export default {
     sshPrivateKeyPlaceholder: 'Paste PEM private key (optional if password is set)',
     advancedSection: 'Advanced configuration',
     testing: 'Testing…',
+    testingHint: 'Testing connection…',
     test: 'Test connection',
     testSuccess: '{message} ({latency}ms)',
     saveFailed: 'Save failed',
@@ -70,6 +72,7 @@ export default {
     testHostRequired: 'Host is required',
     testUserRequired: 'Username is required',
     testFailed: 'Connection test failed',
+    testGuestNotAllowed: 'Guests cannot test connections. Sign in with an account and try again.',
     testSuccessMsg: 'Connected to {name}@{host}:{port}',
     storageOptions: {
         local: 'Local (LOCAL)',

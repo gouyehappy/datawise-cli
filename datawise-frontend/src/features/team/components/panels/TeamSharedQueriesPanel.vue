@@ -3,7 +3,7 @@ import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {ShareTeamSharedQueryPayload, TeamMember, TeamSharedQuerySummary} from '@/core/types'
 import StatusPill from '@/core/components/ui/StatusPill.vue'
-import {DwButton} from '@/core/components'
+import {ConfirmDialog, DwButton} from '@/core/components'
 import ShareTeamQueryDialog from '@/features/team/components/ShareTeamQueryDialog.vue'
 import TeamSharedQueryDetailDrawer from '@/features/team/components/TeamSharedQueryDetailDrawer.vue'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -37,12 +37,20 @@ const editingSql = ref('')
 const drawerOpen = ref(false)
 const drawerSummary = ref<TeamSharedQuerySummary | null>(null)
 const favoriteTogglingId = ref<string | null>(null)
+const deleteConfirmOpen = ref(false)
+const pendingDeleteSummary = ref<TeamSharedQuerySummary | null>(null)
+const deleting = ref(false)
 
 const tagOptions = computed(() => collectTeamSharedQueryTags(queries.value))
 
 const filteredQueries = computed(() =>
     filterTeamSharedQueries(queries.value, search.value, activeTag.value, starredOnly.value),
 )
+
+const deleteConfirmMessage = computed(() => {
+    const summary = pendingDeleteSummary.value
+    return summary ? t('team.sharedQueries.deleteConfirm', {title: summary.title}) : ''
+})
 
 async function reloadQueries() {
     loading.value = true
@@ -129,14 +137,25 @@ async function onSave(payload: ShareTeamSharedQueryPayload) {
 }
 
 async function onDelete(summary: TeamSharedQuerySummary) {
-    if (!window.confirm(t('team.sharedQueries.deleteConfirm', {title: summary.title}))) return
+    pendingDeleteSummary.value = summary
+    deleteConfirmOpen.value = true
+}
+
+async function confirmDelete() {
+    const summary = pendingDeleteSummary.value
+    if (!summary) return
+    deleting.value = true
     try {
         await teamStore.deleteSharedQuery(props.teamId, summary.id)
         layout.showToast(t('team.sharedQueries.deleted'))
+        deleteConfirmOpen.value = false
+        pendingDeleteSummary.value = null
         await reloadQueries()
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.deleteFailed')
         layout.showToast(message)
+    } finally {
+        deleting.value = false
     }
 }
 
@@ -269,6 +288,15 @@ watch(
         :can-manage="canManage"
         :current-user-id="currentUserId"
         @summary-updated="onDrawerSummaryUpdated"
+    />
+
+    <ConfirmDialog
+        v-model:open="deleteConfirmOpen"
+        :title="t('team.sharedQueries.deleteAction')"
+        :message="deleteConfirmMessage"
+        :confirm-label="t('team.sharedQueries.deleteAction')"
+        :confirm-loading="deleting"
+        @confirm="confirmDelete"
     />
   </div>
 </template>

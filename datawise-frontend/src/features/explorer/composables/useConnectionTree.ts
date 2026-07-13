@@ -106,10 +106,16 @@ import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {resolveConnectionCatalogErrorMessage} from '@/features/connection/services/connection-catalog.service'
+import {canMutateConnectionCatalog} from '@/features/auth/services/feature-permission.service'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {useShortcutPanelStore} from '@/features/layout/stores/shortcut-panel-store'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {filterPluginGatedMenuItems} from '@/features/plugin/services/plugin-registry.service'
+import {
+    canRunExplorerContextMenuAction,
+    filterExplorerContextMenuByPermission,
+} from '@/features/explorer/services/explorer-context-menu-permission.service'
 import {instanceSqlApi, sqlApi, tableDataApi, tableDetailApi} from '@/api'
 import {
     resolveViewModelScope,
@@ -134,6 +140,8 @@ export function useConnectionTree() {
     const layout = useLayoutStore()
     const shortcutPanel = useShortcutPanelStore()
     const catalogStore = useDatasourceCatalogStore()
+    const auth = useAuthStore()
+    const connectionDragEnabled = computed(() => canMutateConnectionCatalog(auth.isGuest))
 
     const {visible: menuVisible, pos: menuPos, target: contextNode, open, close: closeMenu} =
         useContextMenuAnchor<TreeNode>()
@@ -542,6 +550,10 @@ export function useConnectionTree() {
     }
 
     async function performMoveConnection(connectionId: string, targetGroupId: string) {
+        if (!canMutateConnectionCatalog(auth.isGuest)) {
+            layout.showErrorToast(t('auth.permissionDenied'))
+            return
+        }
         const connection = explorer.findNode(connectionId)
         const targetGroup = explorer.findNode(targetGroupId)
         if (!connection || connection.type !== 'connection') return
@@ -552,8 +564,8 @@ export function useConnectionTree() {
                 name: connection.label,
                 folder: targetGroup?.label ?? targetGroupId,
             }))
-        } catch {
-            layout.showToast(t('explorer.moveConnectionFailed'))
+        } catch (error) {
+            layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'save'))
         }
     }
 
@@ -609,6 +621,8 @@ export function useConnectionTree() {
         }
         items = filterPluginGatedMenuItems(items, (id) => usePluginStore().isEnabled(id))
         items = buildPinContextMenuItems(node, items)
+        items = filterExplorerContextMenuByPermission(items, {nodeType: node.type})
+        if (items.length === 0) return
         menuItems.value = items
         open(e, node)
     }
@@ -988,6 +1002,10 @@ export function useConnectionTree() {
     function onMenuSelect(id: string) {
         const node = contextNode.value
         if (!node) return
+        if (!canRunExplorerContextMenuAction(id, {nodeType: node.type})) {
+            closeMenu()
+            return
+        }
 
         const dbType = parseDbTypeMenuId(id)
         if (dbType) {
@@ -1476,11 +1494,15 @@ export function useConnectionTree() {
     async function confirmRenameGroup(name: string) {
         const node = pendingGroupNode.value
         if (!node || node.type !== 'group') return
+        if (!canMutateConnectionCatalog(auth.isGuest)) {
+            layout.showErrorToast(t('auth.permissionDenied'))
+            return
+        }
         try {
             await explorer.renameGroup(node.id, name)
             layout.showToast(t('explorer.groupRenamed', {name}))
-        } catch {
-            layout.showToast(t('explorer.createFailed'))
+        } catch (error) {
+            layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'save'))
         }
     }
 
@@ -1675,11 +1697,15 @@ export function useConnectionTree() {
     async function confirmCreateSubgroup(name: string) {
         const node = pendingGroupNode.value
         if (!node || node.type !== 'group') return
+        if (!canMutateConnectionCatalog(auth.isGuest)) {
+            layout.showErrorToast(t('auth.permissionDenied'))
+            return
+        }
         try {
             await explorer.addGroup(name, node.id)
             layout.showToast(t('explorer.subgroupCreated', {name}))
-        } catch {
-            layout.showToast(t('explorer.createFailed'))
+        } catch (error) {
+            layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'save'))
         }
     }
 
@@ -1701,6 +1727,7 @@ export function useConnectionTree() {
 
     function runShortcutOpenSelected() {
         if (isExplorerDialogOpen()) return
+        if (!canRunExplorerContextMenuAction('open')) return
         const node = explorer.selectedNode
         if (!node) return
         if (node.type === 'connection' && node.dbType) {
@@ -1715,6 +1742,7 @@ export function useConnectionTree() {
 
     function runShortcutEditSelected() {
         if (isExplorerDialogOpen()) return
+        if (!canRunExplorerContextMenuAction('edit', {nodeType: node.type})) return
         const node = explorer.selectedNode
         if (!node) return
         if (node.type === 'table') {
@@ -1732,6 +1760,7 @@ export function useConnectionTree() {
 
     function runShortcutDeleteSelected() {
         if (isExplorerDialogOpen()) return
+        if (!canRunExplorerContextMenuAction('delete', {nodeType: node.type})) return
         const node = explorer.selectedNode
         if (!node) return
 
@@ -1872,5 +1901,6 @@ export function useConnectionTree() {
         confirmRenameViewModel,
         confirmDeleteViewModel,
         confirmMigrateViewModel,
+        connectionDragEnabled,
     }
 }

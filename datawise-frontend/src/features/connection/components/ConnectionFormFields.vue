@@ -16,6 +16,7 @@ const form = defineModel<ConnectionConfig>('form', {required: true})
 
 defineProps<{
   dbType: DbType
+  readOnly?: boolean
 }>()
 
 const {t} = useI18n()
@@ -44,12 +45,13 @@ const authOptions = computed(() =>
       <DwInput
           v-model="form.name"
           variant="sm"
+          :disabled="readOnly"
           :placeholder="t('connection.namePlaceholder')"
       />
     </ConnectionFormField>
 
     <ConnectionFormField :label="t('connection.env')" :hint="t('connection.hints.env')">
-      <SettingsSelect v-model="form.env" size="sm" :options="envOptions"/>
+      <SettingsSelect v-model="form.env" size="sm" :disabled="readOnly" :options="envOptions"/>
     </ConnectionFormField>
     <ConnectionFormField
         v-if="showEnvCustom"
@@ -59,11 +61,12 @@ const authOptions = computed(() =>
       <DwInput
           v-model="form.envCustom"
           variant="sm"
+          :disabled="readOnly"
           :placeholder="t('connection.envCustomPlaceholder')"
       />
     </ConnectionFormField>
     <ConnectionFormField :label="t('connection.storage')">
-      <SettingsSelect v-model="form.storage" size="sm" :options="storageOptions"/>
+      <SettingsSelect v-model="form.storage" size="sm" :disabled="readOnly" :options="storageOptions"/>
     </ConnectionFormField>
 
     <ConnectionFormField
@@ -73,15 +76,16 @@ const authOptions = computed(() =>
       <DwInput
           v-model="form.host"
           variant="sm"
+          :disabled="readOnly"
           placeholder="localhost"
       />
     </ConnectionFormField>
     <ConnectionFormField :label="t('connection.port')">
-      <DwInput v-model="form.port" variant="sm"/>
+      <DwInput v-model="form.port" variant="sm" :disabled="readOnly"/>
     </ConnectionFormField>
 
     <ConnectionFormField v-if="dbType === 'oracle'" wide :label="t('connection.sid')">
-      <DwInput v-model="form.sid" variant="sm"/>
+      <DwInput v-model="form.sid" variant="sm" :disabled="readOnly"/>
     </ConnectionFormField>
 
     <ConnectionFormField
@@ -90,7 +94,7 @@ const authOptions = computed(() =>
         :label="t('connection.redisDbIndex')"
         :hint="t('connection.hints.redisDbIndex')"
     >
-      <DwInput v-model="form.database" variant="sm" placeholder="0"/>
+      <DwInput v-model="form.database" variant="sm" :disabled="readOnly" placeholder="0"/>
     </ConnectionFormField>
 
     <ConnectionFormField
@@ -99,7 +103,7 @@ const authOptions = computed(() =>
         :label="t('connection.database')"
         :hint="t('connection.hints.database')"
     >
-      <DwInput v-model="form.database" variant="sm"/>
+      <DwInput v-model="form.database" variant="sm" :disabled="readOnly"/>
     </ConnectionFormField>
 
     <ConnectionFormField wide :label="t('connection.url')">
@@ -114,6 +118,7 @@ const authOptions = computed(() =>
         <DwInput
             v-model="form.user"
             variant="sm"
+            :disabled="readOnly"
             :placeholder="t('connection.redisUsernameOptional')"
         />
       </ConnectionFormField>
@@ -124,6 +129,7 @@ const authOptions = computed(() =>
         <DwSecretInput
             v-model="form.password"
             variant="sm"
+            :disabled="readOnly"
             :placeholder="t('connection.redisPasswordOptional')"
             :show-label="t('connection.showPassword')"
             :hide-label="t('connection.hidePassword')"
@@ -133,17 +139,18 @@ const authOptions = computed(() =>
 
     <template v-else>
     <ConnectionFormField wide :label="t('connection.auth')">
-      <SettingsSelect v-model="form.auth" size="sm" :options="authOptions"/>
+      <SettingsSelect v-model="form.auth" size="sm" :disabled="readOnly" :options="authOptions"/>
     </ConnectionFormField>
 
     <template v-if="form.auth !== 'NONE'">
       <ConnectionFormField :label="t('connection.username')">
-        <DwInput v-model="form.user" variant="sm"/>
+        <DwInput v-model="form.user" variant="sm" :disabled="readOnly"/>
       </ConnectionFormField>
       <ConnectionFormField :label="t('connection.password')">
         <DwSecretInput
             v-model="form.password"
             variant="sm"
+            :disabled="readOnly"
             :show-label="t('connection.showPassword')"
             :hide-label="t('connection.hidePassword')"
         />
@@ -152,7 +159,7 @@ const authOptions = computed(() =>
     </template>
   </div>
 
-  <ConnectionMoreOptions :form="form"/>
+  <ConnectionMoreOptions :form="form" :read-only="readOnly"/>
 </template>
 
 <style scoped>

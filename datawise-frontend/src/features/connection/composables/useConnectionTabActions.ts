@@ -1,4 +1,4 @@
-import {ref} from 'vue'
+import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {ConnectionConfig} from '@/core/types'
 import type {Reactive} from 'vue'
@@ -7,6 +7,8 @@ import {resolveConnectionCatalogErrorMessage} from '@/features/connection/servic
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {canMutateConnectionCatalog} from '@/features/auth/services/feature-permission.service'
 
 /** 连接 Tab：保存 / 取消 */
 export function useConnectionTabActions(options: {
@@ -21,10 +23,16 @@ export function useConnectionTabActions(options: {
     const explorer = useExplorerStore()
     const layout = useLayoutStore()
     const workspace = useWorkspaceStore()
+    const auth = useAuthStore()
     const saving = ref(false)
+    const canSave = computed(() => canMutateConnectionCatalog(auth.isGuest))
 
     async function saveConnection() {
         if (saving.value) return
+        if (!canSave.value) {
+            layout.showErrorToast(t('auth.permissionDenied'))
+            return
+        }
 
         const payload = options.getPayload()
         if (!payload.name?.trim()) {
@@ -69,5 +77,5 @@ export function useConnectionTabActions(options: {
         workspace.closeTab(options.tabId)
     }
 
-    return {saveConnection, cancel, saving}
+    return {saveConnection, cancel, saving, canSave}
 }

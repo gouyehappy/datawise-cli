@@ -31,7 +31,7 @@ export default {
     },
     messages: {
         welcome: {
-            title: '欢迎使用 DataWise CLI',
+            title: '欢迎使用',
             body: '数据库工作台已就绪，可在左侧连接树开始探索。',
         },
         exportDone: {

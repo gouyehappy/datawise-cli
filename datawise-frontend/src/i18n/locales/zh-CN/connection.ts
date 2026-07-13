@@ -1,5 +1,6 @@
 export default {
     formIntro: '填写连接信息，测试通过后保存到左侧连接树。',
+    formReadOnlyHint: '当前账号无编辑权限，连接配置为只读。',
     newTitle: '新建 {dbType} 连接',
     editTitle: '编辑连接 {name}',
     loading: '正在加载连接信息…',
@@ -58,6 +59,7 @@ export default {
     sshPrivateKeyPlaceholder: '粘贴 PEM 私钥（使用密码时可留空）',
     advancedSection: '高级配置',
     testing: '测试中…',
+    testingHint: '正在测试连接…',
     test: '测试连接',
     testSuccess: '{message}（{latency}ms）',
     saveFailed: '保存失败',
@@ -70,6 +72,7 @@ export default {
     testHostRequired: '请填写主机地址',
     testUserRequired: '请填写用户名',
     testFailed: '连接测试失败',
+    testGuestNotAllowed: '访客模式下无法测试连接，请登录账号后再试',
     testSuccessMsg: '连接 {name}@{host}:{port} 成功',
     storageOptions: {
         local: '本地 (LOCAL)',

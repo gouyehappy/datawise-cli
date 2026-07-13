@@ -41,6 +41,8 @@ class AuthServiceTest {
     private UserAccessPolicy userAccessPolicy;
     @Mock
     private UserAdminPolicy userAdminPolicy;
+    @Mock
+    private UserPermissionPolicy userPermissionPolicy;
 
     @InjectMocks
     private AuthService authService;
@@ -82,6 +84,10 @@ class AuthServiceTest {
         UserContext.set(7L, false, "session-abc");
         when(userStore.findById(7L)).thenReturn(Optional.of(user));
         when(sessionStore.findById("session-abc")).thenReturn(Optional.of(session));
+        when(userAdminPolicy.isAdminUser(7L)).thenReturn(true);
+        when(userPermissionPolicy.resolveEffectivePermissions(user)).thenReturn(
+                org.apache.datawise.backend.domain.UserFeaturePermission.fullPreset()
+        );
 
         var info = authService.getCurrentSession();
 
@@ -126,6 +132,10 @@ class AuthServiceTest {
         user.setUsername("automation");
         UserContext.setApiToken(7L, "token-abc", java.util.Set.of());
         when(userStore.findById(7L)).thenReturn(Optional.of(user));
+        when(userAdminPolicy.isAdminUser(7L)).thenReturn(false);
+        when(userPermissionPolicy.resolveEffectivePermissions(user)).thenReturn(
+                org.apache.datawise.backend.domain.UserFeaturePermission.fullPreset()
+        );
 
         var info = authService.getCurrentSession();
 

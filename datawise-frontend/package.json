@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "vite",
     "dev:electron": "npm run gen:icons && cross-env ELECTRON=true vite",
+    "dev:all": "node ../scripts/dev-start.mjs",
+    "stop:dev": "node ../scripts/dev-stop.mjs",
     "build": "vue-tsc --noEmit && vite build",
     "build:electron": "cross-env ELECTRON=true vue-tsc --noEmit && cross-env ELECTRON=true vite build",
     "dist:desktop": "npm run gen:icons && node scripts/desktop/build.mjs",
@@ -26,6 +28,7 @@
     "gen:sql-snippets": "npx tsx scripts/generate-sql-snippets-shared.ts",
     "audit:plugin-catalog": "tsx --import ./scripts/test-setup.mjs scripts/audit-plugin-catalog.ts",
     "audit:plugin-catalog:strict": "tsx --import ./scripts/test-setup.mjs scripts/audit-plugin-catalog.ts --strict",
+    "audit:feature-permissions": "tsx --import ./scripts/test-setup.mjs scripts/audit-feature-permissions.ts",
     "gen:icons": "node scripts/generate-app-icons.mjs",
     "capture:demos": "tsx scripts/capture-demo-screenshots.ts",
     "sync:sql-editor": "node scripts/sync-sql-editor.mjs",

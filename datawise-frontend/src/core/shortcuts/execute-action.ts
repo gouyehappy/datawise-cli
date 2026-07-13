@@ -16,6 +16,7 @@ import {
     runToggleColumnComment,
     runToggleTableComment,
 } from '@/features/explorer/services/explorer-toolbar.actions'
+import {canExecuteShortcutAction} from '@/features/auth/services/feature-permission.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useGlobalObjectSearch} from '@/features/layout/composables/useGlobalObjectSearch'
@@ -25,6 +26,8 @@ function isSqlShortcutTab(type: string | undefined): boolean {
 }
 
 export function executeShortcutAction(actionId: ShortcutActionId) {
+    if (!canExecuteShortcutAction(actionId)) return
+
     const layout = useLayoutStore()
     const workspace = useWorkspaceStore()
     const {toggleGlobalObjectSearch} = useGlobalObjectSearch()

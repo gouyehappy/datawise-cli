@@ -3,6 +3,7 @@ import {dirname, join} from 'path'
 import {existsSync} from 'fs'
 import {fileURLToPath} from 'url'
 import {loadAppIconImage} from './app-icon'
+import {openDetachedDevTools} from './devtools'
 import {
     SPLASH_HEIGHT,
     SPLASH_WIDTH,
@@ -136,7 +137,10 @@ export function sendSplashProgressFromBackend(event: {phase: string; progress: n
 }
 
 export async function closeSplashAndShowMain(mainWindow: BrowserWindow | null): Promise<void> {
-    await waitSplashBarPainted(100, 8_000)
+    await Promise.race([
+        waitSplashBarPainted(100, 8_000),
+        delay(SPLASH_AT_100_HOLD_MS + 400),
+    ])
     await delay(SPLASH_AT_100_HOLD_MS)
 
     const elapsed = Date.now() - splashShownAt
@@ -155,6 +159,7 @@ export async function closeSplashAndShowMain(mainWindow: BrowserWindow | null): 
     if (mainWindow.isMinimized()) mainWindow.restore()
     if (!mainWindow.isVisible()) mainWindow.show()
     mainWindow.focus()
+    openDetachedDevTools(mainWindow)
 }
 
 export function disposeSplashWindow(): void {

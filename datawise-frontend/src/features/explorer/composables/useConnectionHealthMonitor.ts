@@ -1,5 +1,4 @@
 import {onMounted, onUnmounted, watch} from 'vue'
-import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
 import {
     extractDashboardConnections,
@@ -18,7 +17,6 @@ import {useNotificationStore} from '@/features/layout/stores/notification-store'
 export function useConnectionHealthMonitor() {
     const {t} = useI18n()
     const appConfig = useAppConfigStore()
-    const {connectionHealthPreferences} = storeToRefs(appConfig)
     const explorer = useExplorerStore()
     const layout = useLayoutStore()
     const notifications = useNotificationStore()
@@ -26,14 +24,15 @@ export function useConnectionHealthMonitor() {
     let timer: ReturnType<typeof setInterval> | null = null
 
     function notifyAlerts(before: Record<string, 'ok' | 'error'>) {
+        const prefs = appConfig.connectionHealthPreferences
         const rows = extractDashboardConnections(explorer.tree, explorer.connectionDisplayHealthById)
         const alerts = collectConnectionHealthAlerts(
             before,
             rows,
-            connectionHealthPreferences.value,
+            prefs,
         )
         for (const row of alerts) {
-            void dispatchConnectionHealthAlert(row, connectionHealthPreferences.value, {
+            void dispatchConnectionHealthAlert(row, prefs, {
                 showToast: (message) => layout.showToast(message),
                 toastMessage: t('dashboard.connectionHealthFailed', {name: row.name}),
                 pushNotification: (input) => notifications.push(input),
@@ -51,7 +50,7 @@ export function useConnectionHealthMonitor() {
 
     function startTimer() {
         if (timer) clearInterval(timer)
-        const ms = resolveProbeIntervalMs(connectionHealthPreferences.value.probeIntervalMinutes)
+        const ms = resolveProbeIntervalMs(appConfig.connectionHealthPreferences.probeIntervalMinutes)
         timer = setInterval(() => {
             if (document.visibilityState !== 'visible') return
             void tick(true)
@@ -63,7 +62,7 @@ export function useConnectionHealthMonitor() {
         startTimer()
     })
 
-    watch(() => connectionHealthPreferences.value.probeIntervalMinutes, startTimer)
+    watch(() => appConfig.connectionHealthPreferences.probeIntervalMinutes, startTimer)
 
     onUnmounted(() => {
         if (timer) clearInterval(timer)
