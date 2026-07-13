@@ -2,7 +2,7 @@
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwButton, EmptyState} from '@/core/components'
-import {explorerApi} from '@/api'
+import {configApi, explorerApi} from '@/api'
 import type {YarnAppDetail, YarnAppSummary, YarnQueueSummary} from '@/features/explorer/services/yarn-applications.service'
 import {
     formatYarnDuration,
@@ -10,12 +10,22 @@ import {
     formatYarnTimestamp,
     isYarnAppKillable,
 } from '@/features/explorer/services/yarn-applications.service'
+import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useLayoutStore} from '@/features/layout/stores/layout'
+import {
+    buildYarnLogsCommand,
+    findSshConnectionForHost,
+} from '@/features/ssh/services/ssh-yarn-bridge.service'
+import {sendToSshTerminal} from '@/features/terminal/services/ssh-terminal-session.service'
 
 const props = defineProps<{
   connectionId: string
+  initialAppId?: string
 }>()
 
 const {t} = useI18n()
+const workspace = useWorkspaceStore()
+const layout = useLayoutStore()
 
 const stateFilter = ref('RUNNING')
 const userFilter = ref('')
@@ -32,6 +42,8 @@ const moveQueueInput = ref('')
 const killDiagnostics = ref('')
 
 const canKillSelected = computed(() => isYarnAppKillable(selectedApp.value?.state))
+
+const selectedAmHost = computed(() => selectedApp.value?.amHostHttpAddress ?? '')
 
 const statusText = computed(() => {
   if (loading.value) return t('explorer.yarnApps.loading')
@@ -53,6 +65,7 @@ async function loadApps() {
       limit: 200,
     })
     apps.value = result.apps
+    await selectInitialAppIfNeeded()
   } catch (err) {
     error.value = err instanceof Error ? err.message : t('explorer.yarnApps.loadFailed')
     apps.value = []
@@ -144,6 +157,58 @@ function refresh() {
   loadApps()
 }
 
+async function selectInitialAppIfNeeded() {
+  const appId = props.initialAppId?.trim()
+  if (!appId) return
+  const match = apps.value.find((app) => app.id === appId)
+  if (match) {
+    await selectApp(match)
+  }
+}
+
+async function openSshForSelectedApp() {
+  if (!selectedApp.value?.id) return
+  try {
+    const catalog = await configApi.fetchConnectionsCatalog()
+    const host = selectedAmHost.value || catalog.connections.find((entry) => entry.id === props.connectionId)?.config.host
+    const ssh = findSshConnectionForHost(host ?? '', catalog)
+    if (!ssh) {
+      layout.showToast(t('ssh.yarnBridge.noSshConnection'))
+      return
+    }
+    workspace.openSshTerminal({
+      connectionId: ssh.connectionId,
+      connectionName: ssh.label,
+    })
+  } catch (error) {
+    layout.showToast(error instanceof Error ? error.message : t('ssh.yarnBridge.openSshFailed'))
+  }
+}
+
+async function pasteYarnLogsForSelectedApp() {
+  if (!selectedApp.value?.id) return
+  try {
+    const catalog = await configApi.fetchConnectionsCatalog()
+    const host = selectedAmHost.value || catalog.connections.find((entry) => entry.id === props.connectionId)?.config.host
+    const ssh = findSshConnectionForHost(host ?? '', catalog)
+    if (!ssh) {
+      layout.showToast(t('ssh.yarnBridge.noSshConnection'))
+      return
+    }
+    workspace.openSshTerminal({
+      connectionId: ssh.connectionId,
+      connectionName: ssh.label,
+    })
+    const command = buildYarnLogsCommand(selectedApp.value.id)
+    const ok = await sendToSshTerminal(ssh.connectionId, command, {focus: true})
+    if (!ok) {
+      layout.showToast(t('ssh.quickOps.pasteFailed'))
+    }
+  } catch (error) {
+    layout.showToast(error instanceof Error ? error.message : t('ssh.yarnBridge.pasteLogsFailed'))
+  }
+}
+
 defineExpose({refresh})
 
 onMounted(() => {
@@ -153,6 +218,10 @@ onMounted(() => {
 watch(() => props.connectionId, () => {
   loadApps()
   loadQueueOptions()
+})
+
+watch(() => props.initialAppId, () => {
+  void selectInitialAppIfNeeded()
 })
 </script>
 
@@ -234,6 +303,12 @@ watch(() => props.connectionId, () => {
       </dl>
       <p v-if="detailLoading" class="yarn-apps-panel__detail-loading">{{ t('explorer.yarnApps.loadingDetail') }}</p>
       <div class="yarn-apps-panel__actions">
+        <DwButton size="sm" :disabled="!selectedApp?.id" @click="openSshForSelectedApp">
+          {{ t('ssh.yarnBridge.openSshTerminal') }}
+        </DwButton>
+        <DwButton size="sm" :disabled="!selectedApp?.id" @click="pasteYarnLogsForSelectedApp">
+          {{ t('ssh.yarnBridge.pasteYarnLogs') }}
+        </DwButton>
         <label>
           <span>{{ t('explorer.yarnApps.moveQueue') }}</span>
           <input

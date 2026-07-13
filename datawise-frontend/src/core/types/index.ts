@@ -44,6 +44,7 @@ export type DbType =
     | 'dameng'
     | 'gaussdb'
     | 'flink'
+    | 'ssh'
 
 /** 主导航模块，对应 Chat2DB Navigation Bar */
 export type NavModule = 'profile' | 'database' | 'dashboard' | 'ai' | 'plugin' | 'pluginDev' | 'connectorMarket' | 'team' | 'settings'
@@ -98,6 +99,9 @@ export type TreeNodeType =
     | 'kafka-feature'
     | 'kafka-topic'
     | 'yarn-feature'
+    | 'ssh-terminal'
+    | 'ssh-script-records'
+    | 'ssh-script-record'
     | 'load_more'
 
 export interface TreeNode {
@@ -178,6 +182,8 @@ export type WorkspaceTabType =
     | 'yarn-applications'
     | 'yarn-nodes'
     | 'yarn-queues'
+    | 'ssh-terminal'
+    | 'ssh-script-record'
     | 'platform_catalog'
 
 export interface WorkspaceTab {
@@ -244,6 +250,15 @@ export interface WorkspaceTab {
     redisView?: 'keys' | 'command'
     /** Explorer AI 平台能力目录 Tab */
     platformFeature?: import('@/features/platform/types/platform.types').PlatformFeatureId
+    /** SSH 脚本记录 */
+    sshScriptRecordId?: string
+    sshScriptRecordTitle?: string
+    sshScriptRecordHtml?: string
+    sshScriptRecordUpdatedAt?: number
+    /** 同一连接的 SSH 终端序号（多会话） */
+    sshTerminalIndex?: number
+    /** YARN 应用列表 Tab 打开时预选的应用 ID */
+    yarnAppFilterId?: string
     /** 元数据文档预览 */
     metadocHtml?: string
     metadocMarkdown?: string

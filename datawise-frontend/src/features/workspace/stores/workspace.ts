@@ -542,11 +542,15 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         connectionId: string
         connectionName?: string
         explorerNodeId?: string
+        yarnAppFilterId?: string
     }) {
         const existing = tabs.value.find(
             (tab) => tab.type === 'yarn-applications' && tab.connectionId === options.connectionId,
         )
         if (existing) {
+            if (options.yarnAppFilterId) {
+                existing.yarnAppFilterId = options.yarnAppFilterId
+            }
             activeTabId.value = existing.id
             return existing.id
         }
@@ -560,6 +564,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             connectionId: options.connectionId,
             dbType: 'yarn',
             explorerNodeId: options.explorerNodeId,
+            yarnAppFilterId: options.yarnAppFilterId,
         })
         activeTabId.value = id
         return id
@@ -693,6 +698,70 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             title: t('terminal.title'),
             type: 'terminal',
             closable: true,
+        })
+        activeTabId.value = id
+        return id
+    }
+
+    function openSshTerminal(options: {
+        connectionId: string
+        connectionName?: string
+        explorerNodeId?: string
+    }) {
+        const label = options.connectionName ?? resolveConnectionLabel(options.connectionId)
+        const existingCount = tabs.value.filter(
+            (tab) => tab.type === 'ssh-terminal' && tab.connectionId === options.connectionId,
+        ).length
+        const sessionIndex = existingCount + 1
+        const id = nextTabId('ssh-terminal')
+        const baseTitle = label ? t('terminal.sshTabTitle', {name: label}) : t('terminal.sshTitle')
+        const title = sessionIndex > 1 ? `${baseTitle} #${sessionIndex}` : baseTitle
+        tabs.value.push({
+            id,
+            title,
+            type: 'ssh-terminal',
+            closable: true,
+            connectionId: options.connectionId,
+            dbType: 'ssh',
+            explorerNodeId: options.explorerNodeId,
+            sshTerminalIndex: sessionIndex,
+        })
+        activeTabId.value = id
+        return id
+    }
+
+    function openSshScriptRecord(options: {
+        connectionId: string
+        connectionName?: string
+        recordId: string
+        title: string
+        contentHtml?: string
+        updatedAt?: number
+        explorerNodeId?: string
+    }) {
+        const existing = tabs.value.find(
+            (tab) =>
+                tab.type === 'ssh-script-record'
+                && tab.connectionId === options.connectionId
+                && tab.sshScriptRecordId === options.recordId,
+        )
+        if (existing) {
+            activeTabId.value = existing.id
+            return existing.id
+        }
+        const id = nextTabId('ssh-script-record')
+        tabs.value.push({
+            id,
+            title: options.title,
+            type: 'ssh-script-record',
+            closable: true,
+            connectionId: options.connectionId,
+            dbType: 'ssh',
+            explorerNodeId: options.explorerNodeId,
+            sshScriptRecordId: options.recordId,
+            sshScriptRecordTitle: options.title,
+            sshScriptRecordHtml: options.contentHtml ?? '',
+            sshScriptRecordUpdatedAt: options.updatedAt,
         })
         activeTabId.value = id
         return id
@@ -1771,6 +1840,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (type === 'yarn-applications') return 'yarn-applications'
         if (type === 'yarn-nodes') return 'yarn-nodes'
         if (type === 'yarn-queues') return 'yarn-queues'
+        if (type === 'ssh-terminal') return 'ssh-terminal'
+        if (type === 'ssh-script-record') return 'ssh-script-record'
         if (type === 'platform_catalog') return 'platform-catalog'
         if (type === 'view_model_lineage') return 'lineage'
         return 'tab'
@@ -1843,6 +1914,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         openTable,
         openConnectionForm,
         openTerminal,
+        openSshTerminal,
+        openSshScriptRecord,
         openSchemaCompare,
         openSchemaEr,
         openSchemaTables,

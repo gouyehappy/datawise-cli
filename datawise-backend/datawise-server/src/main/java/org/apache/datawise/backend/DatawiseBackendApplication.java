@@ -13,6 +13,7 @@ import org.apache.datawise.backend.config.ConnectionLifecycleProperties;
 import org.apache.datawise.backend.config.ExplorerSchemaProperties;
 import org.apache.datawise.backend.config.JdbcPoolProperties;
 import org.apache.datawise.backend.config.TableMigrationProperties;
+import org.apache.datawise.backend.connector.ssh.SshClientProperties;
 import org.apache.datawise.backend.jdbc.ssh.SshTunnelProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -36,6 +37,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         ExplorerSchemaProperties.class,
         TableMigrationProperties.class,
         SshTunnelProperties.class,
+        SshClientProperties.class,
 })
 public class DatawiseBackendApplication {
 

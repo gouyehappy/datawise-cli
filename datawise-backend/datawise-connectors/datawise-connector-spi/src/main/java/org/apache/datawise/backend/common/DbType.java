@@ -51,6 +51,7 @@ public enum DbType {
     REDIS,
     FLINK,
     YARN,
+    SSH,
     GAUSSDB,
     OTHER,
     ;

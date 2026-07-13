@@ -70,6 +70,7 @@ function isExplorerExpandableFolder(node: TreeNode): boolean {
 export function canExpandTreeNode(node: TreeNode): boolean {
     if (node.children?.length) return true
     if (node.type === 'group' || node.type === 'connection' || node.type === 'database' || node.type === 'schema') return true
+    if (node.type === 'ssh-script-records') return true
     if (isExplorerExpandableFolder(node)) return true
     if (node.type === 'table' || node.type === 'columns' || node.type === 'keys' || node.type === 'indexes') {
         return true

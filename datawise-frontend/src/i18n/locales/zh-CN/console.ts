@@ -1,5 +1,6 @@
 export default {
     run: '执行选中',
+    openJdbcSshTunnel: '打开 SSH 隧道终端',
     save: '保存',
     saveAsFile: '另存为文件',
     saveBookmark: '保存书签',

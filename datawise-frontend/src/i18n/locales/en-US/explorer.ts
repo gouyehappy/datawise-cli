@@ -559,6 +559,9 @@ export default {
         openYarnApplications: 'Applications',
         openYarnNodes: 'Nodes',
         openYarnQueues: 'Queues',
+        openSshTerminal: 'Open SSH terminal',
+        openJdbcSshTunnel: 'Open SSH tunnel terminal',
+        newSshTerminal: 'New SSH terminal',
         publishTableData: 'Publish table data…',
     },
     kafkaFeatures: {
@@ -590,6 +593,10 @@ export default {
         applications: 'Applications',
         nodes: 'Nodes',
         queues: 'Queues',
+    },
+    sshFeatures: {
+        terminal: 'SSH Terminal',
+        scriptRecords: 'Quick commands',
     },
     yarnApps: {
         title: 'YARN applications',

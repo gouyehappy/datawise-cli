@@ -130,6 +130,7 @@ public class SshTunnelManager {
                 SshTunnelProperties properties
         ) throws SshTunnelException {
             try {
+                SshJschCompatibility.applyGlobalDefaults();
                 JSch jsch = new JSch();
                 if (properties.isStrictHostKeyChecking()) {
                     SshKnownHostsSupport.configureKnownHosts(jsch, properties);

@@ -62,6 +62,8 @@ const definitions = [
     {key: 'yarn-applications' as const, component: lazyTab(() => import('./components/tabs/YarnApplicationsTab.vue'))},
     {key: 'yarn-nodes' as const, component: lazyTab(() => import('./components/tabs/YarnNodesTab.vue'))},
     {key: 'yarn-queues' as const, component: lazyTab(() => import('./components/tabs/YarnQueuesTab.vue'))},
+    {key: 'ssh-terminal' as const, component: lazyTab(() => import('./components/tabs/SshTerminalTab.vue'))},
+    {key: 'ssh-script-record' as const, component: lazyTab(() => import('./components/tabs/SshScriptRecordTab.vue'))},
 
     {key: 'platform_catalog' as const, component: lazyTab(() => import('./components/tabs/PlatformCatalogTab.vue'))},
 

@@ -531,6 +531,7 @@ export default {
             LOCK_MONITOR: '锁监控',
             ONLINE_DDL: '在线 DDL',
             SSH_TUNNEL: 'SSH 隧道',
+            REMOTE_SHELL: '远程 Shell',
             NATIVE_COMMAND: '原生命令',
             KEY_VALUE: '键值存储',
             MESSAGE_BROKER: '消息队列',

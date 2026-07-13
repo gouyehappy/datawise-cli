@@ -66,6 +66,12 @@ const {
   confirmRenameViewModel,
   confirmDeleteViewModel,
   confirmMigrateViewModel,
+  showRenameSshScriptRecordDialog,
+  renameSshScriptRecordDefaultName,
+  showDeleteSshScriptRecordDialog,
+  deleteSshScriptRecordMessage,
+  confirmRenameSshScriptRecord,
+  confirmDeleteSshScriptRecord,
   connectionDragEnabled,
 } = useConnectionTree()
 
@@ -266,4 +272,35 @@ onUnmounted(() => {
       :confirm-label="t('explorer.context.migrateData')"
       @confirm="confirmMigrateViewModel"
   />
+
+  <PromptDialog
+      v-model:open="showRenameSshScriptRecordDialog"
+      :title="t('ssh.scriptRecord.rename')"
+      :label="t('ssh.scriptRecord.renamePrompt')"
+      :default-value="renameSshScriptRecordDefaultName"
+      :placeholder="t('ssh.scriptRecord.titlePlaceholder')"
+      :required-message="t('ssh.scriptRecord.nameRequired')"
+      :confirm-label="t('common.confirm')"
+      @confirm="confirmRenameSshScriptRecord"
+  />
+
+  <AppModal
+      :open="showDeleteSshScriptRecordDialog"
+      :title="t('ssh.scriptRecord.deleteTitle')"
+      width="420px"
+      @close="showDeleteSshScriptRecordDialog = false"
+  >
+    <p class="modal-message">{{ deleteSshScriptRecordMessage }}</p>
+    <template #footer>
+      <DwButton variant="ghost" @click="showDeleteSshScriptRecordDialog = false">
+        {{ t('common.cancel') }}
+      </DwButton>
+      <DwButton
+          variant="danger"
+          @click="showDeleteSshScriptRecordDialog = false; confirmDeleteSshScriptRecord()"
+      >
+        {{ t('ssh.scriptRecord.delete') }}
+      </DwButton>
+    </template>
+  </AppModal>
 </template>

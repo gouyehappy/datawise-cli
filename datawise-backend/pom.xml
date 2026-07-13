@@ -109,6 +109,11 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.datawise</groupId>
+                <artifactId>datawise-connector-ssh</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.datawise</groupId>
                 <artifactId>datawise-connector-mongodb</artifactId>
                 <version>${project.version}</version>
             </dependency>

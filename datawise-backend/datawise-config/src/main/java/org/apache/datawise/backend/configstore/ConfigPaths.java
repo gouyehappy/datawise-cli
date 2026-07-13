@@ -77,4 +77,19 @@ public final class ConfigPaths {
     public static String userTableDataAuditScope(long userId, String scopeKey) {
         return userTableDataAuditDir(userId) + "/" + scopeKey + ".json";
     }
+
+    public static String userSshScriptRecordsDir(long userId) {
+        return USERS_DIR + "/" + userId + "/ssh-script-records";
+    }
+
+    public static String userSshScriptRecordsScope(long userId, String connectionId) {
+        return userSshScriptRecordsDir(userId) + "/" + sanitizeScopeKey(connectionId) + ".json";
+    }
+
+    private static String sanitizeScopeKey(String value) {
+        if (value == null || value.isBlank()) {
+            return "default";
+        }
+        return value.replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
 }

@@ -360,4 +360,11 @@ export const API_PATHS = {
             `/api/platform/query-library/${encodeURIComponent(teamId)}/${encodeURIComponent(queryId)}/versions`,
         queryLibrarySaveVersion: '/api/platform/query-library/versions',
     },
+    ssh: {
+        scriptRecords: (connectionId: string) =>
+            `/api/ssh/script-records?connectionId=${encodeURIComponent(connectionId)}`,
+        scriptRecordsSave: '/api/ssh/script-records',
+        scriptRecordDelete: (connectionId: string, recordId: string) =>
+            `/api/ssh/script-records/${encodeURIComponent(recordId)}?connectionId=${encodeURIComponent(connectionId)}`,
+    },
 } as const

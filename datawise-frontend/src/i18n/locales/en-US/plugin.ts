@@ -531,6 +531,7 @@ export default {
             LOCK_MONITOR: 'Lock monitor',
             ONLINE_DDL: 'Online DDL',
             SSH_TUNNEL: 'SSH tunnel',
+            REMOTE_SHELL: 'Remote shell',
             NATIVE_COMMAND: 'Native command',
             KEY_VALUE: 'Key-value',
             MESSAGE_BROKER: 'Message broker',

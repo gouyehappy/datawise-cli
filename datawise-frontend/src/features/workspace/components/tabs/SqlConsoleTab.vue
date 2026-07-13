@@ -63,6 +63,9 @@ import {
 import {validateCrossEnvCompareSql, buildCrossEnvCompareScope} from '@/features/cross-env-compare/services/cross-env-compare.service'
 import {reviewSql} from '@/features/platform/services/sql-review.service'
 import type {SqlReviewFinding} from '@/features/platform/types/platform.types'
+import {fetchConnectionConfig} from '@/shared/config/connections-catalog.service'
+import {isJdbcSshTunnelEnabled} from '@/features/ssh/services/ssh-jdbc-tunnel.service'
+import {DwIcon} from '@/core/icons'
 
 import {
   CONSOLE_EDITOR_HEIGHT_DEFAULT,
@@ -160,6 +163,36 @@ function expandResultPanel() {
 
 const {connectionId, instanceId, dataSources, source, activeInstance, workspaceBound} =
     useConsoleConnectionContext(props.tab)
+
+const jdbcTunnelSshEnabled = ref(false)
+
+watch(
+    () => connectionId.value || props.tab.connectionId,
+    (connId) => {
+        if (!connId) {
+            jdbcTunnelSshEnabled.value = false
+            return
+        }
+        void fetchConnectionConfig(connId)
+            .then((config) => {
+                jdbcTunnelSshEnabled.value = isJdbcSshTunnelEnabled(config)
+            })
+            .catch(() => {
+                jdbcTunnelSshEnabled.value = false
+            })
+    },
+    {immediate: true},
+)
+
+function openJdbcTunnelSshTerminal() {
+    const connId = connectionId.value || props.tab.connectionId
+    if (!connId) return
+    workspace.openSshTerminal({
+        connectionId: connId,
+        connectionName: source.value?.label ?? explorer.findNode(connId)?.label ?? connId,
+        explorerNodeId: connId,
+    })
+}
 
 const {
   bookmarkDialogOpen,
@@ -777,6 +810,13 @@ onMounted(async () => {
             @click="requestCancelConnection()"
         >
           <ConsoleToolbarIcon name="disconnect"/>
+        </IconButton>
+        <IconButton
+            v-if="jdbcTunnelSshEnabled"
+            :title="t('console.openJdbcSshTunnel')"
+            @click="openJdbcTunnelSshTerminal"
+        >
+          <DwIcon name="terminal" size="sm" :stroke-width="1.5"/>
         </IconButton>
         <span
             v-if="showToolbarRunGroup && showToolbarSaveGroup"

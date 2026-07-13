@@ -26,6 +26,6 @@ class PluginOwnedDbTypesTest {
 
     @Test
     void sizeMatchesPluginOwnedTypesAndAliases() {
-        assertEquals(41, PluginOwnedDbTypes.ids().size());
+        assertEquals(42, PluginOwnedDbTypes.ids().size());
     }
 }

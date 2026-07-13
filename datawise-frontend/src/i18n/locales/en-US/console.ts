@@ -1,5 +1,6 @@
 export default {
     run: 'Run selection',
+    openJdbcSshTunnel: 'Open SSH tunnel terminal',
     save: 'Save',
     saveAsFile: 'Save as file',
     saveBookmark: 'Save bookmark',

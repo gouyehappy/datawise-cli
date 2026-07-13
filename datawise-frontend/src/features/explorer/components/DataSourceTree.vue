@@ -266,6 +266,8 @@ function displayNodeLabel(node: TreeNode) {
     if (node.meta === 'nodes') return t('explorer.yarnFeatures.nodes')
     if (node.meta === 'queues') return t('explorer.yarnFeatures.queues')
   }
+  if (node.type === 'ssh-terminal') return t('explorer.sshFeatures.terminal')
+  if (node.type === 'ssh-script-records') return t('explorer.sshFeatures.scriptRecords')
   if (node.type === 'load_more') return 'Load more'
   if (node.type === 'platform_feature') {
     return platformFeatureTreeLabel(resolvePlatformFeatureId(node) as import('@/features/platform/types/platform.types').PlatformFeatureId, t)

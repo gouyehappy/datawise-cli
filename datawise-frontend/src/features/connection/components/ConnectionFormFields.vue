@@ -71,7 +71,7 @@ const authOptions = computed(() =>
 
     <ConnectionFormField
         :label="t('connection.host')"
-        :hint="dbType === 'kafka' ? t('connection.hints.kafkaBootstrap') : dbType === 'yarn' ? t('connection.hints.yarnResourceManager') : undefined"
+        :hint="dbType === 'kafka' ? t('connection.hints.kafkaBootstrap') : dbType === 'yarn' ? t('connection.hints.yarnResourceManager') : dbType === 'ssh' ? t('connection.hints.sshHost') : undefined"
     >
       <DwInput
           v-model="form.host"
@@ -98,7 +98,7 @@ const authOptions = computed(() =>
     </ConnectionFormField>
 
     <ConnectionFormField
-        v-else-if="dbType !== 'oracle' && dbType !== 'kafka' && dbType !== 'yarn'"
+        v-else-if="dbType !== 'oracle' && dbType !== 'kafka' && dbType !== 'yarn' && dbType !== 'ssh'"
         wide
         :label="t('connection.database')"
         :hint="t('connection.hints.database')"
@@ -106,11 +106,48 @@ const authOptions = computed(() =>
       <DwInput v-model="form.database" variant="sm" :disabled="readOnly"/>
     </ConnectionFormField>
 
-    <ConnectionFormField wide :label="t('connection.url')">
+    <ConnectionFormField v-if="dbType !== 'ssh'" wide :label="t('connection.url')">
       <DwInput v-model="form.url" variant="sm" class="url-input" readonly/>
     </ConnectionFormField>
 
-    <template v-if="dbType === 'redis'">
+    <template v-if="dbType === 'ssh'">
+      <ConnectionFormField :label="t('connection.username')">
+        <DwInput v-model="form.user" variant="sm" :disabled="readOnly"/>
+      </ConnectionFormField>
+      <ConnectionFormField :label="t('connection.password')" :hint="t('connection.hints.sshPassword')">
+        <DwSecretInput
+            v-model="form.password"
+            variant="sm"
+            :disabled="readOnly"
+            :show-label="t('connection.showPassword')"
+            :hide-label="t('connection.hidePassword')"
+        />
+      </ConnectionFormField>
+      <ConnectionFormField
+          wide
+          :label="t('connection.sshPrivateKey')"
+          :hint="t('connection.hints.sshPrivateKey')"
+      >
+        <textarea
+            v-model="form.sshPrivateKey"
+            class="dw-input ssh-key-input"
+            rows="4"
+            :disabled="readOnly"
+            :placeholder="t('connection.sshPrivateKeyPlaceholder')"
+        />
+      </ConnectionFormField>
+      <ConnectionFormField :label="t('connection.sshPassphrase')">
+        <DwSecretInput
+            v-model="form.sshPassphrase"
+            variant="sm"
+            :disabled="readOnly"
+            :show-label="t('connection.showPassword')"
+            :hide-label="t('connection.hidePassword')"
+        />
+      </ConnectionFormField>
+    </template>
+
+    <template v-else-if="dbType === 'redis'">
       <ConnectionFormField
           :label="t('connection.username')"
           :hint="t('connection.hints.redisUsername')"
@@ -159,7 +196,7 @@ const authOptions = computed(() =>
     </template>
   </div>
 
-  <ConnectionMoreOptions :form="form" :read-only="readOnly"/>
+  <ConnectionMoreOptions v-if="dbType !== 'ssh'" :form="form" :read-only="readOnly"/>
 </template>
 
 <style scoped>
@@ -174,6 +211,13 @@ const authOptions = computed(() =>
   font-size: 12px;
   background: var(--dw-bg-muted);
   color: var(--dw-text-secondary);
+}
+
+.ssh-key-input {
+  min-height: 88px;
+  resize: vertical;
+  font-family: var(--dw-mono);
+  font-size: 12px;
 }
 
 @media (max-width: 520px) {

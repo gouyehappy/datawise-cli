@@ -40,6 +40,7 @@ export const DB_TYPE_LABELS: Record<DbType, string> = {
     dameng: 'Dameng',
     gaussdb: 'GaussDB',
     flink: 'Flink',
+    ssh: 'SSH',
 }
 
 /** 常用数据库类型，新建连接菜单优先展示 */
@@ -51,6 +52,7 @@ export const PRIMARY_DB_TYPES: DbType[] = [
     'redis',
     'kafka',
     'yarn',
+    'ssh',
     'mongodb',
     'clickhouse',
     'starrocks',
@@ -86,7 +88,7 @@ export const ALL_DB_TYPES: DbType[] = [
     'generic',
     'other',
     'flink',
-    'yarn',
+    'ssh',
 ]
 
 export const DEFAULT_PORTS: Partial<Record<DbType, string>> = {
@@ -129,4 +131,5 @@ export const DEFAULT_PORTS: Partial<Record<DbType, string>> = {
     dameng: '5236',
     gaussdb: '8000',
     flink: '8083',
+    ssh: '22',
 }

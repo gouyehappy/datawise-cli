@@ -63,6 +63,19 @@ import {
 import {parseRedisFeatureId} from '@/features/explorer/services/redis-feature-tree.service'
 import {parseKafkaFeatureId} from '@/features/explorer/services/kafka-feature-tree.service'
 import {parseYarnFeatureId} from '@/features/explorer/services/yarn-feature-tree.service'
+import {
+    parseSshScriptRecordId,
+    parseSshScriptRecordsConnectionId,
+    sshScriptRecordNodeId,
+} from '@/features/explorer/services/ssh-feature-tree.service'
+import {
+    createEmptySshScriptRecord,
+} from '@/features/ssh/types/ssh-script-record.types'
+import {
+    deleteSshScriptRecord,
+    listSshScriptRecords,
+    saveSshScriptRecord,
+} from '@/features/ssh/services/ssh-script-records.service'
 import {isPinnableExplorerNode} from '@/features/explorer/services/explorer-pinned-sort.service'
 import {
     isExplorerFavoritesTreeNode,
@@ -125,6 +138,14 @@ import {
 } from '@/api/modules/view-model'
 import {isValidViewModelBaseName, stripViewModelDisplayName} from '@/features/explorer/services/view-model-naming'
 import {isViewModelDraftNode} from '@/features/explorer/services/view-model-tree.service'
+import {fetchConnectionConfig} from '@/shared/config/connections-catalog.service'
+import {isJdbcSshTunnelEnabled} from '@/features/ssh/services/ssh-jdbc-tunnel.service'
+
+const JDBC_TUNNEL_EXCLUDED_DB_TYPES = new Set(['ssh', 'redis', 'kafka', 'yarn'])
+
+function supportsJdbcTunnelSshMenu(dbType?: string): boolean {
+    return Boolean(dbType && !JDBC_TUNNEL_EXCLUDED_DB_TYPES.has(dbType))
+}
 
 function stripSqlExtension(fileName: string): string {
     return fileName.replace(/\.sql$/i, '')
@@ -163,6 +184,11 @@ export function useConnectionTree() {
     const renameViewModelDefaultName = ref('')
     const showDeleteViewModelDialog = ref(false)
     const deleteViewModelMessage = ref('')
+    const showRenameSshScriptRecordDialog = ref(false)
+    const renameSshScriptRecordDefaultName = ref('')
+    const showDeleteSshScriptRecordDialog = ref(false)
+    const deleteSshScriptRecordMessage = ref('')
+    const pendingSshScriptRecordNode = ref<TreeNode | null>(null)
     const showMigrateViewModelDialog = ref(false)
     const migrateViewModelTargetTable = ref('')
     const pendingMigrateViewModelSql = ref('')
@@ -476,7 +502,33 @@ export function useConnectionTree() {
             }
             return
         }
+        if (node.type === 'ssh-terminal') {
+            const connectionId = findConnectionId(node) ?? node.id.replace(/:ssh-terminal$/, '')
+            if (!connectionId) return
+            workspace.openSshTerminal({
+                connectionId,
+                connectionName: findConnectionLabel(connectionId) ?? connectionId,
+                explorerNodeId: connectionId,
+            })
+            return
+        }
+        if (node.type === 'ssh-script-record') {
+            const connectionId = findConnectionId(node)
+            const recordId = parseSshScriptRecordId(node)
+            if (!connectionId || !recordId) return
+            void openSshScriptRecordFromNode(connectionId, recordId, node.label, node.id)
+            return
+        }
+        if (node.type === 'ssh-script-records') {
+            await explorer.toggleExpand(node.id)
+            return
+        }
         if (node.type === 'connection') {
+            if (node.dbType === 'ssh') {
+                if (!canManageExplorerConnectionLifecycle(auth.isGuest)) return
+                await explorer.connectConnection(node.id, {notify: true})
+                return
+            }
             if (!canManageExplorerConnectionLifecycle(auth.isGuest)) return
             await explorer.connectConnection(node.id, {notify: true})
             return
@@ -499,6 +551,141 @@ export function useConnectionTree() {
     function findConnectionLabel(connectionId?: string): string | undefined {
         if (!connectionId) return undefined
         return explorer.findNode(connectionId)?.label
+    }
+
+    async function openSshScriptRecordFromNode(
+        connectionId: string,
+        recordId: string,
+        title: string,
+        explorerNodeId?: string,
+    ) {
+        try {
+            const records = await listSshScriptRecords(connectionId)
+            const record = records.find((item) => item.id === recordId)
+            workspace.openSshScriptRecord({
+                connectionId,
+                connectionName: findConnectionLabel(connectionId) ?? connectionId,
+                recordId,
+                title: record?.title ?? title,
+                contentHtml: record?.contentHtml ?? '',
+                updatedAt: record?.updatedAt,
+                explorerNodeId,
+            })
+        } catch {
+            layout.showToast(t('ssh.scriptRecord.loadFailed'))
+        }
+    }
+
+    async function createSshScriptRecord(connectionId: string) {
+        const record = createEmptySshScriptRecord(
+            `record-${Date.now()}`,
+            t('ssh.scriptRecord.newRecord'),
+        )
+        try {
+            const saved = await saveSshScriptRecord(connectionId, record)
+            const folder = explorer.findNode(`${connectionId}:ssh:script-records`)
+            if (folder) {
+                folder.meta = undefined
+                folder.children = []
+                await explorer.expandAndLoad(folder.id, {notify: false})
+            }
+            workspace.openSshScriptRecord({
+                connectionId,
+                connectionName: findConnectionLabel(connectionId) ?? connectionId,
+                recordId: saved.id,
+                title: saved.title,
+                contentHtml: saved.contentHtml,
+                updatedAt: saved.updatedAt,
+                explorerNodeId: sshScriptRecordNodeId(connectionId, saved.id),
+            })
+        } catch {
+            layout.showToast(t('ssh.scriptRecord.createFailed'))
+        }
+    }
+
+    async function refreshSshScriptRecordsFolder(node: TreeNode) {
+        const connectionId = parseSshScriptRecordsConnectionId(node.id) ?? findConnectionId(node)
+        if (!connectionId) return
+        node.meta = undefined
+        node.children = []
+        await explorer.expandAndLoad(node.id, {notify: false})
+    }
+
+    async function deleteSshScriptRecordFromNode(node: TreeNode) {
+        const connectionId = findConnectionId(node)
+        const recordId = parseSshScriptRecordId(node)
+        if (!connectionId || !recordId) return
+        try {
+            await deleteSshScriptRecord(connectionId, recordId)
+            for (const tabId of workspace.tabs
+                .filter((tab) =>
+                    tab.type === 'ssh-script-record'
+                    && tab.connectionId === connectionId
+                    && tab.sshScriptRecordId === recordId,
+                )
+                .map((tab) => tab.id)) {
+                workspace.closeTab(tabId)
+            }
+            const folder = explorer.findNode(`${connectionId}:ssh:script-records`)
+            if (folder) {
+                await refreshSshScriptRecordsFolder(folder)
+            }
+            layout.showToast(t('ssh.scriptRecord.deleteSuccess'))
+        } catch {
+            layout.showToast(t('ssh.scriptRecord.deleteFailed'))
+        }
+    }
+
+    async function renameSshScriptRecordFromNode(node: TreeNode, nextTitle: string) {
+        const connectionId = findConnectionId(node)
+        const recordId = parseSshScriptRecordId(node)
+        if (!connectionId || !recordId) return
+        const trimmed = nextTitle.trim()
+        if (!trimmed || trimmed === node.label) return
+        try {
+            const records = await listSshScriptRecords(connectionId)
+            const record = records.find((item) => item.id === recordId)
+            if (!record) {
+                layout.showToast(t('ssh.scriptRecord.loadFailed'))
+                return
+            }
+            const saved = await saveSshScriptRecord(connectionId, {
+                ...record,
+                title: trimmed,
+            })
+            node.label = saved.title
+            explorer.touchTree()
+            layout.showToast(t('ssh.scriptRecord.renameSuccess'))
+        } catch {
+            layout.showToast(t('ssh.scriptRecord.saveFailed'))
+        }
+    }
+
+    function buildSshScriptRecordsMenuItems(): ContextMenuItem[] {
+        return [
+            {id: 'new-ssh-script-record', label: t('ssh.scriptRecord.newRecord'), icon: 'file'},
+            {id: 'refresh-ssh-script-records', label: t('ssh.scriptRecord.refresh'), icon: 'edit'},
+            {id: 'divider-1', label: '', divider: true},
+            {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
+        ]
+    }
+
+    function buildSshScriptRecordMenuItems(): ContextMenuItem[] {
+        return [
+            {id: 'open', label: t('ssh.scriptRecord.open'), icon: 'open', shortcut: 'F4'},
+            {id: 'rename-ssh-script-record', label: t('ssh.scriptRecord.rename'), icon: 'edit'},
+            {id: 'delete-ssh-script-record', label: t('ssh.scriptRecord.delete'), icon: 'delete', danger: true},
+            {id: 'divider-1', label: '', divider: true},
+            {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
+        ]
+    }
+
+    function buildSshTerminalMenuItems(): ContextMenuItem[] {
+        return [
+            {id: 'open', label: t('explorer.context.openSshTerminal'), icon: 'console', shortcut: 'F4'},
+            {id: 'new-ssh-terminal', label: t('explorer.context.newSshTerminal'), icon: 'console'},
+            {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
+        ]
     }
 
     function buildConnectionMenuItems(node: TreeNode): ContextMenuItem[] {
@@ -540,6 +727,17 @@ export function useConnectionTree() {
                 {id: 'open-yarn-applications', label: t('explorer.context.openYarnApplications'), icon: 'open'},
                 {id: 'open-yarn-nodes', label: t('explorer.context.openYarnNodes'), icon: 'open'},
                 {id: 'open-yarn-queues', label: t('explorer.context.openYarnQueues'), icon: 'open'},
+                {id: 'edit', label: t('explorer.context.editConnection'), icon: 'edit', shortcut: 'F4'},
+                {id: 'move', label: t('explorer.context.moveConnection'), icon: 'file'},
+                {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
+                {id: 'divider-1', label: '', divider: true},
+                {id: 'delete', label: t('explorer.context.deleteConnection'), icon: 'delete', shortcut: 'Delete', danger: true},
+            ]), lifecycleItems)
+        }
+        if (node.dbType === 'ssh') {
+            return prependConnectionLifecycleMenu(withMove([
+                {id: 'open-ssh-terminal', label: t('explorer.context.openSshTerminal'), icon: 'console'},
+                {id: 'new-ssh-terminal', label: t('explorer.context.newSshTerminal'), icon: 'console'},
                 {id: 'edit', label: t('explorer.context.editConnection'), icon: 'edit', shortcut: 'F4'},
                 {id: 'move', label: t('explorer.context.moveConnection'), icon: 'file'},
                 {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
@@ -622,6 +820,10 @@ export function useConnectionTree() {
     }
 
     function onContextMenu(e: MouseEvent, node: TreeNode) {
+        void openContextMenu(e, node)
+    }
+
+    async function openContextMenu(e: MouseEvent, node: TreeNode) {
         if (isExplorerFavoritesTreeNode(node)) return
         explorer.selectNode(node.id)
         let items = getContextMenuForNodeType(node.type, t)
@@ -639,6 +841,33 @@ export function useConnectionTree() {
         }
         if (node.type === 'connection') {
             items = buildConnectionMenuItems(node)
+            if (supportsJdbcTunnelSshMenu(node.dbType)) {
+                try {
+                    const config = await fetchConnectionConfig(node.id)
+                    if (isJdbcSshTunnelEnabled(config)) {
+                        items = [
+                            {
+                                id: 'open-jdbc-ssh-tunnel',
+                                label: t('explorer.context.openJdbcSshTunnel'),
+                                icon: 'console',
+                            },
+                            {id: 'divider-jdbc-ssh', label: '', divider: true},
+                            ...items,
+                        ]
+                    }
+                } catch {
+                    // ignore lookup failures
+                }
+            }
+        }
+        if (node.type === 'ssh-script-records') {
+            items = buildSshScriptRecordsMenuItems()
+        }
+        if (node.type === 'ssh-script-record') {
+            items = buildSshScriptRecordMenuItems()
+        }
+        if (node.type === 'ssh-terminal') {
+            items = buildSshTerminalMenuItems()
         }
         if (node.type === 'group') {
             items = buildGroupMenuItems(node)
@@ -1219,6 +1448,70 @@ export function useConnectionTree() {
             return
         }
 
+        if (id === 'open-ssh-terminal' && node.type === 'connection' && node.dbType === 'ssh') {
+            workspace.openSshTerminal({
+                connectionId: node.id,
+                connectionName: node.label,
+                explorerNodeId: node.id,
+            })
+            closeMenu()
+            return
+        }
+
+        if (id === 'open-jdbc-ssh-tunnel' && node.type === 'connection') {
+            workspace.openSshTerminal({
+                connectionId: node.id,
+                connectionName: node.label,
+                explorerNodeId: node.id,
+            })
+            closeMenu()
+            return
+        }
+
+        if (id === 'new-ssh-terminal' && (node.type === 'connection' || node.type === 'ssh-terminal') && node.dbType === 'ssh') {
+            const connectionId = node.type === 'connection' ? node.id : (findConnectionId(node) ?? '')
+            if (connectionId) {
+                workspace.openSshTerminal({
+                    connectionId,
+                    connectionName: findConnectionLabel(connectionId) ?? connectionId,
+                    explorerNodeId: connectionId,
+                })
+            }
+            closeMenu()
+            return
+        }
+
+        if (id === 'new-ssh-script-record' && node.type === 'ssh-script-records') {
+            const connectionId = parseSshScriptRecordsConnectionId(node.id) ?? findConnectionId(node)
+            if (connectionId) {
+                void createSshScriptRecord(connectionId)
+            }
+            closeMenu()
+            return
+        }
+
+        if (id === 'refresh-ssh-script-records' && node.type === 'ssh-script-records') {
+            void refreshSshScriptRecordsFolder(node)
+            closeMenu()
+            return
+        }
+
+        if (id === 'delete-ssh-script-record' && node.type === 'ssh-script-record') {
+            pendingSshScriptRecordNode.value = node
+            deleteSshScriptRecordMessage.value = t('ssh.scriptRecord.deleteConfirm', {name: node.label})
+            showDeleteSshScriptRecordDialog.value = true
+            closeMenu()
+            return
+        }
+
+        if (id === 'rename-ssh-script-record' && node.type === 'ssh-script-record') {
+            pendingSshScriptRecordNode.value = node
+            renameSshScriptRecordDefaultName.value = node.label
+            showRenameSshScriptRecordDialog.value = true
+            closeMenu()
+            return
+        }
+
         if (id === 'publish-table-data' && node.type === 'connection' && node.dbType === 'kafka') {
             openKafkaTablePublishFromKafkaConnection(node.id)
             closeMenu()
@@ -1767,6 +2060,20 @@ export function useConnectionTree() {
         }
     }
 
+    async function confirmDeleteSshScriptRecord() {
+        const node = pendingSshScriptRecordNode.value
+        pendingSshScriptRecordNode.value = null
+        if (!node || node.type !== 'ssh-script-record') return
+        await deleteSshScriptRecordFromNode(node)
+    }
+
+    async function confirmRenameSshScriptRecord(name: string) {
+        const node = pendingSshScriptRecordNode.value
+        pendingSshScriptRecordNode.value = null
+        if (!node || node.type !== 'ssh-script-record') return
+        await renameSshScriptRecordFromNode(node, name)
+    }
+
     function isExplorerDialogOpen(): boolean {
         return (
             menuVisible.value ||
@@ -1779,7 +2086,9 @@ export function useConnectionTree() {
             showSqlExportWizard.value ||
             showRenameViewModelDialog.value ||
             showDeleteViewModelDialog.value ||
-            showMigrateViewModelDialog.value
+            showMigrateViewModelDialog.value ||
+            showRenameSshScriptRecordDialog.value ||
+            showDeleteSshScriptRecordDialog.value
         )
     }
 
@@ -1959,6 +2268,12 @@ export function useConnectionTree() {
         confirmRenameViewModel,
         confirmDeleteViewModel,
         confirmMigrateViewModel,
+        showRenameSshScriptRecordDialog,
+        renameSshScriptRecordDefaultName,
+        showDeleteSshScriptRecordDialog,
+        deleteSshScriptRecordMessage,
+        confirmRenameSshScriptRecord,
+        confirmDeleteSshScriptRecord,
         connectionDragEnabled,
     }
 }

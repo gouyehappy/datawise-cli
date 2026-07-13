@@ -77,6 +77,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- SSH connector runtime (shell sessions + plugin registration) -->
+        <dependency>
+            <groupId>org.apache.datawise</groupId>
+            <artifactId>datawise-connector-ssh</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>

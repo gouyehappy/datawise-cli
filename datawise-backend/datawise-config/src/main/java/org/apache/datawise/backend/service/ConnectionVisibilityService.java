@@ -93,7 +93,14 @@ public class ConnectionVisibilityService {
         if (UserContext.isGuest()) {
             return ephemeralCatalogStore.findConnectionById(UserContext.getSessionId(), connectionId);
         }
-        long userId = UserContext.requireUserId();
+        return resolveConnectionEntity(connectionId, UserContext.requireUserId());
+    }
+
+    /** WebSocket 等无 HTTP {@link UserContext} 的场景使用。 */
+    public Optional<ConnectionEntity> resolveConnectionEntity(String connectionId, long userId) {
+        if (connectionId == null || connectionId.isBlank()) {
+            return Optional.empty();
+        }
         Set<String> teamSharedConnectionIds = teamSharedConnectionIds(userId);
         return connectionStore.findConnectionById(connectionId)
                 .filter(connection -> isConnectionVisible(connection, userId, teamSharedConnectionIds));

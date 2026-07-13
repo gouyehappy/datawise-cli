@@ -559,6 +559,9 @@ export default {
         openYarnApplications: '应用列表',
         openYarnNodes: '节点列表',
         openYarnQueues: '队列列表',
+        openSshTerminal: '打开 SSH 终端',
+        openJdbcSshTunnel: '打开 SSH 隧道终端',
+        newSshTerminal: '新建 SSH 终端',
         publishTableData: '表数据发布…',
     },
     kafkaFeatures: {
@@ -590,6 +593,10 @@ export default {
         applications: '应用列表',
         nodes: '节点列表',
         queues: '队列列表',
+    },
+    sshFeatures: {
+        terminal: 'SSH 终端',
+        scriptRecords: '快捷命令',
     },
     yarnApps: {
         title: 'YARN 应用',

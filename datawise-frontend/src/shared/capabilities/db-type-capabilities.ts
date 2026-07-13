@@ -29,6 +29,8 @@ export interface DbTypeCapability {
     onlineDdl: boolean
     /** SSH 跳板（JDBC 数据源经 catalog 或 fallback 启用） */
     sshTunnel: boolean
+    /** 远程 Shell（SSH 连接器等） */
+    remoteShell: boolean
 }
 
 const DEFAULT_CAPABILITY: DbTypeCapability = {
@@ -41,6 +43,7 @@ const DEFAULT_CAPABILITY: DbTypeCapability = {
     lockMonitor: false,
     onlineDdl: false,
     sshTunnel: false,
+    remoteShell: false,
 }
 
 function jdbcSql(dbType: DbType): DbTypeCapability {
@@ -104,6 +107,7 @@ function jdbcSql(dbType: DbType): DbTypeCapability {
         lockMonitor: sessionOps,
         onlineDdl,
         sshTunnel: true,
+        remoteShell: false,
     }
 }
 
@@ -124,6 +128,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: true,
+        remoteShell: false,
     },
     elasticsearch: {
         supported: true,
@@ -135,6 +140,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: true,
+        remoteShell: false,
     },
     kylin: {
         supported: true,
@@ -146,6 +152,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: true,
+        remoteShell: false,
     },
     dm: jdbcSql('dm'),
     gaussdb: jdbcSql('gaussdb'),
@@ -160,6 +167,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: false,
+        remoteShell: false,
     },
     trino: {
         supported: true,
@@ -171,6 +179,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: false,
+        remoteShell: false,
     },
     db2: {
         supported: true,
@@ -182,6 +191,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: false,
+        remoteShell: false,
     },
     sqlite: {
         supported: true,
@@ -193,6 +203,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: false,
+        remoteShell: false,
     },
     hive: {
         supported: true,
@@ -204,6 +215,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: true,
+        remoteShell: false,
     },
     oceanbase: {
         supported: true,
@@ -215,6 +227,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: true,
         onlineDdl: false,
         sshTunnel: true,
+        remoteShell: false,
     },
     kingbase: jdbcSql('kingbase'),
     greenplum: jdbcSql('greenplum'),
@@ -238,6 +251,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: false,
+        remoteShell: false,
     },
     redis: {
         supported: true,
@@ -249,9 +263,22 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: false,
+        remoteShell: false,
     },
     kafka: DEFAULT_CAPABILITY,
     yarn: DEFAULT_CAPABILITY,
+    ssh: {
+        supported: true,
+        csvImport: false,
+        sqlExecute: false,
+        sqlExplain: false,
+        sessionMonitor: false,
+        sessionKill: false,
+        lockMonitor: false,
+        onlineDdl: false,
+        sshTunnel: false,
+        remoteShell: true,
+    },
     mongodb: {
         supported: true,
         csvImport: false,
@@ -262,6 +289,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: false,
+        remoteShell: false,
     },
     starrocks: jdbcSql('starrocks'),
     doris: jdbcSql('doris'),
@@ -276,6 +304,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: true,
+        remoteShell: false,
     },
     other: {
         supported: true,
@@ -287,6 +316,7 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         lockMonitor: false,
         onlineDdl: false,
         sshTunnel: true,
+        remoteShell: false,
     },
 }
 
@@ -409,7 +439,15 @@ export function supportsSshTunnel(
     dbType: DbType | undefined,
     catalog?: readonly DatasourceDefinition[],
 ): boolean {
+    if (dbType === 'ssh') return false
     return resolveFlag(dbType, catalog, CONNECTOR_CAPABILITY.SSH_TUNNEL, 'sshTunnel')
+}
+
+export function supportsRemoteShell(
+    dbType: DbType | undefined,
+    catalog?: readonly DatasourceDefinition[],
+): boolean {
+    return resolveFlag(dbType, catalog, CONNECTOR_CAPABILITY.REMOTE_SHELL, 'remoteShell')
 }
 
 const SQL_CONTEXT_MENU_IDS = new Set([

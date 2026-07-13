@@ -46,7 +46,7 @@ export function shouldAffirmConnectionHealthForCachedChildren(
 
 /** Kafka / Redis 不在 Explorer 树中展示 Topic 或 Key，仅保留连接节点。 */
 export function isFlatConnectionCatalog(dbType?: DbType): boolean {
-    return dbType === 'kafka' || dbType === 'redis' || dbType === 'yarn'
+    return dbType === 'kafka' || dbType === 'redis' || dbType === 'yarn' || dbType === 'ssh'
 }
 
 /** 过滤不应出现在连接树中的缓存子节点（历史 Topic / Key 等）。 */
@@ -166,6 +166,9 @@ function catalogNeedsSchemaLoad(node: TreeNode, connectionDbType?: DbType): bool
 export function needsLazyLoad(node: TreeNode, connectionDbType?: DbType): boolean {
     if (node.type === 'connection' && isFlatConnectionCatalog(node.dbType)) {
         return false
+    }
+    if (node.type === 'ssh-script-records') {
+        return !node.children?.length && node.meta !== 'loaded'
     }
     const catalogSchema = isCatalogSchemaDbType(connectionDbType ?? node.dbType)
     switch (node.type) {

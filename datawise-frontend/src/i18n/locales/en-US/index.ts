@@ -17,6 +17,7 @@ import settings from './settings'
 import team from './team'
 import notification from './notification'
 import terminal from './terminal'
+import ssh from './ssh'
 import shortcut from './shortcut'
 import shortcuts from './shortcuts'
 import status from './status'
@@ -55,6 +56,7 @@ export default {
     team,
     notification,
     terminal,
+    ssh,
     shortcut,
     shortcuts,
     status,

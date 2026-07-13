@@ -10,9 +10,15 @@ import {useConnectionForm} from '@/features/connection/composables/useConnection
 import {useConnectionTabActions} from '@/features/connection/composables/useConnectionTabActions'
 import {useConnectionTest} from '@/features/connection/composables/useConnectionTest'
 import {isUnsavedConnectionId} from '@/features/connection/utils/connection-defaults'
+import {isJdbcSshTunnelEnabled} from '@/features/ssh/services/ssh-jdbc-tunnel.service'
+import IconButton from '@/core/components/IconButton.vue'
+import {DwIcon} from '@/core/icons'
 import type {WorkspaceTab} from '@/core/types'
 import {fetchConnectionFromCatalog} from '@/shared/config/connections-catalog.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+
+const workspace = useWorkspaceStore()
 
 const {t} = useI18n()
 const props = defineProps<{ tab: WorkspaceTab }>()
@@ -41,6 +47,9 @@ const {saveConnection, cancel, saving, canSave} = useConnectionTabActions({
 
 const busy = computed(() => saving.value || testing.value)
 const readOnly = computed(() => !canSave.value)
+const jdbcTunnelSshReady = computed(() =>
+    isEdit.value && isJdbcSshTunnelEnabled(form),
+)
 const busyHint = computed(() =>
     saving.value ? t('connection.savingHint') : t('connection.testingHint'),
 )
@@ -63,6 +72,16 @@ onMounted(() => {
         loading.value = false
       })
 })
+
+function openJdbcTunnelSshTerminal() {
+  const connectionId = props.tab.connectionId
+  if (!connectionId || !jdbcTunnelSshReady.value) return
+  workspace.openSshTerminal({
+    connectionId,
+    connectionName: form.name || connectionId,
+    explorerNodeId: connectionId,
+  })
+}
 </script>
 
 <template>
@@ -80,6 +99,14 @@ onMounted(() => {
           </h1>
           <p>{{ t('connection.formIntro') }}</p>
         </div>
+        <IconButton
+            v-if="jdbcTunnelSshReady"
+            size="sm"
+            :title="t('connection.openJdbcSshTunnel')"
+            @click="openJdbcTunnelSshTerminal"
+        >
+          <DwIcon name="terminal" size="sm" :stroke-width="1.5"/>
+        </IconButton>
       </header>
 
       <div v-if="loading" class="conn-loading">{{ t('connection.loading') }}</div>
@@ -146,6 +173,11 @@ onMounted(() => {
 
 .conn-head__icon {
   flex-shrink: 0;
+}
+
+.conn-head__text {
+  flex: 1;
+  min-width: 0;
 }
 
 .conn-head__text h1 {

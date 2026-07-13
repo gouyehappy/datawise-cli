@@ -37,6 +37,7 @@ function refresh() {
         ref="panelRef"
         class="yarn-apps-tab__panel"
         :connection-id="connectionId"
+        :initial-app-id="tab.yarnAppFilterId"
     />
   </div>
 </template>

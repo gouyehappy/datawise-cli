@@ -69,6 +69,17 @@ public class ConnectionExecutionContext {
         return requireAvailableConnection(requireUserId(), connectionId, notFoundMessage);
     }
 
+    /** WebSocket 等已在外层校验 userId 的场景。 */
+    public ResolvedConnection requireAvailableConnectionForUser(long userId, String connectionId, String notFoundMessage) {
+        if (connectionId == null || connectionId.isBlank()) {
+            throw new IllegalArgumentException("connectionId is required");
+        }
+        ConnectionEntity entity = connectionVisibilityService.resolveConnectionEntity(connectionId, userId)
+                .orElseThrow(() -> new IllegalArgumentException(notFoundMessage));
+        datasourceCatalogService.requireAvailable(entity.getDbType());
+        return new ResolvedConnection(userId, entity);
+    }
+
     public ResolvedConnectionWithDatabase requireAvailableWithDatabase(
             long userId,
             String connectionId,

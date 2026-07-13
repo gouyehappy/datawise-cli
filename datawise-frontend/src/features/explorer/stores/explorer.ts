@@ -38,6 +38,7 @@ import {
     shouldAffirmConnectionHealthForCachedChildren,
 } from '@/features/explorer/services/explorer-lazy-load'
 import {ensureFlatConnectionFeatureChildren} from '@/features/explorer/services/flat-connection-feature-tree.service'
+import {refreshSshScriptRecordChildren} from '@/features/explorer/services/ssh-feature-tree.service'
 import {
     resolveActiveTabLocateNodeId as resolveLocateNodeId,
     resolveLocateFolderForNode,
@@ -408,6 +409,24 @@ export const useExplorerStore = defineStore('explorer', () => {
 
         const isConnectionProbe = node.type === 'connection' && nodeId === connectionId
         const notify = options?.notify === true
+
+        if (node.type === 'ssh-script-records') {
+            if (node.meta === 'loaded') {
+                return
+            }
+            loadingNodeIds.value.add(nodeId)
+            try {
+                await refreshSshScriptRecordChildren(node, connectionId)
+                touchTree()
+            } catch {
+                node.children = []
+                node.meta = 'loaded'
+                touchTree()
+            } finally {
+                loadingNodeIds.value.delete(nodeId)
+            }
+            return
+        }
 
         if (!needsLazyLoad(node, resolveConnectionDbType(tree.value, nodeId))) {
             if (shouldAffirmConnectionHealthForCachedChildren(node, connectionId, nodeId, notify)) {
@@ -1434,5 +1453,6 @@ export const useExplorerStore = defineStore('explorer', () => {
         disconnectConnection,
         connectConnection,
         reconnectConnection,
+        touchTree,
     }
 })

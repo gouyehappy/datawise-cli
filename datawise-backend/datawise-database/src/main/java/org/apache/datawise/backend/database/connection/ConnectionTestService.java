@@ -50,10 +50,19 @@ public class ConnectionTestService {
             return new ConnectionTestResult(false, ex.getMessage(), 0);
         }
         if (!"redis".equalsIgnoreCase(config.getDbType())
+                && !"kafka".equalsIgnoreCase(config.getDbType())
                 && config.getAuth() != null
                 && !"NONE".equalsIgnoreCase(config.getAuth())
                 && (config.getUser() == null || config.getUser().isBlank())) {
             return new ConnectionTestResult(false, "Username is required", 0);
+        }
+
+        if ("ssh".equalsIgnoreCase(config.getDbType())) {
+            boolean hasPassword = config.getPassword() != null && !config.getPassword().isBlank();
+            boolean hasKey = config.getSshPrivateKey() != null && !config.getSshPrivateKey().isBlank();
+            if (!hasPassword && !hasKey) {
+                return new ConnectionTestResult(false, "SSH password or private key is required", 0);
+            }
         }
 
         DatasourceDefinitionDto datasource = datasourceCatalogService.findById(config.getDbType())
@@ -65,7 +74,7 @@ public class ConnectionTestService {
         applyDriverDefaults(config, datasource);
         ConnectionEntity probe = ConnectionMapper.fromDto(config, null, null, "probe");
 
-        if (Boolean.TRUE.equals(config.getSshEnabled())) {
+        if (Boolean.TRUE.equals(config.getSshEnabled()) && !"ssh".equalsIgnoreCase(config.getDbType())) {
             try {
                 SshTunnelSupport.validate(probe);
             } catch (SshTunnelException ex) {
@@ -74,7 +83,10 @@ public class ConnectionTestService {
         }
 
         try {
-            if (Boolean.TRUE.equals(config.getSshEnabled()) && config.getSshHost() != null && !config.getSshHost().isBlank()) {
+            if (Boolean.TRUE.equals(config.getSshEnabled())
+                    && !"ssh".equalsIgnoreCase(config.getDbType())
+                    && config.getSshHost() != null
+                    && !config.getSshHost().isBlank()) {
                 ConnectionProbeTargetPolicy.requireAllowedProbeHost(
                         config.getSshHost(),
                         "SSH host",

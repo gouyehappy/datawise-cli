@@ -46,6 +46,9 @@ function resolveTreeIcon(type: TreeNodeType, expanded?: boolean, feature?: strin
   if (type === 'redis-browser' || type === 'redis-feature') {
     return feature === 'command' ? 'console' : 'search'
   }
+  if (type === 'ssh-terminal') return 'console'
+  if (type === 'ssh-script-records') return 'folder'
+  if (type === 'ssh-script-record') return 'editor'
   if (type === 'load_more') return 'ellipsis'
   return 'file'
 }
