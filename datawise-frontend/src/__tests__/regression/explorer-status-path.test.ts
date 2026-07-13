@@ -89,4 +89,49 @@ describe('explorer-status-path', () => {
             ['@10.15.34.141:3306', 'archive_repository', 'users'],
         )
     })
+
+    test('includes sql script and view model objects', () => {
+        const tree: TreeNode[] = [
+            {
+                id: 'conn-1',
+                label: 'MySQL@localhost',
+                type: 'connection',
+                children: [
+                    {
+                        id: 'db-1',
+                        label: 'admin_db',
+                        type: 'database',
+                        children: [
+                            {
+                                id: 'ws',
+                                label: 'workspaces',
+                                type: 'folder',
+                                children: [
+                                    {id: 'sql-1', label: 'query.sql', type: 'sql_file'},
+                                ],
+                            },
+                            {
+                                id: 'models',
+                                label: 'models',
+                                type: 'folder',
+                                children: [
+                                    {id: 'vm-1', label: 'sales_view', type: 'view_model'},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        ]
+        const sqlPath = buildExplorerStatusPath(tree, 'sql-1', t, new Map([['conn-1', '@10.15.34.141:3306']]))
+        assert.deepEqual(
+            sqlPath.map((segment) => segment.label),
+            ['@10.15.34.141:3306', 'admin_db', 'query.sql'],
+        )
+        const modelPath = buildExplorerStatusPath(tree, 'vm-1', t, new Map([['conn-1', '@10.15.34.141:3306']]))
+        assert.deepEqual(
+            modelPath.map((segment) => segment.label),
+            ['@10.15.34.141:3306', 'admin_db', 'sales_view'],
+        )
+    })
 })

@@ -15,11 +15,14 @@ import {
     type BackendStartupPhase,
 } from '@/features/layout/services/desktop-backend-startup.service'
 import {backendHealth} from '@/features/layout/services/backend-health.service'
+import ExplorerStatusBreadcrumb from '@/features/layout/components/ExplorerStatusBreadcrumb.vue'
+import {useExplorerStatusPath} from '@/features/explorer/composables/useExplorerStatusPath'
 
 const {t} = useI18n()
 const layout = useLayoutStore()
 const workspace = useWorkspaceStore()
 const editorSettings = useEditorSettingsStore()
+const {hasPath: hasExplorerPath} = useExplorerStatusPath()
 const desktopApp = isDesktopApp()
 
 onMounted(() => {
@@ -125,6 +128,9 @@ async function onOpenRuntimeLog() {
 
 <template>
   <footer class="status-bar">
+    <div v-if="hasExplorerPath" class="status-bar__path">
+      <ExplorerStatusBreadcrumb/>
+    </div>
     <div class="status-bar__main">
       <div v-if="showStartupProgress" class="status-bar__startup">
         <span class="status-bar__startup-label">{{ startupStatusText }}</span>
@@ -187,6 +193,15 @@ async function onOpenRuntimeLog() {
   color: var(--dw-text-secondary);
   font-size: 11px;
   user-select: none;
+}
+
+.status-bar__path {
+  flex: 0 1 min(480px, 42%);
+  min-width: 0;
+  padding-right: 10px;
+  margin-right: 2px;
+  border-right: 1px solid var(--dw-border-light);
+  overflow: hidden;
 }
 
 .status-bar__main {

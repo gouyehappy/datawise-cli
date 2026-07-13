@@ -40,6 +40,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.datawise.backend.service.ConnectionVisibilityService;
 
+import org.apache.datawise.backend.service.FeaturePermissionAccess;
+
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -92,6 +94,8 @@ public class ExplorerSchemaService {
 
     private final ExplorerSchemaProperties schemaProperties;
 
+    private final FeaturePermissionAccess featurePermissionAccess;
+
     public ExplorerSchemaService(
 
             ConnectionExecutionContext connectionContext,
@@ -118,7 +122,9 @@ public class ExplorerSchemaService {
 
             ConnectionVisibilityService connectionVisibilityService,
 
-            ExplorerSchemaProperties schemaProperties
+            ExplorerSchemaProperties schemaProperties,
+
+            FeaturePermissionAccess featurePermissionAccess
 
     ) {
 
@@ -147,6 +153,8 @@ public class ExplorerSchemaService {
         this.connectionVisibilityService = connectionVisibilityService;
 
         this.schemaProperties = schemaProperties;
+
+        this.featurePermissionAccess = featurePermissionAccess;
 
     }
 
@@ -578,6 +586,12 @@ public class ExplorerSchemaService {
 
     ) throws Exception {
 
+        if ("folder".equals(target.getType())) {
+
+            featurePermissionAccess.requireExplorerCatalogFolder(target.getLabel());
+
+        }
+
         if (canUseConditionalRequest(options, ifNoneMatch)) {
 
             List<TreeNode> cachedChildren = resolveCachedChildren(target, options);
@@ -764,6 +778,12 @@ public class ExplorerSchemaService {
     ) {
 
         List<TreeNode> responseNodes = children != null ? children : List.of();
+
+        if (target != null && ("database".equals(target.getType()) || "schema".equals(target.getType()))) {
+
+            responseNodes = featurePermissionAccess.filterCatalogFolderChildren(responseNodes);
+
+        }
 
         Boolean hasMore = null;
 

@@ -12,6 +12,7 @@ import {
     filterExplorerContextMenuByPermission,
 } from '@/features/explorer/services/explorer-context-menu-permission.service'
 import {getContextMenuForNodeType} from '@/features/explorer/constants/context-menus'
+import {buildConnectionLifecycleMenuItems, prependConnectionLifecycleMenu} from '@/features/explorer/services/explorer-connection-lifecycle.service'
 import {toDbTypeMenuId} from '@/features/explorer/constants/explorer-add-menu'
 import {toMoveTargetMenuId} from '@/features/explorer/services/explorer-move-connection.service'
 import {setAppConfigStorageScope} from '@/shared/config/app-config-storage-scope'
@@ -69,12 +70,19 @@ describe('explorer-context-menu-permission.service', () => {
         setAppConfigStorageScope({isGuest: true})
         setActiveFeaturePermissions(createPreset('workbench'))
         const connectionMenu = filterExplorerContextMenuByPermission(
-            getContextMenuForNodeType('connection', t),
+            prependConnectionLifecycleMenu(
+                getContextMenuForNodeType('connection', t),
+                buildConnectionLifecycleMenuItems(t, 'disconnected'),
+            ),
             {nodeType: 'connection'},
         )
         const ids = connectionMenu.map((item) => item.id)
         assert.ok(ids.includes('edit'))
         assert.ok(ids.includes('delete'))
+        assert.ok(ids.includes('connect'))
+        assert.ok(ids.includes('disconnect'))
+        assert.equal(canRunExplorerContextMenuAction('connect', {nodeType: 'connection'}), true)
+        assert.equal(canRunExplorerContextMenuAction('disconnect', {nodeType: 'connection'}), true)
         assert.equal(canRunExplorerContextMenuAction('delete', {nodeType: 'connection'}), true)
         assert.equal(canRunExplorerContextMenuAction('delete', {nodeType: 'table'}), false)
     })

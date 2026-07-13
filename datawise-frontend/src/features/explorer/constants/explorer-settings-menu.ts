@@ -7,6 +7,7 @@ interface ExplorerSettingsState {
     showTableComment: boolean
     showSemanticLayer: boolean
     allCommentsVisible: boolean
+    canToggleSemanticLayer: boolean
 }
 
 export function getExplorerSettingsMenuItems(
@@ -31,13 +32,15 @@ export function getExplorerSettingsMenuItems(
             icon: 'table',
             shortcut: shortcutLabel('explorer.toggleTableComment') || undefined,
         },
-        {
-            id: 'toggle-semantic-layer',
-            label: state.showSemanticLayer
-                ? t('explorer.hideSemanticLayer')
-                : t('explorer.showSemanticLayer'),
-            icon: 'format',
-        },
+        ...(state.canToggleSemanticLayer
+            ? [{
+                id: 'toggle-semantic-layer',
+                label: state.showSemanticLayer
+                    ? t('explorer.hideSemanticLayer')
+                    : t('explorer.showSemanticLayer'),
+                icon: 'format',
+            } satisfies ContextMenuItem]
+            : []),
         {id: 'divider-1', label: '', divider: true},
         {
             id: 'toggle-all-comments',

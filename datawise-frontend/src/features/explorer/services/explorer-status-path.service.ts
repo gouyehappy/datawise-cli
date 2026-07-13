@@ -15,13 +15,6 @@ export interface ExplorerStatusSegment {
     dbType?: DbType
 }
 
-export interface ExplorerStatusSegment {
-    id: string
-    kind: ExplorerStatusSegmentKind
-    label: string
-    dbType?: DbType
-}
-
 export function formatConnectionEndpointLabel(
     config: Pick<ConnectionConfig, 'name' | 'host' | 'port'>,
 ): string {

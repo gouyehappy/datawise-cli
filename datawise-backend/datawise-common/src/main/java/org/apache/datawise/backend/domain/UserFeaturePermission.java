@@ -56,6 +56,10 @@ public final class UserFeaturePermission {
     public static final String WORKBENCH_EXPLORER_SETTINGS = "workbench.explorer.settings";
     public static final String WORKBENCH_EXPLORER_SEARCH = "workbench.explorer.search";
 
+    public static final String WORKBENCH_EXPLORER_CATALOG_MODELS = "workbench.explorer.catalog.models";
+    public static final String WORKBENCH_EXPLORER_CATALOG_WORKSPACES = "workbench.explorer.catalog.workspaces";
+    public static final String WORKBENCH_EXPLORER_CATALOG_AI = "workbench.explorer.catalog.ai";
+
     public static final String WORKBENCH_EXPLORER_CONTEXT_OPEN = "workbench.explorer.context.open";
     public static final String WORKBENCH_EXPLORER_CONTEXT_CONSOLE = "workbench.explorer.context.console";
     public static final String WORKBENCH_EXPLORER_CONTEXT_EDIT = "workbench.explorer.context.edit";
@@ -124,6 +128,9 @@ public final class UserFeaturePermission {
             WORKBENCH_EXPLORER_LOCATE,
             WORKBENCH_EXPLORER_SETTINGS,
             WORKBENCH_EXPLORER_SEARCH,
+            WORKBENCH_EXPLORER_CATALOG_MODELS,
+            WORKBENCH_EXPLORER_CATALOG_WORKSPACES,
+            WORKBENCH_EXPLORER_CATALOG_AI,
             WORKBENCH_EXPLORER_CONTEXT_OPEN,
             WORKBENCH_EXPLORER_CONTEXT_CONSOLE,
             WORKBENCH_EXPLORER_CONTEXT_EDIT,

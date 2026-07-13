@@ -8,6 +8,10 @@ import org.apache.datawise.backend.security.UserContext;
 import org.springframework.stereotype.Service;
 
 import java.util.regex.Pattern;
+import java.util.Locale;
+import java.util.Set;
+
+import org.apache.datawise.backend.domain.TreeNode;
 
 /**
  * 当前会话用户的功能权限校验（API 层防绕过 UI/快捷键）。
@@ -15,6 +19,14 @@ import java.util.regex.Pattern;
  */
 @Service
 public class FeaturePermissionAccess {
+
+    private static final Set<String> SCHEMA_CATALOG_FOLDER_LABELS = Set.of(
+            "tables",
+            "views",
+            "functions",
+            "procedures",
+            "triggers"
+    );
 
     private static final Pattern SQL_WRITE = Pattern.compile(
             "\\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|REPLACE|MERGE|GRANT|REVOKE|CALL|EXEC|BEGIN|COMMIT|ROLLBACK)\\b",
@@ -101,6 +113,68 @@ public class FeaturePermissionAccess {
 
     public void requireUtilTerminal() {
         requirePermission(UserFeaturePermission.UTIL_TERMINAL);
+    }
+
+    /** 展开 database/schema 下目录节点时校验（模型 / 工作区 / AI 可配置；schema 对象组随数据库入口）。 */
+    public void requireExplorerCatalogFolder(String folderLabel) {
+        if (UserContext.isApiTokenAuth()) {
+            return;
+        }
+        if (folderLabel == null || folderLabel.isBlank()) {
+            return;
+        }
+        UserEntity user = requireCurrentUser();
+        String label = folderLabel.trim().toLowerCase(Locale.ROOT);
+        if (SCHEMA_CATALOG_FOLDER_LABELS.contains(label)) {
+            permissionPolicy.requirePermission(user, UserFeaturePermission.NAV_DATABASE);
+            return;
+        }
+        if ("models".equals(label)) {
+            permissionPolicy.requirePermission(user, UserFeaturePermission.WORKBENCH_EXPLORER_CATALOG_MODELS);
+            return;
+        }
+        if ("workspaces".equals(label)) {
+            permissionPolicy.requirePermission(user, UserFeaturePermission.WORKBENCH_EXPLORER_CATALOG_WORKSPACES);
+            return;
+        }
+        if ("ai".equals(label) || "semantics".equals(label)) {
+            permissionPolicy.requirePermission(user, UserFeaturePermission.WORKBENCH_EXPLORER_CATALOG_AI);
+        }
+    }
+
+    public java.util.List<TreeNode> filterCatalogFolderChildren(java.util.List<TreeNode> children) {
+        if (UserContext.isApiTokenAuth() || children == null || children.isEmpty()) {
+            return children;
+        }
+        UserEntity user = requireCurrentUser();
+        return children.stream()
+                .filter(node -> {
+                    if (node == null || !"folder".equals(node.getType())) {
+                        return true;
+                    }
+                    return canAccessCatalogFolder(node.getLabel(), user);
+                })
+                .toList();
+    }
+
+    private boolean canAccessCatalogFolder(String folderLabel, UserEntity user) {
+        if (folderLabel == null || folderLabel.isBlank()) {
+            return true;
+        }
+        String label = folderLabel.trim().toLowerCase(Locale.ROOT);
+        if (SCHEMA_CATALOG_FOLDER_LABELS.contains(label)) {
+            return permissionPolicy.hasPermission(user, UserFeaturePermission.NAV_DATABASE);
+        }
+        if ("models".equals(label)) {
+            return permissionPolicy.hasPermission(user, UserFeaturePermission.WORKBENCH_EXPLORER_CATALOG_MODELS);
+        }
+        if ("workspaces".equals(label)) {
+            return permissionPolicy.hasPermission(user, UserFeaturePermission.WORKBENCH_EXPLORER_CATALOG_WORKSPACES);
+        }
+        if ("ai".equals(label) || "semantics".equals(label)) {
+            return permissionPolicy.hasPermission(user, UserFeaturePermission.WORKBENCH_EXPLORER_CATALOG_AI);
+        }
+        return true;
     }
 
     public void requireRedisCommand(String command) {

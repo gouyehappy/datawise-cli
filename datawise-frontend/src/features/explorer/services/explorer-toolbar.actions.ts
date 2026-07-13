@@ -1,6 +1,7 @@
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {canAccessExplorerCatalogAi} from '@/features/auth/services/feature-permission.service'
 import {t} from '@/i18n'
 
 export async function runExplorerRefresh() {
@@ -67,7 +68,9 @@ export function runToggleAllComments() {
     explorer.toggleAllComments()
 }
 
+
 export function runToggleSemanticLayer() {
+    if (!canAccessExplorerCatalogAi()) return
     const explorer = useExplorerStore()
     explorer.showSemanticLayer = !explorer.showSemanticLayer
 }

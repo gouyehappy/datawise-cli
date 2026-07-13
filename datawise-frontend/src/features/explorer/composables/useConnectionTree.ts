@@ -106,7 +106,7 @@ import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {resolveConnectionCatalogErrorMessage} from '@/features/connection/services/connection-catalog.service'
-import {canMutateConnectionCatalog} from '@/features/auth/services/feature-permission.service'
+import {canManageExplorerConnectionLifecycle, canMutateConnectionCatalog} from '@/features/auth/services/feature-permission.service'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {useShortcutPanelStore} from '@/features/layout/stores/shortcut-panel-store'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
@@ -462,6 +462,7 @@ export function useConnectionTree() {
             return
         }
         if (node.type === 'connection') {
+            if (!canManageExplorerConnectionLifecycle(auth.isGuest)) return
             await explorer.connectConnection(node.id, {notify: true})
             return
         }
@@ -1742,9 +1743,9 @@ export function useConnectionTree() {
 
     function runShortcutEditSelected() {
         if (isExplorerDialogOpen()) return
-        if (!canRunExplorerContextMenuAction('edit', {nodeType: node.type})) return
         const node = explorer.selectedNode
         if (!node) return
+        if (!canRunExplorerContextMenuAction('edit', {nodeType: node.type})) return
         if (node.type === 'table') {
             explorer.selectNode(node.id)
             openTableFromNode(node, 'properties')

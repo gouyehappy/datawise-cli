@@ -26,7 +26,7 @@ import {
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useFeaturePermission} from '@/features/auth/composables/useFeaturePermission'
-import {canMutateConnectionCatalog, canUseExplorerAddMenu} from '@/features/auth/services/feature-permission.service'
+import {canAccessExplorerCatalogAi, canMutateConnectionCatalog, canUseExplorerAddMenu} from '@/features/auth/services/feature-permission.service'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 
@@ -56,6 +56,7 @@ const settingsMenuItems = computed(() =>
           showTableComment: explorer.showTableComment,
           showSemanticLayer: explorer.showSemanticLayer,
           allCommentsVisible: explorer.allCommentsVisible,
+          canToggleSemanticLayer: canAccessExplorerCatalogAi(),
         },
         shortcutLabel,
     ),

@@ -3,6 +3,7 @@ import {pruneContextMenuDividers} from '@/core/utils/context-menu'
 import {
     canAccessFeature,
     canDeleteExplorerNode,
+    canManageExplorerConnectionLifecycle,
     canMutateConnectionCatalog,
     isConnectionCatalogStructureType,
 } from '@/features/auth/services/feature-permission.service'
@@ -95,6 +96,10 @@ function canAccessExplorerContextMenuAction(
         ) {
             return canMutateConnectionCatalog(isGuest)
         }
+    }
+
+    if (key === FeaturePermission.WorkbenchExplorerContextConnection) {
+        return canManageExplorerConnectionLifecycle(isGuest)
     }
 
     if (key === FeaturePermission.WorkbenchExplorerContextDangerous && menuId === 'delete') {

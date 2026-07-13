@@ -78,6 +78,9 @@ const STATIC_FEATURE_PERMISSION_GROUPS: FeaturePermissionGroup[] = [
             {key: FeaturePermission.WorkbenchExplorerLocate, labelKey: 'settings.userPermissions.items.workbenchExplorerLocate'},
             {key: FeaturePermission.WorkbenchExplorerSettings, labelKey: 'settings.userPermissions.items.workbenchExplorerSettings'},
             {key: FeaturePermission.WorkbenchExplorerSearch, labelKey: 'settings.userPermissions.items.workbenchExplorerSearch'},
+            {key: FeaturePermission.WorkbenchExplorerCatalogModels, labelKey: 'settings.userPermissions.items.workbenchExplorerCatalogModels'},
+            {key: FeaturePermission.WorkbenchExplorerCatalogWorkspaces, labelKey: 'settings.userPermissions.items.workbenchExplorerCatalogWorkspaces'},
+            {key: FeaturePermission.WorkbenchExplorerCatalogAi, labelKey: 'settings.userPermissions.items.workbenchExplorerCatalogAi'},
         ],
     },
     {

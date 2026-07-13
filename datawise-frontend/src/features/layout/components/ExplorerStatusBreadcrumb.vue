@@ -39,7 +39,7 @@ const {segments, hasPath} = useExplorerStatusPath()
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 1;
+  max-width: 100%;
   overflow: hidden;
   color: var(--dw-text-secondary);
   font-size: 11px;

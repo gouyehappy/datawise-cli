@@ -9,7 +9,7 @@ import {
     type PermissionPresetId,
 } from '@/features/auth/types/feature-permission.types'
 import {SETTINGS_SECTION_PERMISSION_MAP} from '@/features/settings/constants/settings-nav.config'
-import {canWriteResource} from '@/features/auth/services/user-resource-policy'
+import {canReadResource, canWriteResource} from '@/features/auth/services/user-resource-policy'
 import {isGuestSession} from '@/features/auth/services/user-access-policy'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 
@@ -48,6 +48,9 @@ export function createPreset(preset: PermissionPresetId): FeaturePermissionMap {
         map[FeaturePermission.WorkbenchExplorerContextConsole] = true
         map[FeaturePermission.WorkbenchExplorerContextCopy] = true
         map[FeaturePermission.WorkbenchTabNew] = true
+        map[FeaturePermission.WorkbenchExplorerCatalogModels] = false
+        map[FeaturePermission.WorkbenchExplorerCatalogWorkspaces] = false
+        map[FeaturePermission.WorkbenchExplorerCatalogAi] = false
     }
     return map
 }
@@ -194,6 +197,7 @@ export function canExecuteShortcutAction(id: ShortcutActionId): boolean {
     if (!key) return true
     if (id === 'explorer.editNode') {
         if (isGuestSession() && canWriteResource(UserResource.ConnectionCatalog)) return true
+        if (canAccessFeature(FeaturePermission.WorkbenchExplorerAdd)) return true
     }
     if (id === 'explorer.deleteNode') {
         if (isGuestSession() && canWriteResource(UserResource.ConnectionCatalog)) return true
@@ -206,10 +210,19 @@ export function canOpenConnectionCatalogForm(isGuest: boolean): boolean {
     return canMutateConnectionCatalog(isGuest)
 }
 
-/** 连接目录增改（分组/连接）：访客走会话目录写权限，注册用户走功能权限。 */
+/** 连接目录增改（分组/连接）：访客走会话目录写权限，注册用户需编辑或新建权限。 */
 export function canMutateConnectionCatalog(isGuest: boolean): boolean {
     if (isGuest) return canWriteResource(UserResource.ConnectionCatalog)
-    return canAccessFeature(FeaturePermission.WorkbenchExplorerContextEdit)
+    return (
+        canAccessFeature(FeaturePermission.WorkbenchExplorerContextEdit)
+        || canAccessFeature(FeaturePermission.WorkbenchExplorerAdd)
+    )
+}
+
+/** 连接/断开/重连：访客走会话目录读权限，注册用户走连接生命周期权限。 */
+export function canManageExplorerConnectionLifecycle(isGuest: boolean): boolean {
+    if (isGuest) return canReadResource(UserResource.ConnectionCatalog)
+    return canAccessFeature(FeaturePermission.WorkbenchExplorerContextConnection)
 }
 
 export function isConnectionCatalogStructureType(nodeType?: string): boolean {
@@ -240,6 +253,23 @@ export function canUseExplorerAddMenu(isGuest: boolean): boolean {
 export function canImportExplorerConnections(isGuest: boolean): boolean {
     if (isGuest) return false
     return canAccessFeature(FeaturePermission.WorkbenchExplorerContextExport)
+}
+
+/** 表/视图/函数/存储过程/触发器：随数据库工作台（连接）权限默认开放。 */
+export function canAccessExplorerCatalogSchema(): boolean {
+    return canAccessFeature(FeaturePermission.NavDatabase)
+}
+
+export function canAccessExplorerCatalogModels(): boolean {
+    return canAccessFeature(FeaturePermission.WorkbenchExplorerCatalogModels)
+}
+
+export function canAccessExplorerCatalogWorkspaces(): boolean {
+    return canAccessFeature(FeaturePermission.WorkbenchExplorerCatalogWorkspaces)
+}
+
+export function canAccessExplorerCatalogAi(): boolean {
+    return canAccessFeature(FeaturePermission.WorkbenchExplorerCatalogAi)
 }
 
 export function paletteNavigationEntryAllowed(

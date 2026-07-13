@@ -47,6 +47,10 @@ export const FeaturePermission = {
     WorkbenchExplorerSettings: 'workbench.explorer.settings',
     WorkbenchExplorerSearch: 'workbench.explorer.search',
 
+    WorkbenchExplorerCatalogModels: 'workbench.explorer.catalog.models',
+    WorkbenchExplorerCatalogWorkspaces: 'workbench.explorer.catalog.workspaces',
+    WorkbenchExplorerCatalogAi: 'workbench.explorer.catalog.ai',
+
     WorkbenchExplorerContextOpen: 'workbench.explorer.context.open',
     WorkbenchExplorerContextConsole: 'workbench.explorer.context.console',
     WorkbenchExplorerContextEdit: 'workbench.explorer.context.edit',

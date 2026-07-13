@@ -27,6 +27,8 @@ import org.apache.datawise.backend.schema.SchemaDialectRegistry;
 
 import org.apache.datawise.backend.service.ConnectionVisibilityService;
 
+import org.apache.datawise.backend.service.FeaturePermissionAccess;
+
 import org.apache.datawise.backend.database.explorer.ExplorerTreeBuilder;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 
@@ -123,6 +126,9 @@ class ExplorerSchemaServiceTest {
     @Mock
     private SchemaSession schemaSession;
 
+    @Mock
+    private FeaturePermissionAccess featurePermissionAccess;
+
     private final ExplorerSchemaProperties schemaProperties = new ExplorerSchemaProperties();
 
 
@@ -161,9 +167,13 @@ class ExplorerSchemaServiceTest {
 
                 connectionVisibilityService,
 
-                schemaProperties
+                schemaProperties,
+
+                featurePermissionAccess
 
         );
+
+        lenient().when(featurePermissionAccess.filterCatalogFolderChildren(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         lenient().when(connectorFacade.catalog()).thenReturn(catalogAccess);
 

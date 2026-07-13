@@ -4,7 +4,7 @@ import {collectSearchTreeVisibility, flattenVisibleTree} from '@/core/utils/tree
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {matchesExplorerTreeSearch} from '@/features/explorer/services/explorer-catalog-label.service'
 import {buildExplorerFavoritesGroup} from '@/features/explorer/services/explorer-favorites-group.service'
-import {filterExplorerTreeAiFolders} from '@/features/explorer/services/explorer-ai-tree.service'
+import {filterExplorerTreeCatalogFolders} from '@/features/explorer/services/explorer-catalog-folder-permission.service'
 import {readPinnedTableFavorites} from '@/features/explorer/services/pinned-table-favorites.service'
 
 /** Explorer / AI 共用：同一棵数据源树的可见扁平列表 */
@@ -19,7 +19,9 @@ export function useDataSourceFlatNodes(search: Ref<string>) {
 
     const filteredTree = computed(() => {
         void explorer.treeVersion
-        return filterExplorerTreeAiFolders(explorer.tree, explorer.showSemanticLayer)
+        return filterExplorerTreeCatalogFolders(explorer.tree, {
+            showSemanticLayer: explorer.showSemanticLayer,
+        })
     })
 
     const searchVisibility = computed(() => {

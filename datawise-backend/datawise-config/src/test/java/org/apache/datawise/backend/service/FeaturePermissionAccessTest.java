@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
@@ -124,6 +125,47 @@ class FeaturePermissionAccessTest {
                 IllegalArgumentException.class,
                 () -> access.requireRedisCommand("DEL mykey")
         );
+    }
+
+    @Test
+    void requireExplorerCatalogFolder_allowsSchemaFoldersForWorkbenchGuest() {
+        UserEntity guest = guestUser();
+        when(userStore.findById(2L)).thenReturn(Optional.of(guest));
+
+        assertDoesNotThrow(() -> access.requireExplorerCatalogFolder("tables"));
+        assertDoesNotThrow(() -> access.requireExplorerCatalogFolder("views"));
+    }
+
+    @Test
+    void requireExplorerCatalogFolder_deniesModelsForWorkbenchGuest() {
+        UserEntity guest = guestUser();
+        when(userStore.findById(2L)).thenReturn(Optional.of(guest));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> access.requireExplorerCatalogFolder("models")
+        );
+    }
+
+    @Test
+    void filterCatalogFolderChildren_hidesOptionalFoldersForWorkbenchGuest() {
+        UserEntity guest = guestUser();
+        when(userStore.findById(2L)).thenReturn(Optional.of(guest));
+
+        org.apache.datawise.backend.domain.TreeNode tables = folder("tables");
+        org.apache.datawise.backend.domain.TreeNode models = folder("models");
+        org.apache.datawise.backend.domain.TreeNode ai = folder("ai");
+
+        var filtered = access.filterCatalogFolderChildren(java.util.List.of(tables, models, ai));
+        assertEquals(1, filtered.size());
+        assertEquals("tables", filtered.get(0).getLabel());
+    }
+
+    private static org.apache.datawise.backend.domain.TreeNode folder(String label) {
+        org.apache.datawise.backend.domain.TreeNode node = new org.apache.datawise.backend.domain.TreeNode();
+        node.setType("folder");
+        node.setLabel(label);
+        return node;
     }
 
     private static UserEntity guestUser() {

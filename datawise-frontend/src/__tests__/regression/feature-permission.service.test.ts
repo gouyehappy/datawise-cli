@@ -7,6 +7,7 @@ import {
     canDeleteConnectionCatalogNode,
     canImportExplorerConnections,
     canMutateConnectionCatalog,
+    canManageExplorerConnectionLifecycle,
     canOpenConnectionCatalogForm,
     canUseExplorerAddMenu,
     createPreset,
@@ -105,6 +106,7 @@ describe('feature-permission.service', () => {
         assert.equal(canDeleteExplorerNode('table', true), false)
         assert.equal(canUseExplorerAddMenu(true), true)
         assert.equal(canImportExplorerConnections(true), false)
+        assert.equal(canManageExplorerConnectionLifecycle(true), true)
     })
 
     it('requires explorer context edit for registered users', () => {
@@ -129,6 +131,14 @@ describe('feature-permission.service', () => {
             [FeaturePermission.WorkbenchExplorerAdd]: true,
         })
         assert.equal(canUseExplorerAddMenu(false), true)
+        assert.equal(canMutateConnectionCatalog(false), true)
+        assert.equal(canOpenConnectionCatalogForm(false), true)
+
+        setActiveFeaturePermissions({
+            ...createPreset('workbench'),
+            [FeaturePermission.WorkbenchExplorerContextConnection]: true,
+        })
+        assert.equal(canManageExplorerConnectionLifecycle(false), true)
 
         setActiveFeaturePermissions({
             ...createPreset('workbench'),
