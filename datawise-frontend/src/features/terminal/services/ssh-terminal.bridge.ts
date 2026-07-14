@@ -18,6 +18,11 @@ interface TerminalWsMessage {
     message?: string
 }
 
+/** Keep the browser ↔ backend WebSocket alive across idle proxies/NATs. */
+const WS_PING_INTERVAL_MS = 20_000
+/** Soft ceiling for WS open + backend SSH session create (covers JSch connect timeout). */
+const CREATE_TIMEOUT_MS = 25_000
+
 function resolveWebSocketUrl(path: string, connectionId: string): string {
     const sessionId = localStorage.getItem('dw-cli-session-id')
     const params = new URLSearchParams()
@@ -45,6 +50,8 @@ export function createSshTerminalBridge(
     const outputHandlers = new Map<string, Set<OutputHandler>>()
     const exitHandlers = new Map<string, Set<ExitHandler>>()
     const outputBuffers = new Map<string, string[]>()
+    const pingTimers = new Map<string, ReturnType<typeof setInterval>>()
+    const intentionalClose = new Set<string>()
 
     function emitOutput(sessionId: string, data: string) {
         const handlers = outputHandlers.get(sessionId)
@@ -70,6 +77,28 @@ export function createSshTerminalBridge(
         socket.send(JSON.stringify(payload))
     }
 
+    function stopPing(sessionId: string) {
+        const timer = pingTimers.get(sessionId)
+        if (timer) {
+            clearInterval(timer)
+            pingTimers.delete(sessionId)
+        }
+    }
+
+    function startPing(sessionId: string, socket: WebSocket) {
+        stopPing(sessionId)
+        pingTimers.set(
+            sessionId,
+            setInterval(() => {
+                if (socket.readyState !== WebSocket.OPEN) {
+                    stopPing(sessionId)
+                    return
+                }
+                send(socket, {type: 'ping', sessionId})
+            }, WS_PING_INTERVAL_MS),
+        )
+    }
+
     function ensureHandlers(sessionId: string) {
         if (!outputHandlers.has(sessionId)) outputHandlers.set(sessionId, new Set())
         if (!exitHandlers.has(sessionId)) exitHandlers.set(sessionId, new Set())
@@ -78,10 +107,36 @@ export function createSshTerminalBridge(
     return {
         async create(sessionId, opts) {
             ensureHandlers(sessionId)
+            intentionalClose.delete(sessionId)
             const socket = new WebSocket(resolveWebSocketUrl(path, connectionId))
             sockets.set(sessionId, socket)
 
             const result = await new Promise<NativeTerminalCreateResult>((resolve) => {
+                let settled = false
+                let timeoutId: ReturnType<typeof setTimeout> | null = null
+                const settle = (value: NativeTerminalCreateResult) => {
+                    if (settled) return
+                    settled = true
+                    if (timeoutId) {
+                        clearTimeout(timeoutId)
+                        timeoutId = null
+                    }
+                    resolve(value)
+                }
+
+                timeoutId = setTimeout(() => {
+                    intentionalClose.add(sessionId)
+                    try {
+                        socket.close()
+                    } catch {
+                        // ignore
+                    }
+                    settle({
+                        ok: false,
+                        error: `SSH terminal timed out after ${Math.round(CREATE_TIMEOUT_MS / 1000)}s (WebSocket / shell create)`,
+                    })
+                }, CREATE_TIMEOUT_MS)
+
                 socket.addEventListener('open', () => {
                     send(socket, {
                         type: 'create',
@@ -102,7 +157,10 @@ export function createSshTerminalBridge(
 
                     switch (message.type) {
                         case 'created':
-                            resolve({
+                            if (message.ok === true) {
+                                startPing(sessionId, socket)
+                            }
+                            settle({
                                 ok: message.ok === true,
                                 error: message.error,
                             })
@@ -110,24 +168,47 @@ export function createSshTerminalBridge(
                         case 'output':
                             if (message.data) emitOutput(sessionId, message.data)
                             break
+                        case 'pong':
+                            break
                         case 'exit':
+                            stopPing(sessionId)
                             emitExit(sessionId, typeof message.code === 'number' ? message.code : 0)
                             break
                         case 'error':
-                            if (message.code === 'FORBIDDEN') {
-                                socket.close()
-                                emitExit(sessionId, 1)
+                            if (message.code !== 'FORBIDDEN') break
+                            // Before create settles: fail the handshake cleanly.
+                            // After create: ignore — backend soft-denies pending/stale actions;
+                            // hard-closing here caused the intermittent “连接失败 / WebSocket closed”.
+                            if (!settled) {
+                                intentionalClose.add(sessionId)
+                                stopPing(sessionId)
+                                try {
+                                    socket.close()
+                                } catch {
+                                    // ignore
+                                }
+                                settle({
+                                    ok: false,
+                                    error: message.message ?? 'SSH terminal access denied',
+                                })
                             }
                             break
                     }
                 })
 
                 socket.addEventListener('error', () => {
-                    resolve({ok: false, error: 'WebSocket connection failed'})
+                    settle({ok: false, error: 'WebSocket connection failed'})
                 })
 
                 socket.addEventListener('close', () => {
-                    emitExit(sessionId, 0)
+                    stopPing(sessionId)
+                    const wasIntentional = intentionalClose.has(sessionId)
+                    intentionalClose.delete(sessionId)
+                    sockets.delete(sessionId)
+                    if (!wasIntentional) {
+                        emitExit(sessionId, 0)
+                    }
+                    settle({ok: false, error: 'WebSocket closed'})
                 })
             })
 
@@ -150,14 +231,19 @@ export function createSshTerminalBridge(
 
         async destroy(sessionId) {
             const socket = sockets.get(sessionId)
-            if (socket) {
-                send(socket, {type: 'destroy', sessionId})
-                socket.close()
-                sockets.delete(sessionId)
-            }
+            // Mark before close so the async 'close' event does not look like a drop.
+            intentionalClose.add(sessionId)
+            stopPing(sessionId)
             outputHandlers.delete(sessionId)
             exitHandlers.delete(sessionId)
             outputBuffers.delete(sessionId)
+            sockets.delete(sessionId)
+            if (socket) {
+                send(socket, {type: 'destroy', sessionId})
+                socket.close()
+            } else {
+                intentionalClose.delete(sessionId)
+            }
             return true
         },
 

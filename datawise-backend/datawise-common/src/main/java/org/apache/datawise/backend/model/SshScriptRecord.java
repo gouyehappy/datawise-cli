@@ -1,7 +1,9 @@
 package org.apache.datawise.backend.model;
 
 /**
- * Per-user SSH connection script note (rich HTML content).
+ * Per-user SSH connection script / quick-command note.
+ * {@code contentHtml} is a legacy field name; new writes store plain command text.
+ * Readers should tolerate older HTML-wrapped values.
  */
 public class SshScriptRecord {
 

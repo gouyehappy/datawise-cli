@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,7 +36,14 @@ public class SshShellSessionManager {
             throw new IllegalArgumentException("Authenticated user required for SSH shell session");
         }
         destroy(sessionId);
+        // One interactive shell per connection for a user — reconnect replaces the previous one.
+        destroyByUserAndConnection(userId, entity.getId());
         int active = activeCountByUser.getOrDefault(userId, 0);
+        if (active >= MAX_SESSIONS_PER_USER) {
+            // Heal counter drift (e.g. races) before failing hard.
+            reconcileActiveCount(userId);
+            active = activeCountByUser.getOrDefault(userId, 0);
+        }
         if (active >= MAX_SESSIONS_PER_USER) {
             throw new SshConnectionException("Too many active SSH sessions. Close an existing session and retry.");
         }
@@ -88,11 +97,34 @@ public class SshShellSessionManager {
         if (entity == null || entity.getId() == null || entity.getId().isBlank()) {
             return;
         }
-        String prefix = entity.getId().trim();
-        sessionsById.keySet().stream()
-                .filter(sessionId -> prefix.equals(getConnectionId(sessionId)))
-                .toList()
-                .forEach(this::destroy);
+        destroyByConnectionId(entity.getId().trim());
+    }
+
+    public void destroyByConnectionId(String connectionId) {
+        if (connectionId == null || connectionId.isBlank()) {
+            return;
+        }
+        String id = connectionId.trim();
+        for (String sessionId : sessionIdsForConnection(id)) {
+            destroy(sessionId);
+        }
+    }
+
+    public void destroyByUserAndConnection(Long userId, String connectionId) {
+        if (userId == null || connectionId == null || connectionId.isBlank()) {
+            return;
+        }
+        String id = connectionId.trim();
+        List<String> toClose = new ArrayList<>();
+        for (Map.Entry<String, ManagedSession> entry : sessionsById.entrySet()) {
+            ManagedSession managed = entry.getValue();
+            if (userId.equals(managed.userId()) && id.equals(managed.connectionId())) {
+                toClose.add(entry.getKey());
+            }
+        }
+        for (String sessionId : toClose) {
+            destroy(sessionId);
+        }
     }
 
     @Scheduled(fixedRate = 60_000)
@@ -102,21 +134,46 @@ public class SshShellSessionManager {
             return;
         }
         long cutoff = System.currentTimeMillis() - idleTtlMinutes * 60_000L;
-        sessionsById.entrySet().removeIf(entry -> {
-            if (entry.getValue().lastUsedAtMs() >= cutoff) {
-                return false;
+        List<String> expired = new ArrayList<>();
+        for (Map.Entry<String, ManagedSession> entry : sessionsById.entrySet()) {
+            if (entry.getValue().lastUsedAtMs() < cutoff) {
+                expired.add(entry.getKey());
             }
-            entry.getValue().session().destroy();
-            activeCountByUser.computeIfPresent(entry.getValue().userId(), (id, count) -> count <= 1 ? null : count - 1);
-            log.info("Closed idle SSH shell sessionId={}", entry.getKey());
-            return true;
-        });
+        }
+        for (String sessionId : expired) {
+            destroy(sessionId);
+            log.info("Closed idle SSH shell sessionId={}", sessionId);
+        }
     }
 
     public void touch(String sessionId) {
         ManagedSession managed = sessionsById.get(sessionId);
         if (managed != null) {
             managed.touch();
+        }
+    }
+
+    private List<String> sessionIdsForConnection(String connectionId) {
+        List<String> ids = new ArrayList<>();
+        for (Map.Entry<String, ManagedSession> entry : sessionsById.entrySet()) {
+            if (connectionId.equals(entry.getValue().connectionId())) {
+                ids.add(entry.getKey());
+            }
+        }
+        return ids;
+    }
+
+    private void reconcileActiveCount(Long userId) {
+        int actual = 0;
+        for (ManagedSession managed : sessionsById.values()) {
+            if (userId.equals(managed.userId())) {
+                actual += 1;
+            }
+        }
+        if (actual <= 0) {
+            activeCountByUser.remove(userId);
+        } else {
+            activeCountByUser.put(userId, actual);
         }
     }
 

@@ -13,12 +13,12 @@ import type {NativeTerminalCreateResult} from '../src/features/terminal/services
 function resolveDesktopBackendPort(): number {
     try {
         if (ipcRenderer.sendSync('get-is-packaged') === true) {
-            return ports.backendPackaged
+            return ports.desktop.backend
         }
     } catch {
         // preload 早于主进程注册时回退开发端口
     }
-    return ports.backend
+    return ports.dev.backend
 }
 
 const DEFAULT_DESKTOP_API_BASE = `http://127.0.0.1:${resolveDesktopBackendPort()}`

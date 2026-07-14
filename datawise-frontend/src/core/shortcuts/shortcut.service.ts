@@ -130,6 +130,16 @@ export function isEditableTarget(target: EventTarget | null): boolean {
     return false
 }
 
+/** xterm / SSH / local terminal — bare keys like `/` must reach the PTY. */
+export function isTerminalTarget(target: EventTarget | null): boolean {
+    if (!target || typeof (target as {closest?: unknown}).closest !== 'function') return false
+    try {
+        return Boolean((target as HTMLElement).closest('.xterm'))
+    } catch {
+        return false
+    }
+}
+
 /** Strip legacy i18n shortcut suffix like " (Ctrl+S)" before appending dynamic hints. */
 export function stripTrailingShortcutHint(label: string): string {
     return label.replace(/\s*\(([^()]*)\)\s*$/, (full, inner: string) => {

@@ -8,6 +8,8 @@ export interface SshTerminalHandle {
     focus: () => void
     getStatus: () => SshTerminalStatus
     reconnect: () => Promise<void>
+    /** Release remote shell + WebSocket (e.g. tab closed while KeepAlive still caches the pane). */
+    dispose?: () => void | Promise<void>
 }
 
 const handles = new Map<string, SshTerminalHandle>()
@@ -18,6 +20,18 @@ export function registerSshTerminalHandle(handle: SshTerminalHandle): void {
 
 export function unregisterSshTerminalHandle(tabId: string): void {
     handles.delete(tabId)
+}
+
+/** Drop handle and tear down shell when a workspace tab is closed (KeepAlive may skip onUnmounted). */
+export async function disposeSshTerminalHandle(tabId: string): Promise<void> {
+    const handle = handles.get(tabId)
+    handles.delete(tabId)
+    if (!handle?.dispose) return
+    try {
+        await handle.dispose()
+    } catch {
+        // best-effort cleanup
+    }
 }
 
 export function listSshTerminalHandles(connectionId: string): SshTerminalHandle[] {

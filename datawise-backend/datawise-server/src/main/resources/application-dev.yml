@@ -1,0 +1,4 @@
+# Local / Vite 联调（profile=dev，默认启用）
+# 端口与 datawise-frontend/runtime-ports.json → dev.backend 一致
+server:
+  port: 18421

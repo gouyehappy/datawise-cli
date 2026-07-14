@@ -33,8 +33,14 @@ public class ConnectorRegistry {
         List<DataSourceConnector> merged = new ArrayList<>();
         if (pluginConnectors != null) {
             for (DataSourceConnector connector : pluginConnectors) {
+                if (connector == null || connector.id() == null || connector.id().isBlank()) {
+                    continue;
+                }
+                // Keep first occurrence — protects against accidental duplicate SPI registrations.
+                if (!pluginIds.add(connector.id())) {
+                    continue;
+                }
                 merged.add(connector);
-                pluginIds.add(connector.id());
             }
         }
         if (classpathConnectors != null) {

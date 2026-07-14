@@ -15,7 +15,6 @@ import org.apache.datawise.sqlflow.engine.AstSqlFlowLineageEngine;
 import org.apache.datawise.sqlflow.engine.SqlFlowEngines;
 import org.apache.datawise.sqlflow.engine.UnavailableSqlFlowLineageEngine;
 import org.apache.datawise.sqlflow.engine.gsp.GspSqlFlowLineageEngine;
-import org.apache.datawise.sqlflow.spi.SqlFlowSqlPreprocessor;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

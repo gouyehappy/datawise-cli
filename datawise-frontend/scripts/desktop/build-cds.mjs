@@ -4,8 +4,7 @@
 import {spawn, execSync} from 'node:child_process'
 import {existsSync, rmSync, statSync, readFileSync} from 'node:fs'
 import http from 'node:http'
-import {dirname, join} from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {join} from 'node:path'
 import {backendBundleOut, configBundleOut, frontendRoot} from './paths.mjs'
 import {log, sleep, isDirectRun} from './lib.mjs'
 
@@ -138,6 +137,8 @@ export async function buildAppCds() {
 
     const args = [
         ...sharedJvmArgs(),
+        // Keep CDS dump diagnostics quiet; training still fails hard if archive missing.
+        '-Xlog:cds=error',
         `-XX:ArchiveClassesAtExit=${archivePath}`,
         '-jar',
         jar,
@@ -145,6 +146,8 @@ export async function buildAppCds() {
         '--server.address=127.0.0.1',
         `--datawise.config.dir=${configBundleOut}`,
         '--spring.profiles.active=desktop',
+        // Do not archive plugin ClassLoader classes — they collide at runtime with plugins/*.jar.
+        '--datawise.connectors.load-plugins=false',
         '--management.endpoint.shutdown.enabled=true',
         '--management.endpoints.web.exposure.include=health,shutdown',
         '--server.shutdown=graceful',
@@ -181,7 +184,7 @@ export async function buildAppCds() {
     log('build-cds', `wrote ${archivePath} (${sizeMb.toFixed(1)} MB)`)
 }
 
-if (isDirectRun()) {
+if (isDirectRun(import.meta.url)) {
     try {
         await buildAppCds()
     } catch (error) {

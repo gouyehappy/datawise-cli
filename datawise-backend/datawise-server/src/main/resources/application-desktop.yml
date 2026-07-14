@@ -1,5 +1,7 @@
 # 桌面一体化打包（Electron 内嵌 JRE）专用：优先缩短冷启动时间
+# 端口与 datawise-frontend/runtime-ports.json → desktop.backend 一致，便于同机与 dev 并行
 server:
+  port: 18423
   # 仅本机回环，避免 Windows 首次启动弹出 Java 防火墙放行框
   address: 127.0.0.1
 

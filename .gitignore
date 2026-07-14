@@ -6,6 +6,7 @@ datawise-frontend/resources/desktop/
 datawise-frontend/.electron-builder-output
 datawise-frontend/release-*/
 target/
+target-desktop/
 data/**
 *.tsbuildinfo
 *.local

@@ -111,4 +111,14 @@ class ConnectorPluginLoaderTest {
         ConnectorPluginLoader loader = new ConnectorPluginLoader(tempConfigRoot.toString(), "plugins");
         assertEquals(tempConfigRoot.resolve("plugins").toAbsolutePath().normalize(), loader.pluginsDirectory());
     }
+
+    @Test
+    void isContributedByPluginJar_rejectsParentClasspathWithoutLocalSpi() {
+        Object parentScoped = new Object() {};
+        ClassLoader appLoader = parentScoped.getClass().getClassLoader();
+        java.net.URLClassLoader pluginLoader = new java.net.URLClassLoader(new java.net.URL[0], appLoader);
+        // Empty plugin URLs + class from parent → not contributed by this jar.
+        assertTrue(!ConnectorPluginLoader.isContributedByPluginJar(
+                Object.class, parentScoped, pluginLoader));
+    }
 }

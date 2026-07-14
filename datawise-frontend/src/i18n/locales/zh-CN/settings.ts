@@ -402,7 +402,7 @@ export default {
         resetAll: '恢复默认',
         pluginTitle: '插件内置通用配置',
         pluginHint: '随 SQL 编辑器插件打包的 sql-snippets.shared.json，无需导入即可生效。',
-        pluginFileNote: '文件路径：sql-editor/src/config/sql-snippets.shared.json。修改后运行 npm run gen:sql-snippets 同步（或直接编辑 JSON）。',
+        pluginFileNote: '文件路径：sql-editor/src/config/sql-snippets.shared.json。修改 constants 后在 sql-editor 运行 npm run gen:snippets（或前端 npm run gen:sql-snippets）同步，也可直接编辑 JSON。',
         pluginCount: '插件 {count} 项',
         sharedTitle: '额外团队配置（可选）',
         sharedHint: '在插件内置配置之上叠加导入的团队 JSON；不会修改插件文件本身。',

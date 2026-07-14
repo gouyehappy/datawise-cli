@@ -1,6 +1,10 @@
 import {describe, it} from 'node:test'
 import assert from 'node:assert/strict'
-import {matchesBinding, stripTrailingShortcutHint} from '@/core/shortcuts/shortcut.service'
+import {
+    isTerminalTarget,
+    matchesBinding,
+    stripTrailingShortcutHint,
+} from '@/core/shortcuts/shortcut.service'
 
 describe('app shortcut listener — editable target bindings', () => {
     it('matches Ctrl+R and Ctrl+S for console actions', () => {
@@ -14,11 +18,25 @@ describe('app shortcut listener — editable target bindings', () => {
         )
     })
 
-    it('matches / for ai prompt without modifiers', () => {
+    it('matches Alt+/ for ai prompt without stealing Ctrl+/ comment', () => {
         assert.equal(
-            matchesBinding({key: '/', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false} as KeyboardEvent, '/'),
+            matchesBinding({key: '/', ctrlKey: false, metaKey: false, altKey: true, shiftKey: false} as KeyboardEvent, 'Alt+/'),
             true,
         )
+        assert.equal(
+            matchesBinding({key: '/', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false} as KeyboardEvent, 'Alt+/'),
+            false,
+        )
+        assert.equal(
+            matchesBinding({key: '/', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false} as KeyboardEvent, 'Alt+/'),
+            false,
+        )
+    })
+
+    it('detects xterm as terminal target so / is not stolen for AI prompt', () => {
+        const host = {closest: (sel: string) => (sel === '.xterm' ? {} : null)} as unknown as HTMLElement
+        assert.equal(isTerminalTarget(host), true)
+        assert.equal(isTerminalTarget(null), false)
     })
 })
 

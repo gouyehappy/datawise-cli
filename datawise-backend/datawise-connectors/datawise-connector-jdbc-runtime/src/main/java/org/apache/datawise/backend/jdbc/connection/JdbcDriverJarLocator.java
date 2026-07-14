@@ -34,12 +34,12 @@ public final class JdbcDriverJarLocator {
         return driversDir.resolve("hive");
     }
 
-    /** Finds exact or compatible local JAR for requested Maven coordinate. */
+    /**
+     * Finds a local JAR for the requested Maven coordinate.
+     * Prefer exact filename / same-version compatible artifacts; never silently use a
+     * different version of the same driver class (e.g. ES 8.17 when 7.3 was requested).
+     */
     public Optional<Path> findLocalJar(JdbcMavenCoordinate coordinate, String driverClass) throws IOException {
-        Optional<Path> byDriverClass = findLocalJarByDriverClass(driverClass);
-        if (byDriverClass.isPresent()) {
-            return byDriverClass;
-        }
         Path exact = driversDir.resolve(coordinate.fileName());
         if (Files.isRegularFile(exact)) {
             return Optional.of(exact);
@@ -48,23 +48,22 @@ public final class JdbcDriverJarLocator {
         if (Files.isRegularFile(hiveExact)) {
             return Optional.of(hiveExact);
         }
+
         Set<String> acceptable = JdbcDriverCoordinateSupport.compatibleArtifacts(coordinate.artifactId());
-        if (acceptable.isEmpty()) {
-            return findLocalJarByDriverClass(driverClass);
-        }
-        for (Path jar : listJarPaths()) {
-            JdbcMavenCoordinate local = JdbcDriverCoordinateSupport.tryParseJarFileName(jar.getFileName().toString());
-            if (local == null || !acceptable.contains(local.artifactId())) {
-                continue;
+        if (!acceptable.isEmpty()) {
+            Optional<Path> sameVersion = findCompatibleJar(coordinate, acceptable, true);
+            if (sameVersion.isPresent()) {
+                return sameVersion;
             }
-            log.info(
-                    "Using compatible local JDBC driver {} instead of requested {}",
-                    jar.getFileName(),
-                    coordinate.fileName()
-            );
-            return Optional.of(jar);
+            Optional<Path> anyCompatible = findCompatibleJar(coordinate, acceptable, false);
+            if (anyCompatible.isPresent()) {
+                return anyCompatible;
+            }
         }
-        return Optional.empty();
+
+        // Last resort: probe jars that look like this artifact family. Skip wrong versions.
+        // Filename filter first so we do not Class.forName every JAR under config/drivers/.
+        return findLocalJarByDriverClass(driverClass, coordinate, acceptable);
     }
 
     public List<String> listCachedJarNames() throws IOException {
@@ -82,16 +81,62 @@ public final class JdbcDriverJarLocator {
         return List.copyOf(names);
     }
 
-    private Optional<Path> findLocalJarByDriverClass(String driverClass) throws IOException {
+    private Optional<Path> findCompatibleJar(
+            JdbcMavenCoordinate coordinate,
+            Set<String> acceptable,
+            boolean requireSameVersion
+    ) throws IOException {
+        for (Path jar : listJarPaths()) {
+            JdbcMavenCoordinate local = JdbcDriverCoordinateSupport.tryParseJarFileName(jar.getFileName().toString());
+            if (local == null || !acceptable.contains(local.artifactId())) {
+                continue;
+            }
+            if (requireSameVersion && !coordinate.version().equals(local.version())) {
+                continue;
+            }
+            log.info(
+                    "Using compatible local JDBC driver {} instead of requested {}",
+                    jar.getFileName(),
+                    coordinate.fileName()
+            );
+            return Optional.of(jar);
+        }
+        return Optional.empty();
+    }
+
+    private static boolean isSameDriverFamily(
+            JdbcMavenCoordinate requested,
+            JdbcMavenCoordinate local,
+            Set<String> acceptable
+    ) {
+        if (requested.artifactId().equals(local.artifactId())) {
+            return true;
+        }
+        return !acceptable.isEmpty() && acceptable.contains(local.artifactId());
+    }
+
+    private Optional<Path> findLocalJarByDriverClass(
+            String driverClass,
+            JdbcMavenCoordinate coordinate,
+            Set<String> acceptable
+    ) throws IOException {
         if (driverClass == null || driverClass.isBlank()) {
             return Optional.empty();
         }
         String trimmed = driverClass.trim();
         for (Path jar : listJarPaths()) {
-            if (jarContainsDriverClass(jar, trimmed)) {
-                log.info("Using local JDBC driver {} matching driver class {}", jar.getFileName(), trimmed);
-                return Optional.of(jar);
+            JdbcMavenCoordinate local = JdbcDriverCoordinateSupport.tryParseJarFileName(jar.getFileName().toString());
+            if (local == null || !isSameDriverFamily(coordinate, local, acceptable)) {
+                continue;
             }
+            if (!coordinate.version().equals(local.version())) {
+                continue;
+            }
+            if (!jarContainsDriverClass(jar, trimmed)) {
+                continue;
+            }
+            log.info("Using local JDBC driver {} matching driver class {}", jar.getFileName(), trimmed);
+            return Optional.of(jar);
         }
         return Optional.empty();
     }

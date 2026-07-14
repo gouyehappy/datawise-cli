@@ -18,8 +18,8 @@ import {currentLocale} from '@/i18n'
 import {isDesktopApp} from '@/features/layout/services/desktop-chrome'
 import ports from '../../runtime-ports.json'
 
-const DEV_BACKEND_ENDPOINT = `127.0.0.1:${ports.backend}`
-const PACKAGED_BACKEND_ENDPOINT = `127.0.0.1:${ports.backendPackaged}`
+const DEV_BACKEND_ENDPOINT = `127.0.0.1:${ports.dev.backend}`
+const PACKAGED_BACKEND_ENDPOINT = `127.0.0.1:${ports.desktop.backend}`
 const SPLASH_PROGRESS_STEP_MS = 850
 const SPLASH_BAR_TRANSITION_MS = 720
 const SPLASH_WAIT_BAR_TIMEOUT_MS = 2_500

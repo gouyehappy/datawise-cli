@@ -15,8 +15,8 @@ const tabComponent = computed(() => (activeTab.value ? resolveWorkspaceTab(activ
 const showWelcome = computed(() => !activeTab.value || !tabComponent.value)
 const showActiveTab = computed(() => Boolean(activeTab.value && tabComponent.value))
 
-/** SQL 控制台含 Monaco 实例，排除缓存以降低内存；KeepAlive 容器需常驻以免其它 Tab 缓存被清空 */
-const KEEPALIVE_EXCLUDE = ['SqlConsoleTab']
+/** SQL 控制台 / 快捷命令编辑：避免 KeepAlive 复用同类型异步组件导致空白页。SSH 终端保留缓存，切 Tab 不断开。 */
+const KEEPALIVE_EXCLUDE = ['SqlConsoleTab', 'SshScriptRecordTab']
 
 function reconcileBrokenActiveTab() {
     const tab = workspace.activeTab

@@ -44,9 +44,8 @@ async function onResolveDriver() {
   resolveMessage.value = null
   try {
     const result = await resolveJdbcDriver(mavenCoordinates, driverClass)
-    if (result.mavenCoordinates && result.mavenCoordinates !== mavenCoordinates) {
-      props.form.driver = result.mavenCoordinates
-    }
+    // Do not rewrite form.driver from the resolve response — backend jar-name remapping
+    // used to snap elasticsearch 7.3.0 back to a locally cached 8.x coordinate.
     resolveOk.value = true
     resolveMessage.value = result.cached
         ? t('connection.driverResolveCached')

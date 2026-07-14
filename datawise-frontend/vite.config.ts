@@ -15,7 +15,7 @@ import {electronBuildPlugin} from './vite/electron-build-plugin'
 import ports from './runtime-ports.json' with {type: 'json'}
 
 const enableElectron = process.env.ELECTRON === 'true'
-const backendOrigin = `http://127.0.0.1:${ports.backend}`
+const backendOrigin = `http://127.0.0.1:${ports.dev.backend}`
 const projectRoot = dirname(fileURLToPath(import.meta.url))
 
 function copyElectronStaticAssets() {
@@ -105,7 +105,7 @@ export default defineConfig(async () => {
         },
         server: {
             host: '127.0.0.1',
-            port: ports.frontendDev,
+            port: ports.dev.frontend,
             strictPort: true,
             fs: {
                 // sql-editor 在 frontend 包外，Worker 与 alias 需读取 ../sql-editor

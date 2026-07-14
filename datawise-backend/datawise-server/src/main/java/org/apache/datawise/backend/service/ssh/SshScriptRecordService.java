@@ -7,7 +7,9 @@ import org.apache.datawise.backend.service.ConnectionVisibilityService;
 import org.apache.datawise.backend.service.UserAccountService;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -36,14 +38,42 @@ public class SshScriptRecordService {
         List<SshScriptRecord> existing = recordStore.listAll(userId, connectionId);
         long now = System.currentTimeMillis();
         List<SshScriptRecord> ensured = SshScriptRecordBootstrap.ensureDefaults(existing, now);
-        if (ensured.size() != existing.size()) {
+        persistBootstrapChanges(userId, connectionId, existing, ensured);
+        return sortForDisplay(ensured);
+    }
+
+    private void persistBootstrapChanges(
+            long userId,
+            String connectionId,
+            List<SshScriptRecord> existing,
+            List<SshScriptRecord> ensured
+    ) {
+        if (existing.isEmpty() && !ensured.isEmpty()) {
             for (SshScriptRecord record : ensured) {
-                if (existing.stream().noneMatch(entry -> record.getId().equals(entry.getId()))) {
-                    recordStore.upsert(userId, connectionId, record);
-                }
+                recordStore.upsert(userId, connectionId, record);
+            }
+            return;
+        }
+        Map<String, SshScriptRecord> before = new LinkedHashMap<>();
+        for (SshScriptRecord record : existing) {
+            if (record != null && record.getId() != null) {
+                before.put(record.getId(), record);
             }
         }
-        return sortForDisplay(ensured);
+        for (SshScriptRecord record : ensured) {
+            if (record == null || record.getId() == null) {
+                continue;
+            }
+            SshScriptRecord previous = before.get(record.getId());
+            String previousHtml = previous != null ? previous.getContentHtml() : null;
+            String nextHtml = record.getContentHtml();
+            boolean htmlRepaired = (previousHtml == null || previousHtml.isBlank())
+                    && nextHtml != null
+                    && !nextHtml.isBlank();
+            if (previous == null || htmlRepaired) {
+                recordStore.upsert(userId, connectionId, record);
+            }
+        }
     }
 
     private static List<SshScriptRecord> sortForDisplay(List<SshScriptRecord> records) {

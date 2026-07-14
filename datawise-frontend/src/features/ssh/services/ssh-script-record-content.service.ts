@@ -1,25 +1,47 @@
 import {htmlToPlainText} from '@/features/ssh/services/ssh-html-text.service'
 
-function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
+/** Detect legacy rich-text / pre-wrapped HTML records. */
+export function looksLikeStoredHtml(value: string): boolean {
+    const trimmed = value?.trim() ?? ''
+    if (!trimmed) return false
+    return /^<[a-z!/?]/i.test(trimmed) || /<\/(?:p|div|pre|span|br|li|h[1-6]|ul|ol)\s*>/i.test(trimmed)
 }
 
-/** 从已存 HTML 读取命令纯文本（兼容旧富文本记录） */
+/** Normalize any stored payload (plain or legacy HTML) to editable command text. */
+export function toPlainCommandText(stored: string): string {
+    if (!stored) return ''
+    if (looksLikeStoredHtml(stored)) {
+        return htmlToPlainText(stored)
+    }
+    return stored.replace(/\r\n/g, '\n')
+}
+
+/** Persist command text as plain text (no HTML wrapper). */
+export function toStoredCommandText(text: string): string {
+    return (text ?? '').replace(/\r\n/g, '\n')
+}
+
+/** @deprecated Use {@link toPlainCommandText} */
 export function recordHtmlToCommandText(html: string): string {
-    return htmlToPlainText(html)
+    return toPlainCommandText(html)
 }
 
-/** 保存为 pre 块，避免富文本段落丢换行 */
+/** @deprecated Use {@link toStoredCommandText} — kept for call-site compatibility. */
 export function commandTextToRecordHtml(text: string): string {
-    const normalized = text.replace(/\r\n/g, '\n')
-    if (!normalized.trim()) return ''
-    return `<pre>${escapeHtml(normalized)}</pre>`
+    return toStoredCommandText(text)
 }
 
 export const SSH_COMMAND_TEMPLATE = `@paste
 # 标题
 command here
 `
+
+export const SSH_COMMAND_COMPLETIONS = [
+    {label: '@run', insertText: '@run\n', detail: 'Run each command in the terminal'},
+    {label: '@paste', insertText: '@paste\n', detail: 'Paste commands without executing'},
+    {label: '# title', insertText: '# ${1:标题}\n', detail: 'Command label for quick ops'},
+    {label: '!run', insertText: '!run', detail: 'Override this entry to run'},
+    {label: '!paste', insertText: '!paste', detail: 'Override this entry to paste'},
+    {label: '{{appId}}', insertText: '{{appId}}', detail: 'YARN application id parameter'},
+    {label: '{{topic}}', insertText: '{{topic}}', detail: 'Kafka topic parameter'},
+] as const

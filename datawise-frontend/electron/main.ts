@@ -3,7 +3,7 @@
  *
  * 职责：
  *   - 创建原生窗口 BrowserWindow
- *   - 开发模式：加载 Vite 开发服（见 runtime-ports.json → frontendDev）
+ *   - 开发模式：加载 Vite 开发服（见 runtime-ports.json → dev.frontend）
  *   - 打包后：加载 dist/index.html 静态文件
  *   - Windows/Linux：无边框 + 应用内自定义标题栏
  *   - macOS：hiddenInset + 应用内标题栏（保留系统交通灯）

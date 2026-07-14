@@ -84,16 +84,16 @@ function stopBackend() {
         log('dev-stop', `stopped backend pid ${pid}`)
     }
 
-    for (const pid of findListeningPids(ports.backend)) {
+    for (const pid of findListeningPids(ports.dev.backend)) {
         killPidTree(pid)
-        log('dev-stop', `stopped listener on :${ports.backend} (pid ${pid})`)
+        log('dev-stop', `stopped listener on :${ports.dev.backend} (pid ${pid})`)
     }
 }
 
 function stopFrontendDevServer() {
-    for (const pid of findListeningPids(ports.frontendDev)) {
+    for (const pid of findListeningPids(ports.dev.frontend)) {
         killPidTree(pid)
-        log('dev-stop', `stopped listener on :${ports.frontendDev} (pid ${pid})`)
+        log('dev-stop', `stopped listener on :${ports.dev.frontend} (pid ${pid})`)
     }
 }
 

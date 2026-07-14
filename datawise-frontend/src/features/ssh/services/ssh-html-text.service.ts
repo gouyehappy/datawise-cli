@@ -1,13 +1,21 @@
 /** 将脚本记录 HTML 转为可发送到终端的纯文本（保留段落换行） */
 export function htmlToPlainText(html: string): string {
-    if (!html.trim()) return ''
+    if (!html?.trim()) return ''
     const htmlWithBreaks = html
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/(p|div|pre|li|h[1-6]|tr)>/gi, '\n')
         .replace(/<\/(td|th)>/gi, '\t')
+
     if (typeof DOMParser !== 'undefined') {
-        const doc = new DOMParser().parseFromString(htmlWithBreaks, 'text/html')
-        return normalizePlainText(doc.body.textContent ?? '')
+        try {
+            const doc = new DOMParser().parseFromString(htmlWithBreaks, 'text/html')
+            const text = doc.body?.textContent ?? doc.documentElement?.textContent
+            if (typeof text === 'string') {
+                return normalizePlainText(text)
+            }
+        } catch {
+            // fall through to tag strip
+        }
     }
     return normalizePlainText(htmlWithBreaks.replace(/<[^>]+>/g, ''))
 }

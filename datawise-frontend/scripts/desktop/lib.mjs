@@ -1,8 +1,9 @@
 /**
- * Shared helpers for desktop packaging scripts.
+ * Shared helpers for desktop packaging (process control + filesystem).
+ * Maven helpers live in ./maven.mjs.
  */
 import {execSync, spawnSync} from 'node:child_process'
-import {cpSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync} from 'node:fs'
+import {cpSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync} from 'node:fs'
 import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {frontendRoot} from './paths.mjs'
@@ -17,10 +18,18 @@ export function sleep(ms) {
     return new Promise((r) => setTimeout(r, ms))
 }
 
-export function isDirectRun() {
+/**
+ * Whether this file is the Node entrypoint.
+ * Pass the caller's `import.meta.url` — using lib's own meta would always be false.
+ */
+export function isDirectRun(importMetaUrl) {
     const entry = process.argv[1]
-    if (!entry) return false
-    return fileURLToPath(import.meta.url) === resolve(entry)
+    if (!entry || !importMetaUrl) return false
+    try {
+        return fileURLToPath(importMetaUrl) === resolve(entry)
+    } catch {
+        return false
+    }
 }
 
 export function run(cmd, args, cwd = frontendRoot) {
@@ -38,18 +47,6 @@ export function run(cmd, args, cwd = frontendRoot) {
 
 export function runNpm(script) {
     run('npm', ['run', script], frontendRoot)
-}
-
-export function runMaven(cwd, goals, projectList) {
-    const args = [...goals]
-    if (projectList) {
-        args.push('-pl', projectList, '-am')
-    }
-    args.push(
-        '-Dmaven.test.skip=true',
-        '-Dmaven.compiler.useIncrementalCompilation=false',
-    )
-    run('mvn', args, cwd)
 }
 
 export function stopDesktopProcesses() {
@@ -148,7 +145,8 @@ export function copyJarFiles(srcDir, destDir, suffix = '.jar') {
     return count
 }
 
-export function resolveServerJar(serverTargetDir) {
+/** Locate the newest datawise-server-*.jar under the packaging target dir (no content validation). */
+export function findServerJar(serverTargetDir) {
     if (!existsSync(serverTargetDir)) {
         throw new Error(`Missing ${serverTargetDir} — run Maven build for datawise-server first`)
     }
@@ -156,15 +154,63 @@ export function resolveServerJar(serverTargetDir) {
         .filter((name) =>
             name.startsWith('datawise-server-')
             && name.endsWith('.jar')
-            && !name.endsWith('.jar.original'),
+            && !name.endsWith('.jar.original')
+            && !name.includes('-sources')
+            && !name.includes('-javadoc')
+            && !name.includes('-plain'),
         )
-        .sort()
+        .map((name) => join(serverTargetDir, name))
+        .sort((a, b) => {
+            // Prefer newest mtime, then longer name (version) as tiebreaker.
+            try {
+                return statSync(b).mtimeMs - statSync(a).mtimeMs
+            } catch {
+                return b.localeCompare(a)
+            }
+        })
     if (!candidates.length) {
         throw new Error(`No datawise-server-*.jar in ${serverTargetDir}`)
     }
-    return join(serverTargetDir, candidates[candidates.length - 1])
+    return candidates[0]
 }
 
-if (isDirectRun() && process.argv.includes('--stop-processes')) {
+/**
+ * Locate server JAR and validate Spring Boot contents (used after Maven packaging).
+ */
+export function resolveServerJar(serverTargetDir) {
+    const jar = findServerJar(serverTargetDir)
+    assertSpringBootJarHasMainClass(jar, 'org/apache/datawise/backend/DatawiseBackendApplication.class')
+    return jar
+}
+
+/**
+ * Fail fast if the boot jar is incomplete (corrupt package or incomplete build).
+ */
+export function assertSpringBootJarHasMainClass(jarPath, classPathInJar) {
+    const listing = execSync(`jar tf "${jarPath}"`, {
+        encoding: 'utf8',
+        windowsHide: true,
+        maxBuffer: 64 * 1024 * 1024,
+    })
+    const bootClassEntry = `BOOT-INF/classes/${classPathInJar.replace(/^\/+/, '')}`
+    if (!listing.split(/\r?\n/).includes(bootClassEntry)) {
+        throw new Error(
+            `Broken Spring Boot JAR: missing ${bootClassEntry} in ${jarPath}. ` +
+                'Re-run: npm run build:backend (writes to target-desktop/, separate from IDE target/).',
+        )
+    }
+    const classCount = listing.split(/\r?\n/).filter(
+        (line) => line.startsWith('BOOT-INF/classes/') && line.endsWith('.class'),
+    ).length
+    if (classCount < 20) {
+        throw new Error(
+            `Broken Spring Boot JAR: only ${classCount} classes in BOOT-INF/classes (${jarPath}). ` +
+                'Re-run: npm run build:backend',
+        )
+    }
+    log('desktop', `validated boot jar (${classCount} classes): ${jarPath}`)
+}
+
+if (isDirectRun(import.meta.url) && process.argv.includes('--stop-processes')) {
     stopDesktopProcesses()
 }

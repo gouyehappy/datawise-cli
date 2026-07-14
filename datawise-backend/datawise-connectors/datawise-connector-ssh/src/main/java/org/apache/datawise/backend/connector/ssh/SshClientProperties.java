@@ -12,6 +12,13 @@ public class SshClientProperties {
     private String knownHostsPath;
     private int idleTtlMinutes = 30;
     private int connectTimeoutMs = 15_000;
+    /**
+     * SSH protocol keepalive interval in ms ({@code ServerAliveInterval}). Zero disables.
+     * Prevents idle NAT/firewall drops on interactive shells.
+     */
+    private int serverAliveIntervalMs = 15_000;
+    /** Consecutive unanswered keepalives before JSch treats the session as dead. */
+    private int serverAliveCountMax = 3;
     /** When true, allow legacy ssh-rsa host keys and related algorithms for older servers. */
     private boolean allowLegacyAlgorithms = true;
 
@@ -61,6 +68,22 @@ public class SshClientProperties {
 
     public void setConnectTimeoutMs(int connectTimeoutMs) {
         this.connectTimeoutMs = Math.max(1_000, connectTimeoutMs);
+    }
+
+    public int getServerAliveIntervalMs() {
+        return serverAliveIntervalMs;
+    }
+
+    public void setServerAliveIntervalMs(int serverAliveIntervalMs) {
+        this.serverAliveIntervalMs = Math.max(0, serverAliveIntervalMs);
+    }
+
+    public int getServerAliveCountMax() {
+        return serverAliveCountMax;
+    }
+
+    public void setServerAliveCountMax(int serverAliveCountMax) {
+        this.serverAliveCountMax = Math.max(1, serverAliveCountMax);
     }
 
     void configureKnownHosts(JSch jsch) throws JSchException {

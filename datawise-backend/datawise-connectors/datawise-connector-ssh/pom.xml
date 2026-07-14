@@ -44,6 +44,16 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
+                    <!-- Library jar for datawise-server: shell runtime, no SPI (avoids ServiceLoader pollution). -->
+                    <execution>
+                        <id>default-jar</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>META-INF/services/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <!-- Plugin jar → config/plugins: full contents including SPI. -->
                     <execution>
                         <id>plugin-jar</id>
                         <phase>package</phase>

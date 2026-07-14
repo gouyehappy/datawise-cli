@@ -53,21 +53,14 @@ public class JdbcDriverService {
             boolean downloaded,
             boolean cached
     ) {
-        String resolvedCoordinates = coordinatesFromJar(requestedCoordinates, loaded.jarPath());
+        // Keep the coordinates the user/API asked for. Deriving them from the jar filename
+        // previously rewrote e.g. elasticsearch 7.3.0 → 8.17.5 when a wrong local jar matched.
         return new JdbcDriverResolveResult(
-                resolvedCoordinates,
+                requestedCoordinates,
                 driverClass,
                 loaded.jarPath().toString(),
                 downloaded,
                 cached
         );
-    }
-
-    private static String coordinatesFromJar(String requestedCoordinates, java.nio.file.Path jarPath) {
-        try {
-            return JdbcDriverLoader.normalizeDriverInput(jarPath.getFileName().toString());
-        } catch (IllegalArgumentException ex) {
-            return requestedCoordinates;
-        }
     }
 }

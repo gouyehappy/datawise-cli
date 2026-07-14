@@ -6,12 +6,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Seeds built-in quick-command records into each SSH connection's script store on first access.
- * Users may edit or delete them like any other record; missing defaults are re-added on list.
+ * Users may edit or delete them like any other record. Built-ins are only re-added when the store
+ * is completely empty; deleted built-ins stay deleted. Blank built-in content is repaired in place.
  */
 final class SshScriptRecordBootstrap {
 
@@ -21,25 +20,40 @@ final class SshScriptRecordBootstrap {
     }
 
     static List<SshScriptRecord> ensureDefaults(List<SshScriptRecord> existing, long now) {
-        Map<String, SshScriptRecord> merged = new LinkedHashMap<>();
-        if (existing != null) {
-            for (SshScriptRecord record : existing) {
-                if (record != null && record.getId() != null && !record.getId().isBlank()) {
-                    merged.put(record.getId(), record);
-                }
-            }
+        if (existing == null || existing.isEmpty()) {
+            return new ArrayList<>(builtInRecords(now));
         }
-        Set<String> present = merged.keySet();
+
+        Map<String, String> defaultHtmlById = new LinkedHashMap<>();
         for (SshScriptRecord defaults : builtInRecords(now)) {
-            if (!present.contains(defaults.getId())) {
-                merged.put(defaults.getId(), defaults);
-            }
+            defaultHtmlById.put(defaults.getId(), defaults.getContentHtml());
         }
-        return new ArrayList<>(merged.values());
+
+        List<SshScriptRecord> repaired = new ArrayList<>(existing.size());
+        boolean changed = false;
+        for (SshScriptRecord record : existing) {
+            if (record == null || record.getId() == null || record.getId().isBlank()) {
+                continue;
+            }
+            String defaultHtml = defaultHtmlById.get(record.getId());
+            if (defaultHtml != null && isBlank(record.getContentHtml())) {
+                record.setContentHtml(defaultHtml);
+                if (record.getUpdatedAt() <= 0) {
+                    record.setUpdatedAt(now);
+                }
+                changed = true;
+            }
+            repaired.add(record);
+        }
+        return changed ? repaired : existing;
     }
 
     static boolean isBuiltInId(String recordId) {
         return recordId != null && recordId.startsWith(BUILTIN_PREFIX);
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private static List<SshScriptRecord> builtInRecords(long now) {
@@ -111,19 +125,9 @@ final class SshScriptRecordBootstrap {
         SshScriptRecord record = new SshScriptRecord();
         record.setId(id);
         record.setTitle(title);
-        record.setContentHtml(toPreHtml(plainText.strip() + "\n"));
+        // Store plain text (contentHtml is a legacy field name).
+        record.setContentHtml(plainText.strip() + "\n");
         record.setUpdatedAt(updatedAt);
         return record;
-    }
-
-    private static String toPreHtml(String text) {
-        return "<pre>" + escapeHtml(text) + "</pre>";
-    }
-
-    private static String escapeHtml(String text) {
-        return text
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
     }
 }

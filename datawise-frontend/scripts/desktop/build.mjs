@@ -2,7 +2,7 @@
  * Build DataWise desktop executable (Windows installer + portable).
  *
  * Usage:
- *   node scripts/desktop/build.mjs [--clean] [--skip-backend] [--dir]
+ *   node scripts/desktop/build.mjs [--clean] [--skip-backend] [--dir] [--ide-target]
  *
  * npm scripts:
  *   dist:desktop        full build (backend + electron + NSIS/portable)
@@ -13,7 +13,7 @@ import {existsSync, readFileSync} from 'node:fs'
 import {join} from 'node:path'
 import {spawnSync} from 'node:child_process'
 import {frontendRoot, outputFlagFile} from './paths.mjs'
-import {log, runNpm, stopDesktopProcesses} from './lib.mjs'
+import {log, runNpm} from './lib.mjs'
 import {bundleBackend} from './bundle-backend.mjs'
 import {cleanDesktop} from './clean.mjs'
 
@@ -22,6 +22,7 @@ function parseArgs(argv) {
         clean: argv.includes('--clean'),
         skipBackend: argv.includes('--skip-backend'),
         dir: argv.includes('--dir'),
+        includeIdeTarget: argv.includes('--ide-target'),
     }
 }
 
@@ -57,16 +58,17 @@ function runElectronBuilder(extraArgs) {
 async function main() {
     const opts = parseArgs(process.argv.slice(2))
 
-    stopDesktopProcesses()
-
+    // Optional full wipe. Process stop happens inside clean / Maven purge — not here.
     if (opts.clean) {
-        await cleanDesktop('all')
+        await cleanDesktop('all', {includeIdeTarget: opts.includeIdeTarget})
     }
 
+    // Backend JAR + JRE + plugins → resources/desktop (Maven skips tests)
     if (!opts.skipBackend) {
         await bundleBackend()
     }
 
+    // Electron frontend + installer / unpacked dir
     await cleanDesktop('release')
     runNpm('build:electron')
 

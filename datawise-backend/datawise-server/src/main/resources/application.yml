@@ -1,10 +1,9 @@
-server:
-  # 与 datawise-frontend/runtime-ports.json → backend 保持一致
-  port: 18421
-
 spring:
   application:
     name: datawise-backend
+  profiles:
+    # mvn spring-boot:run / IDE 默认走 dev；Electron 打包显式 --spring.profiles.active=desktop
+    default: dev
   main:
     allow-bean-definition-overriding: true
     allow-circular-references: true
@@ -66,6 +65,8 @@ datawise:
   connectors:
     # 可选数据源 connector 插件目录（相对 datawise.config.dir）
     plugins-dir: plugins
+    # AppCDS 训练可设 false，避免把插件 ClassLoader 类打进 jsa 导致运行时刷屏
+    load-plugins: true
   query:
     # 服务端默认最大返回行数；0 表示不限制（客户端可在设置中进一步收紧）
     max-result-rows: 0
@@ -89,6 +90,11 @@ datawise:
     idle-evict-enabled: true
     idle-evict-ms: 900000
     idle-evict-poll-ms: 60000
+  ssh:
+    # 交互 Shell 空闲 keepalive（毫秒）；0 关闭。避免 NAT/防火墙过早掐断 SSH。
+    server-alive-interval-ms: 15000
+    server-alive-count-max: 3
+    idle-ttl-minutes: 30
   explorer:
     schema-session:
       # Explorer 懒加载树复用的 JDBC schema 会话空闲回收时间（毫秒）

@@ -1,7 +1,12 @@
 import {onMounted, onUnmounted} from 'vue'
 import {SHORTCUT_DEFINITIONS} from '@/core/shortcuts/definitions'
 import {executeShortcutAction} from '@/core/shortcuts/execute-action'
-import {isEditableTarget, matchesBinding, stripTrailingShortcutHint} from '@/core/shortcuts/shortcut.service'
+import {
+    isEditableTarget,
+    isTerminalTarget,
+    matchesBinding,
+    stripTrailingShortcutHint,
+} from '@/core/shortcuts/shortcut.service'
 import type {ShortcutActionId} from '@/core/shortcuts/types'
 import {useShortcutSettingsStore} from '@/features/settings/stores/shortcut-settings-store'
 import {useAppPalette} from '@/features/layout/composables/useAppPalette'
@@ -36,6 +41,12 @@ export function useAppShortcutListener() {
         if ((event.ctrlKey || event.metaKey) && key === 'k') {
             event.preventDefault()
             togglePalette()
+            return
+        }
+
+        // SSH / xterm: never steal `/`, Ctrl+R, etc. — xterm uses a textarea that would
+        // otherwise match EDITABLE_TARGET_SHORTCUTS and swallow the key before the PTY.
+        if (isTerminalTarget(event.target)) {
             return
         }
 

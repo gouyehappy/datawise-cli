@@ -21,7 +21,7 @@ import {
 } from './runtime-log'
 import ports from '../runtime-ports.json' with {type: 'json'}
 
-const BACKEND_PACKAGED_PORT = ports.backendPackaged
+const BACKEND_PACKAGED_PORT = ports.desktop.backend
 const HEALTH_PATH = '/api/health'
 const STARTUP_TIMEOUT_MS = 120_000
 const HEALTH_POLL_MS = 150
@@ -322,7 +322,9 @@ function buildJvmArgs(): string[] {
     ]
     const cdsArchive = resolveCdsArchivePath()
     if (cdsArchive) {
-        args.push(`-XX:SharedArchiveFile=${cdsArchive}`)
+        // AppCDS 与 plugins/*.jar 自定义 ClassLoader 并存时会刷 Duplicated unregistered class；
+        // 这不影响功能，只保留 error 级（例如 archive 映射失败）。
+        args.push(`-XX:SharedArchiveFile=${cdsArchive}`, '-Xlog:cds=error')
     }
     return args
 }

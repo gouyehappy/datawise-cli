@@ -25,7 +25,7 @@ function log(tag, message) {
 }
 
 async function waitForBackend(timeoutMs = 120_000) {
-    const url = `http://127.0.0.1:${ports.backend}/api/health`
+    const url = `http://127.0.0.1:${ports.dev.backend}/api/health`
     const started = Date.now()
     while (Date.now() - started < timeoutMs) {
         try {
@@ -41,7 +41,7 @@ async function waitForBackend(timeoutMs = 120_000) {
 
 async function isBackendReady() {
     try {
-        const res = await fetch(`http://127.0.0.1:${ports.backend}/api/health`, {
+        const res = await fetch(`http://127.0.0.1:${ports.dev.backend}/api/health`, {
             signal: AbortSignal.timeout(1_500),
         })
         return res.ok
@@ -102,7 +102,7 @@ function startBackend() {
 
 async function main() {
     if (await isBackendReady()) {
-        log('dev-start', `backend already listening on :${ports.backend}`)
+        log('dev-start', `backend already listening on :${ports.dev.backend}`)
         log(
             'dev-start',
             'after backend Java changes run: npm run stop:dev && npm run dev:all',
@@ -110,7 +110,7 @@ async function main() {
     } else {
         await compileBackend()
         startBackend()
-        log('dev-start', `waiting for backend on :${ports.backend}...`)
+        log('dev-start', `waiting for backend on :${ports.dev.backend}...`)
         const ready = await waitForBackend()
         if (!ready) {
             console.error(

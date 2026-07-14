@@ -1,22 +1,26 @@
 /**
  * Clean desktop build outputs.
  *
- *   --release   release/ only (default when called from build.mjs)
- *   --all       frontend artifacts + resources/desktop + mvn clean
+ *   --release      release/ only (default when called from build.mjs)
+ *   --all          frontend artifacts + resources/desktop + target-desktop/
+ *   --ide-target   with --all, also purge IDE `target/` under datawise-backend
  */
 import {existsSync, mkdirSync, readdirSync, writeFileSync} from 'node:fs'
 import {join} from 'node:path'
 import {
-    backendRoot,
     desktopBundleRoot,
     frontendRoot,
     outputFlagFile,
     releaseDir,
     winUnpackedDir,
 } from './paths.mjs'
-import {log, removePathRobust, run, stopDesktopProcesses, isDirectRun} from './lib.mjs'
+import {isDirectRun, log, removePathRobust, stopDesktopProcesses} from './lib.mjs'
+import {cleanBackendMaven} from './maven.mjs'
 
 async function cleanReleaseDir() {
+    // Release wipe may hit locks from a running desktop app.
+    stopDesktopProcesses()
+
     if (!existsSync(winUnpackedDir)) {
         writeFileSync(outputFlagFile, 'release', 'utf8')
         log('clean', 'ready: release/')
@@ -24,7 +28,10 @@ async function cleanReleaseDir() {
     }
 
     try {
-        await removePathRobust(winUnpackedDir, {tag: 'clean'})
+        await removePathRobust(winUnpackedDir, {
+            tag: 'clean',
+            onRetry: stopDesktopProcesses,
+        })
         writeFileSync(outputFlagFile, 'release', 'utf8')
         log('clean', 'ready: release/')
         return 'release'
@@ -38,7 +45,7 @@ async function cleanReleaseDir() {
     }
 }
 
-async function cleanAll() {
+async function cleanAll({includeIdeTarget = false} = {}) {
     stopDesktopProcesses()
 
     const paths = [
@@ -63,22 +70,30 @@ async function cleanAll() {
         })
     }
 
-    log('clean', 'running mvn clean in datawise-backend…')
-    run('mvn', ['clean', '-DskipTests'], backendRoot)
-
-    log('clean', 'all build artifacts cleared')
+    // cleanBackendMaven → purgeBackendTargets also stops processes once for target-desktop/.
+    await cleanBackendMaven({includeIdeTarget})
+    log(
+        'clean',
+        includeIdeTarget
+            ? 'all build artifacts cleared (including IDE target/)'
+            : 'all packaging artifacts cleared (IDE target/ left intact)',
+    )
 }
 
-export async function cleanDesktop(mode = 'release') {
-    stopDesktopProcesses()
+/**
+ * @param {'release'|'all'} [mode]
+ * @param {{includeIdeTarget?: boolean}} [options]
+ */
+export async function cleanDesktop(mode = 'release', {includeIdeTarget = false} = {}) {
     if (mode === 'all') {
-        await cleanAll()
+        await cleanAll({includeIdeTarget})
         return 'release'
     }
     return cleanReleaseDir()
 }
 
-if (isDirectRun()) {
+if (isDirectRun(import.meta.url)) {
     const mode = process.argv.includes('--all') ? 'all' : 'release'
-    await cleanDesktop(mode)
+    const includeIdeTarget = process.argv.includes('--ide-target')
+    await cleanDesktop(mode, {includeIdeTarget})
 }

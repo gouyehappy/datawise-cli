@@ -9,7 +9,8 @@ cd datawise-backend
 mvn spring-boot:run -pl datawise-server -am
 ```
 
-- 地址：`http://localhost:18421`（与 `datawise-frontend/runtime-ports.json` 中 `backend` 一致）
+- 地址：`http://localhost:18421`（`spring.profiles.default=dev` / `application-dev.yml`；与 `runtime-ports.json` → `dev.backend` 一致）
+- Electron 内嵌后端：`http://127.0.0.1:18423`（`profile=desktop` / `application-desktop.yml`）
 - 健康检查：`GET /api/health`
 - 配置目录：仓库根 `config/`
 

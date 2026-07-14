@@ -28,7 +28,7 @@ const EXPLORER_CONTEXT_MENU_PERMISSION_BY_ID: Record<string, FeaturePermissionKe
     'open-kafka-consumer-groups': FeaturePermission.WorkbenchExplorerContextOpen,
     'new-ssh-script-record': FeaturePermission.WorkbenchExplorerContextEdit,
     'refresh-ssh-script-records': FeaturePermission.WorkbenchExplorerContextOpen,
-    'delete-ssh-script-record': FeaturePermission.WorkbenchExplorerContextDangerous,
+    'delete-ssh-script-record': FeaturePermission.WorkbenchExplorerContextEdit,
     'rename-ssh-script-record': FeaturePermission.WorkbenchExplorerContextEdit,
     'new-ssh-terminal': FeaturePermission.WorkbenchExplorerContextConsole,
 

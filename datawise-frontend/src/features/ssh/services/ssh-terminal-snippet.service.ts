@@ -4,24 +4,32 @@ import {
     listSshScriptRecords,
     saveSshScriptRecord,
 } from '@/features/ssh/services/ssh-script-records.service'
+import {
+    toPlainCommandText,
+    toStoredCommandText,
+} from '@/features/ssh/services/ssh-script-record-content.service'
 
-function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
+/** 终端选区保存为纯文本命令记录。 */
+export function terminalOutputToRecordText(text: string): string {
+    return toStoredCommandText(text.trimEnd() + '\n')
 }
 
-/** 终端纯文本输出转为脚本记录 HTML */
+export function appendTerminalOutputToRecordText(existingStored: string, text: string): string {
+    const block = text.trim()
+    if (!block) return toStoredCommandText(existingStored)
+    const base = toPlainCommandText(existingStored).replace(/\s+$/, '')
+    if (!base) return terminalOutputToRecordText(block)
+    return toStoredCommandText(`${base}\n\n# 终端片段\n${block}\n`)
+}
+
+/** @deprecated Use {@link terminalOutputToRecordText} */
 export function terminalOutputToRecordHtml(text: string): string {
-    return `<pre>${escapeHtml(text)}</pre>`
+    return terminalOutputToRecordText(text)
 }
 
+/** @deprecated Use {@link appendTerminalOutputToRecordText} */
 export function appendTerminalOutputToRecordHtml(existingHtml: string, text: string): string {
-    const block = terminalOutputToRecordHtml(text)
-    const base = existingHtml?.trim()
-    if (!base) return block
-    return `${base}<p><br></p>${block}`
+    return appendTerminalOutputToRecordText(existingHtml, text)
 }
 
 export function defaultTerminalSnippetTitle(now = new Date()): string {
@@ -44,7 +52,7 @@ export async function createScriptRecordFromTerminalSelection(
         throw new Error('EMPTY_SELECTION')
     }
     const record = createEmptySshScriptRecord(`record-${Date.now()}`, title.trim())
-    record.contentHtml = terminalOutputToRecordHtml(trimmed)
+    record.contentHtml = terminalOutputToRecordText(trimmed)
     return saveSshScriptRecord(connectionId, record)
 }
 
@@ -64,7 +72,7 @@ export async function appendTerminalSelectionToScriptRecord(
     }
     return saveSshScriptRecord(connectionId, {
         ...existing,
-        contentHtml: appendTerminalOutputToRecordHtml(existing.contentHtml, trimmed),
+        contentHtml: appendTerminalOutputToRecordText(existing.contentHtml, trimmed),
         updatedAt: Date.now(),
     })
 }

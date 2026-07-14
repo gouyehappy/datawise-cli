@@ -1,7 +1,7 @@
 export default {
     quickOps: {
         title: '快捷操作',
-        hint: '命令来自左侧「快捷命令」；@run 点按执行，@paste 填入终端。分组命令点击展开。',
+        hint: "命令来自左侧「快捷命令」；{'@'}run 点按执行，{'@'}paste 填入终端。分组命令点击展开。",
         commandsEmpty: '在左侧「快捷命令」里新建或编辑',
         searchPlaceholder: '搜索命令…',
         searchEmpty: '没有匹配的命令',
@@ -37,7 +37,7 @@ export default {
     },
     params: {
         title: '填写命令参数',
-        subtitle: '命令中包含 {{参数名}} 占位符，请填写后再执行',
+        subtitle: "命令中包含 {'{'}{'{'}参数名{'}'}{'}'} 占位符，请填写后再执行",
         confirm: '确定',
         required: '请填写所有参数',
     },
@@ -81,7 +81,7 @@ export default {
         savedAt: '已于 {time} 保存',
         hint: '修改后会自动保存，也可按 Ctrl+S 立即保存',
         commandFormatTitle: '命令格式',
-        commandFormatHint: '首行 @run 或 @paste 控制点击行为；# 标题 单独一行，下一行写命令。多条命令会自动分组。',
+        commandFormatHint: "首行 {'@'}run 或 {'@'}paste 控制点击行为；# 标题 单独一行，下一行写命令。多条命令会自动分组。",
         insertTemplate: '插入模板',
         preview: '预览',
         saveSuccess: '记录已保存',

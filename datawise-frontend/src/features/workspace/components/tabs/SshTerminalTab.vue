@@ -1,4 +1,6 @@
 <script setup lang="ts">
+defineOptions({name: 'SshTerminalTab'})
+
 import {computed, nextTick, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import SshTerminalPane from '@/features/terminal/components/SshTerminalPane.vue'
@@ -529,7 +531,7 @@ watch(status, (next) => {
           <DwIcon name="link" size="sm" :stroke-width="1.5"/>
         </IconButton>
         <IconButton
-            v-if="status === 'disconnected' || status === 'error'"
+            v-if="status === 'disconnected' || status === 'error' || status === 'connecting'"
             size="sm"
             :title="t('terminal.sshReconnect')"
             @click="reconnectTerminal"

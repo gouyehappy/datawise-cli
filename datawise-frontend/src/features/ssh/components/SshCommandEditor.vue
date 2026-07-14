@@ -1,37 +1,49 @@
 <script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
+import type * as monaco from 'monaco-editor'
+import MonacoEditor from '@/core/components/MonacoEditor.vue'
 import {parseCommandEntries} from '@/features/ssh/services/ssh-my-commands.service'
 import {SSH_COMMAND_TEMPLATE} from '@/features/ssh/services/ssh-script-record-content.service'
+import {
+    ensureSshCommandMonacoLanguage,
+    SSH_COMMAND_MONACO_LANGUAGE,
+} from '@/features/ssh/services/ssh-command-monaco.language'
+
+ensureSshCommandMonacoLanguage()
 
 const model = defineModel<string>({default: ''})
 
 const props = defineProps<{
   placeholder?: string
+  readonly?: boolean
 }>()
 
 const {t} = useI18n()
 
 const previewEntries = computed(() => parseCommandEntries(model.value ?? '').entries)
 
-function insertTemplate() {
-  const current = model.value ?? ''
-  model.value = current.trim() ? `${current.replace(/\s+$/, '')}\n\n${SSH_COMMAND_TEMPLATE}` : SSH_COMMAND_TEMPLATE
+const editorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
+  minimap: {enabled: false},
+  wordWrap: 'on',
+  lineNumbers: 'on',
+  glyphMargin: false,
+  folding: false,
+  renderLineHighlight: 'line',
+  scrollbar: {
+    verticalScrollbarSize: 10,
+    horizontalScrollbarSize: 10,
+  },
+  suggestOnTriggerCharacters: true,
+  quickSuggestions: {other: true, comments: false, strings: true},
+  ariaLabel: props.placeholder || 'SSH quick commands',
 }
 
-function onKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Tab') return
-  event.preventDefault()
-  const target = event.target
-  if (!(target instanceof HTMLTextAreaElement)) return
-  const start = target.selectionStart ?? 0
-  const end = target.selectionEnd ?? start
-  const value = model.value ?? ''
-  model.value = `${value.slice(0, start)}  ${value.slice(end)}`
-  requestAnimationFrame(() => {
-    target.selectionStart = start + 2
-    target.selectionEnd = start + 2
-  })
+function insertTemplate() {
+  const current = model.value ?? ''
+  model.value = current.trim()
+      ? `${current.replace(/\s+$/, '')}\n\n${SSH_COMMAND_TEMPLATE}`
+      : SSH_COMMAND_TEMPLATE
 }
 </script>
 
@@ -61,13 +73,14 @@ function onKeydown(event: KeyboardEvent) {
       </div>
     </div>
 
-    <textarea
-        v-model="model"
-        class="ssh-command-editor__textarea"
-        spellcheck="false"
-        :placeholder="props.placeholder"
-        @keydown="onKeydown"
-    />
+    <div class="ssh-command-editor__monaco" :class="{'is-readonly': props.readonly}">
+      <MonacoEditor
+          v-model="model"
+          :language="SSH_COMMAND_MONACO_LANGUAGE"
+          :readonly="props.readonly"
+          :extra-options="editorOptions"
+      />
+    </div>
   </div>
 </template>
 
@@ -81,6 +94,7 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 .ssh-command-editor__guide {
+  flex-shrink: 0;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--dw-border) 80%, transparent);
   border-radius: 8px;
@@ -124,6 +138,7 @@ function onKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  flex-shrink: 0;
   padding: 8px 10px;
   border: 1px dashed color-mix(in srgb, #0ea5e9 30%, var(--dw-border));
   border-radius: 8px;
@@ -176,29 +191,16 @@ function onKeydown(event: KeyboardEvent) {
   text-overflow: ellipsis;
 }
 
-.ssh-command-editor__textarea {
+.ssh-command-editor__monaco {
   flex: 1;
-  min-height: 200px;
-  width: 100%;
-  padding: 14px 16px;
+  min-height: 280px;
   border: 1px solid var(--dw-border);
   border-radius: 10px;
-  background: #1a1d24;
-  color: #e5e7eb;
-  font-family: Consolas, 'Cascadia Mono', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.55;
-  resize: none;
-  tab-size: 2;
-  outline: none;
+  overflow: hidden;
+  background: var(--dw-bg-editor);
 }
 
-.ssh-command-editor__textarea:focus {
-  border-color: color-mix(in srgb, var(--dw-primary) 45%, var(--dw-border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dw-primary) 12%, transparent);
-}
-
-.ssh-command-editor__textarea::placeholder {
-  color: #6b7280;
+.ssh-command-editor__monaco.is-readonly {
+  opacity: 0.75;
 }
 </style>

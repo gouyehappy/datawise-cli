@@ -34,6 +34,7 @@ import {
     probeAllConnections,
 } from '@/features/explorer/utils/data-sources'
 import {isConsoleTabDirty} from '@/features/workspace/services/console-tab-dirty'
+import {disposeSshTerminalHandle} from '@/features/terminal/services/ssh-terminal-session.service'
 import {
     replaceConsoleQueryResultAtIndex,
     sumConsoleQueryTotals,
@@ -1343,6 +1344,10 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         const tab = tabs.value.find((t) => t.id === tabId)
         if (!tab?.closable) return
         const idx = tabs.value.findIndex((t) => t.id === tabId)
+        // KeepAlive may cache SSH panes — dispose before removing so shells do not leak.
+        if (tab.type === 'ssh-terminal') {
+            void disposeSshTerminalHandle(tabId)
+        }
         tabs.value.splice(idx, 1)
         delete consoleQueryByTabId.value[tabId]
         if (activeTabId.value === tabId) {

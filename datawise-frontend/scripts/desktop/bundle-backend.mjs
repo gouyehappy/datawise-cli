@@ -1,17 +1,17 @@
 /**
- * Build backend JAR, bundle portable JRE, config template, and connector plugins.
+ * Build backend JAR, portable JRE, config template, and connector plugins.
  *
  * Prerequisites: JAVA_HOME (JDK 17+), Maven.
  * Output: resources/desktop/{backend,config-bundle}
+ *
+ * Maven always skips tests (see maven.mjs).
  */
 import {cpSync, existsSync, mkdirSync, rmSync} from 'node:fs'
 import {join} from 'node:path'
 import {
     backendBundleOut,
-    backendRoot,
     bundleConfigSrc,
     configBundleOut,
-    CONNECTOR_MODULES,
     desktopBundleRoot,
     repoConfig,
     serverTargetDir,
@@ -19,13 +19,13 @@ import {
 import {
     copyDirSync,
     copyJarFiles,
+    findServerJar,
     isDirectRun,
     log,
     removePathRobust,
-    resolveServerJar,
-    runMaven,
     stopDesktopProcesses,
 } from './lib.mjs'
+import {buildDesktopBackendMaven} from './maven.mjs'
 import {buildAppCds} from './build-cds.mjs'
 
 function copyJre(javaHome, dest) {
@@ -40,20 +40,10 @@ function copyJre(javaHome, dest) {
     }
 }
 
-export async function bundleBackend({skipMaven = false} = {}) {
-    stopDesktopProcesses()
-
-    if (!skipMaven) {
-        runMaven(backendRoot, ['clean', 'install'], 'datawise-server')
-        runMaven(backendRoot, ['package'], CONNECTOR_MODULES.join(','))
-    }
-
-    const serverJar = resolveServerJar(serverTargetDir)
-    log('bundle-backend', `using server jar ${serverJar}`)
-
-    stopDesktopProcesses()
+async function assembleBundle(serverJar) {
     await removePathRobust(desktopBundleRoot, {
         tag: 'bundle-backend',
+        // Only stop processes if delete hits a lock — packaging purge already stops earlier.
         onRetry: stopDesktopProcesses,
     })
 
@@ -82,18 +72,39 @@ export async function bundleBackend({skipMaven = false} = {}) {
     for (const sub of ['logs', 'cache/schema', 'scripts', 'ai-checkpoints']) {
         mkdirSync(join(configBundleOut, sub), {recursive: true})
     }
+}
 
+async function optionalAppCds() {
     log('bundle-backend', 'building AppCDS class cache (may take 1–2 min)…')
     try {
         await buildAppCds()
     } catch {
         log('bundle-backend', 'AppCDS skipped — desktop app will still run without class cache')
     }
+}
+
+/**
+ * @param {{skipMaven?: boolean}} [options]
+ */
+export async function bundleBackend({skipMaven = false} = {}) {
+    // 1) Maven: server + connectors → JAR / config/plugins (tests skipped)
+    //    Process stop happens inside purgeBackendTargets during the Maven step.
+    if (!skipMaven) {
+        await buildDesktopBackendMaven()
+    }
+
+    // 2) Stage resources/desktop (existence check only — Maven already validated boot JAR)
+    const serverJar = findServerJar(serverTargetDir)
+    log('bundle-backend', `using server jar ${serverJar}`)
+    await assembleBundle(serverJar)
+
+    // 3) Optional CDS archive for faster JVM startup
+    await optionalAppCds()
 
     log('bundle-backend', `desktop bundle ready at ${desktopBundleRoot}`)
 }
 
-if (isDirectRun()) {
+if (isDirectRun(import.meta.url)) {
     const skipMaven = process.argv.includes('--skip-maven')
     await bundleBackend({skipMaven})
 }

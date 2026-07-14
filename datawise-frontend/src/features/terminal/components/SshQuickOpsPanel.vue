@@ -461,6 +461,11 @@ defineExpose({
   border: 1px solid var(--dw-border);
   border-radius: 10px;
   background: color-mix(in srgb, var(--dw-bg-panel) 92%, transparent);
+  /* Keep the SSH pane tall enough to show menus / scrollback. */
+  max-height: min(240px, 32vh);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .ssh-quick-ops__head {
@@ -534,6 +539,8 @@ defineExpose({
   flex-direction: column;
   gap: 6px;
   padding: 0 10px 8px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .ssh-quick-ops__search {

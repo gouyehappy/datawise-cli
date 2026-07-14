@@ -8,7 +8,7 @@ export default {
     format: '格式化 SQL',
     ai: 'AI 生成 SQL',
     textToSql: '描述查询目标或业务问题，Enter 生成 SQL',
-    aiPlaceholder: '描述查询目标或业务问题，Enter 生成 SQL（/ 快速唤起）',
+    aiPlaceholder: '描述查询目标或业务问题，Enter 生成 SQL（Alt+/ 快速唤起）',
     aiPromptAria: 'AI 查询输入框',
     aiPromptHintLead: '在这里描述你想查的内容',
     aiPromptHintExample: '，如「近 7 天订单量」',

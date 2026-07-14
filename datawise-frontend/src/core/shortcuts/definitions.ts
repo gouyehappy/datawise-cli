@@ -117,7 +117,8 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
         id: 'workspace.aiPrompt',
         category: 'workspace',
         labelKey: 'shortcuts.actions.workspace.aiPrompt',
-        defaultBinding: '/',
+        // Bare "/" steals SSH typing; Ctrl+/ steals Monaco toggle-comment.
+        defaultBinding: 'Alt+/',
         icon: 'ai',
     },
     {

@@ -37,7 +37,13 @@ final class SshJschSessions {
             session.setPassword(entity.getPassword());
         }
         session.setConfig("StrictHostKeyChecking", properties.strictHostKeyCheckingMode());
+        session.setConfig("TCPKeepAlive", "yes");
         session.connect(properties.getConnectTimeoutMs());
+        int aliveIntervalMs = properties.getServerAliveIntervalMs();
+        if (aliveIntervalMs > 0) {
+            session.setServerAliveInterval(aliveIntervalMs);
+            session.setServerAliveCountMax(properties.getServerAliveCountMax());
+        }
         properties.persistKnownHosts(jsch);
         return session;
     }

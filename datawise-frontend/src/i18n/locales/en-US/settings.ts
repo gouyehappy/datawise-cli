@@ -402,7 +402,7 @@ export default {
         resetAll: 'Reset defaults',
         pluginTitle: 'Plugin bundled config',
         pluginHint: 'Loaded from sql-snippets.shared.json packaged with the SQL editor plugin — no import required.',
-        pluginFileNote: 'Path: sql-editor/src/config/sql-snippets.shared.json. Run npm run gen:sql-snippets after editing constants, or edit the JSON directly.',
+        pluginFileNote: 'Path: sql-editor/src/config/sql-snippets.shared.json. After editing constants, run npm run gen:snippets in sql-editor (or npm run gen:sql-snippets in the frontend), or edit the JSON directly.',
         pluginCount: '{count} in plugin',
         sharedTitle: 'Extra team config (optional)',
         sharedHint: 'Import team JSON on top of the plugin file. Does not modify the plugin bundle.',

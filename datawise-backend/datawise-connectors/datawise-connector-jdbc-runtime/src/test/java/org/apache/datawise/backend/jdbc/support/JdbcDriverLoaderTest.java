@@ -89,4 +89,28 @@ class JdbcDriverLoaderTest {
         assertTrue(loader.preloadIfPresent("com.mysql:mysql-connector-j:8.4.0", "com.mysql.cj.jdbc.Driver")
                 .isEmpty());
     }
+
+    @Test
+    void resolveLocalJarFileName_doesNotReuseDifferentElasticsearchVersion(@TempDir Path configDir) throws Exception {
+        Path drivers = configDir.resolve("drivers");
+        Files.createDirectories(drivers);
+        Files.writeString(drivers.resolve("x-pack-sql-jdbc-8.17.5.jar"), "fake");
+
+        JdbcDriverLoader loader = new JdbcDriverLoader(configDir.toString());
+        assertTrue(
+                loader.resolveLocalJarFileName(
+                        "org.elasticsearch.plugin:x-pack-sql-jdbc:7.3.0",
+                        null
+                ).isEmpty()
+        );
+
+        Files.writeString(drivers.resolve("x-pack-sql-jdbc-7.3.0.jar"), "fake");
+        assertEquals(
+                "x-pack-sql-jdbc-7.3.0.jar",
+                loader.resolveLocalJarFileName(
+                        "org.elasticsearch.plugin:x-pack-sql-jdbc:7.3.0",
+                        null
+                ).orElseThrow()
+        );
+    }
 }

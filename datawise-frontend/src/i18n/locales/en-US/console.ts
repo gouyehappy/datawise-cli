@@ -8,7 +8,7 @@ export default {
     format: 'Format SQL',
     ai: 'AI SQL',
     textToSql: 'Describe your query intent or business question. Press Enter to generate SQL',
-    aiPlaceholder: 'Describe your query intent or business question. Press Enter to generate SQL (/ to focus)',
+    aiPlaceholder: 'Describe your query intent or business question. Press Enter to generate SQL (Alt+/ to focus)',
     aiPromptAria: 'AI query input',
     aiPromptHintLead: 'Describe what you want to query here',
     aiPromptHintExample: ', e.g. "orders in the last 7 days"',

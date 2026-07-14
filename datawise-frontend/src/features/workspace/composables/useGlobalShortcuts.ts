@@ -8,7 +8,7 @@
  * | Ctrl+Shift+L     | 新建控制台 Tab |
  * | Ctrl+R           | 执行 SQL       |
  * | Ctrl+S           | 保存控制台     |
- * | /                | 唤起 AI 输入框 |
+ * | Alt+/            | 唤起 AI 输入框 |
  */
 import {onMounted, onUnmounted} from 'vue'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
@@ -53,14 +53,9 @@ export function useGlobalShortcuts(handlers?: {
             return
         }
         if (
-            e.key === '/'
-            && !e.ctrlKey
-            && !e.metaKey
-            && !e.altKey
+            matchShortcut(e, '/', {alt: true, ctrl: false})
             && workspace.activeTab?.type === 'console'
         ) {
-            const target = e.target as HTMLElement
-            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
             e.preventDefault()
             handlers?.onAiPrompt?.()
         }

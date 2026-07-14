@@ -18,20 +18,36 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger log = LoggerFactory.getLogger(SshTerminalWebSocketHandler.class);
+    private static final AtomicInteger CREATE_THREAD_SEQ = new AtomicInteger();
 
     private final SshShellSessionManager sessionManager;
     private final ConnectionExecutionContext connectionContext;
     private final TeamService teamService;
     private final ObjectMapper objectMapper;
+    /** Active shell after successful create. */
     private final Map<String, String> shellSessionBySocket = new ConcurrentHashMap<>();
+    /** sessionId reserved while async JSch connect is in flight. */
+    private final Map<String, String> pendingSessionBySocket = new ConcurrentHashMap<>();
+    /** Don't block Tomcat WebSocket threads on JSch TCP handshake. */
+    private final ExecutorService shellCreateExecutor = Executors.newCachedThreadPool(r -> {
+        Thread thread = new Thread(r, "ssh-shell-create-" + CREATE_THREAD_SEQ.incrementAndGet());
+        thread.setDaemon(true);
+        return thread;
+    });
 
     public SshTerminalWebSocketHandler(
             SshShellSessionManager sessionManager,
@@ -43,6 +59,18 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
         this.connectionContext = connectionContext;
         this.teamService = teamService;
         this.objectMapper = objectMapper;
+    }
+
+    @PreDestroy
+    void shutdownShellCreateExecutor() {
+        shellCreateExecutor.shutdownNow();
+        try {
+            if (!shellCreateExecutor.awaitTermination(3, TimeUnit.SECONDS)) {
+                log.debug("SSH shell create executor did not terminate within 3s");
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
@@ -63,6 +91,7 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
                     payload.path("cols").asInt(80),
                     payload.path("rows").asInt(24)
             );
+            case "ping" -> handlePing(session, sessionId);
             case "destroy" -> handleDestroy(session, sessionId);
             default -> log.debug("Ignoring unknown SSH terminal WS message type: {}", type);
         }
@@ -70,14 +99,19 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        String sessionId = shellSessionBySocket.remove(session.getId());
-        if (sessionId != null) {
-            Long userId = userId(session);
-            destroySession(session, sessionId, userId, "ssh.shell.disconnect");
+        String socketId = session.getId();
+        String pendingSessionId = pendingSessionBySocket.remove(socketId);
+        String activeSessionId = shellSessionBySocket.remove(socketId);
+        Long userId = userId(session);
+        if (pendingSessionId != null) {
+            destroySession(session, pendingSessionId, userId, "ssh.shell.disconnect", "pending");
+        }
+        if (activeSessionId != null && !activeSessionId.equals(pendingSessionId)) {
+            destroySession(session, activeSessionId, userId, "ssh.shell.disconnect", null);
         }
     }
 
-    private void handleCreate(WebSocketSession socketSession, String sessionId, JsonNode payload) throws IOException {
+    private void handleCreate(WebSocketSession socketSession, String sessionId, JsonNode payload) {
         Long userId = userId(socketSession);
         String connectionId = connectionId(socketSession);
         int cols = payload.path("cols").asInt(80);
@@ -88,13 +122,39 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
                     .put("error", "SSH terminal session is not authenticated"));
             return;
         }
+        pendingSessionBySocket.put(socketSession.getId(), sessionId);
         try {
+            shellCreateExecutor.execute(
+                    () -> openShellSession(socketSession, sessionId, userId, connectionId, cols, rows)
+            );
+        } catch (RejectedExecutionException ex) {
+            pendingSessionBySocket.remove(socketSession.getId(), sessionId);
+            send(socketSession, message("created", sessionId)
+                    .put("ok", false)
+                    .put("error", "SSH shell create queue is unavailable"));
+        }
+    }
+
+    private void openShellSession(
+            WebSocketSession socketSession,
+            String sessionId,
+            Long userId,
+            String connectionId,
+            int cols,
+            int rows
+    ) {
+        try {
+            if (!socketSession.isOpen() || !sessionId.equals(pendingSessionBySocket.get(socketSession.getId()))) {
+                sessionManager.destroy(sessionId);
+                return;
+            }
             var resolved = connectionContext.requireAvailableConnectionForUser(
                     userId,
                     connectionId,
                     "Connection not found: " + connectionId
             );
             if (!SshShellEntityResolver.supportsInteractiveShell(resolved.entity())) {
+                pendingSessionBySocket.remove(socketSession.getId(), sessionId);
                 send(socketSession, message("created", sessionId)
                         .put("ok", false)
                         .put("error", "Connection does not support SSH shell"));
@@ -108,6 +168,13 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
                     cols,
                     rows
             );
+            if (!socketSession.isOpen() || !sessionId.equals(pendingSessionBySocket.get(socketSession.getId()))) {
+                // Client abandoned the WebSocket while JSch was connecting — do not leak the shell.
+                sessionManager.destroy(sessionId);
+                pendingSessionBySocket.remove(socketSession.getId(), sessionId);
+                return;
+            }
+            pendingSessionBySocket.remove(socketSession.getId(), sessionId);
             shellSessionBySocket.put(socketSession.getId(), sessionId);
             shellSession.pumpOutput(
                     data -> send(socketSession, message("output", sessionId).put("data", data)),
@@ -132,16 +199,19 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
             );
             send(socketSession, message("created", sessionId).put("ok", true));
         } catch (SshConnectionException ex) {
+            pendingSessionBySocket.remove(socketSession.getId(), sessionId);
             ExceptionLogging.warn(log, "ssh.shell.create sessionId=" + sessionId, ex);
             send(socketSession, message("created", sessionId).put("ok", false).put("error", ex.getMessage()));
         } catch (Exception ex) {
+            pendingSessionBySocket.remove(socketSession.getId(), sessionId);
+            sessionManager.destroy(sessionId);
             ExceptionLogging.warn(log, "ssh.shell.create sessionId=" + sessionId, ex);
             send(socketSession, message("created", sessionId).put("ok", false).put("error", userMessage(ex)));
         }
     }
 
     private void handleWrite(WebSocketSession socketSession, String sessionId, String data) throws IOException {
-        if (!requireOwner(socketSession, sessionId)) {
+        if (!requireActiveOwner(socketSession, sessionId)) {
             return;
         }
         SshShellSession shellSession = sessionManager.get(sessionId);
@@ -153,7 +223,7 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void handleResize(WebSocketSession socketSession, String sessionId, int cols, int rows) {
-        if (!requireOwner(socketSession, sessionId)) {
+        if (!requireActiveOwner(socketSession, sessionId)) {
             return;
         }
         SshShellSession shellSession = sessionManager.get(sessionId);
@@ -164,11 +234,29 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
         shellSession.resize(cols, rows);
     }
 
-    private void handleDestroy(WebSocketSession socketSession, String sessionId) {
-        if (!requireOwner(socketSession, sessionId)) {
+    private void handlePing(WebSocketSession socketSession, String sessionId) {
+        if (!requireActiveOwner(socketSession, sessionId)) {
             return;
         }
-        destroySession(socketSession, sessionId, userId(socketSession), "ssh.shell.close");
+        if (sessionManager.get(sessionId) == null) {
+            return;
+        }
+        sessionManager.touch(sessionId);
+        send(socketSession, message("pong", sessionId));
+    }
+
+    private void handleDestroy(WebSocketSession socketSession, String sessionId) {
+        // Allow destroy for pending creates (session may not be owned in manager yet).
+        Long userId = userId(socketSession);
+        boolean pending = sessionId.equals(pendingSessionBySocket.get(socketSession.getId()));
+        boolean mapped = sessionId.equals(shellSessionBySocket.get(socketSession.getId()));
+        if (!pending && !mapped && !sessionManager.isOwner(sessionId, userId)) {
+            // Soft-ignore stale destroy (e.g. client teardown after server already closed the shell).
+            log.debug("Ignoring SSH terminal WS destroy for unknown session {} by user {}", sessionId, userId);
+            return;
+        }
+        pendingSessionBySocket.remove(socketSession.getId(), sessionId);
+        destroySession(socketSession, sessionId, userId, "ssh.shell.close");
     }
 
     private void destroySession(WebSocketSession socketSession, String sessionId, Long userId, String action) {
@@ -184,7 +272,8 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
     ) {
         String connectionId = sessionManager.getConnectionId(sessionId);
         sessionManager.destroy(sessionId);
-        shellSessionBySocket.remove(socketSession.getId());
+        shellSessionBySocket.remove(socketSession.getId(), sessionId);
+        pendingSessionBySocket.remove(socketSession.getId(), sessionId);
         String detail = "sessionId=" + sessionId;
         if (connectionId != null && !connectionId.isBlank()) {
             detail = detail + "; connectionId=" + connectionId;
@@ -195,20 +284,24 @@ public class SshTerminalWebSocketHandler extends TextWebSocketHandler {
         teamService.recordTerminalAudit(userId, action, detail);
     }
 
-    private boolean requireOwner(WebSocketSession socketSession, String sessionId) {
+    /**
+     * True only when the shell exists and belongs to this user.
+     * Pending/closed sessions are soft-ignored — never FORBIDDEN — so early resize/ping
+     * during async create cannot tear down a healthy WebSocket.
+     */
+    private boolean requireActiveOwner(WebSocketSession socketSession, String sessionId) {
         Long userId = userId(socketSession);
         if (sessionManager.isOwner(sessionId, userId)) {
             return true;
         }
-        log.warn("Rejected SSH terminal WS action for session {} by user {}", sessionId, userId);
-        sendForbidden(socketSession, sessionId);
+        // Soft-deny: still creating, already closed, or race after destroy — never force-close the WS.
+        if (sessionId.equals(pendingSessionBySocket.get(socketSession.getId()))
+                || sessionId.equals(shellSessionBySocket.get(socketSession.getId()))
+                || sessionManager.get(sessionId) == null) {
+            return false;
+        }
+        log.debug("Ignoring unauthorized SSH terminal WS action for session {} by user {}", sessionId, userId);
         return false;
-    }
-
-    private void sendForbidden(WebSocketSession socketSession, String sessionId) {
-        send(socketSession, message("error", sessionId)
-                .put("code", TerminalClientIpSupport.ERROR_CODE_FORBIDDEN)
-                .put("message", "SSH terminal session access denied"));
     }
 
     private Long userId(WebSocketSession socketSession) {

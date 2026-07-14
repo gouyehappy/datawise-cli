@@ -3,8 +3,8 @@ import ports from '../runtime-ports.json' with {type: 'json'}
 export const SPLASH_WIDTH = 660
 export const SPLASH_HEIGHT = 340
 
-const DEV_BACKEND = `127.0.0.1:${ports.backend}`
-const PACKAGED_BACKEND = `127.0.0.1:${ports.backendPackaged}`
+const DEV_BACKEND = `127.0.0.1:${ports.dev.backend}`
+const PACKAGED_BACKEND = `127.0.0.1:${ports.desktop.backend}`
 
 export function resolveBackendSplashStatus(phase: string, isPackaged: boolean): string {
     const endpoint = isPackaged ? PACKAGED_BACKEND : DEV_BACKEND

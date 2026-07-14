@@ -11,16 +11,22 @@ import org.apache.datawise.backend.common.support.ConfigDirectoryLocator;
 import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
@@ -35,21 +41,30 @@ public class ConnectorPluginLoader {
     private static final String NO_SPI_PROVIDERS = "NO_SPI_PROVIDERS";
 
     private final Path pluginsDir;
+    private final boolean loadPlugins;
     private final ClassLoader applicationClassLoader;
     private final List<LoadedPlugin> loadedPlugins = new ArrayList<>();
     private final List<SqlExecutionHook> loadedSqlExecutionHooks = new ArrayList<>();
     private final List<ConnectorPluginLoadFailure> failedPlugins = new ArrayList<>();
 
+    /** Programmatic / test construction (plugins enabled). */
+    public ConnectorPluginLoader(String configDir, String pluginsDirName) throws IOException {
+        this(configDir, pluginsDirName, true);
+    }
+
+    @Autowired
     public ConnectorPluginLoader(
             @Value("${datawise.config.dir:config}") String configDir,
-            @Value("${datawise.connectors.plugins-dir:plugins}") String pluginsDirName
+            @Value("${datawise.connectors.plugins-dir:plugins}") String pluginsDirName,
+            @Value("${datawise.connectors.load-plugins:true}") boolean loadPlugins
     ) throws IOException {
         Path configRoot = ConfigDirectoryLocator.resolve(configDir);
         String dirName = pluginsDirName != null && !pluginsDirName.isBlank() ? pluginsDirName.trim() : "plugins";
         this.pluginsDir = configRoot.resolve(dirName).toAbsolutePath().normalize();
+        this.loadPlugins = loadPlugins;
         this.applicationClassLoader = ConnectorPluginLoader.class.getClassLoader();
         Files.createDirectories(pluginsDir);
-        log.info("Connector plugins directory: {}", pluginsDir);
+        log.info("Connector plugins directory: {} (loadPlugins={})", pluginsDir, loadPlugins);
     }
 
     public Path pluginsDirectory() {
@@ -80,17 +95,22 @@ public class ConnectorPluginLoader {
         loadedSqlExecutionHooks.clear();
         List<DataSourceConnector> connectors = new ArrayList<>();
         ConnectorDialectContributions contributions = ConnectorDialectContributions.EMPTY;
+        if (!loadPlugins) {
+            contributionHolder.setContributions(ConnectorDialectContributions.EMPTY);
+            log.info("Connector plugin loading disabled (datawise.connectors.load-plugins=false)");
+            return connectors;
+        }
         for (Path jarPath : listPluginJars()) {
             contributions = loadJar(jarPath, context, connectors, contributions);
         }
         contributionHolder.setContributions(contributions);
         if (!connectors.isEmpty()) {
-            log.info(
-                    "Loaded {} connector plugin(s) from {}: {}",
-                    connectors.size(),
-                    pluginsDir,
-                    connectors.stream().map(DataSourceConnector::id).sorted().toList()
-            );
+            List<String> ids = connectors.stream()
+                    .map(DataSourceConnector::id)
+                    .distinct()
+                    .sorted()
+                    .toList();
+            log.info("Loaded {} connector plugin(s) from {}: {}", ids.size(), pluginsDir, ids);
         }
         if (!failedPlugins.isEmpty()) {
             log.warn("Connector plugin load failures: {}", failedPlugins);
@@ -126,11 +146,32 @@ public class ConnectorPluginLoader {
             List<SqlExecutionHook> jarHooks = new ArrayList<>();
             ConnectorDialectContributions jarContributions = ConnectorDialectContributions.EMPTY;
             for (DataSourceConnectorProvider provider : providers) {
+                // ServiceLoader can surface parent-classpath providers; only accept ones whose
+                // META-INF/services entry (or defining CL) belongs to this plugin JAR.
+                if (!isContributedByPluginJar(
+                        DataSourceConnectorProvider.class, provider, pluginClassLoader)) {
+                    log.debug(
+                            "Skipping classpath SPI provider {} while loading {}",
+                            provider.getClass().getName(),
+                            jarName
+                    );
+                    continue;
+                }
                 DataSourceConnector connector = provider.create(context);
+                String connectorId = connector.id();
+                boolean duplicateInJar = jarConnectors.stream().anyMatch(existing -> existing.id().equals(connectorId));
+                boolean alreadyLoaded = connectors.stream().anyMatch(existing -> existing.id().equals(connectorId));
+                if (duplicateInJar || alreadyLoaded) {
+                    log.debug("Skipping duplicate connector id {} from {}", connectorId, jarName);
+                    continue;
+                }
                 jarConnectors.add(connector);
                 jarContributions = jarContributions.merge(provider.dialectContributions());
             }
             for (SqlExecutionHook hook : ServiceLoader.load(SqlExecutionHook.class, pluginClassLoader)) {
+                if (!isContributedByPluginJar(SqlExecutionHook.class, hook, pluginClassLoader)) {
+                    continue;
+                }
                 jarHooks.add(hook);
             }
             if (jarConnectors.isEmpty()) {
@@ -192,6 +233,68 @@ public class ConnectorPluginLoader {
         } catch (IOException ex) {
             ExceptionLogging.recoverable(log, "Failed to close connector plugin classloader", ex);
         }
+    }
+
+    /**
+     * Whether this SPI instance is contributed by {@code pluginClassLoader}'s own JAR.
+     * <p>
+     * Parent-first {@link URLClassLoader} may resolve the implementation class from the app
+     * classpath (e.g. {@code datawise-connector-ssh} on the server) even when
+     * {@code META-INF/services/…} lives only in the plugin JAR. Matching the service resource
+     * URL to this JAR (not only {@code getClassLoader()}) avoids false negatives that drop SSH.
+     */
+    static boolean isContributedByPluginJar(
+            Class<?> serviceType,
+            Object spiInstance,
+            URLClassLoader pluginClassLoader
+    ) {
+        if (serviceType == null || spiInstance == null || pluginClassLoader == null) {
+            return false;
+        }
+        if (spiInstance.getClass().getClassLoader() == pluginClassLoader) {
+            return true;
+        }
+        URL[] urls = pluginClassLoader.getURLs();
+        if (urls.length == 0) {
+            return false;
+        }
+        String pluginJar = urls[0].toExternalForm();
+        String resourceName = "META-INF/services/" + serviceType.getName();
+        String providerName = spiInstance.getClass().getName();
+        try {
+            Enumeration<URL> resources = pluginClassLoader.getResources(resourceName);
+            while (resources.hasMoreElements()) {
+                URL resource = resources.nextElement();
+                String resourceUrl = resource.toExternalForm();
+                if (!resourceUrl.startsWith("jar:" + pluginJar + "!")) {
+                    continue;
+                }
+                if (serviceFileListsProvider(resource, providerName)) {
+                    return true;
+                }
+            }
+        } catch (IOException ignored) {
+            return false;
+        }
+        return false;
+    }
+
+    private static boolean serviceFileListsProvider(URL serviceResource, String providerClassName)
+            throws IOException {
+        try (InputStream in = serviceResource.openStream();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimmed = line.trim();
+                if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                    continue;
+                }
+                if (trimmed.equals(providerClassName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private record LoadedPlugin(Path jarPath, URLClassLoader classLoader) {

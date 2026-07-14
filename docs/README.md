@@ -36,7 +36,14 @@ npm install && npm run dev
 # → http://localhost:28413
 ```
 
-`VITE_API_BASE_URL` 留空时，Vite 将 `/api` 代理到后端（端口见 `datawise-frontend/runtime-ports.json`）。
+`VITE_API_BASE_URL` 留空时，Vite 将 `/api` 代理到后端（`runtime-ports.json` → `dev.backend`，默认 `18421`）。
+
+端口分环境：
+
+| 环境 | 后端 | 前端 |
+|------|------|------|
+| **dev** | `18421`（`application-dev.yml`） | `28413` |
+| **desktop** | `18423`（`application-desktop.yml`） | Electron 内嵌，无 Vite |
 
 ## 本地配置（`config/`）
 

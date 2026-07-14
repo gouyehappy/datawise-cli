@@ -1,7 +1,7 @@
 export default {
     quickOps: {
         title: 'Quick actions',
-        hint: 'Commands come from Quick commands in the explorer; @run executes, @paste pastes. Click a group to expand.',
+        hint: "Commands come from Quick commands in the explorer; {'@'}run executes, {'@'}paste pastes. Click a group to expand.",
         commandsEmpty: 'Create or edit under Quick commands in the explorer',
         searchPlaceholder: 'Search commands…',
         searchEmpty: 'No matching commands',
@@ -36,7 +36,7 @@ export default {
     },
     params: {
         title: 'Command parameters',
-        subtitle: 'This command uses {{name}} placeholders — fill them in to continue',
+        subtitle: "This command uses {'{'}{'{'}name{'}'}{'}'} placeholders — fill them in to continue",
         confirm: 'OK',
         required: 'Fill in all parameters',
     },
@@ -80,7 +80,7 @@ export default {
         savedAt: 'Saved at {time}',
         hint: 'Changes auto-save; press Ctrl+S to save immediately',
         commandFormatTitle: 'Command format',
-        commandFormatHint: 'Use @run or @paste on the first line; # title on its own line, command on the next. Multiple entries group automatically.',
+        commandFormatHint: "Use {'@'}run or {'@'}paste on the first line; # title on its own line, command on the next. Multiple entries group automatically.",
         insertTemplate: 'Insert template',
         preview: 'Preview',
         saveSuccess: 'Record saved',

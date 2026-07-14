@@ -22,6 +22,14 @@ export const useShortcutSettingsStore = defineStore('shortcut-settings', () => {
                 const value = prefs[def.id]
                 if (typeof value === 'string') {
                     const trimmed = value.trim()
+                    // Migrate legacy AI prompt bindings that collide with SSH or Monaco.
+                    if (
+                        def.id === 'workspace.aiPrompt'
+                        && (trimmed === '/' || trimmed === 'Ctrl+/')
+                    ) {
+                        next[def.id] = def.defaultBinding
+                        continue
+                    }
                     next[def.id] = trimmed || def.defaultBinding
                 }
             }

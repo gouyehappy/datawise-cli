@@ -37,6 +37,11 @@
 
     <properties>
         <java.version>17</java.version>
+        <!--
+          Desktop packaging sets -Ddatawise.build.dir=target-desktop so Maven does not
+          share the IDE Java LS default target/ (avoids corrupt .class / empty boot JARs on Windows).
+        -->
+        <datawise.build.dir>target</datawise.build.dir>
         <jsqlparser.version>5.3</jsqlparser.version>
         <spring-ai.version>1.0.0</spring-ai.version>
         <spring-ai-alibaba.version>1.0.0.2</spring-ai-alibaba.version>
@@ -380,6 +385,7 @@
     </pluginRepositories>
 
     <build>
+        <directory>${datawise.build.dir}</directory>
         <pluginManagement>
             <plugins>
                 <plugin>
