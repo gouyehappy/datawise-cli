@@ -38,16 +38,18 @@ public class SshScriptRecordService {
         List<SshScriptRecord> existing = recordStore.listAll(userId, connectionId);
         long now = System.currentTimeMillis();
         List<SshScriptRecord> ensured = SshScriptRecordBootstrap.ensureDefaults(existing, now);
-        persistBootstrapChanges(userId, connectionId, existing, ensured);
-        return sortForDisplay(ensured);
+        SshScriptRecordMigration.Result migrated = SshScriptRecordMigration.migrate(ensured);
+        persistBootstrapChanges(userId, connectionId, existing, migrated);
+        return sortForDisplay(migrated.records());
     }
 
     private void persistBootstrapChanges(
             long userId,
             String connectionId,
             List<SshScriptRecord> existing,
-            List<SshScriptRecord> ensured
+            SshScriptRecordMigration.Result migrated
     ) {
+        List<SshScriptRecord> ensured = migrated.records();
         if (existing.isEmpty() && !ensured.isEmpty()) {
             for (SshScriptRecord record : ensured) {
                 recordStore.upsert(userId, connectionId, record);
@@ -65,12 +67,12 @@ public class SshScriptRecordService {
                 continue;
             }
             SshScriptRecord previous = before.get(record.getId());
-            String previousHtml = previous != null ? previous.getContentHtml() : null;
-            String nextHtml = record.getContentHtml();
-            boolean htmlRepaired = (previousHtml == null || previousHtml.isBlank())
-                    && nextHtml != null
-                    && !nextHtml.isBlank();
-            if (previous == null || htmlRepaired) {
+            if (SshScriptRecordMigration.shouldPersist(
+                    previous,
+                    record,
+                    migrated.lackedCommandsBefore(),
+                    migrated.changedIds()
+            )) {
                 recordStore.upsert(userId, connectionId, record);
             }
         }
@@ -111,9 +113,21 @@ public class SshScriptRecordService {
             title = "Untitled";
         }
         record.setTitle(title);
-        if (record.getContentHtml() == null) {
-            record.setContentHtml("");
+
+        if (!SshCommandDslParser.hasCommands(record.getCommands())
+                && record.getContentHtml() != null
+                && !record.getContentHtml().isBlank()) {
+            record.setCommands(SshCommandDslParser.parse(record.getContentHtml()));
         }
+        if (SshCommandDslParser.hasCommands(record.getCommands())) {
+            if (record.getContentHtml() == null || record.getContentHtml().isBlank()) {
+                record.setContentHtml(SshCommandDslParser.serialize(record.getCommands()));
+            }
+        } else if (record.getContentHtml() == null) {
+            record.setContentHtml("");
+            record.setCommands(List.of());
+        }
+
         record.setUpdatedAt(System.currentTimeMillis());
         return recordStore.upsert(userId, command.connectionId(), record);
     }

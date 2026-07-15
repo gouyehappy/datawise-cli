@@ -21,7 +21,7 @@ const props = defineProps<{
 
 const {t} = useI18n()
 
-const previewEntries = computed(() => parseCommandEntries(model.value ?? '').entries)
+const previewEntries = computed(() => parseCommandEntries(model.value ?? '').commands)
 
 const editorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
   minimap: {enabled: false},
@@ -45,6 +45,10 @@ function insertTemplate() {
       ? `${current.replace(/\s+$/, '')}\n\n${SSH_COMMAND_TEMPLATE}`
       : SSH_COMMAND_TEMPLATE
 }
+
+function modeLabel(mode: 'run' | 'paste'): string {
+  return mode === 'run' ? t('ssh.scriptRecord.previewModeRun') : t('ssh.scriptRecord.previewModePaste')
+}
 </script>
 
 <template>
@@ -67,7 +71,19 @@ function insertTemplate() {
             :key="index"
             class="ssh-command-editor__preview-item"
         >
-          <span class="ssh-command-editor__preview-name">{{ entry.label }}</span>
+          <span
+              class="ssh-command-editor__preview-mode"
+              :class="entry.mode === 'run' ? 'is-run' : 'is-paste'"
+          >{{ modeLabel(entry.mode) }}</span>
+          <span
+              v-if="entry.title.trim()"
+              class="ssh-command-editor__preview-name"
+          >{{ entry.title.trim() }}</span>
+          <span
+              v-if="entry.description.trim()"
+              class="ssh-command-editor__preview-desc"
+              :title="entry.description.trim()"
+          >{{ entry.description.trim() }}</span>
           <code class="ssh-command-editor__preview-cmd">{{ entry.command }}</code>
         </div>
       </div>
@@ -170,6 +186,26 @@ function insertTemplate() {
   min-width: 0;
 }
 
+.ssh-command-editor__preview-mode {
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.ssh-command-editor__preview-mode.is-run {
+  background: color-mix(in srgb, #16a34a 16%, transparent);
+  color: #15803d;
+}
+
+.ssh-command-editor__preview-mode.is-paste {
+  background: color-mix(in srgb, #0ea5e9 14%, transparent);
+  color: #0369a1;
+}
+
 .ssh-command-editor__preview-name {
   flex: 0 0 auto;
   padding: 1px 8px;
@@ -179,6 +215,16 @@ function insertTemplate() {
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.ssh-command-editor__preview-desc {
+  flex: 0 1 auto;
+  max-width: 10rem;
+  color: var(--dw-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ssh-command-editor__preview-cmd {

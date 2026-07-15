@@ -69,6 +69,7 @@ import {
 } from '@/features/explorer/services/explorer-favorites-ui.service'
 import {isExplorerFavoritesGroupId} from '@/features/explorer/services/explorer-favorites.constants'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {disposeSshTerminalsForConnection} from '@/features/terminal/services/ssh-terminal-session.service'
 import {useDebouncedRef} from '@/core/utils/debounced-ref'
 import {
     EXPLORER_HEALTH_PROBE_CONCURRENCY,
@@ -132,6 +133,8 @@ export const useExplorerStore = defineStore('explorer', () => {
     const connectionHealthById = ref<Record<string, 'ok' | 'error'>>({})
     /** 后端仍保持温热 JDBC 池的连接（绿标 / 已连接状态以此为准，与 ping 可达性分离） */
     const pooledConnectionIds = ref<Set<string>>(new Set())
+    /** 连接已从服务端释放，打开的工作区 Tab 需遮罩提示重新连接 */
+    const needsReconnectConnectionIds = ref<Set<string>>(new Set())
     /** 用户已点击/展开过的连接，仅这些连接参与健康检查 */
     const attemptedConnectionIds = ref<Set<string>>(new Set())
     const connectionHealthChecking = ref(false)
@@ -169,6 +172,29 @@ export const useExplorerStore = defineStore('explorer', () => {
 
     function isConnectionPooled(connectionId: string) {
         return pooledConnectionIds.value.has(connectionId)
+    }
+
+    function connectionNeedsReconnect(connectionId: string | undefined | null): boolean {
+        if (!connectionId) return false
+        return needsReconnectConnectionIds.value.has(connectionId)
+    }
+
+    function markConnectionNeedsReconnect(connectionId: string) {
+        if (!connectionId) return
+        if (!needsReconnectConnectionIds.value.has(connectionId)) {
+            needsReconnectConnectionIds.value = new Set([
+                ...needsReconnectConnectionIds.value,
+                connectionId,
+            ])
+        }
+        void disposeSshTerminalsForConnection(connectionId)
+    }
+
+    function clearConnectionNeedsReconnect(connectionId: string) {
+        if (!needsReconnectConnectionIds.value.has(connectionId)) return
+        const next = new Set(needsReconnectConnectionIds.value)
+        next.delete(connectionId)
+        needsReconnectConnectionIds.value = next
     }
 
     function markConnectionPooled(connectionId: string) {
@@ -1170,6 +1196,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         if (!node || node.type !== 'connection') return
         const hadLoadedTree = Boolean(node.children?.length) || node.expanded
         resetConnectionTreeState(connectionId)
+        markConnectionNeedsReconnect(connectionId)
         if (options?.notify && hadLoadedTree) {
             useLayoutStore().showToast(
                 i18n.global.t('explorer.connectionIdleDisconnected', {name: node.label}),
@@ -1213,6 +1240,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         try {
             await explorerApi.disconnectConnection(connectionId)
             clearConnectionLoadedState(connectionId)
+            markConnectionNeedsReconnect(connectionId)
             return true
         } catch {
             return false
@@ -1250,6 +1278,7 @@ export const useExplorerStore = defineStore('explorer', () => {
             logPerf('connection.total', startedAt, {connectionId, ok: true})
             setConnectionHealth(connectionId, 'ok')
             markConnectionPooled(connectionId)
+            clearConnectionNeedsReconnect(connectionId)
             return true
         } catch (error) {
             markConnectionAttempted(connectionId)
@@ -1281,6 +1310,7 @@ export const useExplorerStore = defineStore('explorer', () => {
             if (!result.ok) {
                 markConnectionAttempted(connectionId)
                 setConnectionHealth(connectionId, 'error')
+                markConnectionNeedsReconnect(connectionId)
                 if (options?.notify === true) {
                     useLayoutStore().showToast(result.message || resolveConnectionErrorMessage(result))
                 }
@@ -1293,10 +1323,12 @@ export const useExplorerStore = defineStore('explorer', () => {
             logPerf('connection.reconnect.total', startedAt, {connectionId, ok: true})
             setConnectionHealth(connectionId, 'ok')
             markConnectionPooled(connectionId)
+            clearConnectionNeedsReconnect(connectionId)
             return true
         } catch (error) {
             markConnectionAttempted(connectionId)
             setConnectionHealth(connectionId, 'error')
+            markConnectionNeedsReconnect(connectionId)
             reportConnectionFailure(connectionId, error, {notify: options?.notify})
             return false
         } finally {
@@ -1405,6 +1437,10 @@ export const useExplorerStore = defineStore('explorer', () => {
         connectionDisplayHealthById,
         pooledConnectionIds,
         isConnectionPooled,
+        needsReconnectConnectionIds,
+        connectionNeedsReconnect,
+        markConnectionNeedsReconnect,
+        clearConnectionNeedsReconnect,
         attemptedConnectionIds,
         hasAttemptedConnections,
         markConnectionAttempted,

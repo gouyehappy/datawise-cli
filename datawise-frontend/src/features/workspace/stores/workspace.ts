@@ -1340,6 +1340,15 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         }
     }
 
+    function disposeSshTerminalsForConnection(connectionId: string) {
+        if (!connectionId) return
+        for (const tab of tabs.value) {
+            if (tab.type === 'ssh-terminal' && tab.connectionId === connectionId) {
+                void disposeSshTerminalHandle(tab.id)
+            }
+        }
+    }
+
     function closeTab(tabId: string) {
         const tab = tabs.value.find((t) => t.id === tabId)
         if (!tab?.closable) return
@@ -1943,6 +1952,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         openYarnNodes,
         openYarnQueues,
         closeTab,
+        disposeSshTerminalsForConnection,
         closeConsoleTabsForSqlFile,
         closeTableTabs,
         isTabDirty,

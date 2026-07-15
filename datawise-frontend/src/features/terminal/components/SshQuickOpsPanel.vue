@@ -204,7 +204,10 @@ function groupHint(group: MyCommandGroup): string {
 function entryHint(group: MyCommandGroup, entry: MyCommandGroup['entries'][number]): string {
   const action = resolveEntryAction(entry, group)
   const prefix = action === 'run' ? t('ssh.quickOps.runHint') : t('ssh.quickOps.pasteHint')
-  return `${prefix}\n${entry.command}`
+  const description = entry.description?.trim()
+  return description
+      ? `${prefix}\n${description}\n${entry.command}`
+      : `${prefix}\n${entry.command}`
 }
 
 function onGroupClick(group: MyCommandGroup) {

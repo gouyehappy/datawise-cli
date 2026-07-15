@@ -38,6 +38,13 @@ export function listSshTerminalHandles(connectionId: string): SshTerminalHandle[
     return [...handles.values()].filter((item) => item.connectionId === connectionId)
 }
 
+/** Tear down all interactive shells for a connection (idle disconnect / manual disconnect). */
+export async function disposeSshTerminalsForConnection(connectionId: string): Promise<void> {
+    if (!connectionId) return
+    const targets = listSshTerminalHandles(connectionId)
+    await Promise.all(targets.map((handle) => disposeSshTerminalHandle(handle.tabId)))
+}
+
 export function findSshTerminalHandle(
     connectionId: string,
     preferTabId?: string,

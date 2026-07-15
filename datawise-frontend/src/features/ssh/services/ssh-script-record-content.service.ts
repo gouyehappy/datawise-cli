@@ -32,16 +32,21 @@ export function commandTextToRecordHtml(text: string): string {
 }
 
 export const SSH_COMMAND_TEMPLATE = `@paste
-# 标题
+# 标题 :: 可选描述
 command here
 `
 
 export const SSH_COMMAND_COMPLETIONS = [
-    {label: '@run', insertText: '@run\n', detail: 'Run each command in the terminal'},
-    {label: '@paste', insertText: '@paste\n', detail: 'Paste commands without executing'},
-    {label: '# title', insertText: '# ${1:标题}\n', detail: 'Command label for quick ops'},
+    {label: '@run', insertText: '@run\n', detail: 'Run following commands in the terminal'},
+    {label: '@paste', insertText: '@paste\n', detail: 'Paste following commands without executing'},
+    {label: '# title', insertText: '# ${1:标题}\n', detail: 'Optional command label'},
+    {label: '# title :: desc', insertText: '# ${1:标题} :: ${2:描述}\n', detail: 'Label with description'},
+    {label: '## comment', insertText: '## ${1:注释}\n', detail: 'Ignored comment (not a label)'},
     {label: '!run', insertText: '!run', detail: 'Override this entry to run'},
     {label: '!paste', insertText: '!paste', detail: 'Override this entry to paste'},
     {label: '{{appId}}', insertText: '{{appId}}', detail: 'YARN application id parameter'},
     {label: '{{topic}}', insertText: '{{topic}}', detail: 'Kafka topic parameter'},
+    {label: '{{groupId}}', insertText: '{{groupId}}', detail: 'Kafka consumer group parameter'},
+    {label: '{{db}}', insertText: '{{db}}', detail: 'MongoDB database name parameter'},
+    {label: '{{collection}}', insertText: '{{collection}}', detail: 'MongoDB collection name parameter'},
 ] as const

@@ -17,6 +17,13 @@ import {
     toStoredCommandText,
 } from '@/features/ssh/services/ssh-script-record-content.service'
 import {resolveBuiltinCommandPlainText} from '@/features/ssh/services/ssh-builtin-defaults.service'
+import {
+    commandsToExecutableText,
+    parseCommandEntries,
+    resolveRecordCommands,
+    serializeCommandEntries,
+} from '@/features/ssh/services/ssh-my-commands.service'
+import type {SshCommandItem} from '@/features/ssh/types/ssh-script-record.types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {sshScriptRecordNodeId} from '@/features/explorer/services/ssh-feature-tree.service'
@@ -60,11 +67,19 @@ function markDirty() {
   dirty.value = true
 }
 
-function resolveContentText(stored: string, recordId?: string): string {
-  const fromStored = toPlainCommandText(stored)
+function resolveContentText(options: {
+  contentHtml?: string
+  commands?: SshCommandItem[]
+  recordId?: string
+}): string {
+  // Prefer stored DSL so autosave/reload does not rewrite the user's formatting.
+  const fromStored = toPlainCommandText(options.contentHtml ?? '')
   if (fromStored.trim()) return fromStored
-  if (recordId) {
-    const builtin = resolveBuiltinCommandPlainText(recordId)
+  if (options.commands?.some((item) => !!item.command?.trim())) {
+    return serializeCommandEntries(options.commands).trimEnd()
+  }
+  if (options.recordId) {
+    const builtin = resolveBuiltinCommandPlainText(options.recordId)
     if (builtin) return builtin.trimEnd()
   }
   return ''
@@ -73,13 +88,18 @@ function resolveContentText(stored: string, recordId?: string): string {
 async function applyRecordState(next: {
   title: string
   contentHtml: string
+  commands?: SshCommandItem[]
   updatedAt?: number
   recordId?: string
 }) {
   applying.value = true
   ready.value = false
   title.value = next.title
-  commandText.value = resolveContentText(next.contentHtml, next.recordId ?? props.tab.sshScriptRecordId)
+  commandText.value = resolveContentText({
+    contentHtml: next.contentHtml,
+    commands: next.commands,
+    recordId: next.recordId ?? props.tab.sshScriptRecordId,
+  })
   props.tab.title = next.title
   props.tab.sshScriptRecordTitle = next.title
   props.tab.sshScriptRecordHtml = toStoredCommandText(commandText.value) || toPlainCommandText(next.contentHtml)
@@ -109,6 +129,7 @@ async function reloadFromServer() {
     await applyRecordState({
       title: record.title,
       contentHtml: record.contentHtml ?? '',
+      commands: resolveRecordCommands(record),
       updatedAt: record.updatedAt,
       recordId: record.id,
     })
@@ -117,10 +138,18 @@ async function reloadFromServer() {
   }
 }
 
+function resolveExecutablePayload(): string {
+  return commandsToExecutableText(parseCommandEntries(commandText.value).commands)
+}
+
 async function copyRecordText() {
-  if (!commandText.value.trim()) return
+  const payload = resolveExecutablePayload()
+  if (!payload.trim()) {
+    layout.showToast(t('ssh.scriptRecord.sendEmpty'))
+    return
+  }
   try {
-    await navigator.clipboard.writeText(commandText.value)
+    await navigator.clipboard.writeText(payload)
     layout.showToast(t('ssh.scriptRecord.copied'))
   } catch {
     layout.showToast(t('ssh.scriptRecord.copyFailed'))
@@ -138,7 +167,8 @@ async function waitForTerminalHandle(connectionId: string, attempts = 25): Promi
 async function sendToTerminal() {
   const connectionId = props.tab.connectionId
   if (!connectionId) return
-  if (!commandText.value.trim()) {
+  const payload = resolveExecutablePayload()
+  if (!payload.trim()) {
     layout.showToast(t('ssh.scriptRecord.sendEmpty'))
     return
   }
@@ -154,7 +184,7 @@ async function sendToTerminal() {
       return
     }
   }
-  const ok = await sendToSshTerminal(connectionId, commandText.value, {appendNewline: false})
+  const ok = await sendToSshTerminal(connectionId, payload, {appendNewline: false})
   if (ok) {
     layout.showToast(t('ssh.scriptRecord.sentToTerminal'))
     return
@@ -170,6 +200,7 @@ async function saveRecord(options?: {silent?: boolean}) {
   if (options?.silent && !stored.trim() && props.tab.sshScriptRecordHtml?.trim()) {
     return false
   }
+  const parsed = parseCommandEntries(stored)
   const nextTitle = title.value.trim() || t('ssh.scriptRecord.untitled')
   saving.value = true
   try {
@@ -177,11 +208,13 @@ async function saveRecord(options?: {silent?: boolean}) {
       id: recordId,
       title: nextTitle,
       contentHtml: stored,
+      commands: parsed.commands,
       updatedAt: Date.now(),
     })
     await applyRecordState({
       title: saved.title,
       contentHtml: saved.contentHtml ?? '',
+      commands: resolveRecordCommands(saved),
       updatedAt: saved.updatedAt,
       recordId: saved.id,
     })
