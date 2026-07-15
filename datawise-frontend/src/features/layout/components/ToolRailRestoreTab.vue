@@ -45,14 +45,14 @@ function restore() {
   justify-content: center;
   flex-shrink: 0;
   align-self: stretch;
-  width: 14px;
+  width: var(--dw-icon-size-sm);
   min-height: 52px;
   padding: 0;
   border: 1px solid var(--dw-panel-border);
   background: var(--dw-bg-panel);
   color: var(--dw-text-muted);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition: var(--dw-transition-colors);
 }
 
 .tool-rail-restore:hover {
@@ -62,12 +62,12 @@ function restore() {
 }
 
 .tool-rail-restore--left {
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--dw-control-radius) var(--dw-control-radius) 0;
   border-left: none;
 }
 
 .tool-rail-restore--right {
-  border-radius: 8px 0 0 8px;
+  border-radius: var(--dw-control-radius) 0 0 var(--dw-control-radius);
   border-right: none;
 }
 </style>

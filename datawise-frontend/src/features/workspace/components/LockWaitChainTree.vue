@@ -87,23 +87,23 @@ function onKill(mode: SessionKillMode, sessionId: string) {
 
 <style scoped>
 .lock-waits__node + .lock-waits__node {
-  margin-top: 6px;
+  margin-top: var(--dw-space-3);
 }
 
 .lock-waits__card-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .lock-waits__card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   width: 100%;
-  padding: 10px 11px;
+  padding: var(--dw-space-5) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg);
   text-align: left;
   cursor: pointer;
@@ -122,32 +122,32 @@ function onKill(mode: SessionKillMode, sessionId: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .lock-waits__duration {
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
 .lock-waits__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
 }
 
 .lock-waits__sql {
   margin: 0;
-  padding: 7px 8px;
-  border-radius: 7px;
+  padding: var(--dw-space-3) var(--dw-space-4);
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-muted);
   color: var(--dw-text);
   font-family: var(--dw-mono);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
   white-space: pre-wrap;
   word-break: break-word;
 }

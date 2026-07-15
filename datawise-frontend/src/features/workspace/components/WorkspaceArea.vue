@@ -46,7 +46,7 @@ watch(activeTab, () => nextTick(reconcileBrokenActiveTab))
 </script>
 
 <template>
-  <main class="workspace" :class="{ 'workspace--home': showWelcome }" data-onboarding="workspace-main">
+  <main class="workspace dw-surface dw-surface--editor" :class="{ 'workspace--home': showWelcome }" data-onboarding="workspace-main">
     <WorkspaceTabs v-if="workspace.hasOpenTabs"/>
     <div class="workspace-body">
       <WelcomeTab v-if="showWelcome"/>
@@ -73,11 +73,6 @@ watch(activeTab, () => nextTick(reconcileBrokenActiveTab))
   flex: 1;
   min-width: 0;
   min-height: 0;
-  border: 1px solid var(--dw-panel-border);
-  border-radius: var(--dw-panel-radius);
-  background: var(--dw-bg-editor);
-  box-shadow: var(--dw-panel-shadow);
-  overflow: hidden;
 }
 
 .workspace-body {

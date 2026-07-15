@@ -26,16 +26,16 @@ const {snippet, connectionLabel, visible, copyCommand} = useTerminalConnectionHi
 .terminal-context-hint {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   width: 100%;
   margin: 0;
-  padding: 6px 10px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border: none;
   border-top: 1px solid var(--terminal-border, #2d3340);
-  background: color-mix(in srgb, #22c55e 10%, #151820);
+  background: color-mix(in srgb, var(--dw-success) 10%, #151820);
   color: #d1fae5;
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   text-align: left;
   cursor: pointer;
   opacity: 0;
@@ -47,12 +47,12 @@ const {snippet, connectionLabel, visible, copyCommand} = useTerminalConnectionHi
 }
 
 .terminal-context-hint:hover {
-  background: color-mix(in srgb, #22c55e 16%, #151820);
+  background: color-mix(in srgb, var(--dw-success) 16%, #151820);
 }
 
 .terminal-context-hint__label {
   flex-shrink: 0;
-  color: #86efac;
+  color: var(--dw-success);
   font-weight: 600;
   white-space: nowrap;
 }

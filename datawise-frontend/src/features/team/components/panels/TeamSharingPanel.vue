@@ -202,29 +202,29 @@ const emit = defineEmits<{
 .sharing-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--dw-space-8);
 }
 
 .sharing-block__title {
-  margin: 0 0 4px;
-  font-size: 14px;
+  margin: 0 0 var(--dw-space-2);
+  font-size: var(--dw-text-xl);
   font-weight: 600;
 }
 
 .sharing-block__desc {
-  margin: 0 0 10px;
-  font-size: 12px;
+  margin: 0 0 var(--dw-space-5);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .sharing-block__hint {
-  margin-top: 10px;
-  font-size: 12px;
+  margin-top: var(--dw-space-5);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-secondary);
 }
 
 .link-btn {
-  margin-left: 4px;
+  margin-left: var(--dw-space-2);
   padding: 0;
   border: none;
   background: transparent;
@@ -238,18 +238,18 @@ const emit = defineEmits<{
   width: 100%;
   min-height: 84px;
   resize: vertical;
-  margin-bottom: 12px;
+  margin-bottom: var(--dw-space-6);
 }
 
 .shared-access-list {
   display: grid;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-6);
 }
 
 .shared-access-list__hint {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
@@ -257,15 +257,15 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 10px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-pad-control);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
 }
 
 .shared-access-row__id {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .shared-access-row :deep(.dw-select) {
@@ -275,47 +275,47 @@ const emit = defineEmits<{
 
 .on-call-list {
   display: grid;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-6);
 }
 
 .on-call-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-pad-control);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   cursor: pointer;
 }
 
 .on-call-row__id {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .invite-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--dw-space-6);
   flex-wrap: wrap;
 }
 
 .invite-code {
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: var(--dw-space-4) var(--dw-space-6);
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-muted);
   font-family: var(--dw-mono);
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
   letter-spacing: 0.08em;
 }
 
 .share-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 13px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-6);
+  font-size: var(--dw-text-md);
 }
 </style>

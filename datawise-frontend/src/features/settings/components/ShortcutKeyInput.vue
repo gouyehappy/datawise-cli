@@ -135,7 +135,7 @@ function reset() {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
 }
 
@@ -146,14 +146,13 @@ function reset() {
   justify-content: center;
   min-width: 148px;
   min-height: 36px;
-  padding: 6px 10px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg);
   color: var(--dw-text);
   cursor: pointer;
-  transition: border-color 0.15s ease,
-  box-shadow 0.15s ease,
+  transition: var(--dw-transition-shadow),
   background 0.15s ease;
 }
 
@@ -163,14 +162,14 @@ function reset() {
 }
 
 .shortcut-key-input.is-recording .shortcut-key-input__trigger {
-  border-color: var(--dw-primary-border);
-  box-shadow: 0 0 0 3px var(--dw-primary-soft);
+  border-color: var(--dw-focus-border);
+  box-shadow: var(--dw-focus-ring);
   background: color-mix(in srgb, var(--dw-primary) 6%, var(--dw-bg));
 }
 
 .shortcut-key-input.has-conflict .shortcut-key-input__trigger {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #ef4444 18%, transparent);
+  border-color: var(--dw-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dw-danger) 18%, transparent);
 }
 
 .shortcut-key-input__field {
@@ -185,7 +184,7 @@ function reset() {
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
 }
 
 .shortcut-key-input__chip {
@@ -193,10 +192,10 @@ function reset() {
   align-items: center;
   justify-content: center;
   min-width: 22px;
-  min-height: 22px;
-  padding: 0 6px;
+  min-height: var(--dw-control-h-xs);
+  padding: 0 var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: linear-gradient(
       180deg,
       var(--dw-bg-panel) 0%,
@@ -204,7 +203,7 @@ function reset() {
   );
   box-shadow: 0 1px 0 color-mix(in srgb, var(--dw-text) 6%, transparent);
   font-family: var(--dw-mono);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   line-height: 1;
   color: var(--dw-text-secondary);
@@ -216,15 +215,15 @@ function reset() {
 }
 
 .shortcut-key-input__empty {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .shortcut-key-input__recording {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: var(--dw-gap);
+  font-size: var(--dw-text-sm);
   font-weight: 500;
   color: var(--dw-primary);
 }
@@ -254,13 +253,13 @@ function reset() {
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 32px;
+  height: var(--dw-tab-height);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: transparent;
   color: var(--dw-text-muted);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition: var(--dw-transition-colors);
 }
 
 .shortcut-key-input__reset:hover {
@@ -273,7 +272,7 @@ function reset() {
   flex: 1 1 100%;
   margin: 0;
   text-align: right;
-  color: #dc2626;
-  font-size: 11px;
+  color: var(--dw-danger);
+  font-size: var(--dw-text-xs);
 }
 </style>

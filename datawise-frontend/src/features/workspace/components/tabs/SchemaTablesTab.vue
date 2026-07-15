@@ -268,8 +268,8 @@ async function updateSelectedTags(tagged: boolean) {
 
 .schema-tables-tab :deep(.schema-tables-tab__hint) {
   max-width: min(320px, 36vw);
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   color: var(--dw-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -292,7 +292,7 @@ async function updateSelectedTags(tagged: boolean) {
 }
 
 :deep(.col-collation) {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 :deep(.col-num) {

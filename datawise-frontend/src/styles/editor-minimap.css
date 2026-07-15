@@ -9,10 +9,9 @@
 .monaco-host :deep(.minimap-slider) {
     background: var(--dw-minimap-slider-bg) !important;
     border: 1px solid var(--dw-minimap-slider-border) !important;
-    border-radius: 3px !important;
+    border-radius: var(--dw-radius-sm) !important;
     box-shadow: 0 0 0 1px var(--dw-minimap-slider-ring) inset !important;
-    transition: background 0.15s ease,
-    border-color 0.15s ease;
+    transition: var(--dw-transition-colors);
 }
 
 .monaco-host :deep(.minimap:hover .minimap-slider) {
@@ -28,14 +27,4 @@
     --dw-minimap-slider-ring: rgba(255, 255, 255, 0.06);
     --dw-minimap-slider-hover-bg: rgba(167, 139, 250, 0.1);
     --dw-minimap-slider-hover-border: rgba(167, 139, 250, 0.38);
-}
-
-.monaco-host[data-minimap-tone='light'] {
-    --dw-minimap-border: rgba(15, 23, 42, 0.08);
-    --dw-minimap-inset-shadow: rgba(15, 23, 42, 0.04);
-    --dw-minimap-slider-bg: rgba(15, 23, 42, 0.04);
-    --dw-minimap-slider-border: rgba(15, 23, 42, 0.12);
-    --dw-minimap-slider-ring: rgba(255, 255, 255, 0.6);
-    --dw-minimap-slider-hover-bg: rgba(124, 58, 237, 0.06);
-    --dw-minimap-slider-hover-border: rgba(124, 58, 237, 0.28);
 }

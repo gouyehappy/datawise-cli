@@ -22,25 +22,25 @@ const model = defineModel<boolean>({required: true})
 .settings-switch {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-5) 0;
   cursor: pointer;
 }
 
 .settings-switch input {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--dw-space-1);
   accent-color: var(--dw-primary);
 }
 
 .settings-switch__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-1);
 }
 
 .settings-switch__label {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   color: var(--dw-text);
 }
 

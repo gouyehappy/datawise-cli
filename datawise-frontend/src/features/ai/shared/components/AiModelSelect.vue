@@ -192,30 +192,29 @@ watch(open, (isOpen) => {
 .ai-model-select__trigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   max-width: 100%;
   border: 1px solid var(--dw-border-light);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-secondary);
   font-size: var(--mp-sub);
-  line-height: 1.4;
+  line-height: var(--dw-leading);
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s ease,
-  background 0.15s ease,
+  transition: var(--dw-transition-colors),
   color 0.15s ease;
 }
 
 .ai-model-select--default .ai-model-select__trigger {
   height: clamp(28px, 3.2vmin, 32px);
-  padding: 0 10px 0 12px;
+  padding: 0 var(--dw-space-5) 0 var(--dw-space-6);
 }
 
 .ai-model-select--composer .ai-model-select__trigger {
-  height: 28px;
-  padding: 0 8px 0 6px;
-  gap: 4px;
+  height: var(--dw-btn-height);
+  padding: 0 var(--dw-space-4) 0 var(--dw-space-3);
+  gap: var(--dw-gap-xs);
   max-width: min(240px, 46vw);
   border-color: transparent;
   background: transparent;
@@ -235,7 +234,7 @@ watch(open, (isOpen) => {
   font-size: var(--mp-sub);
   font-weight: 500;
   color: var(--dw-text);
-  line-height: 1.4;
+  line-height: var(--dw-leading);
 }
 
 .ai-model-select--composer .ai-model-select__trigger:hover:not(:disabled) .ai-model-select__label,
@@ -287,23 +286,23 @@ watch(open, (isOpen) => {
 
 .ai-model-select__count {
   flex-shrink: 0;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
+  min-width: var(--dw-icon-size-lg);
+  height: var(--dw-icon-size-lg);
+  padding: 0 var(--dw-space-2);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg);
   border: 1px solid var(--dw-border-light);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
-  line-height: 16px;
+  line-height: var(--dw-tab-title-line);
   text-align: center;
 }
 
 .ai-model-select__chevron {
   flex-shrink: 0;
   opacity: 0.55;
-  transition: transform 0.15s ease;
+  transition: transform var(--dw-duration) var(--dw-ease);
 }
 
 .ai-model-select__trigger.open .ai-model-select__chevron {
@@ -312,8 +311,7 @@ watch(open, (isOpen) => {
 
 .model-menu-enter-active,
 .model-menu-leave-active {
-  transition: opacity 0.12s ease,
-  transform 0.12s ease;
+  transition: opacity var(--dw-duration-fast) var(--dw-ease), transform var(--dw-duration-fast) var(--dw-ease);
 }
 
 .model-menu-enter-from,

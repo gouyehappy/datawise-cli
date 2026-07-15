@@ -186,8 +186,8 @@ async function startSession() {
       scrollback: 5000,
       theme: {
         background: '#1a1d24',
-        foreground: '#e5e7eb',
-        cursor: '#22c55e',
+        foreground: 'var(--dw-border)',
+        cursor: 'var(--dw-success)',
         selectionBackground: '#264f78',
       },
     })
@@ -463,7 +463,7 @@ defineExpose({
   height: 100%;
   min-height: 0;
   /* Extra bottom inset so the live prompt/cursor isn't flush against the pane edge. */
-  padding: 10px 12px 18px;
+  padding: var(--dw-space-5) var(--dw-space-6) 18px;
   background: #1a1d24;
   outline: none;
   overflow: hidden;
@@ -479,7 +479,7 @@ defineExpose({
   left: 0;
   right: 0;
   bottom: 0;
-  height: 14px;
+  height: var(--dw-icon-size-sm);
   background: linear-gradient(to top, rgba(26, 29, 36, 0.85), transparent);
 }
 
@@ -497,6 +497,6 @@ defineExpose({
 
 .ssh-terminal :deep(.xterm-screen) {
   /* Keep cursor/descenders inside the padded area. */
-  margin-bottom: 2px;
+  margin-bottom: var(--dw-space-1);
 }
 </style>

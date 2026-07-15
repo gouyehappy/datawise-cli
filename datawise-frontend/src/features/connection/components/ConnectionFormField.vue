@@ -21,22 +21,22 @@ defineProps<{
 .conn-form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
 }
 
 .conn-form-field label {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   color: var(--dw-text);
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
 }
 
 .conn-form-field__hint {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .conn-form-field--wide {

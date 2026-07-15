@@ -46,24 +46,24 @@ const title = computed(() =>
   position: absolute;
   top: 8px;
   right: 10px;
-  z-index: 2;
+  z-index: var(--dw-z-raised);
   width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  height: var(--dw-tab-height);
+  border-radius: var(--dw-control-radius-sm);
   color: var(--dw-text-secondary);
   background: color-mix(in srgb, var(--dw-bg) 88%, transparent);
   border: 1px solid var(--dw-border-light);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--dw-shadow-sm);
   opacity: 0.72;
   backdrop-filter: blur(4px);
-  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: var(--dw-transition-colors), opacity var(--dw-duration) var(--dw-ease), box-shadow var(--dw-duration) var(--dw-ease);
 }
 
 .editor-fs-btn--floating:hover {
   opacity: 1;
   color: var(--dw-text);
   background: var(--dw-bg);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--dw-shadow-md);
 }
 
 .editor-fs-btn--floating.is-active {
@@ -74,8 +74,8 @@ const title = computed(() =>
 }
 
 .editor-fs-btn--floating .editor-fs-icon {
-  width: 16px;
-  height: 16px;
+  width: var(--dw-icon-size-md);
+  height: var(--dw-icon-size-md);
 }
 
 .editor-fs-btn--toolbar.is-active {

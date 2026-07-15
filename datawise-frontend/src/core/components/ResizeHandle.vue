@@ -66,7 +66,7 @@ onUnmounted(() => {
 .resize-handle {
   flex-shrink: 0;
   background: transparent;
-  transition: background 0.15s;
+  transition: background var(--dw-duration) var(--dw-ease);
 }
 
 .resize-handle.horizontal {

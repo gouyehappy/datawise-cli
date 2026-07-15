@@ -116,17 +116,17 @@ onMounted(() => {
 }
 
 .plugin-dev-page__back {
-    margin: clamp(16px, 2vmin, 24px) 0 0;
+    margin: var(--dw-space-10) 0 0;
     text-align: center;
 }
 
 .plugin-dev-page__back-btn {
-    padding: 8px 14px;
+    padding: var(--dw-space-4) var(--dw-space-7);
     border: 1px solid var(--dw-border);
-    border-radius: var(--dw-radius-md, 8px);
+    border-radius: var(--dw-radius-md);
     background: transparent;
     color: var(--dw-text-secondary);
-    font-size: 0.875rem;
+    font-size: var(--dw-text-xl);
     cursor: pointer;
 }
 

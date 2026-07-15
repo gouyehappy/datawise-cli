@@ -122,75 +122,75 @@ function onSelect(dbType: DbType) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 4px 12px 6px;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-2) var(--dw-space-6) var(--dw-space-3);
 }
 
 .panel-title {
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 500;
   color: var(--dw-text-muted);
   letter-spacing: 0.02em;
 }
 
 .panel-count {
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
+  min-width: var(--dw-icon-size-lg);
+  height: var(--dw-icon-size-lg);
+  padding: 0 var(--dw-space-2);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
-  line-height: 18px;
+  line-height: var(--dw-text-xl);
   text-align: center;
 }
 
 .panel-search {
-  padding: 0 8px 6px;
+  padding: 0 var(--dw-space-4) var(--dw-space-3);
 }
 
 .panel-search :deep(.dw-search) {
-  height: 28px;
+  height: var(--dw-btn-height);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-muted);
 }
 
 .panel-search :deep(.dw-search input) {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .panel-body {
   max-height: 280px;
   overflow-y: auto;
-  padding: 0 4px 4px;
+  padding: 0 var(--dw-space-2) var(--dw-space-2);
 }
 
 .panel-section + .panel-section {
-  margin-top: 4px;
-  padding-top: 4px;
+  margin-top: var(--dw-space-2);
+  padding-top: var(--dw-space-2);
   border-top: 1px solid var(--dw-border-light);
 }
 
 .section-label {
-  padding: 2px 8px 4px;
+  padding: var(--dw-space-1) var(--dw-space-4) var(--dw-space-2);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
 .panel-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   width: 100%;
-  min-height: 26px;
-  padding: 0 8px;
+  min-height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-4);
   border-radius: 0;
   text-align: left;
   color: var(--dw-text);
-  transition: background 0.1s ease;
+  transition: var(--dw-transition-bg);
 }
 
 .panel-item:hover {
@@ -198,7 +198,7 @@ function onSelect(dbType: DbType) {
 }
 
 [data-theme='dark'] .panel-item:hover {
-  background: #2d4f7c;
+  background: var(--dw-selection-bg);
 }
 
 .panel-item__icon {
@@ -208,14 +208,14 @@ function onSelect(dbType: DbType) {
 .panel-item__label {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-tight);
 }
 
 .panel-empty {
-  padding: 12px 10px;
+  padding: var(--dw-space-6) var(--dw-space-5);
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   text-align: center;
 }
 </style>

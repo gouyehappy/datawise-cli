@@ -229,33 +229,33 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
 .bookmarks-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--dw-space-6);
 }
 
 .bookmarks-panel__toolbar {
   display: flex;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .bookmarks-panel__search {
   flex: 1;
   min-width: 0;
-  padding: 8px 10px;
+  padding: var(--dw-pad-control);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
   color: var(--dw-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .bookmarks-panel__add {
   flex-shrink: 0;
-  padding: 8px 12px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
   color: var(--dw-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
   cursor: pointer;
 }
@@ -268,16 +268,16 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
 .bookmarks-panel__filter-block {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .bookmarks-panel__filter-block--tags {
-  padding-top: 2px;
+  padding-top: var(--dw-space-1);
   border-top: 1px dashed var(--dw-border-light);
 }
 
 .bookmarks-panel__filter-label {
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -287,17 +287,17 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
 .bookmarks-panel__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .bookmarks-panel__chip {
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: var(--dw-space-2) var(--dw-space-5);
+  border-radius: var(--dw-radius-pill);
   border: 1px solid var(--dw-border-light);
   background: var(--dw-bg-panel);
   color: var(--dw-text-secondary);
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   cursor: pointer;
 }
 
@@ -310,33 +310,33 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
 .bookmarks-panel__groups {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--dw-space-7);
 }
 
 .bookmarks-group__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-  padding-bottom: 6px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-3);
+  padding-bottom: var(--dw-space-3);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
 .bookmarks-group__head h5 {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
   color: var(--dw-text);
 }
 
 .bookmarks-group__count {
   min-width: 20px;
-  padding: 1px 7px;
-  border-radius: 999px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   text-align: center;
 }
@@ -344,7 +344,7 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
 .bookmarks-group__list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -356,10 +356,10 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
   gap: 0;
   width: 100%;
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg);
   overflow: hidden;
-  transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+  transition: var(--dw-transition-colors), box-shadow 0.12s ease;
 }
 
 .bookmark-card:hover {
@@ -372,9 +372,9 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
   display: flex;
   flex: 1;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-width: 0;
-  padding: 10px 11px;
+  padding: var(--dw-space-5) var(--dw-space-5);
   border: none;
   background: transparent;
   text-align: left;
@@ -385,8 +385,8 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
-  padding: 4px 6px 4px 0;
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-2) var(--dw-space-3) var(--dw-space-2) 0;
   flex-shrink: 0;
 }
 
@@ -396,9 +396,9 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
   justify-content: center;
   flex-shrink: 0;
   width: 32px;
-  height: 32px;
+  height: var(--dw-tab-height);
   margin-top: 1px;
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-muted));
   color: var(--dw-primary);
 }
@@ -407,7 +407,7 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   min-width: 0;
 }
 
@@ -415,34 +415,34 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 6px;
+  gap: var(--dw-space-2) var(--dw-space-3);
 }
 
 .bookmark-card__title {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   color: var(--dw-text);
   word-break: break-word;
 }
 
 .bookmark-card__desc {
   color: var(--dw-text-secondary);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .bookmark-card__meta {
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .bookmark-card__chevron {
   flex-shrink: 0;
   align-self: center;
   color: var(--dw-text-muted);
-  font-size: 18px;
+  font-size: var(--dw-text-2xl);
   line-height: 1;
   opacity: 0.45;
 }
@@ -454,8 +454,8 @@ function exportForGitCi(item: QueryBookmarkItem, event: Event) {
   background: transparent;
   color: var(--dw-text-muted);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
+  padding: var(--dw-space-2);
+  border-radius: var(--dw-control-radius-sm);
 }
 
 .bookmark-card__action:hover {

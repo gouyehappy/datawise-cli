@@ -322,8 +322,8 @@ function onKeydown(event: KeyboardEvent) {
 
 <style scoped>
 .app-palette__hint--reference {
-  margin-top: -6px;
+  margin-top: -var(--dw-space-3);
   color: var(--dw-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--dw-text-md);
 }
 </style>

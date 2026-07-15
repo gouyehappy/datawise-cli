@@ -54,9 +54,9 @@ function refresh() {
 .yarn-apps-tab__head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--dw-space-6);
   min-height: 56px;
-  padding: 11px 16px;
+  padding: var(--dw-space-5) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border);
   background: var(--dw-bg-panel);
 }
@@ -68,20 +68,20 @@ function refresh() {
 
 .yarn-apps-tab__title h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
   font-weight: 600;
 }
 
 .yarn-apps-tab__title p {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: var(--dw-space-2) 0 0;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .yarn-apps-tab__refresh {
-  padding: 6px 12px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-input);
   cursor: pointer;
 }
@@ -89,6 +89,6 @@ function refresh() {
 .yarn-apps-tab__panel {
   flex: 1;
   min-height: 0;
-  padding: 12px 16px;
+  padding: var(--dw-space-6) var(--dw-space-8);
 }
 </style>

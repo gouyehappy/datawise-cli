@@ -89,10 +89,10 @@ defineExpose({
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 16px 28px 20px;
+  padding: var(--dw-space-8) var(--dw-space-11) var(--dw-space-9);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--dw-space-8);
   background: radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, var(--dw-primary) 6%, transparent), transparent 70%),
   var(--dw-bg);
 }
@@ -103,27 +103,26 @@ defineExpose({
 
 .quick-label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: var(--dw-space-5);
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .quick-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .quick-chip {
-  padding: 8px 14px;
+  padding: var(--dw-space-4) var(--dw-space-7);
   border: 1px solid var(--dw-border);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-panel);
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-snug);
   cursor: pointer;
-  transition: border-color 0.15s ease,
-  background 0.15s ease,
+  transition: var(--dw-transition-colors),
   color 0.15s ease,
   transform 0.12s ease;
 }

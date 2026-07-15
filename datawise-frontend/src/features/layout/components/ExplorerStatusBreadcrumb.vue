@@ -37,13 +37,13 @@ const {segments, hasPath} = useExplorerStatusPath()
 .explorer-status-path {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
   color: var(--dw-text-secondary);
-  font-size: 11px;
-  line-height: 1.2;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-tight);
 }
 
 .explorer-status-path__brand {
@@ -53,14 +53,14 @@ const {segments, hasPath} = useExplorerStatusPath()
 .explorer-status-path__sep {
   flex-shrink: 0;
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   opacity: 0.72;
 }
 
 .explorer-status-path__segment {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -85,10 +85,10 @@ const {segments, hasPath} = useExplorerStatusPath()
 
 .explorer-status-path__db-icon {
   flex-shrink: 0;
-  color: #16a34a;
+  color: var(--dw-success);
 }
 
 [data-theme='dark'] .explorer-status-path__db-icon {
-  color: #4ade80;
+  color: var(--dw-success);
 }
 </style>

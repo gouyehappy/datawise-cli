@@ -134,6 +134,16 @@ export default {
     basic: {
         title: '基础设置',
         subtitle: '在这里你可以选择喜欢的样式作为主题，调整背景色与主题色，并根据地区选择适合的语言。',
+        uiSkin: '界面款式',
+        uiSkinHint: '经典保持现有卡片壳；IDE 为可选的贴合式工作台',
+        uiSkins: {
+            classic: '经典卡片',
+            ide: 'IDE 工作台',
+        },
+        uiSkinHints: {
+            classic: '圆角卡片与留白（默认）',
+            ide: '贴合扁平、更像 IDEA',
+        },
         background: '背景色',
         backgroundHint: '设置界面的背景色',
         appearances: {

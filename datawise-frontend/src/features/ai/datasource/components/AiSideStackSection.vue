@@ -92,11 +92,11 @@ const actionLabel = computed(() =>
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   flex-shrink: 0;
   width: 100%;
   min-height: 44px;
-  padding: 8px 10px 8px 12px;
+  padding: var(--dw-space-4) var(--dw-space-5) var(--dw-space-4) var(--dw-space-6);
   border: none;
   border-bottom: 1px solid var(--dw-border-light);
   background: linear-gradient(
@@ -107,8 +107,7 @@ const actionLabel = computed(() =>
   color: var(--dw-text);
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease,
-  border-color 0.15s ease,
+  transition: var(--dw-transition-colors),
   box-shadow 0.15s ease;
 }
 
@@ -119,7 +118,7 @@ const actionLabel = computed(() =>
       color-mix(in srgb, var(--dw-primary-soft) 70%, var(--dw-bg-panel)) 0%,
       color-mix(in srgb, var(--dw-primary-soft) 35%, var(--dw-bg-panel)) 100%
   );
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 40%, transparent);
+  box-shadow: var(--dw-surface-inset-highlight);
 }
 
 .stack-section.is-collapsed .stack-section__head {
@@ -136,9 +135,9 @@ const actionLabel = computed(() =>
   top: 8px;
   bottom: 8px;
   width: 3px;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 var(--dw-radius-sm) var(--dw-radius-sm) 0;
   background: color-mix(in srgb, var(--dw-text-muted) 35%, transparent);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background var(--dw-duration) var(--dw-ease) ease, box-shadow 0.15s ease;
 }
 
 .stack-section.is-active .stack-section__accent {
@@ -152,19 +151,18 @@ const actionLabel = computed(() =>
   justify-content: center;
   flex-shrink: 0;
   width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  height: var(--dw-btn-height);
+  border-radius: var(--dw-control-radius);
   border: 1px solid var(--dw-border-light);
   background: var(--dw-bg);
   color: var(--dw-text-secondary);
-  transition: background 0.15s ease,
-  border-color 0.15s ease,
+  transition: var(--dw-transition-colors),
   color 0.15s ease;
 }
 
 .stack-section.is-active .stack-section__icon {
   border-color: color-mix(in srgb, var(--dw-primary) 30%, var(--dw-border-light));
-  background: color-mix(in srgb, var(--dw-primary-soft) 80%, #fff);
+  background: color-mix(in srgb, var(--dw-primary-soft) 80%, var(--dw-on-accent));
   color: var(--dw-primary);
 }
 
@@ -178,17 +176,17 @@ const actionLabel = computed(() =>
 
 .stack-section__label {
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
 }
 
 .stack-section__title {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -196,8 +194,8 @@ const actionLabel = computed(() =>
 
 .stack-section__subtitle {
   color: var(--dw-text-secondary);
-  font-size: 10px;
-  line-height: 1.3;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

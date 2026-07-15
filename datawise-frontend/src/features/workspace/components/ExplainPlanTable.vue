@@ -43,7 +43,7 @@ function cellValue(value: string | number | undefined): string {
 <style scoped>
 .explain-plan-table-wrap {
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
 }
 
@@ -51,12 +51,12 @@ function cellValue(value: string | number | undefined): string {
   width: 100%;
   min-width: 640px;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .explain-plan-table th,
 .explain-plan-table td {
-  padding: 8px 10px;
+  padding: var(--dw-pad-control);
   border-bottom: 1px solid var(--dw-border-light);
   text-align: left;
   vertical-align: top;
@@ -65,7 +65,7 @@ function cellValue(value: string | number | undefined): string {
 .explain-plan-table thead th {
   background: color-mix(in srgb, var(--dw-bg-muted) 88%, var(--dw-bg-panel));
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -80,19 +80,19 @@ function cellValue(value: string | number | undefined): string {
 }
 
 .explain-plan-table td {
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
   color: var(--dw-text-secondary);
-  line-height: 1.45;
+  line-height: var(--dw-leading);
   word-break: break-word;
 }
 
 .explain-plan-table td:first-child,
 .explain-plan-table th:first-child {
-  padding-left: 12px;
+  padding-left: var(--dw-space-6);
 }
 
 .explain-plan-table td:last-child,
 .explain-plan-table th:last-child {
-  padding-right: 12px;
+  padding-right: var(--dw-space-6);
 }
 </style>

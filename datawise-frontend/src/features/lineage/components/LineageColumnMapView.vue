@@ -363,20 +363,20 @@ defineExpose({fitView})
 
 <style scoped>
 .er-lineage {
-  --er-canvas-bg: color-mix(in srgb, var(--dw-bg-editor) 94%, #e2e8f0 6%);
-  --er-node-fill: #ffffff;
-  --er-node-stroke: color-mix(in srgb, var(--dw-border) 75%, #64748b 25%);
-  --er-header-fill: color-mix(in srgb, var(--dw-bg-muted) 45%, #fff 55%);
-  --er-output-header: color-mix(in srgb, var(--dw-primary) 14%, #fff 86%);
-  --er-output-stroke: color-mix(in srgb, var(--dw-primary) 45%, #64748b 55%);
-  --er-text: #0f172a;
-  --er-text-label: #64748b;
+  --er-canvas-bg: color-mix(in srgb, var(--dw-bg-editor) 94%, var(--dw-border-light) 6%);
+  --er-node-fill: var(--dw-bg);
+  --er-node-stroke: color-mix(in srgb, var(--dw-border) 75%, var(--dw-text-secondary) 25%);
+  --er-header-fill: color-mix(in srgb, var(--dw-bg-muted) 45%, var(--dw-on-accent) 55%);
+  --er-output-header: color-mix(in srgb, var(--dw-primary) 14%, var(--dw-on-accent) 86%);
+  --er-output-stroke: color-mix(in srgb, var(--dw-primary) 45%, var(--dw-text-secondary) 55%);
+  --er-text: var(--dw-text);
+  --er-text-label: var(--dw-text-secondary);
   --er-row-alt: color-mix(in srgb, var(--dw-bg-muted) 28%, transparent);
   --er-row-active: color-mix(in srgb, var(--dw-primary) 14%, transparent);
-  --er-divider: color-mix(in srgb, var(--dw-border) 80%, #94a3b8 20%);
-  --er-link: #6366f1;
-  --er-link-warn: #d97706;
-  --er-port: #6366f1;
+  --er-divider: color-mix(in srgb, var(--dw-border) 80%, var(--dw-text-muted) 20%);
+  --er-link: var(--mp-tone-indigo);
+  --er-link-warn: var(--mp-tone-amber);
+  --er-port: var(--mp-tone-indigo);
 
   display: flex;
   flex-direction: column;
@@ -385,26 +385,26 @@ defineExpose({fitView})
 }
 
 [data-theme='dark'] .er-lineage {
-  --er-canvas-bg: #151518;
-  --er-node-fill: #26262b;
-  --er-node-stroke: #5f6672;
-  --er-header-fill: #303038;
-  --er-output-header: color-mix(in srgb, var(--dw-primary) 24%, #303038 76%);
-  --er-output-stroke: color-mix(in srgb, var(--dw-primary) 55%, #5f6672 45%);
-  --er-text: #eef1f5;
-  --er-text-label: #b8bec8;
+  --er-canvas-bg: var(--dw-bg-rail);
+  --er-node-fill: var(--dw-bg-hover);
+  --er-node-stroke: var(--dw-text-secondary);
+  --er-header-fill: var(--dw-graph-node-dark);
+  --er-output-header: color-mix(in srgb, var(--dw-primary) 24%, var(--dw-graph-node-dark) 76%);
+  --er-output-stroke: color-mix(in srgb, var(--dw-primary) 55%, var(--dw-text-secondary) 45%);
+  --er-text: var(--dw-border-light);
+  --er-text-label: var(--dw-text-muted);
   --er-row-alt: rgb(255 255 255 / 4%);
   --er-row-active: color-mix(in srgb, var(--dw-primary) 22%, transparent);
   --er-divider: rgb(255 255 255 / 10%);
-  --er-link: #818cf8;
-  --er-link-warn: #fbbf24;
-  --er-port: #818cf8;
+  --er-link: var(--mp-tone-indigo);
+  --er-link-warn: var(--dw-warning);
+  --er-port: var(--mp-tone-indigo);
 }
 
 .er-lineage__empty {
-  padding: 24px;
+  padding: var(--dw-space-10);
   color: var(--dw-text-muted);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 
 .er-lineage__canvas-wrap {
@@ -413,12 +413,12 @@ defineExpose({fitView})
   min-height: 440px;
   overflow: auto;
   border: 1px solid var(--dw-border);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--er-canvas-bg);
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 16px;
+  padding: var(--dw-space-8);
 }
 
 .er-lineage--compact .er-lineage__canvas-wrap {
@@ -432,7 +432,7 @@ defineExpose({fitView})
 }
 
 .er-lineage__column-label {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
   fill: var(--er-text-label);
   letter-spacing: 0.04em;
@@ -479,7 +479,7 @@ defineExpose({fitView})
 }
 
 .er-lineage__expr-text {
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   fill: var(--er-link-warn);
   font-family: var(--dw-mono);
@@ -524,7 +524,7 @@ defineExpose({fitView})
 }
 
 .er-lineage__entity-title {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
   fill: var(--er-text);
 }
@@ -551,7 +551,7 @@ defineExpose({fitView})
 }
 
 .er-lineage__field-label {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 500;
   fill: var(--er-text);
   font-family: var(--dw-mono);
@@ -583,19 +583,19 @@ defineExpose({fitView})
   right: 14px;
   bottom: 12px;
   display: flex;
-  gap: 14px;
-  padding: 6px 10px;
-  border-radius: 6px;
+  gap: var(--dw-space-7);
+  padding: var(--dw-space-3) var(--dw-space-5);
+  border-radius: var(--dw-control-radius-sm);
   background: color-mix(in srgb, var(--er-node-fill) 92%, transparent);
   border: 1px solid var(--er-node-stroke);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--er-text-label);
 }
 
 .er-lineage__legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .er-lineage__legend-line {

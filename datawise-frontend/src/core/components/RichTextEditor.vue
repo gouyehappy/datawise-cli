@@ -159,7 +159,7 @@ defineExpose({
   flex-direction: column;
   min-height: 0;
   border: 1px solid var(--dw-border);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
   overflow: hidden;
 }
@@ -168,21 +168,21 @@ defineExpose({
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  padding: 6px 8px;
+  gap: var(--dw-gap-xs);
+  padding: var(--dw-pad-tight);
   border-bottom: 1px solid var(--dw-border);
   background: color-mix(in srgb, var(--dw-bg-panel) 92%, var(--dw-text) 8%);
 }
 
 .rich-text-editor__divider {
   width: 1px;
-  height: 18px;
-  margin: 0 4px;
+  height: var(--dw-icon-size-lg);
+  margin: 0 var(--dw-space-2);
   background: var(--dw-border);
 }
 
 .rich-text-editor__action-label {
-  font-size: 14px;
+  font-size: var(--dw-text-xl);
   line-height: 1;
 }
 
@@ -195,8 +195,8 @@ defineExpose({
 }
 
 .rich-text-editor__inline-code {
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 11px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-xs);
 }
 
 .rich-text-editor__hr {
@@ -206,9 +206,9 @@ defineExpose({
 .rich-text-editor__body {
   flex: 1;
   min-height: 280px;
-  padding: 14px 16px;
+  padding: var(--dw-space-7) var(--dw-space-8);
   overflow: auto;
-  line-height: 1.6;
+  line-height: var(--dw-leading-loose);
   color: var(--dw-text);
   outline: none;
 }
@@ -245,20 +245,20 @@ defineExpose({
 
 .rich-text-editor__body :deep(pre),
 .rich-text-editor__body :deep(code) {
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
 }
 
 .rich-text-editor__body :deep(pre) {
   margin: 0.5em 0;
-  padding: 10px 12px;
-  border-radius: 6px;
+  padding: var(--dw-pad-control-lg);
+  border-radius: var(--dw-control-radius-sm);
   background: color-mix(in srgb, var(--dw-bg-panel) 80%, var(--dw-text) 20%);
   white-space: pre-wrap;
 }
 
 .rich-text-editor__body :deep(code) {
   padding: 0.1em 0.35em;
-  border-radius: 4px;
+  border-radius: var(--dw-radius-sm);
   background: color-mix(in srgb, var(--dw-bg-panel) 84%, var(--dw-text) 16%);
 }
 

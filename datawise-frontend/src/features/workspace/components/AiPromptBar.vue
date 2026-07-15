@@ -131,20 +131,20 @@ defineExpose({focus, inputRef})
 .ai-quick-actions {
   display: flex;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   overflow-x: auto;
-  padding: 3px 8px;
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-bottom: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
 }
 
 .ai-quick-action {
   flex-shrink: 0;
-  padding: 1px 8px;
+  padding: 1px var(--dw-space-4);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--dw-radius-sm);
   background: transparent;
   color: var(--dw-text-secondary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   cursor: pointer;
 }
 
@@ -162,12 +162,12 @@ defineExpose({focus, inputRef})
   display: flex;
   align-items: center;
   gap: 0;
-  height: 30px;
+  height: var(--dw-control-h-sm);
 }
 
 .ai-prompt-icon {
   flex-shrink: 0;
-  margin-left: 8px;
+  margin-left: var(--dw-space-4);
   color: var(--dw-text-muted);
 }
 
@@ -187,13 +187,13 @@ defineExpose({focus, inputRef})
 .ai-prompt-input {
   width: 100%;
   height: 100%;
-  padding: 0 6px;
+  padding: 0 var(--dw-space-3);
   margin: 0;
   border: none;
   outline: none;
   background: transparent;
   color: var(--dw-text-primary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-family: inherit;
 }
 
@@ -202,8 +202,8 @@ defineExpose({focus, inputRef})
   inset: 0;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 6px;
+  gap: var(--dw-gap-xs);
+  padding: 0 var(--dw-space-3);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -213,7 +213,7 @@ defineExpose({focus, inputRef})
 .ai-prompt-hint-lead {
   flex-shrink: 0;
   color: color-mix(in srgb, var(--dw-text-muted) 88%, transparent);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .ai-prompt-hint-example {
@@ -222,7 +222,7 @@ defineExpose({focus, inputRef})
   overflow: hidden;
   text-overflow: ellipsis;
   color: color-mix(in srgb, var(--dw-text-muted) 62%, transparent);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .ai-prompt-input:disabled {
@@ -233,20 +233,20 @@ defineExpose({focus, inputRef})
 .ai-prompt-divider {
   flex-shrink: 0;
   width: 1px;
-  height: 16px;
-  margin: 0 6px;
+  height: var(--dw-icon-size-md);
+  margin: 0 var(--dw-space-3);
   background: color-mix(in srgb, var(--dw-border-light) 70%, transparent);
 }
 
 .ai-context-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   max-width: 140px;
   flex-shrink: 0;
-  padding-right: 2px;
+  padding-right: var(--dw-space-1);
   color: var(--dw-text-secondary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-family: var(--dw-mono);
 }
 
@@ -267,11 +267,11 @@ defineExpose({focus, inputRef})
   justify-content: center;
   flex-shrink: 0;
   width: 22px;
-  height: 22px;
-  margin-right: 4px;
+  height: var(--dw-control-h-xs);
+  margin-right: var(--dw-space-2);
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--dw-radius-sm);
   background: transparent;
   color: var(--dw-text-muted);
   cursor: pointer;
@@ -288,8 +288,8 @@ defineExpose({focus, inputRef})
 }
 
 .ai-prompt-send-spinner {
-  width: 12px;
-  height: 12px;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
   border: 2px solid color-mix(in srgb, var(--dw-text-muted) 28%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;

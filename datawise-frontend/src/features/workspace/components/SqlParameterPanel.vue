@@ -80,8 +80,8 @@ function applyPreset(preset: DatePresetId) {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 8px;
-  min-height: 28px;
+  gap: var(--dw-gap);
+  min-height: var(--dw-btn-height);
   padding: 0 var(--dw-console-chrome-inset);
   border-bottom: 1px solid var(--dw-border-light);
   background: var(--dw-bg-editor);
@@ -90,7 +90,7 @@ function applyPreset(preset: DatePresetId) {
 
 .sql-params__label {
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.03em;
   color: var(--dw-text-muted);
@@ -100,7 +100,7 @@ function applyPreset(preset: DatePresetId) {
 .sql-params__divider {
   flex-shrink: 0;
   width: 1px;
-  height: 14px;
+  height: var(--dw-icon-size-sm);
   background: var(--dw-border-light);
 }
 
@@ -108,17 +108,17 @@ function applyPreset(preset: DatePresetId) {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
 }
 
 .sql-params__preset {
-  padding: 1px 7px;
+  padding: 1px var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-panel);
   color: var(--dw-text-secondary);
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-relaxed);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -134,7 +134,7 @@ function applyPreset(preset: DatePresetId) {
   align-items: center;
   flex: 1;
   flex-wrap: nowrap;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-width: 0;
 }
 
@@ -142,25 +142,25 @@ function applyPreset(preset: DatePresetId) {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 5px;
+  gap: var(--dw-space-2);
 }
 
 .sql-params__name {
   flex-shrink: 0;
-  font-family: var(--dw-mono, monospace);
-  font-size: 10px;
+  font-family: var(--dw-mono);
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
 .sql-params__input {
   width: 108px;
-  padding: 2px 6px;
+  padding: var(--dw-space-1) var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
-  border-radius: 4px;
+  border-radius: var(--dw-radius-sm);
   background: var(--dw-bg-panel);
   color: var(--dw-text);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .sql-params__input:focus {

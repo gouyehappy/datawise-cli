@@ -44,35 +44,35 @@ function onLocate(connectionId: string, found: boolean) {
 .team-shared-bar {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-bottom: 1px solid var(--dw-border-light);
   background: color-mix(in srgb, var(--dw-primary) 6%, var(--dw-bg-panel));
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .team-shared-bar__label {
   flex-shrink: 0;
   color: var(--dw-text-secondary);
-  padding-top: 2px;
+  padding-top: var(--dw-space-1);
 }
 
 .team-shared-bar__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   min-width: 0;
 }
 
 .team-shared-chip {
   max-width: 100%;
-  padding: 2px 8px;
+  padding: var(--dw-pad-chip);
   border: 1px solid var(--dw-primary-border);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg);
   color: var(--dw-primary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;

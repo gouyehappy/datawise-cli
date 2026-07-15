@@ -1087,19 +1087,19 @@ onMounted(async () => {
 
 <style scoped>
 .console-run-btn--cancel {
-  color: #dc2626;
+  color: var(--dw-danger);
 }
 
 .console-run-btn--cancel:hover {
-  background: color-mix(in srgb, #dc2626 10%, var(--dw-bg-muted));
+  background: color-mix(in srgb, var(--dw-danger) 10%, var(--dw-bg-muted));
 }
 
 .console-disconnect-btn {
-  color: #dc2626;
+  color: var(--dw-danger);
 }
 
 .console-disconnect-btn:hover {
-  background: color-mix(in srgb, #dc2626 10%, var(--dw-bg-muted));
+  background: color-mix(in srgb, var(--dw-danger) 10%, var(--dw-bg-muted));
 }
 
 .ai-btn-wrap {
@@ -1112,14 +1112,14 @@ onMounted(async () => {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   min-width: 0;
 }
 
 .dw-console-toolbar__controls {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   flex-shrink: 0;
 }
 
@@ -1157,32 +1157,32 @@ onMounted(async () => {
 }
 
 .editor-surface :deep(.sql-editor-hint-bar) {
-  height: 26px;
-  min-height: 26px;
-  max-height: 26px;
+  height: var(--dw-control-h-sm);
+  min-height: var(--dw-control-h-sm);
+  max-height: var(--dw-control-h-sm);
   padding: 0 var(--dw-console-chrome-inset);
-  gap: 6px;
-  font-size: 10px;
-  line-height: 14px;
+  gap: var(--dw-gap-sm);
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-tab-title-line);
   background: var(--dw-bg-editor);
 }
 
 .editor-surface :deep(.sql-editor-hint-bar .hint-text) {
-  line-height: 14px;
+  line-height: var(--dw-tab-title-line);
   padding-bottom: 1px;
 }
 
 .editor-surface :deep(.sql-editor-hint-bar .hint-leading) {
   width: 172px;
   min-width: 172px;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
 }
 
 .editor-surface :deep(.sql-editor-hint-bar .hint-badge) {
-  height: 18px;
-  padding: 0 5px;
-  font-size: 9px;
-  line-height: 14px;
+  height: var(--dw-icon-size-lg);
+  padding: 0 var(--dw-space-2);
+  font-size: var(--dw-text-2xs);
+  line-height: var(--dw-tab-title-line);
 }
 
 .editor-surface :deep(.sql-editor-hint-bar .hint-statement) {
@@ -1203,21 +1203,21 @@ onMounted(async () => {
 .editor-surface :deep(.sql-editor-hint-bar .hint-dialect) {
   width: 46px;
   min-width: 46px;
-  height: 16px;
-  font-size: 8px;
-  line-height: 14px;
+  height: var(--dw-icon-size-md);
+  font-size: var(--dw-text-2xs);
+  line-height: var(--dw-tab-title-line);
 }
 
 .editor-surface :deep(.sql-editor-hint-bar .hint-chip) {
   min-width: 24px;
-  height: 18px;
-  padding: 0 5px;
-  font-size: 9px;
-  line-height: 14px;
+  height: var(--dw-icon-size-lg);
+  padding: 0 var(--dw-space-2);
+  font-size: var(--dw-text-2xs);
+  line-height: var(--dw-tab-title-line);
 }
 
 .editor-surface :deep(.sql-editor-hint-bar .hint-quick-label) {
-  font-size: 9px;
+  font-size: var(--dw-text-2xs);
 }
 
 .editor-surface :deep(.sql-editor) {
@@ -1242,7 +1242,7 @@ onMounted(async () => {
   flex-shrink: 0;
   width: 100%;
   height: var(--dw-tab-height);
-  padding: 0 10px;
+  padding: 0 var(--dw-space-5);
   border: none;
   border-top: 1px solid var(--dw-tab-bar-border);
   background: var(--dw-tab-bar-bg);

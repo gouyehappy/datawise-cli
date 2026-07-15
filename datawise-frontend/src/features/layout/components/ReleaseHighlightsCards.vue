@@ -67,36 +67,36 @@ function dismiss() {
 
 <style scoped>
 .release-cards {
-  margin: 0 0 12px;
-  padding: 12px;
+  margin: 0 0 var(--dw-space-6);
+  padding: var(--dw-space-6);
   border: 1px solid var(--dw-border-light);
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   background: linear-gradient(145deg, var(--dw-bg), color-mix(in srgb, var(--dw-primary) 4%, var(--dw-bg)));
 }
 
 .release-cards__head {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--dw-space-6);
   align-items: flex-start;
-  margin-bottom: 10px;
+  margin-bottom: var(--dw-space-5);
 }
 
 .release-cards__eyebrow {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   color: var(--dw-primary);
 }
 
 .release-cards__title {
-  margin: 2px 0 0;
-  font-size: 15px;
+  margin: var(--dw-space-1) 0 0;
+  font-size: var(--dw-text-lg);
 }
 
 .release-cards__sub {
-  margin: 2px 0 0;
-  font-size: 12px;
+  margin: var(--dw-space-1) 0 0;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
@@ -104,31 +104,31 @@ function dismiss() {
   border: none;
   background: transparent;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 
 .release-cards__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .release-card {
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: var(--dw-radius-lg);
+  padding: var(--dw-space-5);
   background: var(--dw-bg-panel);
 }
 
 .release-card h4 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 
 .release-card p {
-  margin: 6px 0 8px;
-  font-size: 12px;
+  margin: var(--dw-space-3) 0 var(--dw-space-4);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
@@ -136,9 +136,9 @@ function dismiss() {
   border: 1px solid var(--dw-primary);
   color: var(--dw-primary);
   background: transparent;
-  border-radius: 7px;
-  padding: 4px 8px;
-  font-size: 12px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-space-2) var(--dw-space-4);
+  font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 

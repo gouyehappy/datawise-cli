@@ -61,9 +61,9 @@ function refreshMetrics() {
 .kafka-consumer-groups-tab__head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--dw-space-6);
   min-height: 56px;
-  padding: 11px 16px;
+  padding: var(--dw-space-5) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border);
   background: var(--dw-bg-panel);
 }
@@ -75,32 +75,32 @@ function refreshMetrics() {
 
 .kafka-consumer-groups-tab__title h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
   font-weight: 600;
 }
 
 .kafka-consumer-groups-tab__title p {
-  margin: 2px 0 0;
+  margin: var(--dw-space-1) 0 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .kafka-consumer-groups-tab__refresh {
   flex-shrink: 0;
-  height: 34px;
+  height: var(--dw-control-h);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-panel-radius, 8px);
-  padding: 0 12px;
-  background: var(--dw-bg, var(--dw-bg-panel));
+  border-radius: var(--dw-panel-radius);
+  padding: 0 var(--dw-space-6);
+  background: var(--dw-bg);
   color: var(--dw-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 
 .kafka-consumer-groups-tab__body {
   flex: 1;
   min-height: 0;
-  padding: 12px 16px 16px;
+  padding: var(--dw-space-6) var(--dw-space-8) var(--dw-space-8);
 }
 
 .kafka-consumer-groups-tab__panel {

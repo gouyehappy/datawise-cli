@@ -72,8 +72,8 @@ watch(
 
 .view-model-data__error {
   margin: 0;
-  padding: 8px 12px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   color: var(--dw-danger);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 </style>

@@ -43,20 +43,20 @@ const emit = defineEmits<{
 .migration-flow {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 12px;
+    gap: var(--dw-gap-sm);
+    margin-top: var(--dw-space-6);
 }
 
 .migration-flow__step {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
+    gap: var(--dw-gap);
+    padding: var(--dw-space-3) var(--dw-space-6);
     border: 1px solid var(--dw-border-light);
-    border-radius: 999px;
+    border-radius: var(--dw-radius-pill);
     background: var(--dw-bg);
-    font-size: 12px;
-    transition: border-color 0.12s ease, background 0.12s ease;
+    font-size: var(--dw-text-sm);
+    transition: var(--dw-transition-colors);
 }
 
 .migration-flow__step.is-active {
@@ -66,8 +66,8 @@ const emit = defineEmits<{
 }
 
 .migration-flow__step.is-complete:not(.is-active) {
-    border-color: color-mix(in srgb, #16a34a 30%, var(--dw-border-light));
-    color: #15803d;
+    border-color: color-mix(in srgb, var(--dw-success) 30%, var(--dw-border-light));
+    color: var(--dw-success-fg);
 }
 
 .migration-flow__step.is-disabled {
@@ -83,7 +83,7 @@ const emit = defineEmits<{
     height: 20px;
     border-radius: 50%;
     background: var(--dw-bg-muted);
-    font-size: 11px;
+    font-size: var(--dw-text-xs);
     font-weight: 700;
 }
 

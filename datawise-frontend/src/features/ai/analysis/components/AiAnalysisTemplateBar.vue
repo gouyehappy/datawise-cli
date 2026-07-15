@@ -125,18 +125,18 @@ function deleteTemplate(template: AiAnalysisTemplate, event: MouseEvent) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px 0;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-5) var(--dw-space-9) 0;
 }
 
 .template-bar__toggle,
 .template-bar__save {
-  padding: 4px 10px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-panel);
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 
@@ -146,29 +146,29 @@ function deleteTemplate(template: AiAnalysisTemplate, event: MouseEvent) {
 }
 
 .template-bar__count {
-  margin-left: 6px;
-  padding: 0 6px;
-  border-radius: 999px;
+  margin-left: var(--dw-space-3);
+  padding: 0 var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: color-mix(in srgb, var(--dw-primary) 12%, var(--dw-bg));
   color: var(--dw-primary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .template-bar__list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   width: 100%;
 }
 
 .template-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   max-width: 240px;
-  padding: 4px 8px;
+  padding: var(--dw-space-2) var(--dw-space-4);
   border: 1px solid var(--dw-border-light);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg);
   cursor: pointer;
 }
@@ -177,23 +177,23 @@ function deleteTemplate(template: AiAnalysisTemplate, event: MouseEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text);
 }
 
 .template-chip__meta {
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
   text-transform: uppercase;
 }
 
 .template-chip__delete {
   color: var(--dw-text-muted);
-  font-size: 14px;
+  font-size: var(--dw-text-xl);
   line-height: 1;
 }
 
 .template-chip__delete:hover {
-  color: var(--dw-danger, #dc2626);
+  color: var(--dw-danger);
 }
 </style>

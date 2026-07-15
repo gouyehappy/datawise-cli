@@ -308,16 +308,16 @@ function displayInstanceOption(label: string) {
 .ctx-merged {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--dw-space-2);
   max-width: min(320px, 42vw);
   height: var(--dw-console-btn-size);
   min-width: 0;
-  padding: 0 6px;
+  padding: 0 var(--dw-space-3);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: transparent;
   color: var(--dw-text-secondary);
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: var(--dw-transition-colors);
 }
 
 .ctx-merged:hover:not(.ctx-merged--readonly) {
@@ -344,8 +344,8 @@ function displayInstanceOption(label: string) {
   display: inline-flex;
   align-items: center;
   min-width: 0;
-  gap: 4px;
-  font-size: 11px;
+  gap: var(--dw-gap-xs);
+  font-size: var(--dw-text-xs);
   line-height: 1;
 }
 
@@ -376,7 +376,7 @@ function displayInstanceOption(label: string) {
   flex-shrink: 0;
   margin-left: auto;
   color: var(--dw-text-muted);
-  transition: transform 0.15s ease;
+  transition: transform var(--dw-duration) var(--dw-ease);
 }
 
 .ctx-merged.open .ctx-caret {
@@ -388,14 +388,14 @@ function displayInstanceOption(label: string) {
   top: calc(100% + 6px);
   right: 0;
   left: auto;
-  z-index: 60;
+  z-index: var(--dw-z-drawer);
   min-width: 240px;
   max-width: min(320px, 90vw);
-  padding: 4px;
+  padding: var(--dw-space-2);
   border: 1px solid var(--dw-border);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--dw-shadow-float);
 }
 
 .ctx-menu--unified {
@@ -408,23 +408,23 @@ function displayInstanceOption(label: string) {
 
 .ctx-menu-tabs {
   display: flex;
-  gap: 2px;
+  gap: var(--dw-space-1);
   flex-shrink: 0;
-  padding: 4px 4px 0;
+  padding: var(--dw-space-2) var(--dw-space-2) 0;
   border-bottom: 1px solid var(--dw-border-light);
 }
 
 .ctx-menu-tab {
   flex: 1;
   min-width: 0;
-  padding: 7px 8px;
-  border-radius: 6px 6px 0 0;
+  padding: var(--dw-space-3) var(--dw-space-4);
+  border-radius: var(--dw-control-radius-sm) var(--dw-control-radius-sm) 0 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 500;
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
   text-align: center;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .ctx-menu-tab:hover:not(:disabled) {
@@ -435,7 +435,7 @@ function displayInstanceOption(label: string) {
 .ctx-menu-tab.active {
   color: var(--dw-text);
   background: var(--dw-bg-hover);
-  box-shadow: inset 0 -2px 0 var(--dw-primary, #0969da);
+  box-shadow: inset 0 -2px 0 var(--dw-primary);
 }
 
 .ctx-menu-tab:disabled {
@@ -445,10 +445,10 @@ function displayInstanceOption(label: string) {
 
 .ctx-menu-subhead {
   flex-shrink: 0;
-  padding: 6px 10px 4px;
+  padding: var(--dw-space-3) var(--dw-space-5) var(--dw-space-2);
   color: var(--dw-text-muted);
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
@@ -457,27 +457,27 @@ function displayInstanceOption(label: string) {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 4px;
+  padding: var(--dw-space-2);
 }
 
 .ctx-menu-empty {
-  padding: 14px 12px;
+  padding: var(--dw-space-7) var(--dw-space-6);
   color: var(--dw-text-muted);
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading);
 }
 
 .ctx-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: var(--dw-pad-control);
+  border-radius: var(--dw-control-radius-sm);
   text-align: left;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text);
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .ctx-item:hover {
@@ -514,7 +514,7 @@ function displayInstanceOption(label: string) {
   display: block;
   margin-top: 1px;
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
 }
 
 .ctx-check {

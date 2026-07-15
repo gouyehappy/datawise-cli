@@ -80,40 +80,40 @@ const warnings = computed(() => props.graph?.meta?.warnings ?? [])
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-bottom: 1px solid var(--dw-border-subtle);
 }
 
 .vm-lineage-preview__title {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 12px;
+  gap: var(--dw-space-1);
+  font-size: var(--dw-text-sm);
   font-weight: 600;
 }
 
 .vm-lineage-preview__meta {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 400;
   color: var(--dw-text-muted);
 }
 
 .vm-lineage-preview__actions {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .vm-lineage-preview__warnings {
-  padding: 6px 10px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: color-mix(in srgb, var(--dw-warning) 12%, transparent);
   color: var(--dw-text-secondary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .vm-lineage-preview__state {
-  padding: 12px;
+  padding: var(--dw-space-6);
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 </style>

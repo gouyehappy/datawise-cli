@@ -2,10 +2,16 @@
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {currentLocale, setLocale, type AppLocale} from '@/i18n'
-import {PRIMARY_PRESETS, type PrimaryTone, type ThemeAppearance} from '@/features/settings/constants/theme-presets'
+import {
+    PRIMARY_PRESETS,
+    type PrimaryTone,
+    type ThemeAppearance,
+} from '@/features/settings/constants/theme-presets'
+import {UI_SKIN_DEFINITIONS} from '@/core/ui-skin'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
 import ThemeAppearanceCard from '@/features/settings/components/ThemeAppearanceCard.vue'
+import ThemeSkinCard from '@/features/settings/components/ThemeSkinCard.vue'
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import SettingsSectionCard from '@/features/settings/components/SettingsSectionCard.vue'
 import {useThemeStore} from '@/features/settings/stores/theme-store'
@@ -49,6 +55,7 @@ const deepLinkExampleParams = computed(() => {
 const {readOnly, hint, denyIfReadOnly} = useResourceWriteGuard(UserResource.AppConfig)
 
 const appearances: ThemeAppearance[] = ['light', 'dark', 'system']
+const uiSkins = UI_SKIN_DEFINITIONS
 const primaryTones: PrimaryTone[] = ['violet', 'blue', 'cyan', 'green', 'orange', 'rose']
 const locales: AppLocale[] = ['zh-CN', 'en-US']
 
@@ -137,12 +144,31 @@ async function copyDeepLinkExample() {
   >
     <div class="settings-groups">
       <SettingsSectionCard
+          :title="t('settings.basic.uiSkin')"
+          :hint="t('settings.basic.uiSkinHint')"
+          icon="settings-basic"
+          tone="primary"
+      >
+        <div class="dw-choice-grid">
+          <ThemeSkinCard
+              v-for="skin in uiSkins"
+              :key="skin.id"
+              :variant="skin.id"
+              :active="theme.uiSkin === skin.id"
+              :label="t(skin.labelKey)"
+              :hint="t(skin.hintKey)"
+              @click="theme.setUiSkin(skin.id)"
+          />
+        </div>
+      </SettingsSectionCard>
+
+      <SettingsSectionCard
           :title="t('settings.basic.background')"
           :hint="t('settings.basic.backgroundHint')"
           icon="settings-basic"
           tone="primary"
       >
-        <div class="appearance-grid">
+        <div class="dw-choice-grid">
           <ThemeAppearanceCard
               v-for="appearance in appearances"
               :key="appearance"

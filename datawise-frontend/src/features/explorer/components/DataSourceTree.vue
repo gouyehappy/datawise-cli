@@ -437,20 +437,20 @@ function folderItemCount(node: TreeNode): number | null {
 
 <style scoped>
 .datasource-tree {
-  --tree-row-height: 28px;
+  --tree-row-height: var(--dw-btn-height);
   --tree-indent: 14px;
   --tree-twistie-size: 18px;
   --tree-guide-color: color-mix(in srgb, var(--dw-border) 55%, transparent);
 
   flex: 1;
   min-height: min-content;
-  padding: 4px 0 8px;
+  padding: var(--dw-space-2) 0 var(--dw-space-4);
 }
 
 .datasource-tree--compact {
-  --tree-row-height: 26px;
+  --tree-row-height: var(--dw-control-h-sm);
   --tree-indent: 12px;
-  padding: 2px 0 6px;
+  padding: var(--dw-space-1) 0 var(--dw-space-3);
 }
 
 .tree-empty {
@@ -458,11 +458,11 @@ function folderItemCount(node: TreeNode): number | null {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   min-height: 120px;
-  padding: 28px 16px;
+  padding: var(--dw-space-11) var(--dw-space-8);
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .tree-empty-icon {
@@ -471,20 +471,20 @@ function folderItemCount(node: TreeNode): number | null {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
 }
 
 .tree-empty-icon svg {
   width: 22px;
-  height: 22px;
+  height: var(--dw-control-h-xs);
 }
 
 .tree-empty p {
   margin: 0;
   text-align: center;
-  line-height: 1.5;
+  line-height: var(--dw-leading-relaxed);
 }
 
 .tree-node {
@@ -492,8 +492,8 @@ function folderItemCount(node: TreeNode): number | null {
   display: flex;
   align-items: stretch;
   min-height: var(--tree-row-height);
-  padding-left: calc(6px + var(--tree-depth, 0) * var(--tree-indent));
-  padding-right: 6px;
+  padding-left: calc(var(--dw-space-3) + var(--tree-depth, 0) * var(--tree-indent));
+  padding-right: var(--dw-space-3);
   cursor: default;
   user-select: none;
 }
@@ -544,21 +544,21 @@ function folderItemCount(node: TreeNode): number | null {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--dw-space-2);
   flex: 1;
   min-width: 0;
   min-height: var(--tree-row-height);
-  padding: 0 6px 0 2px;
-  border-radius: 4px;
+  padding: 0 var(--dw-space-3) 0 var(--dw-space-1);
+  border-radius: var(--dw-radius-sm);
   color: var(--dw-text);
-  font-size: 12.5px;
-  line-height: 1.3;
-  transition: background 0.1s ease;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-snug);
+  transition: var(--dw-transition-bg);
 }
 
 .datasource-tree--compact .tree-node__body {
-  font-size: 12px;
-  gap: 4px;
+  font-size: var(--dw-text-sm);
+  gap: var(--dw-gap-xs);
 }
 
 .tree-node__body::before {
@@ -568,9 +568,9 @@ function folderItemCount(node: TreeNode): number | null {
   top: 3px;
   bottom: 3px;
   width: 2px;
-  border-radius: 1px;
+  border-radius: var(--dw-radius-xs);
   background: transparent;
-  transition: background 0.1s ease;
+  transition: var(--dw-transition-bg);
 }
 
 .tree-node:hover .tree-node__body {
@@ -587,20 +587,20 @@ function folderItemCount(node: TreeNode): number | null {
 
 .tree-node--connection.is-selected .tree-node__body,
 .tree-node--database.is-selected .tree-node__body {
-  background: color-mix(in srgb, #0891b2 10%, var(--dw-bg-hover));
+  background: color-mix(in srgb, var(--dw-info-fg) 10%, var(--dw-bg-hover));
 }
 
 .tree-node--connection.is-selected .tree-node__body::before,
 .tree-node--database.is-selected .tree-node__body::before {
-  background: #0891b2;
+  background: var(--dw-info-fg);
 }
 
 .tree-node--group.is-selected .tree-node__body {
-  background: color-mix(in srgb, #d97706 10%, var(--dw-bg-hover));
+  background: color-mix(in srgb, var(--mp-tone-amber) 10%, var(--dw-bg-hover));
 }
 
 .tree-node--group.is-selected .tree-node__body::before {
-  background: #d97706;
+  background: var(--mp-tone-amber);
 }
 
 .tree-node.is-checked .tree-node__body {
@@ -668,14 +668,14 @@ function folderItemCount(node: TreeNode): number | null {
 }
 
 .tree-node--folder .tree-label {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
   letter-spacing: 0.01em;
 }
 
 .tree-node--column {
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .tree-node--column.is-selected .tree-node__body {
@@ -696,12 +696,12 @@ function folderItemCount(node: TreeNode): number | null {
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--dw-radius-sm);
   background: transparent;
   color: var(--dw-text-muted);
   cursor: pointer;
   opacity: 0.55;
-  transition: opacity 0.12s ease,
+  transition: opacity var(--dw-duration-fast) var(--dw-ease),
   color 0.12s ease,
   transform 0.14s ease;
 }
@@ -721,7 +721,7 @@ function folderItemCount(node: TreeNode): number | null {
   width: 13px;
   height: 13px;
   display: block;
-  transition: transform 0.14s ease;
+  transition: transform var(--dw-duration) var(--dw-ease);
 }
 
 .tree-twistie.is-expanded .tree-twistie__icon {
@@ -734,8 +734,8 @@ function folderItemCount(node: TreeNode): number | null {
 }
 
 .tree-twistie__spinner {
-  width: 12px;
-  height: 12px;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
   border: 1.5px solid color-mix(in srgb, var(--dw-text-muted) 35%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;
@@ -758,15 +758,15 @@ function folderItemCount(node: TreeNode): number | null {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
+  width: var(--dw-icon-size-sm);
+  height: var(--dw-icon-size-sm);
   margin: 0;
   cursor: pointer;
 }
 
 .tree-check input {
-  width: 12px;
-  height: 12px;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
   margin: 0;
   accent-color: var(--dw-primary);
   cursor: pointer;
@@ -775,7 +775,7 @@ function folderItemCount(node: TreeNode): number | null {
 .tree-label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -785,7 +785,7 @@ function folderItemCount(node: TreeNode): number | null {
 
 .tree-folder-count {
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 400;
   flex-shrink: 0;
 }
@@ -797,18 +797,18 @@ function folderItemCount(node: TreeNode): number | null {
   white-space: nowrap;
   min-width: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .tree-meta {
   margin-left: auto;
-  padding: 0 5px;
-  border-radius: 4px;
+  padding: 0 var(--dw-space-2);
+  border-radius: var(--dw-radius-sm);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
   font-family: var(--dw-mono);
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-relaxed);
   flex-shrink: 0;
 }
 

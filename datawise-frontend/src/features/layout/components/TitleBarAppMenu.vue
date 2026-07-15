@@ -96,8 +96,8 @@ function onDocumentClick(event: MouseEvent) {
   align-items: center;
   flex-shrink: 0;
   height: 100%;
-  margin-left: 10px;
-  padding: 0 2px 0 0;
+  margin-left: var(--dw-space-5);
+  padding: 0 var(--dw-space-1) 0 0;
   -webkit-app-region: no-drag;
 }
 
@@ -105,23 +105,23 @@ function onDocumentClick(event: MouseEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--dw-titlebar-chip-size, 30px);
-  height: var(--dw-titlebar-chip-size, 30px);
+  width: var(--dw-titlebar-chip-size);
+  height: var(--dw-titlebar-chip-size);
   border: none;
-  border-radius: var(--dw-titlebar-chip-radius, 7px);
+  border-radius: var(--dw-titlebar-chip-radius);
   background: transparent;
   color: var(--dw-text-secondary);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .titlebar-app-menu__btn:hover {
-  background: var(--dw-titlebar-chip-hover, color-mix(in srgb, var(--dw-text) 8%, transparent));
+  background: var(--dw-titlebar-chip-hover);
   color: var(--dw-text);
 }
 
 .titlebar-app-menu__btn.is-active {
-  background: var(--dw-titlebar-chip-active, color-mix(in srgb, var(--dw-text) 11%, transparent));
+  background: var(--dw-titlebar-chip-active);
   color: var(--dw-text);
 }
 

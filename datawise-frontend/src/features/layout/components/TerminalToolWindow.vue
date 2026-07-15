@@ -49,7 +49,7 @@ function clearTerminal() {
 
 <template>
   <section
-      class="terminal-window dw-panel-hover-chrome"
+      class="terminal-window dw-surface dw-panel-hover-chrome"
       :style="{ height: `${layout.terminalHeight}px` }"
       :aria-label="t('terminal.title')"
   >
@@ -82,11 +82,6 @@ function clearTerminal() {
   flex-direction: column;
   flex-shrink: 0;
   min-height: 0;
-  border: 1px solid var(--dw-panel-border);
-  border-radius: var(--dw-panel-radius);
-  background: var(--dw-bg-panel);
-  box-shadow: var(--dw-panel-shadow);
-  overflow: hidden;
 }
 
 .terminal-window__shell {
@@ -100,22 +95,22 @@ function clearTerminal() {
 }
 
 .terminal-window__shortcut {
-  padding: 2px 6px;
+  padding: var(--dw-space-1) var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
-  border-radius: 4px;
+  border-radius: var(--dw-radius-sm);
   background: var(--dw-bg-muted);
   font-family: var(--dw-mono);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
 .terminal-window__link {
-  padding: 4px 10px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   border: none;
-  border-radius: 7px;
+  border-radius: var(--dw-control-radius-sm);
   background: transparent;
   color: var(--dw-primary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -128,7 +123,7 @@ function clearTerminal() {
 .terminal-window__body {
   height: 100%;
   min-height: 0;
-  padding: 8px var(--dw-console-chrome-inset) 10px;
+  padding: var(--dw-space-4) var(--dw-console-chrome-inset) var(--dw-space-5);
   box-sizing: border-box;
 }
 </style>

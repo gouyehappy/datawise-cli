@@ -3,12 +3,12 @@
 .dw-field {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--dw-gap-sm);
 }
 
 .dw-field label,
 .dw-field__label {
-    font-size: 12px;
+    font-size: var(--dw-font-size-label);
     font-weight: 500;
     color: var(--dw-text-secondary);
 }
@@ -22,43 +22,42 @@
 .dw-field textarea,
 .dw-field select {
     width: 100%;
-    padding: clamp(8px, 1vmin, 10px) clamp(10px, 1.2vmin, 12px);
+    padding: var(--dw-pad-control-lg);
     border: 1px solid var(--dw-border);
-    border-radius: var(--dw-panel-radius);
+    border-radius: var(--dw-input-radius);
     background: var(--dw-bg);
     color: var(--dw-text);
-    font-size: var(--mp-sub);
-    line-height: 1.4;
-    transition: border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    font-size: var(--dw-font-size-control);
+    line-height: var(--dw-leading);
+    transition: var(--dw-transition-shadow);
 }
 
 .dw-input--sm {
     height: var(--mp-input-h);
-    padding: 0 clamp(8px, 1vmin, 10px);
-    border-radius: var(--dw-panel-radius);
-    font-size: var(--mp-sub);
-    line-height: 1.4;
+    padding: 0 var(--dw-space-5);
+    border-radius: var(--dw-input-radius);
+    font-size: var(--dw-font-size-control);
+    line-height: var(--dw-leading);
 }
 
 /* 表格内紧凑输入（设置页词条表等） */
 .dw-input--cell {
     width: 100%;
     min-width: 88px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    font-size: 12px;
+    padding: var(--dw-pad-tight);
+    border-radius: var(--dw-control-radius-sm);
+    font-size: var(--dw-text-sm);
 }
 
 .dw-input--mono {
-    font-family: var(--dw-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
-    font-size: 12px;
+    font-family: var(--dw-mono);
+    font-size: var(--dw-text-sm);
 }
 
 .dw-textarea--cell {
     resize: vertical;
     min-height: 52px;
-    line-height: 1.45;
+    line-height: var(--dw-leading);
 }
 
 .dw-input::placeholder,
@@ -80,8 +79,8 @@
 .dw-field textarea:focus,
 .dw-field select:focus {
     outline: none;
-    border-color: var(--dw-primary-border);
-    box-shadow: 0 0 0 3px var(--dw-primary-soft);
+    border-color: var(--dw-focus-border);
+    box-shadow: var(--dw-focus-ring);
 }
 
 /* ── DwCheckbox（统一多选框） ── */
@@ -89,9 +88,9 @@
 .dw-checkbox {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    font-size: var(--mp-sub);
-    line-height: 1.4;
+    gap: var(--dw-gap);
+    font-size: var(--dw-font-size-control);
+    line-height: var(--dw-leading);
     color: var(--dw-text);
     cursor: pointer;
 }
@@ -100,7 +99,7 @@
     display: flex;
     width: 100%;
     align-items: flex-start;
-    gap: 10px;
+    gap: var(--dw-gap-md);
 }
 
 .dw-checkbox__control {
@@ -113,7 +112,7 @@
 }
 
 .dw-checkbox--block .dw-checkbox__control {
-    margin-top: 2px;
+    margin-top: var(--dw-space-1);
 }
 
 .dw-checkbox__label {
@@ -132,9 +131,9 @@
     display: inline-flex;
     flex-wrap: wrap;
     gap: 0;
-    padding: 3px;
+    padding: var(--dw-space-1);
     border: 1px solid var(--dw-border);
-    border-radius: 10px;
+    border-radius: var(--dw-radius-lg);
     background: var(--dw-bg-muted);
     width: fit-content;
 }
@@ -143,13 +142,13 @@
     display: inline-flex;
     align-items: center;
     gap: 0;
-    padding: 7px 16px;
-    border-radius: 7px;
+    padding: var(--dw-space-3) var(--dw-space-8);
+    border-radius: var(--dw-control-radius-sm);
     color: var(--dw-text-secondary);
-    font-size: var(--mp-sub);
-    line-height: 1.4;
+    font-size: var(--dw-font-size-control);
+    line-height: var(--dw-leading);
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    transition: background var(--dw-duration) var(--dw-ease), color var(--dw-duration) var(--dw-ease), box-shadow 0.15s ease;
 }
 
 .dw-radio-option input {
@@ -162,7 +161,7 @@
     background: var(--dw-bg);
     color: var(--dw-primary);
     font-weight: 500;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    box-shadow: var(--dw-shadow-sm);
 }
 
 .dw-radio-option.is-disabled {
@@ -176,7 +175,7 @@
 
 .dw-field select {
     appearance: none;
-    padding-right: 32px;
+    padding-right: var(--dw-space-12);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 6 8 9.5 11.5 6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
@@ -189,30 +188,28 @@
 .dw-select {
     position: relative;
     width: 100%;
-    --dw-select-font: var(--mp-sub);
-    --dw-select-trigger-h: var(--mp-input-h);
 }
 
 .dw-select__trigger {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--dw-gap);
     width: 100%;
-    min-height: 34px;
+    min-height: var(--dw-control-h);
     height: var(--dw-select-trigger-h);
-    padding: 0 clamp(10px, 1.2vmin, 12px) 0 clamp(12px, 1.4vmin, 14px);
+    padding: 0 var(--dw-space-6) 0 clamp(12px, 1.4vmin, 14px);
     border: 1px solid var(--dw-border);
-    border-radius: var(--dw-panel-radius);
+    border-radius: var(--dw-input-radius);
     background: var(--dw-bg);
     color: var(--dw-text);
     font-size: var(--dw-select-font);
-    line-height: 1.4;
+    line-height: var(--dw-leading);
     font-weight: 400;
     text-align: left;
     cursor: pointer;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    box-shadow: var(--dw-shadow-xs);
+    transition: var(--dw-transition-shadow), background 0.15s ease;
 }
 
 .dw-select__trigger:hover:not(:disabled) {
@@ -225,7 +222,7 @@
     outline: none;
     border-color: var(--dw-primary-border);
     background: var(--dw-bg);
-    box-shadow: 0 0 0 3px var(--dw-primary-soft);
+    box-shadow: var(--dw-focus-ring);
 }
 
 .dw-select.is-disabled .dw-select__trigger {
@@ -241,7 +238,7 @@
     white-space: nowrap;
     font-weight: 500;
     color: var(--dw-text);
-    line-height: 1.4;
+    line-height: var(--dw-leading);
 }
 
 .dw-select.is-placeholder .dw-select__value {
@@ -254,7 +251,7 @@
     width: 15px;
     height: 15px;
     color: var(--dw-text-muted);
-    transition: transform 0.18s ease, color 0.15s ease;
+    transition: transform var(--dw-duration) var(--dw-ease), color var(--dw-duration) var(--dw-ease);
 }
 
 .dw-select.is-open .dw-select__chevron {
@@ -267,9 +264,9 @@
     top: calc(100% + 6px);
     left: 0;
     right: auto;
-    z-index: 120;
+    z-index: var(--dw-z-dropdown);
     margin: 0;
-    padding: 5px;
+    padding: var(--dw-space-2);
     list-style: none;
     min-width: 100%;
     width: max-content;
@@ -277,7 +274,7 @@
     max-height: 280px;
     overflow-y: auto;
     border: 1px solid var(--dw-border-light);
-    border-radius: calc(var(--dw-panel-radius) + 2px);
+    border-radius: var(--dw-menu-radius);
     background: var(--dw-bg);
     box-shadow: var(--dw-menu-shadow);
 }
@@ -287,26 +284,26 @@
     top: auto;
     left: auto;
     right: auto;
-    z-index: 2100;
+    z-index: var(--dw-z-select-portal);
 }
 
 .dw-select__item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--dw-gap-md);
     width: 100%;
     min-height: 36px;
     padding: 0 11px;
     border: none;
-    border-radius: calc(var(--dw-panel-radius) - 1px);
+    border-radius: var(--dw-menu-item-radius);
     background: transparent;
     color: var(--dw-text-secondary);
     font-size: var(--dw-select-font);
-    line-height: 1.4;
+    line-height: var(--dw-leading);
     text-align: left;
     cursor: pointer;
-    transition: background 0.12s ease, color 0.12s ease;
+    transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .dw-select__item:hover:not(:disabled) {
@@ -343,7 +340,7 @@
 
 .dw-select-menu-enter-active,
 .dw-select-menu-leave-active {
-    transition: opacity 0.14s ease, transform 0.14s ease;
+    transition: opacity var(--dw-duration) var(--dw-ease), transform var(--dw-duration) var(--dw-ease);
 }
 
 .dw-select-menu-enter-from,
@@ -355,15 +352,15 @@
 /* sm — 表单紧凑（字号与 dw-input 对齐，仅略减内边距） */
 .dw-select--sm .dw-select__trigger {
     height: var(--mp-input-h);
-    min-height: 30px;
-    padding: 0 clamp(8px, 1vmin, 10px) 0 clamp(10px, 1.2vmin, 12px);
-    font-size: var(--mp-sub);
+    min-height: var(--dw-control-h-sm);
+    padding: 0 var(--dw-space-5) 0 clamp(10px, 1.2vmin, 12px);
+    font-size: var(--dw-font-size-control);
     box-shadow: none;
 }
 
 .dw-select--sm .dw-select__item {
-    min-height: 34px;
-    font-size: var(--mp-sub);
+    min-height: var(--dw-control-h);
+    font-size: var(--dw-font-size-control);
 }
 
 /* pill — 工具栏圆角 */
@@ -376,11 +373,11 @@
     width: auto;
     max-width: 180px;
     height: clamp(28px, 3.2vmin, 32px);
-    min-height: 28px;
-    padding: 0 10px 0 12px;
-    border-radius: 999px;
+    min-height: var(--dw-btn-height);
+    padding: 0 var(--dw-space-5) 0 var(--dw-space-6);
+    border-radius: var(--dw-radius-pill);
     background: var(--dw-bg-muted);
-    font-size: var(--mp-sub);
+    font-size: var(--dw-font-size-control);
     box-shadow: none;
 }
 
@@ -389,7 +386,7 @@
 }
 
 .dw-select--pill .dw-select__item {
-    font-size: var(--mp-sub);
+    font-size: var(--dw-font-size-control);
 }
 
 /* compact — 分页等超窄 */
@@ -402,17 +399,17 @@
     width: auto;
     max-width: 80px;
     height: clamp(26px, 3vmin, 30px);
-    min-height: 26px;
-    padding: 0 8px 0 10px;
-    border-radius: 6px;
+    min-height: var(--dw-control-h-sm);
+    padding: 0 var(--dw-space-4) 0 var(--dw-space-5);
+    border-radius: var(--dw-control-radius-sm);
     background: var(--dw-bg-muted);
-    font-size: var(--mp-sub);
+    font-size: var(--dw-font-size-control);
     box-shadow: none;
 }
 
 .dw-select--compact .dw-select__chevron {
-    width: 12px;
-    height: 12px;
+    width: var(--dw-icon-size-xs);
+    height: var(--dw-icon-size-xs);
 }
 
 .dw-select--compact .dw-select__menu {
@@ -420,8 +417,8 @@
 }
 
 .dw-select--compact .dw-select__item {
-    font-size: var(--mp-sub);
-    min-height: 32px;
+    font-size: var(--dw-font-size-control);
+    min-height: var(--dw-tab-height);
 }
 
 /* inline — 嵌入组合控件（DataGrid 筛选等） */
@@ -432,14 +429,14 @@
 
 .dw-select--inline .dw-select__trigger {
     height: 100%;
-    min-height: 24px;
-    padding: 0 18px 0 8px;
+    min-height: var(--dw-control-h-xs);
+    padding: 0 18px 0 var(--dw-space-4);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--dw-radius-sm);
     background: transparent;
-    font-size: 12px;
+    font-size: var(--dw-text-sm);
     font-weight: 600;
-    font-family: var(--dw-mono, ui-monospace, monospace);
+    font-family: var(--dw-mono);
     box-shadow: none;
 }
 
@@ -455,8 +452,8 @@
 }
 
 .dw-select--inline .dw-select__chevron {
-    width: 10px;
-    height: 10px;
+    width: var(--dw-icon-size-xs);
+    height: var(--dw-icon-size-xs);
 }
 
 .dw-select--inline .dw-select__menu {
@@ -466,26 +463,26 @@
 }
 
 .dw-select--inline .dw-select__item {
-    min-height: 32px;
-    font-size: 12px;
-    font-family: var(--dw-mono, ui-monospace, monospace);
+    min-height: var(--dw-tab-height);
+    font-size: var(--dw-text-sm);
+    font-family: var(--dw-mono);
 }
 
 .dw-form-error {
     margin: 0;
-    color: #dc2626;
-    font-size: 12px;
+    color: var(--dw-danger);
+    font-size: var(--dw-text-sm);
 }
 
 .dw-search {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--dw-gap);
     width: 100%;
-    height: 34px;
-    padding: 0 10px;
+    height: var(--dw-control-h);
+    padding: 0 var(--dw-space-5);
     border: 1px solid var(--dw-border);
-    border-radius: 9px;
+    border-radius: var(--dw-input-radius);
     background: var(--dw-bg);
     color: var(--dw-text-muted);
 }
@@ -498,7 +495,7 @@
     outline: none;
     background: transparent;
     color: var(--dw-text);
-    font-size: 12px;
+    font-size: var(--dw-text-sm);
 }
 
 .dw-search input::placeholder {
@@ -506,22 +503,22 @@
 }
 
 .dw-search:focus-within {
-    border-color: var(--dw-primary-border);
-    box-shadow: 0 0 0 3px var(--dw-primary-soft);
+    border-color: var(--dw-focus-border);
+    box-shadow: var(--dw-focus-ring);
 }
 
 .dw-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--dw-gap-sm);
     max-width: 100%;
-    padding: 4px 10px;
+    padding: var(--dw-space-2) var(--dw-space-5);
     border: 1px solid var(--dw-border);
-    border-radius: 999px;
+    border-radius: var(--dw-chip-radius);
     background: var(--dw-bg-panel);
     color: var(--dw-text-secondary);
-    font-size: 11px;
-    line-height: 1.3;
+    font-size: var(--dw-text-xs);
+    line-height: var(--dw-leading-snug);
 }
 
 .dw-chip__label {
@@ -532,11 +529,11 @@
 
 .dw-chip__remove {
     flex-shrink: 0;
-    padding: 0 2px;
+    padding: 0 var(--dw-space-1);
     border: none;
     background: none;
     color: var(--dw-text-muted);
-    font-size: 14px;
+    font-size: var(--dw-text-xl);
     line-height: 1;
     cursor: pointer;
 }
@@ -551,14 +548,14 @@
     justify-content: center;
     flex-shrink: 0;
     min-width: 22px;
-    height: 22px;
-    padding: 0 7px;
-    border-radius: 999px;
+    height: var(--dw-control-h-xs);
+    padding: 0 var(--dw-space-3);
+    border-radius: var(--dw-radius-pill);
     background: var(--dw-primary);
-    color: #fff;
-    font-size: 11px;
+    color: var(--dw-on-accent);
+    font-size: var(--dw-text-xs);
     font-weight: 600;
-    line-height: 22px;
+    line-height: var(--dw-control-h-xs);
 }
 
 .dw-badge--soft {
@@ -569,16 +566,16 @@
 }
 
 .dw-empty {
-    padding: 24px 14px;
+    padding: var(--dw-space-10) var(--dw-space-7);
     color: var(--dw-text-muted);
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: var(--dw-text-sm);
+    line-height: var(--dw-leading-relaxed);
     text-align: center;
 }
 
 .dw-page-head {
     flex-shrink: 0;
-    padding: 18px 24px 14px;
+    padding: 18px var(--dw-space-10) var(--dw-space-7);
     border-bottom: 1px solid var(--dw-border-light);
     background: radial-gradient(ellipse 70% 80% at 0% 0%, color-mix(in srgb, var(--dw-primary) 7%, transparent), transparent),
     var(--dw-bg);
@@ -587,7 +584,7 @@
 .dw-page-head__brand {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--dw-space-7);
 }
 
 .dw-page-head__icon {
@@ -596,37 +593,37 @@
     justify-content: center;
     width: 42px;
     height: 42px;
-    border-radius: 13px;
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    color: #fff;
-    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.22);
+    border-radius: var(--dw-radius-xl);
+    background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-primary) 100%);
+    color: var(--dw-on-accent);
+    box-shadow: var(--dw-btn-elev-shadow-hover);
 }
 
 .dw-page-head__title-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--dw-gap-md);
 }
 
 .dw-page-head h1 {
     margin: 0;
-    font-size: 18px;
+    font-size: var(--dw-text-2xl);
     font-weight: 600;
 }
 
 .dw-page-head p {
-    margin: 4px 0 0;
+    margin: var(--dw-space-2) 0 0;
     color: var(--dw-text-secondary);
-    font-size: 13px;
+    font-size: var(--dw-text-md);
 }
 
 .dw-page-head__extra {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    margin-top: 12px;
-    min-height: 28px;
+    gap: var(--dw-gap);
+    margin-top: var(--dw-space-6);
+    min-height: var(--dw-btn-height);
 }
 
 .dw-page-head__extra .dw-page-head__hint {
@@ -634,14 +631,14 @@
 }
 
 .dw-page-head__hint {
-    margin: 10px 0 0;
+    margin: var(--dw-space-5) 0 0;
     color: var(--dw-text-muted);
-    font-size: 12px;
+    font-size: var(--dw-text-sm);
 }
 
 .dw-composer-wrap {
     flex-shrink: 0;
-    padding: 14px 24px 16px;
+    padding: var(--dw-space-7) var(--dw-space-10) var(--dw-space-8);
     border-top: 1px solid var(--dw-border-light);
     background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--dw-bg-panel) 92%, var(--dw-primary) 8%) 100%);
 }
@@ -653,13 +650,13 @@
 .dw-composer-targets {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: var(--dw-gap);
+    margin-bottom: var(--dw-space-6);
 }
 
 .dw-composer-shell {
     position: relative;
-    border-radius: 18px;
+    border-radius: var(--dw-radius-xl);
     padding: 1px;
     background: linear-gradient(
             135deg,
@@ -687,16 +684,16 @@
     display: grid;
     grid-template-columns: 26px minmax(0, 1fr) 30px;
     align-items: center;
-    gap: 8px;
-    padding: 8px 8px 8px 10px;
-    border-radius: 17px;
+    gap: var(--dw-gap);
+    padding: var(--dw-space-4) var(--dw-space-4) var(--dw-space-4) var(--dw-space-5);
+    border-radius: var(--dw-radius-xl);
     background: var(--dw-bg);
 }
 
 .dw-composer.is-multiline {
     align-items: end;
-    padding-top: 10px;
-    padding-bottom: 8px;
+    padding-top: var(--dw-space-5);
+    padding-bottom: var(--dw-space-4);
 }
 
 .dw-composer-badge {
@@ -705,8 +702,8 @@
     justify-content: center;
     flex-shrink: 0;
     width: 26px;
-    height: 26px;
-    border-radius: 8px;
+    height: var(--dw-control-h-sm);
+    border-radius: var(--dw-control-radius);
     background: linear-gradient(
             145deg,
             color-mix(in srgb, var(--dw-primary) 16%, var(--dw-bg-muted)),
@@ -718,7 +715,7 @@
 
 .dw-composer.is-multiline .dw-composer-badge {
     width: 30px;
-    height: 30px;
+    height: var(--dw-control-h-sm);
     margin-bottom: 0;
 }
 
@@ -741,21 +738,21 @@
     outline: none;
     background: transparent;
     color: var(--dw-text);
-    font-size: 14px;
+    font-size: var(--dw-text-xl);
     box-sizing: border-box;
     font-family: inherit;
 }
 
 .dw-composer-input--single {
-    height: 30px;
-    line-height: 30px;
+    height: var(--dw-control-h-sm);
+    line-height: var(--dw-control-h-sm);
 }
 
 .dw-composer-input--multi {
-    min-height: 30px;
+    min-height: var(--dw-control-h-sm);
     max-height: 128px;
     padding: 0;
-    line-height: 1.5;
+    line-height: var(--dw-leading-relaxed);
     resize: none;
     overflow-y: auto;
 }
@@ -778,17 +775,17 @@
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 6px;
-    margin: 10px 0 0;
+    gap: var(--dw-gap-sm);
+    margin: var(--dw-space-5) 0 0;
     color: var(--dw-text-muted);
-    font-size: 11px;
-    line-height: 1.4;
+    font-size: var(--dw-text-xs);
+    line-height: var(--dw-leading);
 }
 
 .dw-composer-hint-item {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--dw-space-2);
 }
 
 .dw-composer-hint-dot {
@@ -798,14 +795,14 @@
 .dw-composer-hint kbd {
     display: inline-flex;
     align-items: center;
-    min-height: 18px;
-    padding: 0 6px;
+    min-height: var(--dw-icon-size-lg);
+    padding: 0 var(--dw-space-3);
     border: 1px solid var(--dw-border-light);
-    border-radius: 5px;
+    border-radius: var(--dw-control-radius-sm);
     background: var(--dw-bg-muted);
     color: var(--dw-text-secondary);
     font-family: inherit;
-    font-size: 10px;
+    font-size: var(--dw-text-xs);
     font-weight: 600;
     letter-spacing: 0.01em;
     box-shadow: var(--dw-kbd-elev-shadow);
@@ -817,18 +814,18 @@
     justify-content: center;
     flex-shrink: 0;
     width: 30px;
-    height: 30px;
+    height: var(--dw-control-h-sm);
     border: none;
-    border-radius: 11px;
+    border-radius: var(--dw-radius-lg);
     background: linear-gradient(
             145deg,
-            color-mix(in srgb, var(--dw-primary) 92%, #fff 8%),
+            color-mix(in srgb, var(--dw-primary) 92%, var(--dw-on-accent) 8%),
             var(--dw-primary)
     );
-    color: #fff;
+    color: var(--dw-on-accent);
     cursor: pointer;
     box-shadow: var(--dw-btn-elev-shadow);
-    transition: transform 0.15s ease,
+    transition: transform var(--dw-duration) var(--dw-ease),
     box-shadow 0.15s ease,
     filter 0.15s ease,
     opacity 0.15s ease;
@@ -850,10 +847,10 @@
 }
 
 .dw-send-spinner {
-    width: 14px;
-    height: 14px;
+    width: var(--dw-icon-size-sm);
+    height: var(--dw-icon-size-sm);
     border: 2px solid rgba(255, 255, 255, 0.28);
-    border-top-color: #fff;
+    border-top-color: var(--dw-on-accent);
     border-radius: 50%;
     animation: dw-send-spin 0.7s linear infinite;
 }

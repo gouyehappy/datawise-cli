@@ -138,13 +138,13 @@ function selectTab(tab: MonitorTab) {
 .sql-monitor {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--dw-gap-md);
 }
 
 .sql-monitor__tabs {
   display: flex;
   gap: var(--dw-tab-gap);
-  padding: 0 4px;
+  padding: 0 var(--dw-space-2);
   border: none;
   border-bottom: 1px solid var(--dw-tab-bar-border);
   border-radius: 0;
@@ -154,9 +154,9 @@ function selectTab(tab: MonitorTab) {
 .sql-monitor__tab {
   flex: 1;
   min-width: 0;
-  padding: 6px 6px;
+  padding: var(--dw-space-3) var(--dw-space-3);
   border-radius: var(--dw-tab-pill-radius);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   cursor: pointer;
 }

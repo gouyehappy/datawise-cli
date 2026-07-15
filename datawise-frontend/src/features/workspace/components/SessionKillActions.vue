@@ -40,20 +40,20 @@ const {t} = useI18n()
 .session-kill-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding-top: 2px;
+  gap: var(--dw-gap-sm);
+  padding-top: var(--dw-space-1);
   border-top: 1px solid var(--dw-border-light);
 }
 
 .session-kill-actions__btn {
-  padding: 6px 8px;
+  padding: var(--dw-pad-tight);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-muted);
   color: var(--dw-text-secondary);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
   cursor: pointer;
 }
 
@@ -63,8 +63,8 @@ const {t} = useI18n()
 }
 
 .session-kill-actions__btn--danger {
-  border-color: color-mix(in srgb, #dc2626 20%, var(--dw-border-light));
-  background: color-mix(in srgb, #dc2626 6%, var(--dw-bg-muted));
-  color: #b91c1c;
+  border-color: color-mix(in srgb, var(--dw-danger) 20%, var(--dw-border-light));
+  background: color-mix(in srgb, var(--dw-danger) 6%, var(--dw-bg-muted));
+  color: var(--dw-danger-fg);
 }
 </style>

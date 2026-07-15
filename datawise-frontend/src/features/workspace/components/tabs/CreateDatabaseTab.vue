@@ -194,61 +194,61 @@ async function save() {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: var(--dw-surface, #fff);
+  background: var(--dw-surface);
 }
 
 .create-db__toolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--dw-border, #e5e7eb);
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-5) var(--dw-space-7);
+  border-bottom: 1px solid var(--dw-border);
 }
 
 .create-db__tabs {
   display: flex;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
 }
 
 .create-db__tab {
   border: none;
   background: transparent;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: var(--dw-space-3) var(--dw-space-5);
+  border-radius: var(--dw-control-radius-sm);
   cursor: pointer;
-  color: var(--dw-text-secondary, #6b7280);
-  font-size: 13px;
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-md);
 }
 
 .create-db__tab.is-active {
-  background: var(--dw-surface-muted, #f3f4f6);
-  color: var(--dw-text, #111827);
+  background: var(--dw-surface-muted));
+  color: var(--dw-text);
   font-weight: 600;
 }
 
 .create-db__general {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 20px 24px;
+  gap: var(--dw-space-7);
+  padding: var(--dw-space-9) var(--dw-space-10);
   max-width: 640px;
 }
 
 .create-db__row {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--dw-space-6);
   align-items: center;
-  font-size: 13px;
-  color: var(--dw-text, #111827);
+  font-size: var(--dw-text-md);
+  color: var(--dw-text);
 }
 
 .create-db__input {
-  height: 32px;
-  border: 1px solid var(--dw-border, #d1d5db);
-  border-radius: 6px;
-  padding: 0 10px;
-  background: #fff;
+  height: var(--dw-tab-height);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-control-radius-sm);
+  padding: 0 var(--dw-space-5);
+  background: var(--dw-bg);
   color: inherit;
 }
 
@@ -257,19 +257,19 @@ async function save() {
   flex-direction: column;
   min-height: 0;
   flex: 1;
-  padding: 12px 16px;
+  padding: var(--dw-space-6) var(--dw-space-8);
 }
 
 .create-db__sql-actions {
-  margin-bottom: 8px;
+  margin-bottom: var(--dw-space-4);
 }
 
 .create-db__link {
   border: none;
   background: transparent;
-  color: var(--dw-accent, #2563eb);
+  color: var(--dw-link);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   padding: 0;
 }
 
@@ -277,12 +277,12 @@ async function save() {
   margin: 0;
   flex: 1;
   overflow: auto;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--dw-surface-muted, #f8fafc);
+  padding: var(--dw-space-6);
+  border-radius: var(--dw-control-radius);
+  background: var(--dw-surface-muted));
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--dw-text-md);
+  line-height: var(--dw-leading-relaxed);
   white-space: pre-wrap;
 }
 </style>

@@ -338,6 +338,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
                 appearance: theme.appearance,
                 background: theme.backgroundTone,
                 primary: theme.primaryTone,
+                uiSkin: theme.uiSkin,
             },
             editor: {...editor.settings},
             layout: snapshotLayoutPreferences(),
@@ -606,6 +607,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
     watch(() => theme.appearance, () => persistSoon())
     watch(() => theme.backgroundTone, () => persistSoon())
     watch(() => theme.primaryTone, () => persistSoon())
+    watch(() => theme.uiSkin, () => persistSoon())
     watch(() => editor.settings, () => persistSoon(), {deep: true})
     watch(currentLocale, () => persistSoon())
     watch(() => layout.profileName, () => scheduleProfilePersist())

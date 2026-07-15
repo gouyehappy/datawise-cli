@@ -154,39 +154,39 @@ function openInConsole() {
 .canvas-rerun__status,
 .canvas-rerun__hint {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--dw-text-md);
     color: var(--dw-text-muted);
 }
 
 .canvas-rerun__error {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--dw-text-md);
     color: var(--dw-danger);
 }
 
 .canvas-rerun__form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--dw-gap-md);
 }
 
 .canvas-rerun__result {
-    margin-top: 12px;
-    padding-top: 12px;
+    margin-top: var(--dw-space-6);
+    padding-top: var(--dw-space-6);
     border-top: 1px solid var(--dw-border-light);
 }
 
 .canvas-rerun__result h4 {
-    margin: 0 0 8px;
-    font-size: 13px;
+    margin: 0 0 var(--dw-space-4);
+    font-size: var(--dw-text-md);
 }
 
 .canvas-rerun__sql {
     margin: 0;
-    padding: 8px;
-    border-radius: 6px;
+    padding: var(--dw-space-4);
+    border-radius: var(--dw-control-radius-sm);
     background: var(--dw-bg-subtle);
-    font-size: 12px;
+    font-size: var(--dw-text-sm);
     white-space: pre-wrap;
     word-break: break-word;
     max-height: 160px;
@@ -195,13 +195,13 @@ function openInConsole() {
 
 .canvas-rerun__prompt {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--dw-text-sm);
     color: var(--dw-text-muted);
 }
 
 .canvas-rerun__actions {
     display: flex;
-    gap: 8px;
-    margin-top: 8px;
+    gap: var(--dw-gap);
+    margin-top: var(--dw-space-4);
 }
 </style>

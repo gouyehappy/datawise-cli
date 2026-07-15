@@ -27,7 +27,10 @@ import {
     hydrateSqlEditorStorageFromAppConfigBody,
     readCanonicalSqlEditorLayers,
 } from '@/features/settings/services/sql-editor-shortcuts.service'
-import {readThemePreferencesOnBoot} from '@/features/settings/services/theme.service'
+import {
+    normalizeThemePreferences,
+    readThemePreferencesOnBoot,
+} from '@/features/settings/services/theme.service'
 import {
     SQL_EDITOR_SHORTCUTS_SHARED_STORAGE_KEY,
     LEGACY_SQL_EDITOR_SHORTCUTS_STORAGE_KEY,
@@ -548,7 +551,7 @@ export function normalizeAppConfig(raw: AppConfigInput | undefined): AppConfigFi
         version: APP_CONFIG_VERSION,
         exportedAt: typeof raw.exportedAt === 'string' ? raw.exportedAt : defaults.exportedAt,
         locale: raw.locale === 'en-US' || raw.locale === 'zh-CN' ? raw.locale : readLocale(),
-        theme: raw.theme ?? readThemePreferencesOnBoot(),
+        theme: normalizeThemePreferences(raw.theme ?? readThemePreferencesOnBoot()),
         editor: raw.editor ?? readStoredEditorSettings(),
         window: normalizeWindow(raw.window),
         layout: normalizeLayout(raw.layout),

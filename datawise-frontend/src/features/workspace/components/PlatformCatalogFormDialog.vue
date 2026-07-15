@@ -550,8 +550,8 @@ async function submit() {
 <style scoped>
 .modal-textarea--mono,
 .modal-input--mono {
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 12px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-sm);
 }
 
 .modal-fieldset:last-of-type {

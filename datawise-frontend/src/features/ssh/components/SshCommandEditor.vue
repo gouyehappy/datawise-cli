@@ -104,16 +104,16 @@ function modeLabel(mode: 'run' | 'paste'): string {
 .ssh-command-editor {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   height: 100%;
   min-height: 0;
 }
 
 .ssh-command-editor__guide {
   flex-shrink: 0;
-  padding: 10px 12px;
+  padding: var(--dw-pad-control-lg);
   border: 1px solid color-mix(in srgb, var(--dw-border) 80%, transparent);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: color-mix(in srgb, var(--dw-bg-panel) 90%, transparent);
 }
 
@@ -121,9 +121,9 @@ function modeLabel(mode: 'run' | 'paste'): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
-  font-size: 12px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-2);
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   color: var(--dw-text);
 }
@@ -131,18 +131,18 @@ function modeLabel(mode: 'run' | 'paste'): string {
 .ssh-command-editor__guide p {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-relaxed);
   white-space: pre-line;
 }
 
 .ssh-command-editor__insert {
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
-  padding: 2px 8px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-pad-chip);
   background: var(--dw-bg);
   color: var(--dw-primary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   cursor: pointer;
 }
 
@@ -153,20 +153,20 @@ function modeLabel(mode: 'run' | 'paste'): string {
 .ssh-command-editor__preview {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   flex-shrink: 0;
-  padding: 8px 10px;
-  border: 1px dashed color-mix(in srgb, #0ea5e9 30%, var(--dw-border));
-  border-radius: 8px;
-  background: color-mix(in srgb, #0ea5e9 5%, var(--dw-bg));
+  padding: var(--dw-pad-control);
+  border: 1px dashed color-mix(in srgb, var(--dw-info) 30%, var(--dw-border));
+  border-radius: var(--dw-control-radius);
+  background: color-mix(in srgb, var(--dw-info) 5%, var(--dw-bg));
   max-height: 8rem;
   overflow-y: auto;
 }
 
 .ssh-command-editor__preview-label {
   flex: 0 0 auto;
-  padding-top: 2px;
-  font-size: 11px;
+  padding-top: var(--dw-space-1);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   color: var(--dw-text-muted);
 }
@@ -174,7 +174,7 @@ function modeLabel(mode: 'run' | 'paste'): string {
 .ssh-command-editor__preview-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
   flex: 1;
 }
@@ -182,37 +182,37 @@ function modeLabel(mode: 'run' | 'paste'): string {
 .ssh-command-editor__preview-item {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--dw-gap);
   min-width: 0;
 }
 
 .ssh-command-editor__preview-mode {
   flex: 0 0 auto;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 10px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-sm);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
 .ssh-command-editor__preview-mode.is-run {
-  background: color-mix(in srgb, #16a34a 16%, transparent);
-  color: #15803d;
+  background: color-mix(in srgb, var(--dw-success) 16%, transparent);
+  color: var(--dw-success-fg);
 }
 
 .ssh-command-editor__preview-mode.is-paste {
-  background: color-mix(in srgb, #0ea5e9 14%, transparent);
-  color: #0369a1;
+  background: color-mix(in srgb, var(--dw-info) 14%, transparent);
+  color: var(--dw-info-fg);
 }
 
 .ssh-command-editor__preview-name {
   flex: 0 0 auto;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, #0ea5e9 14%, transparent);
-  color: #0369a1;
-  font-size: 11px;
+  padding: 1px var(--dw-space-4);
+  border-radius: var(--dw-radius-pill);
+  background: color-mix(in srgb, var(--dw-info) 14%, transparent);
+  color: var(--dw-info-fg);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -221,7 +221,7 @@ function modeLabel(mode: 'run' | 'paste'): string {
   flex: 0 1 auto;
   max-width: 10rem;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -231,7 +231,7 @@ function modeLabel(mode: 'run' | 'paste'): string {
   min-width: 0;
   color: var(--dw-text);
   font-family: Consolas, 'Cascadia Mono', 'Courier New', monospace;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -241,7 +241,7 @@ function modeLabel(mode: 'run' | 'paste'): string {
   flex: 1;
   min-height: 280px;
   border: 1px solid var(--dw-border);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   overflow: hidden;
   background: var(--dw-bg-editor);
 }

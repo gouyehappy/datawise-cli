@@ -58,7 +58,7 @@ onUnmounted(() => {
 .split-handle {
   flex-shrink: 0;
   background: var(--dw-border-light);
-  transition: background 0.15s;
+  transition: background var(--dw-duration) var(--dw-ease);
 }
 
 .split-handle.horizontal {

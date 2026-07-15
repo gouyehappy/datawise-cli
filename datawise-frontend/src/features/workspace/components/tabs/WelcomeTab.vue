@@ -77,8 +77,8 @@ function keyChips(actionId: ShortcutActionId): string[] {
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 24px;
-  padding: 32px 24px;
+  gap: var(--dw-space-10);
+  padding: var(--dw-space-12) var(--dw-space-10);
   background: var(--dw-bg-editor);
 }
 
@@ -98,11 +98,11 @@ function keyChips(actionId: ShortcutActionId): string[] {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: var(--dw-space-7);
   margin: 0;
-  padding: 5px 0;
-  line-height: 1.4;
-  font-size: 14px;
+  padding: var(--dw-space-2) 0;
+  line-height: var(--dw-leading);
+  font-size: var(--dw-text-xl);
 }
 
 .welcome-actions__label {
@@ -114,7 +114,7 @@ function keyChips(actionId: ShortcutActionId): string[] {
 .welcome-actions__keys {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   min-width: 10em;
   justify-content: flex-start;
 }
@@ -124,10 +124,10 @@ function keyChips(actionId: ShortcutActionId): string[] {
   align-items: center;
   justify-content: center;
   min-width: 22px;
-  min-height: 22px;
-  padding: 0 6px;
+  min-height: var(--dw-control-h-xs);
+  padding: 0 var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: linear-gradient(
       180deg,
       var(--dw-bg-panel) 0%,
@@ -135,7 +135,7 @@ function keyChips(actionId: ShortcutActionId): string[] {
   );
   box-shadow: 0 1px 0 color-mix(in srgb, var(--dw-text) 5%, transparent);
   font-family: var(--dw-mono);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   color: var(--dw-text-secondary);
 }
@@ -144,24 +144,24 @@ function keyChips(actionId: ShortcutActionId): string[] {
   min-width: 10em;
   text-align: left;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .welcome-hint {
-  margin: 4px 0 0;
+  margin: var(--dw-space-2) 0 0;
   color: var(--dw-text-dim);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--dw-text-md);
+  line-height: var(--dw-leading-relaxed);
 }
 
 .welcome-cta {
-  margin-top: 4px;
-  padding: 8px 18px;
+  margin-top: var(--dw-space-2);
+  padding: var(--dw-space-4) 18px;
   border: 1px solid color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border));
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg));
   color: var(--dw-primary);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 500;
   cursor: pointer;
   opacity: 0;

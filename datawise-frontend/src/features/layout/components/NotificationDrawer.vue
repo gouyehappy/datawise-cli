@@ -314,16 +314,16 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
 .notify-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 6px 8px 10px;
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-3) var(--dw-space-4) var(--dw-space-5);
 }
 
 .notify-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 28px 20px 24px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-11) var(--dw-space-9) var(--dw-space-10);
   text-align: center;
 }
 
@@ -333,15 +333,15 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   color: var(--dw-text-muted);
   background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-muted));
   border: 1px solid var(--dw-border-light);
 }
 
 .notify-empty__title {
-  margin: 2px 0 0;
-  font-size: 13px;
+  margin: var(--dw-space-1) 0 0;
+  font-size: var(--dw-text-md);
   font-weight: 600;
   color: var(--dw-text);
 }
@@ -349,29 +349,29 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
 .notify-empty__hint {
   max-width: 220px;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .notify-section + .notify-section {
-  margin-top: 4px;
+  margin-top: var(--dw-space-2);
 }
 
 .notify-section__head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 4px 4px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-1) var(--dw-space-2) var(--dw-space-2);
 }
 
 .notify-section__pill {
   display: inline-flex;
   align-items: center;
-  padding: 1px 6px;
-  border-radius: 999px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: var(--section-soft);
   color: var(--section-accent);
-  font-size: 9px;
+  font-size: var(--dw-text-2xs);
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -379,7 +379,7 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
 
 .notify-section__count {
   color: var(--dw-text-muted);
-  font-size: 9px;
+  font-size: var(--dw-text-2xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -387,16 +387,16 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 7px 8px 7px 9px;
+  gap: var(--dw-gap);
+  padding: 7px var(--dw-space-4) 7px 9px;
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg);
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition: var(--dw-transition-colors);
 }
 
 .notify-card + .notify-card {
-  margin-top: 4px;
+  margin-top: var(--dw-space-2);
 }
 
 .notify-card:hover {
@@ -415,7 +415,7 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
   bottom: 6px;
   left: 0;
   width: 2px;
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 var(--dw-radius-xs) var(--dw-radius-xs) 0;
   background: var(--card-accent);
 }
 
@@ -427,7 +427,7 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
   width: 20px;
   height: 20px;
   margin-top: 1px;
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   color: var(--card-accent);
   background: var(--card-soft);
 }
@@ -440,15 +440,15 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
 .notify-card__top {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
 }
 
 .notify-card__title {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
-  line-height: 1.25;
+  line-height: var(--dw-leading-tight);
   color: var(--dw-text);
   white-space: nowrap;
   overflow: hidden;
@@ -467,15 +467,15 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
   flex-shrink: 0;
   margin-left: auto;
   color: var(--dw-text-muted);
-  font-size: 10px;
-  line-height: 1.2;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-tight);
   white-space: nowrap;
 }
 
 .notify-card__detail {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-1);
   margin-top: 3px;
 }
 
@@ -483,15 +483,15 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 0;
+  gap: var(--dw-space-2) 0;
   margin: 0;
   min-width: 0;
 }
 
 .notify-card__meta-item {
   color: var(--dw-text-secondary);
-  font-size: 10px;
-  line-height: 1.3;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -500,12 +500,12 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
 
 .notify-card__meta-item:not(:last-child)::after {
   content: '·';
-  margin: 0 4px;
+  margin: 0 var(--dw-space-2);
   color: var(--dw-text-muted);
 }
 
 .notify-card__meta-item--warn {
-  color: #b45309;
+  color: var(--dw-warning-fg);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -516,10 +516,10 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
 }
 
 .notify-card__body {
-  margin: 3px 0 0;
+  margin: var(--dw-space-1) 0 0;
   color: var(--dw-text-secondary);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -535,8 +535,8 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
   background: transparent;
   color: var(--dw-text-muted);
   font-family: var(--dw-mono);
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
@@ -562,8 +562,8 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 2px 8px;
-  margin-top: 4px;
+  gap: var(--dw-space-1) var(--dw-space-4);
+  margin-top: var(--dw-space-2);
 }
 
 .notify-card__link {
@@ -571,8 +571,8 @@ function notificationIcon(category: NotificationCategory, titleKey: string): DwI
   border: none;
   background: transparent;
   color: var(--dw-primary);
-  font-size: 10px;
-  line-height: 1.2;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-tight);
   white-space: nowrap;
   cursor: pointer;
 }

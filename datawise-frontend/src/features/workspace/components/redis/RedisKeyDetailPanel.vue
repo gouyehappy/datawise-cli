@@ -374,11 +374,11 @@ watch(
 
   border: 1px solid var(--dw-border);
 
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
 
   background: var(--dw-bg-panel);
 
-  padding: 12px;
+  padding: var(--dw-space-6);
 
 }
 
@@ -392,7 +392,7 @@ watch(
 
   justify-content: space-between;
 
-  gap: 12px;
+  gap: var(--dw-space-6);
 
 }
 
@@ -404,7 +404,7 @@ watch(
 
   align-items: center;
 
-  gap: 8px;
+  gap: var(--dw-gap);
 
 }
 
@@ -414,7 +414,7 @@ watch(
 
   margin: 0;
 
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 
   font-weight: 600;
 
@@ -424,11 +424,11 @@ watch(
 
 .redis-key-detail-panel__type {
 
-  padding: 1px 8px;
+  padding: 1px var(--dw-space-4);
 
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
 
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
 
   font-weight: 600;
 
@@ -444,9 +444,9 @@ watch(
 
 .redis-key-detail-panel__type.is-string {
 
-  background: color-mix(in srgb, #16a34a 15%, transparent);
+  background: color-mix(in srgb, var(--dw-success) 15%, transparent);
 
-  color: #16a34a;
+  color: var(--dw-success);
 
 }
 
@@ -454,9 +454,9 @@ watch(
 
 .redis-key-detail-panel__type.is-hash {
 
-  background: color-mix(in srgb, #2563eb 15%, transparent);
+  background: color-mix(in srgb, var(--dw-link) 15%, transparent);
 
-  color: #2563eb;
+  color: var(--dw-link);
 
 }
 
@@ -464,9 +464,9 @@ watch(
 
 .redis-key-detail-panel__type.is-list {
 
-  background: color-mix(in srgb, #d97706 15%, transparent);
+  background: color-mix(in srgb, var(--mp-tone-amber) 15%, transparent);
 
-  color: #d97706;
+  color: var(--mp-tone-amber);
 
 }
 
@@ -476,9 +476,9 @@ watch(
 
 .redis-key-detail-panel__type.is-zset {
 
-  background: color-mix(in srgb, #7c3aed 15%, transparent);
+  background: color-mix(in srgb, var(--dw-primary) 15%, transparent);
 
-  color: #7c3aed;
+  color: var(--dw-primary);
 
 }
 
@@ -486,13 +486,13 @@ watch(
 
 .redis-key-detail-panel__key {
 
-  margin: 4px 0 0;
+  margin: var(--dw-space-2) 0 0;
 
   color: var(--dw-text-muted);
 
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
 
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 
   word-break: break-all;
 
@@ -508,7 +508,7 @@ watch(
 
   justify-content: flex-end;
 
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 
 }
 
@@ -516,11 +516,11 @@ watch(
 
 .redis-key-detail-panel__error {
 
-  margin: 8px 0 0;
+  margin: var(--dw-space-4) 0 0;
 
   color: var(--dw-danger);
 
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 
 }
 
@@ -532,9 +532,9 @@ watch(
 
   grid-template-columns: repeat(2, minmax(0, 1fr));
 
-  gap: 8px;
+  gap: var(--dw-gap);
 
-  margin-top: 10px;
+  margin-top: var(--dw-space-5);
 
 }
 
@@ -546,9 +546,9 @@ watch(
 
   flex-direction: column;
 
-  gap: 2px;
+  gap: var(--dw-space-1);
 
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 
   color: var(--dw-text-muted);
 
@@ -560,7 +560,7 @@ watch(
 
   color: var(--dw-text);
 
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 
 }
 
@@ -572,23 +572,23 @@ watch(
 
   min-height: 0;
 
-  margin: 10px 0 0;
+  margin: var(--dw-space-5) 0 0;
 
-  padding: 10px;
+  padding: var(--dw-space-5);
 
   overflow: auto;
 
   border: 1px solid var(--dw-border);
 
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
 
   background: var(--dw-bg-editor);
 
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
 
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 
-  line-height: 1.5;
+  line-height: var(--dw-leading-relaxed);
 
   white-space: pre-wrap;
 

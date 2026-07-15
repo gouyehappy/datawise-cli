@@ -21,11 +21,11 @@ const {t} = useI18n()
 <style scoped>
 .federated-banner {
   display: flex;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   align-items: flex-start;
-  margin: 12px 28px 0;
-  padding: 10px 12px;
-  border-radius: 10px;
+  margin: var(--dw-space-6) var(--dw-space-10) 0;
+  padding: var(--dw-pad-control-lg);
+  border-radius: var(--dw-radius-lg);
   border: 1px solid color-mix(in srgb, var(--dw-primary) 24%, var(--dw-border-light));
   background: color-mix(in srgb, var(--dw-primary-soft) 55%, var(--dw-bg-panel));
 }
@@ -33,27 +33,27 @@ const {t} = useI18n()
 .federated-banner__icon {
   flex-shrink: 0;
   width: 22px;
-  height: 22px;
-  border-radius: 999px;
+  height: var(--dw-control-h-xs);
+  border-radius: var(--dw-radius-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: var(--dw-bg);
   color: var(--dw-primary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
 }
 
 .federated-banner__body strong {
   display: block;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text);
 }
 
 .federated-banner__body p {
-  margin: 2px 0 0;
-  font-size: 11px;
-  line-height: 1.45;
+  margin: var(--dw-space-1) 0 0;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
   color: var(--dw-text-secondary);
 }
 </style>

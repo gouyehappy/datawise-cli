@@ -344,7 +344,7 @@ function toggleExpanded() {
 .analysis-progress-panel__bar-fill {
   display: block;
   height: 100%;
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 var(--dw-radius-xs) var(--dw-radius-xs) 0;
   background: linear-gradient(
       90deg,
       color-mix(in srgb, var(--dw-primary) 75%, transparent),
@@ -359,7 +359,7 @@ function toggleExpanded() {
 }
 
 .analysis-progress-panel.is-complete .analysis-progress-panel__bar-fill {
-  background: linear-gradient(90deg, var(--dw-primary), color-mix(in srgb, var(--dw-primary) 70%, #34d399));
+  background: linear-gradient(90deg, var(--dw-primary), color-mix(in srgb, var(--dw-primary) 70%, var(--dw-success)));
 }
 
 .analysis-progress-panel.is-readonly {
@@ -375,14 +375,14 @@ function toggleExpanded() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--dw-space-6);
   width: 100%;
-  padding: 13px 16px 10px;
+  padding: 13px var(--dw-space-8) var(--dw-space-5);
   border: none;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: background 0.18s ease;
+  transition: background var(--dw-duration) var(--dw-ease);
 }
 
 .analysis-progress-panel__header:hover:not(:disabled) {
@@ -396,7 +396,7 @@ function toggleExpanded() {
 .analysis-progress-panel__summary {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-width: 0;
 }
 
@@ -405,9 +405,9 @@ function toggleExpanded() {
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 28px;
+  height: var(--dw-btn-height);
   margin-top: 1px;
-  border-radius: 9px;
+  border-radius: var(--dw-control-radius);
   border: 1px solid color-mix(in srgb, var(--dw-text) 14%, transparent);
   background: var(--dw-bg);
   color: var(--dw-text-muted);
@@ -427,20 +427,20 @@ function toggleExpanded() {
 }
 
 .analysis-progress-panel__header-icon.failed {
-  border-color: color-mix(in srgb, #ef4444 40%, var(--dw-border));
-  background: color-mix(in srgb, #ef4444 8%, var(--dw-bg));
-  color: #ef4444;
+  border-color: color-mix(in srgb, var(--dw-danger) 40%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-danger) 8%, var(--dw-bg));
+  color: var(--dw-danger);
 }
 
 .analysis-progress-panel__titles {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--dw-space-1);
   min-width: 0;
 }
 
 .analysis-progress-panel__eyebrow {
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -448,15 +448,15 @@ function toggleExpanded() {
 }
 
 .analysis-progress-panel__current {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   color: var(--dw-text);
 }
 
 .analysis-progress-panel__message {
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
   color: var(--dw-text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -467,17 +467,17 @@ function toggleExpanded() {
 .analysis-progress-panel__meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   flex-shrink: 0;
 }
 
 .analysis-progress-panel__count {
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: var(--dw-space-2) var(--dw-space-5);
+  border-radius: var(--dw-radius-pill);
   border: 1px solid color-mix(in srgb, var(--dw-primary) 20%, var(--dw-border-light));
   background: color-mix(in srgb, var(--dw-bg) 85%, var(--dw-primary-soft));
   color: var(--dw-primary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -488,7 +488,7 @@ function toggleExpanded() {
   border-right: 2px solid var(--dw-text-muted);
   border-bottom: 2px solid var(--dw-text-muted);
   transform: rotate(45deg);
-  transition: transform 0.25s ease;
+  transition: transform var(--dw-duration-slow) var(--dw-ease);
 }
 
 .analysis-progress-panel.is-expanded .analysis-progress-panel__chevron {
@@ -498,7 +498,7 @@ function toggleExpanded() {
 .analysis-progress-panel__track {
   display: grid;
   gap: 0;
-  padding: 2px 12px 14px;
+  padding: var(--dw-space-1) var(--dw-space-6) var(--dw-space-7);
 }
 
 .analysis-progress-panel__track-item {
@@ -506,9 +506,9 @@ function toggleExpanded() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
-  padding: 0 2px;
+  padding: 0 var(--dw-space-1);
 }
 
 .analysis-progress-panel__track-node {
@@ -517,8 +517,8 @@ function toggleExpanded() {
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 28px;
-  border-radius: 9px;
+  height: var(--dw-btn-height);
+  border-radius: var(--dw-control-radius);
   border: 1px solid color-mix(in srgb, var(--dw-text) 12%, transparent);
   background: var(--dw-bg);
   color: var(--dw-text-muted);
@@ -556,15 +556,15 @@ function toggleExpanded() {
 
 .analysis-progress-panel__track-item.failed .analysis-progress-panel__track-node {
   opacity: 1;
-  border-color: color-mix(in srgb, #ef4444 45%, var(--dw-border));
-  background: color-mix(in srgb, #ef4444 8%, var(--dw-bg));
-  color: #ef4444;
+  border-color: color-mix(in srgb, var(--dw-danger) 45%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-danger) 8%, var(--dw-bg));
+  color: var(--dw-danger);
 }
 
 .analysis-progress-panel__track-ring {
   position: absolute;
   inset: -4px;
-  border-radius: 11px;
+  border-radius: var(--dw-radius-lg);
   border: 1.5px solid transparent;
   border-top-color: color-mix(in srgb, var(--dw-primary) 70%, transparent);
   border-right-color: color-mix(in srgb, var(--dw-primary) 20%, transparent);
@@ -584,7 +584,7 @@ function toggleExpanded() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7px;
+  font-size: var(--dw-text-2xs);
   font-weight: 700;
   line-height: 1;
   border: 1px solid var(--dw-bg-panel);
@@ -592,24 +592,24 @@ function toggleExpanded() {
 
 .analysis-progress-panel__track-done {
   background: var(--dw-primary);
-  color: #fff;
+  color: var(--dw-on-accent);
 }
 
 .analysis-progress-panel__track-skip {
   background: var(--dw-text-muted);
-  color: #fff;
+  color: var(--dw-on-accent);
 }
 
 .analysis-progress-panel__track-fail {
-  background: #ef4444;
-  color: #fff;
+  background: var(--dw-danger);
+  color: var(--dw-on-accent);
 }
 
 .analysis-progress-panel__track-label {
   width: 100%;
-  font-size: 9px;
+  font-size: var(--dw-text-2xs);
   font-weight: 600;
-  line-height: 1.25;
+  line-height: var(--dw-leading-tight);
   text-align: center;
   color: var(--dw-text-muted);
   overflow: hidden;
@@ -632,7 +632,7 @@ function toggleExpanded() {
   left: calc(50% + 16px);
   right: calc(-50% + 16px);
   height: 2px;
-  border-radius: 1px;
+  border-radius: var(--dw-radius-xs);
   background: color-mix(in srgb, var(--dw-text) 10%, transparent);
   z-index: 0;
   transition: background 0.5s ease;
@@ -656,8 +656,8 @@ function toggleExpanded() {
 .analysis-progress-panel__live-footer {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 16px 14px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-5) var(--dw-space-8) var(--dw-space-7);
   border-top: 1px solid color-mix(in srgb, var(--dw-border-light) 90%, transparent);
   background: color-mix(in srgb, var(--dw-bg) 50%, var(--dw-bg-panel));
 }
@@ -667,8 +667,8 @@ function toggleExpanded() {
   align-items: center;
   justify-content: center;
   width: 30px;
-  height: 30px;
-  border-radius: 10px;
+  height: var(--dw-control-h-sm);
+  border-radius: var(--dw-radius-lg);
   border: 1px solid color-mix(in srgb, var(--dw-primary) 30%, var(--dw-border));
   background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg));
   color: var(--dw-primary);
@@ -678,20 +678,20 @@ function toggleExpanded() {
 .analysis-progress-panel__live-text {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-relaxed);
   color: var(--dw-text-secondary);
 }
 
 .analysis-progress-panel__body {
-  padding: 0 16px 16px;
+  padding: 0 var(--dw-space-8) var(--dw-space-8);
   border-top: 1px solid color-mix(in srgb, var(--dw-border-light) 80%, transparent);
   background: color-mix(in srgb, var(--dw-bg) 60%, var(--dw-bg-panel));
 }
 
 .analysis-progress {
   list-style: none;
-  margin: 12px 0 0;
+  margin: var(--dw-space-6) 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -702,16 +702,16 @@ function toggleExpanded() {
 .analysis-progress__item {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-height: 38px;
   color: var(--dw-text-muted);
 }
 
 .analysis-progress__item.running {
   color: var(--dw-primary);
-  padding: 6px 10px;
-  margin: 0 -10px;
-  border-radius: 10px;
+  padding: var(--dw-space-3) var(--dw-space-5);
+  margin: 0 -var(--dw-space-5);
+  border-radius: var(--dw-radius-lg);
   background: color-mix(in srgb, var(--dw-primary) 5%, transparent);
 }
 
@@ -720,7 +720,7 @@ function toggleExpanded() {
 }
 
 .analysis-progress__item.failed {
-  color: #ef4444;
+  color: var(--dw-danger);
 }
 
 .analysis-progress__track {
@@ -737,8 +737,8 @@ function toggleExpanded() {
   align-items: center;
   justify-content: center;
   width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  height: var(--dw-control-h-xs);
+  border-radius: var(--dw-control-radius-sm);
   border: 1px solid color-mix(in srgb, var(--dw-text) 14%, transparent);
   background: var(--dw-bg-panel);
   color: var(--dw-text-muted);
@@ -758,17 +758,17 @@ function toggleExpanded() {
 }
 
 .analysis-progress__marker.failed {
-  border-color: color-mix(in srgb, #ef4444 40%, var(--dw-border));
-  background: color-mix(in srgb, #ef4444 8%, var(--dw-bg-panel));
-  color: #ef4444;
+  border-color: color-mix(in srgb, var(--dw-danger) 40%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-danger) 8%, var(--dw-bg-panel));
+  color: var(--dw-danger);
 }
 
 .analysis-progress__line {
   flex: 1;
   width: 2px;
   min-height: 8px;
-  margin: 3px 0;
-  border-radius: 1px;
+  margin: var(--dw-space-1) 0;
+  border-radius: var(--dw-radius-xs);
   background: color-mix(in srgb, var(--dw-text) 12%, transparent);
 }
 
@@ -779,10 +779,10 @@ function toggleExpanded() {
 .analysis-progress__text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   min-width: 0;
   flex: 1;
-  padding: 1px 0 10px;
+  padding: 1px 0 var(--dw-space-5);
 }
 
 .analysis-progress__item--last .analysis-progress__text {
@@ -793,13 +793,13 @@ function toggleExpanded() {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .analysis-progress__label {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
 }
 
 .analysis-progress__item.pending .analysis-progress__label {
@@ -807,11 +807,11 @@ function toggleExpanded() {
 }
 
 .analysis-progress__status {
-  padding: 1px 7px;
-  border-radius: 999px;
-  font-size: 10px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
-  line-height: 1.4;
+  line-height: var(--dw-leading);
   border: 1px solid var(--dw-border-light);
   background: var(--dw-bg);
   color: var(--dw-text-muted);
@@ -830,9 +830,9 @@ function toggleExpanded() {
 }
 
 .analysis-progress__status.failed {
-  border-color: color-mix(in srgb, #ef4444 30%, var(--dw-border));
-  background: color-mix(in srgb, #ef4444 8%, var(--dw-bg));
-  color: #ef4444;
+  border-color: color-mix(in srgb, var(--dw-danger) 30%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-danger) 8%, var(--dw-bg));
+  color: var(--dw-danger);
 }
 
 .analysis-progress__status.skipped {
@@ -842,15 +842,15 @@ function toggleExpanded() {
 }
 
 .analysis-progress__duration {
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 500;
   color: var(--dw-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .analysis-progress__message {
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-relaxed);
   color: var(--dw-text-secondary);
   white-space: pre-line;
 }
@@ -887,8 +887,8 @@ function toggleExpanded() {
   .analysis-progress-panel__track {
     display: flex;
     overflow-x: auto;
-    gap: 10px;
-    padding-bottom: 12px;
+    gap: var(--dw-gap-md);
+    padding-bottom: var(--dw-space-6);
   }
 
   .analysis-progress-panel__track-item {

@@ -95,36 +95,36 @@ const statusMessage = computed(() => {
 <style scoped>
 .dangerous-pending {
   flex-shrink: 0;
-  padding: 6px 12px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   border-bottom: 1px solid var(--dw-border-light);
-  background: color-mix(in srgb, var(--dw-warning, #f59e0b) 8%, var(--dw-bg-panel));
+  background: color-mix(in srgb, var(--dw-warning) 8%, var(--dw-bg-panel));
 }
 
 .dangerous-pending__prod {
-  margin: 0 0 4px;
-  font-size: 11px;
+  margin: 0 0 var(--dw-space-2);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
-  color: var(--dw-danger, #dc2626);
+  color: var(--dw-danger);
 }
 
 .dangerous-pending__body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  line-height: 1.4;
+  gap: var(--dw-gap);
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading);
 }
 
 .dangerous-pending__badge {
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 10px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-sm);
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--dw-danger, #dc2626);
-  background: color-mix(in srgb, var(--dw-danger, #dc2626) 12%, transparent);
+  color: var(--dw-danger);
+  background: color-mix(in srgb, var(--dw-danger) 12%, transparent);
 }
 
 .dangerous-pending__table {
@@ -136,9 +136,9 @@ const statusMessage = computed(() => {
 }
 
 .dangerous-pending__review {
-  margin: 6px 0 0;
+  margin: var(--dw-space-3) 0 0;
   padding-left: 18px;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
@@ -150,11 +150,11 @@ const statusMessage = computed(() => {
 }
 
 .dangerous-pending__review-blocked {
-  color: var(--dw-danger, #dc2626);
+  color: var(--dw-danger);
 }
 
 .dangerous-pending__finding {
-  margin-top: 2px;
+  margin-top: var(--dw-space-1);
 }
 
 .dangerous-pending__suggestion {
@@ -163,23 +163,23 @@ const statusMessage = computed(() => {
 }
 
 .dangerous-pending__rewrite {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: var(--dw-space-4);
+  padding-top: var(--dw-space-4);
   border-top: 1px dashed color-mix(in srgb, var(--dw-border-light) 80%, transparent);
 }
 
 .dangerous-pending__rewrite-note {
-  margin: 0 0 4px;
-  font-size: 11px;
+  margin: 0 0 var(--dw-space-2);
+  font-size: var(--dw-text-xs);
   color: var(--dw-text);
 }
 
 .dangerous-pending__rewrite-sql {
-  margin: 0 0 6px;
-  padding: 6px 8px;
-  border-radius: 6px;
+  margin: 0 0 var(--dw-space-3);
+  padding: var(--dw-pad-tight);
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-subtle);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   white-space: pre-wrap;
   max-height: 120px;
   overflow: auto;
@@ -189,9 +189,9 @@ const statusMessage = computed(() => {
   border: 1px solid var(--dw-accent);
   background: transparent;
   color: var(--dw-accent);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 11px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-space-2) var(--dw-space-5);
+  font-size: var(--dw-text-xs);
   cursor: pointer;
 }
 

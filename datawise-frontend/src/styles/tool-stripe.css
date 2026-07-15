@@ -22,11 +22,11 @@
     flex-direction: column;
     flex-shrink: 0;
     gap: 1px;
-    padding: 3px 4px;
+    padding: var(--dw-space-1) var(--dw-space-2);
 }
 
 .tool-stripe__group--bottom {
-    padding-top: 4px;
+    padding-top: var(--dw-space-2);
     border-top: 1px solid var(--dw-panel-border);
 }
 
@@ -47,7 +47,7 @@
     color: var(--dw-text-muted);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: color 0.12s ease;
+    transition: color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .tool-btn:focus {
@@ -56,11 +56,11 @@
 
 .tool-btn--stack {
     flex-direction: column;
-    gap: 2px;
+    gap: var(--dw-space-1);
     min-height: 48px;
-    padding: 6px 3px 5px;
+    padding: var(--dw-space-3) 3px 5px;
     border-radius: var(--dw-tool-pill-radius);
-    transition: color 0.12s ease,
+    transition: color var(--dw-duration-fast) var(--dw-ease),
     background 0.12s ease;
 }
 
@@ -84,20 +84,20 @@
     align-items: center;
     justify-content: center;
     width: 24px;
-    height: 24px;
+    height: var(--dw-control-h-xs);
     flex-shrink: 0;
 }
 
 .tool-btn__graphic svg {
     display: block;
     width: 22px;
-    height: 22px;
+    height: var(--dw-control-h-xs);
     flex-shrink: 0;
 }
 
 .tool-btn__graphic .ai-icon--fit {
     width: 22px;
-    height: 22px;
+    height: var(--dw-control-h-xs);
 }
 
 .tool-btn__caption {
@@ -106,7 +106,7 @@
     color: inherit;
     font-size: var(--dw-tool-caption-size);
     font-weight: 400;
-    line-height: 1.2;
+    line-height: var(--dw-leading-tight);
     letter-spacing: 0;
     text-align: center;
     word-break: break-word;
@@ -128,8 +128,8 @@
 
 .tool-btn--brand:hover .app-brand-logo {
     transform: scale(1.06);
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.38),
-    0 2px 4px rgba(15, 23, 42, 0.1);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--dw-primary) 38%, transparent),
+    var(--dw-shadow-sm);
 }
 
 .tool-btn--brand.active {
@@ -140,12 +140,12 @@
 .tool-btn--brand.active .app-brand-logo {
     transform: scale(1.04);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--dw-primary) 35%, transparent),
-    0 6px 18px rgba(124, 58, 237, 0.4);
+    0 6px 18px color-mix(in srgb, var(--dw-primary) 40%, transparent);
 }
 
 .tool-btn__graphic--brand {
     width: 28px;
-    height: 28px;
+    height: var(--dw-btn-height);
 }
 
 .tool-btn__dot {
@@ -155,7 +155,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #f59e0b;
+    background: var(--dw-warning);
     box-shadow: 0 0 0 1.5px var(--dw-bg-chrome);
 }
 
@@ -165,18 +165,18 @@
     right: -8px;
     min-width: 15px;
     height: 15px;
-    padding: 0 4px;
-    border-radius: 999px;
-    background: #ef4444;
-    color: #fff;
-    font-size: 9px;
+    padding: 0 var(--dw-space-2);
+    border-radius: var(--dw-radius-pill);
+    background: var(--dw-danger);
+    color: var(--dw-on-accent);
+    font-size: var(--dw-text-2xs);
     font-weight: 600;
-    line-height: 15px;
+    line-height: var(--dw-text-lg);
     text-align: center;
 }
 
 .nav-brand {
     position: relative;
     flex-shrink: 0;
-    padding: 3px 4px 2px;
+    padding: var(--dw-space-1) var(--dw-space-2) var(--dw-space-1);
 }

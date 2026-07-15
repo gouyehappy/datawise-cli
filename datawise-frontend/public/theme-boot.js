@@ -99,6 +99,10 @@
         return 'light'
     }
 
+    function readUiSkin(value) {
+        return value === 'ide' || value === 'classic' ? value : 'classic'
+    }
+
     function readPrefs() {
         try {
             var raw = localStorage.getItem(THEME_KEY)
@@ -108,6 +112,7 @@
                     appearance: readAppearance(parsed),
                     background: parsed.background || 'default',
                     primary: parsed.primary || 'violet',
+                    uiSkin: readUiSkin(parsed.uiSkin),
                 }
             }
             var configRaw = localStorage.getItem(CONFIG_KEY)
@@ -118,13 +123,14 @@
                         appearance: readAppearance(config.theme),
                         background: config.theme.background || 'default',
                         primary: config.theme.primary || 'violet',
+                        uiSkin: readUiSkin(config.theme.uiSkin),
                     }
                 }
             }
         } catch (e) {
             /* fall through */
         }
-        return {appearance: 'light', background: 'default', primary: 'violet'}
+        return {appearance: 'light', background: 'default', primary: 'violet', uiSkin: 'classic'}
     }
 
     function resolveMode(appearance) {
@@ -143,9 +149,14 @@
                 : BG_LIGHT[prefs.background] || BG_LIGHT.default
         var ui = mode === 'dark' ? DARK_UI : LIGHT_UI
 
+        var skin = prefs.uiSkin || 'classic'
         root.setAttribute('data-theme', mode)
         root.setAttribute('data-bg-tone', prefs.background)
+        root.setAttribute('data-ui-skin', skin)
         root.style.colorScheme = mode
+
+        var chrome = mode === 'dark' ? surfaces.rail : LIGHT_UI.chrome
+        var isIde = skin === 'ide'
 
         var vars = {
             '--dw-primary': primary.primary,
@@ -165,11 +176,11 @@
             '--dw-bg-hover': surfaces.hover,
             '--dw-bg-rail': surfaces.rail,
             '--dw-bg-editor': surfaces.bg,
-            '--dw-bg-chrome': mode === 'dark' ? surfaces.rail : LIGHT_UI.chrome,
+            '--dw-bg-chrome': chrome,
             '--dw-border': ui.border,
             '--dw-border-light': ui.borderLight,
             '--dw-panel-border': ui.panelBorder,
-            '--dw-panel-shadow': ui.panelShadow,
+            '--dw-panel-shadow': isIde ? 'none' : ui.panelShadow,
             '--dw-text': ui.text,
             '--dw-text-secondary': ui.textSecondary,
             '--dw-text-muted': ui.textMuted,
@@ -183,14 +194,22 @@
                 mode === 'dark'
                     ? DARK_UI.toolPillActive
                     : 'color-mix(in srgb, var(--dw-text) 9%, var(--dw-bg-hover))',
-            '--dw-tab-bar-bg': ui.tabBarBg,
-            '--dw-tab-bar-border': ui.tabBarBorder,
-            '--dw-tab-active-bg': ui.tabActiveBg,
-            '--dw-tab-active-border': ui.tabActiveBorder,
-            '--dw-tab-active-text': ui.tabActiveText,
+            '--dw-tab-bar-bg': isIde ? chrome : ui.tabBarBg,
+            '--dw-tab-bar-border': isIde ? ui.panelBorder : ui.tabBarBorder,
+            '--dw-tab-active-bg': isIde ? surfaces.bg : ui.tabActiveBg,
+            '--dw-tab-active-border': isIde ? 'transparent' : ui.tabActiveBorder,
+            '--dw-tab-active-text': isIde ? ui.text : ui.tabActiveText,
             '--dw-tab-inactive-text': ui.tabInactiveText,
-            '--dw-tab-hover-bg': ui.tabHoverBg,
-            '--dw-tab-close-hover': ui.tabCloseHover,
+            '--dw-tab-hover-bg': isIde
+                ? (mode === 'dark'
+                    ? 'color-mix(in srgb, #fff 5%, transparent)'
+                    : 'color-mix(in srgb, var(--dw-text) 6%, transparent)')
+                : ui.tabHoverBg,
+            '--dw-tab-close-hover': isIde
+                ? (mode === 'dark'
+                    ? 'color-mix(in srgb, #fff 10%, transparent)'
+                    : 'color-mix(in srgb, var(--dw-text) 10%, transparent)')
+                : ui.tabCloseHover,
             '--dw-shadow': ui.shadow,
             '--dw-menu-shadow': ui.menuShadow,
         }

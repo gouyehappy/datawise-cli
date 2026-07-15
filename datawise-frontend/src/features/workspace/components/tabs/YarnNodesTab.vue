@@ -96,44 +96,44 @@ watch(connectionId, loadNodes)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 16px;
+  padding: var(--dw-space-5) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border);
   background: var(--dw-bg-panel);
 }
 
 .yarn-nodes-tab__head h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
 }
 
 .yarn-nodes-tab__head p {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: var(--dw-space-2) 0 0;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .yarn-nodes-tab__table-wrap {
   flex: 1;
   overflow: auto;
-  padding: 12px 16px;
+  padding: var(--dw-space-6) var(--dw-space-8);
 }
 
 .yarn-nodes-tab__table-wrap table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .yarn-nodes-tab__table-wrap th,
 .yarn-nodes-tab__table-wrap td {
-  padding: 8px 10px;
+  padding: var(--dw-pad-control);
   border-bottom: 1px solid var(--dw-border);
   text-align: left;
 }
 
 .yarn-nodes-tab__status {
-  padding: 12px 16px;
-  font-size: 12px;
+  padding: var(--dw-space-6) var(--dw-space-8);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 

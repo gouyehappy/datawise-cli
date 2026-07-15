@@ -7,7 +7,7 @@
 .dw-panel-hover-chrome .dw-panel-hover-actions {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.12s ease;
+    transition: opacity var(--dw-duration-fast) var(--dw-ease);
 }
 
 .dw-panel-hover-chrome:hover .dw-panel-hover-actions,
@@ -36,8 +36,8 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    padding: 16px 14px 12px;
+    gap: var(--dw-space-6);
+    padding: var(--dw-space-8) var(--dw-space-7) var(--dw-space-6);
     border-bottom: 1px solid var(--dw-border-light);
 }
 
@@ -48,22 +48,22 @@
 }
 
 .dw-side-panel__head p {
-    margin: 4px 0 0;
+    margin: var(--dw-space-2) 0 0;
     color: var(--dw-text-secondary);
     font-size: var(--mp-caption);
-    line-height: 1.45;
+    line-height: var(--dw-leading);
 }
 
 .dw-side-panel__toolbar {
-    padding: 10px 14px;
+    padding: var(--dw-space-5) var(--dw-space-7);
     border-bottom: 1px solid var(--dw-border-light);
 }
 
 .dw-side-panel__toolbar-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
+    gap: var(--dw-gap);
+    margin-top: var(--dw-space-5);
 }
 
 .dw-side-panel__body {
@@ -73,9 +73,9 @@
 }
 
 .dw-side-panel__group-title {
-    margin: 10px 8px 6px;
+    margin: var(--dw-space-5) var(--dw-space-4) var(--dw-space-3);
     color: var(--dw-text-muted);
-    font-size: 11px;
+    font-size: var(--dw-text-xs);
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -83,7 +83,7 @@
 
 .dw-list {
     margin: 0;
-    padding: 8px;
+    padding: var(--dw-space-4);
     list-style: none;
 }
 
@@ -95,15 +95,15 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 3px;
+    gap: var(--dw-space-1);
     width: 100%;
-    padding: 10px 34px 10px 10px;
+    padding: var(--dw-space-5) 34px var(--dw-space-5) var(--dw-space-5);
     border: 1px solid transparent;
-    border-radius: 10px;
+    border-radius: var(--dw-radius-lg);
     background: transparent;
     text-align: left;
     cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition: background var(--dw-duration-fast) var(--dw-ease), border-color 0.12s ease;
 }
 
 .dw-list-item:hover,
@@ -119,7 +119,7 @@
 
 .dw-list-item__title {
     width: 100%;
-    font-size: 13px;
+    font-size: var(--dw-text-md);
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -129,7 +129,7 @@
 .dw-list-item__meta {
     width: 100%;
     color: var(--dw-text-secondary);
-    font-size: 11px;
+    font-size: var(--dw-text-xs);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -137,7 +137,7 @@
 
 .dw-list-item__time {
     color: var(--dw-text-muted);
-    font-size: 10px;
+    font-size: var(--dw-text-xs);
 }
 
 .dw-list-item__delete {
@@ -145,16 +145,16 @@
     top: 8px;
     right: 6px;
     width: 22px;
-    height: 22px;
+    height: var(--dw-control-h-xs);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--dw-control-radius-sm);
     background: transparent;
     color: var(--dw-text-muted);
-    font-size: 16px;
+    font-size: var(--dw-text-xl);
     line-height: 1;
     opacity: 0;
     cursor: pointer;
-    transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+    transition: var(--dw-transition-colors), opacity var(--dw-duration-fast) var(--dw-ease);
 }
 
 .dw-list-item-wrap:hover .dw-list-item__delete,
@@ -163,18 +163,18 @@
 }
 
 .dw-list-item__delete:hover {
-    background: color-mix(in srgb, #ef4444 12%, transparent);
-    color: #dc2626;
+    background: color-mix(in srgb, var(--dw-danger) 12%, transparent);
+    color: var(--dw-danger);
 }
 
 .dw-check-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 10px;
-    border-radius: 10px;
+    gap: var(--dw-gap-md);
+    padding: var(--dw-space-5) var(--dw-space-5);
+    border-radius: var(--dw-radius-lg);
     cursor: pointer;
-    transition: background 0.12s ease;
+    transition: background var(--dw-duration-fast) var(--dw-ease);
 }
 
 .dw-check-item:hover {
@@ -198,7 +198,7 @@
 }
 
 .dw-check-item__text strong {
-    font-size: 13px;
+    font-size: var(--dw-text-md);
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -207,7 +207,7 @@
 
 .dw-check-item__text span {
     color: var(--dw-text-secondary);
-    font-size: 11px;
+    font-size: var(--dw-text-xs);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -61,9 +61,9 @@ const {t} = useI18n()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--dw-space-6);
   flex-shrink: 0;
-  padding: 12px 24px 14px;
+  padding: var(--dw-space-6) var(--dw-space-10) var(--dw-space-7);
   border-top: 1px solid var(--dw-border-light);
   background: var(--dw-bg-panel);
 }
@@ -71,35 +71,35 @@ const {t} = useI18n()
 .conn-footer__left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   min-width: 0;
   flex: 1;
 }
 
 .conn-footer__right {
   display: flex;
-  gap: 8px;
+  gap: var(--dw-gap);
   flex-shrink: 0;
 }
 
 .test-result {
   margin: 0;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  line-height: 1.35;
+  padding: var(--dw-space-2) var(--dw-space-4);
+  border-radius: var(--dw-control-radius-sm);
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .test-result.ok {
-  background: color-mix(in srgb, #16a34a 12%, var(--dw-bg));
-  color: #16a34a;
+  background: color-mix(in srgb, var(--dw-success) 12%, var(--dw-bg));
+  color: var(--dw-success);
 }
 
 .test-result.fail {
-  background: color-mix(in srgb, #dc2626 12%, var(--dw-bg));
-  color: #dc2626;
+  background: color-mix(in srgb, var(--dw-danger) 12%, var(--dw-bg));
+  color: var(--dw-danger);
 }
 </style>

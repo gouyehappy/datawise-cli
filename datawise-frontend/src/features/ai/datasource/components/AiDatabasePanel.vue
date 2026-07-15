@@ -108,13 +108,13 @@ function refreshCatalog() {
 }
 
 .ai-datasource-panel :deep(.dw-side-panel__toolbar) {
-  padding: 8px 10px 6px;
+  padding: var(--dw-space-4) var(--dw-space-5) var(--dw-space-3);
 }
 
 .scope-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .scope-toolbar__search {
@@ -123,24 +123,24 @@ function refreshCatalog() {
 }
 
 .scope-toolbar__search :deep(input) {
-  min-height: 30px;
+  min-height: var(--dw-control-h-sm);
   padding-top: 5px;
   padding-bottom: 5px;
-  font-size: 12px;
-  border-radius: 8px;
+  font-size: var(--dw-text-sm);
+  border-radius: var(--dw-control-radius);
 }
 
 .scope-toolbar__actions {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--dw-space-1);
   flex-shrink: 0;
 }
 
 .scope-toolbar__actions :deep(.dw-icon-btn) {
   width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  height: var(--dw-btn-height);
+  border-radius: var(--dw-control-radius);
   color: var(--dw-text-muted);
 }
 
@@ -150,14 +150,14 @@ function refreshCatalog() {
 }
 
 .scope-toolbar__clear {
-  margin-left: 2px;
-  padding: 0 8px;
+  margin-left: var(--dw-space-1);
+  padding: 0 var(--dw-space-4);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: transparent;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 28px;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-btn-height);
   cursor: pointer;
   white-space: nowrap;
 }

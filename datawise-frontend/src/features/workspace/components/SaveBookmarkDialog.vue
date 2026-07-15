@@ -154,8 +154,8 @@ function submit() {
 .bookmark-library-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 4px;
+  gap: var(--dw-gap);
+  padding-top: var(--dw-space-2);
   border-top: 1px dashed var(--dw-border-light);
 }
 </style>

@@ -206,19 +206,19 @@ async function saveAsCanvas() {
 .ai-analysis-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--dw-space-6);
 }
 
 .analysis-export-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   flex-wrap: wrap;
-  padding: 0 2px;
+  padding: 0 var(--dw-space-1);
 }
 
 .analysis-export-bar__label {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -228,49 +228,49 @@ async function saveAsCanvas() {
 .analysis-sql-card .analysis-sql-body {
   border: none;
   border-radius: 0;
-  background: color-mix(in srgb, #1e1f26 94%, var(--dw-bg-panel));
+  background: color-mix(in srgb, var(--dw-ink-deep) 94%, var(--dw-bg-panel));
 }
 
 .analysis-sql-body pre {
   margin: 0;
-  padding: 12px 14px;
+  padding: var(--dw-space-6) var(--dw-space-7);
   overflow-x: auto;
 }
 
 .analysis-sql-body code {
-  color: color-mix(in srgb, #e4e4e7 95%, var(--dw-text));
+  color: color-mix(in srgb, var(--dw-border) 95%, var(--dw-text));
   font-family: var(--dw-mono);
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   white-space: pre-wrap;
 }
 
 .analysis-chip {
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: var(--dw-space-2) var(--dw-space-5);
+  border-radius: var(--dw-radius-pill);
   border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border));
-  background: linear-gradient(180deg, color-mix(in srgb, var(--dw-primary-soft) 90%, #fff), var(--dw-primary-soft));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dw-primary-soft) 90%, var(--dw-on-accent)), var(--dw-primary-soft));
   color: var(--dw-primary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   white-space: nowrap;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 40%, transparent);
+  box-shadow: var(--dw-surface-inset-highlight);
 }
 
 .analysis-table-scroll {
   overflow-x: auto;
-  border-radius: 0 0 14px 14px;
+  border-radius: 0 0 var(--dw-radius-xl) var(--dw-radius-xl);
 }
 
 .analysis-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .analysis-table th,
 .analysis-table td {
-  padding: 10px 14px;
+  padding: var(--dw-space-5) var(--dw-space-7);
   border-bottom: 1px solid var(--dw-border-light);
   text-align: left;
   white-space: nowrap;
@@ -284,13 +284,13 @@ async function saveAsCanvas() {
   );
   color: var(--dw-text-secondary);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
 .analysis-table tbody tr {
-  transition: background 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease);
 }
 
 .analysis-table tbody tr:nth-child(even) td {
@@ -310,20 +310,20 @@ async function saveAsCanvas() {
 
 .analysis-federated-hint {
   margin: 0;
-  padding: 0 14px 10px;
-  font-size: 11px;
-  line-height: 1.45;
+  padding: 0 var(--dw-space-7) var(--dw-space-5);
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
   color: var(--dw-text-muted);
 }
 
 .analysis-python-body {
-  padding: 12px 14px;
+  padding: var(--dw-space-6) var(--dw-space-7);
 }
 
 .analysis-python-text {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: var(--dw-text-md);
+  line-height: var(--dw-leading-loose);
   white-space: pre-wrap;
   color: var(--dw-text);
 }

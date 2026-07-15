@@ -138,7 +138,7 @@ defineExpose({applySeed})
 .kafka-producer-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -150,53 +150,53 @@ defineExpose({applySeed})
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .kafka-producer-panel__hint {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .kafka-producer-panel__row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 120px;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .kafka-producer-panel__field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 11px;
+  gap: var(--dw-gap-xs);
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
 .kafka-producer-panel__field input,
 .kafka-producer-panel__field textarea {
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-pad-control);
   background: var(--dw-bg-panel);
   color: var(--dw-text);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 12px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-sm);
 }
 
 .kafka-producer-panel__field textarea {
   min-height: 56px;
   resize: vertical;
-  line-height: 1.5;
+  line-height: var(--dw-leading-relaxed);
 }
 
 .kafka-producer-panel__footer {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   flex-shrink: 0;
-  padding-top: 2px;
+  padding-top: var(--dw-space-1);
   border-top: 1px solid var(--dw-border);
 }
 
@@ -205,7 +205,7 @@ defineExpose({applySeed})
   min-width: 0;
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .kafka-producer-panel__feedback.is-error {
@@ -213,17 +213,17 @@ defineExpose({applySeed})
 }
 
 .kafka-producer-panel__feedback.is-success {
-  color: var(--dw-success, #15803d);
+  color: var(--dw-success);
 }
 
 .kafka-producer-panel__send {
   flex-shrink: 0;
   border: 1px solid var(--dw-primary-ring);
-  border-radius: 6px;
-  padding: 8px 14px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-space-4) var(--dw-space-7);
   background: var(--dw-primary-tint);
   color: var(--dw-primary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
   cursor: pointer;
 }

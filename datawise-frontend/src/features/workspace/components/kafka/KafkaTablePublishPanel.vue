@@ -747,14 +747,14 @@ defineExpose({resetFormState})
 .kafka-table-publish-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .kafka-table-publish-panel__scroll {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px 12px 4px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-5) var(--dw-space-6) var(--dw-space-2);
 }
 
 .kafka-table-publish-panel__scroll.is-locked {
@@ -769,54 +769,54 @@ defineExpose({resetFormState})
 }
 
 .kafka-table-publish-panel__rules {
-  margin: 2px 0 0;
-  padding: 8px 10px;
+  margin: var(--dw-space-1) 0 0;
+  padding: var(--dw-pad-control);
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: color-mix(in srgb, var(--dw-bg-editor) 55%, var(--dw-bg-panel));
 }
 
 .kafka-table-publish-panel__rules-title {
-  margin: 0 0 6px;
-  font-size: 11px;
+  margin: 0 0 var(--dw-space-3);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   color: var(--dw-text);
 }
 
 .kafka-table-publish-panel__rules-list {
   margin: 0;
-  padding-left: 16px;
+  padding-left: var(--dw-space-8);
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-relaxed);
 }
 
 .kafka-table-publish-panel__rules-list li + li {
-  margin-top: 4px;
+  margin-top: var(--dw-space-2);
 }
 
 .kafka-table-publish-panel__hint {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .kafka-table-publish-panel__source-tag {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px 10px;
-  padding: 8px 10px;
+  gap: var(--dw-gap-sm) var(--dw-gap-md);
+  padding: var(--dw-pad-control);
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: color-mix(in srgb, var(--dw-primary) 5%, var(--dw-bg-panel));
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .kafka-table-publish-panel__source-tag-label {
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .kafka-table-publish-panel__source-tag strong {
@@ -825,14 +825,14 @@ defineExpose({resetFormState})
 
 .kafka-table-publish-panel__divider {
   height: 1px;
-  margin: 2px 0;
+  margin: var(--dw-space-1) 0;
   background: var(--dw-border);
 }
 
 .kafka-table-publish-panel__row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px;
+  gap: var(--dw-gap-md);
 }
 
 .kafka-table-publish-panel__row--triple {
@@ -842,16 +842,16 @@ defineExpose({resetFormState})
 .kafka-table-publish-panel__field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   min-width: 0;
   position: relative;
   z-index: 0;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
 .kafka-table-publish-panel__field:has(:deep(.dw-select.is-open)) {
-  z-index: 20;
+  z-index: var(--dw-z-toolbar);
 }
 
 .kafka-table-publish-panel__field :deep(.dw-select) {
@@ -859,14 +859,14 @@ defineExpose({resetFormState})
 }
 
 .kafka-table-publish-panel__control {
-  min-height: 34px;
+  min-height: var(--dw-control-h);
 }
 
 .kafka-table-publish-panel__field-note {
-  min-height: 16px;
+  min-height: var(--dw-icon-size-md);
   margin: 0;
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-tab-title-line);
 }
 
 .kafka-table-publish-panel__field-note .is-error {
@@ -880,16 +880,16 @@ defineExpose({resetFormState})
 .kafka-table-publish-panel__option-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .kafka-table-publish-panel__option {
   border: 1px solid var(--dw-border);
-  border-radius: 999px;
-  padding: 5px 12px;
+  border-radius: var(--dw-radius-pill);
+  padding: var(--dw-space-2) var(--dw-space-6);
   background: transparent;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   cursor: pointer;
 }
 
@@ -907,10 +907,10 @@ defineExpose({resetFormState})
 .kafka-table-publish-panel__checkbox {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 34px;
+  gap: var(--dw-gap-sm);
+  min-height: var(--dw-control-h);
   color: var(--dw-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 
@@ -920,14 +920,14 @@ defineExpose({resetFormState})
 
 .kafka-table-publish-panel__input {
   width: 100%;
-  min-height: 34px;
+  min-height: var(--dw-control-h);
   box-sizing: border-box;
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-pad-control);
   background: var(--dw-bg-panel);
   color: var(--dw-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .kafka-table-publish-panel__input:disabled {
@@ -938,21 +938,21 @@ defineExpose({resetFormState})
 .kafka-table-publish-panel__field-error {
   margin: 0;
   color: var(--dw-danger);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .kafka-table-publish-panel__field-hint {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .kafka-table-publish-panel__footer {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   flex-shrink: 0;
-  padding: 8px 12px 10px;
+  padding: var(--dw-space-4) var(--dw-space-6) var(--dw-space-5);
   border-top: 1px solid var(--dw-border);
   background: color-mix(in srgb, var(--dw-bg-editor) 70%, transparent);
 }
@@ -962,8 +962,8 @@ defineExpose({resetFormState})
   min-width: 0;
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .kafka-table-publish-panel__feedback.is-error {
@@ -971,17 +971,17 @@ defineExpose({resetFormState})
 }
 
 .kafka-table-publish-panel__feedback.is-success {
-  color: var(--dw-success, #15803d);
+  color: var(--dw-success);
 }
 
 .kafka-table-publish-panel__send {
   flex-shrink: 0;
   border: 1px solid var(--dw-primary-ring);
-  border-radius: 6px;
-  padding: 8px 14px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-space-4) var(--dw-space-7);
   background: var(--dw-primary-tint);
   color: var(--dw-primary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
   cursor: pointer;
 }

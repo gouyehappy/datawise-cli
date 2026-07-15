@@ -56,19 +56,14 @@ const {visible, maximized, isMac, minimize, toggleMaximize, close} = useDesktopT
 
 <style scoped>
 .desktop-titlebar {
-  --dw-titlebar-chip-size: 30px;
-  --dw-titlebar-chip-radius: 7px;
-  --dw-titlebar-chip-hover: color-mix(in srgb, var(--dw-text) 8%, transparent);
-  --dw-titlebar-chip-active: color-mix(in srgb, var(--dw-text) 11%, transparent);
-
   display: flex;
   align-items: center;
   flex-shrink: 0;
   min-width: 0;
-  height: var(--dw-titlebar-height, 44px);
+  height: var(--dw-titlebar-height);
   background: var(--dw-bg-chrome);
   position: relative;
-  z-index: 20;
+  z-index: var(--dw-z-toolbar);
   user-select: none;
 }
 
@@ -82,7 +77,7 @@ const {visible, maximized, isMac, minimize, toggleMaximize, close} = useDesktopT
   gap: 0;
   flex-shrink: 0;
   height: 100%;
-  padding-right: 2px;
+  padding-right: var(--dw-space-1);
   -webkit-app-region: no-drag;
 }
 
@@ -92,24 +87,24 @@ const {visible, maximized, isMac, minimize, toggleMaximize, close} = useDesktopT
   justify-content: center;
   flex-shrink: 0;
   height: 100%;
-  padding: 0 0 0 14px;
+  padding: 0 0 0 var(--dw-space-7);
   -webkit-app-region: drag;
 }
 
 .desktop-titlebar__menu {
   flex: 1;
   min-width: 0;
-  margin-left: 12px;
-  padding-left: 6px;
+  margin-left: var(--dw-space-6);
+  padding-left: var(--dw-space-3);
 }
 
 .desktop-titlebar__controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   flex-shrink: 0;
   height: 100%;
-  padding: 0 10px 0 4px;
+  padding: 0 var(--dw-space-5) 0 var(--dw-space-2);
   -webkit-app-region: no-drag;
 }
 
@@ -117,28 +112,28 @@ const {visible, maximized, isMac, minimize, toggleMaximize, close} = useDesktopT
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--dw-titlebar-chip-size, 30px);
-  height: var(--dw-titlebar-chip-size, 30px);
+  width: var(--dw-titlebar-chip-size);
+  height: var(--dw-titlebar-chip-size);
   border: none;
-  border-radius: var(--dw-titlebar-chip-radius, 7px);
+  border-radius: var(--dw-titlebar-chip-radius);
   background: transparent;
   color: var(--dw-text-secondary);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .desktop-titlebar__btn:hover {
-  background: var(--dw-titlebar-chip-hover, color-mix(in srgb, var(--dw-text) 8%, transparent));
+  background: var(--dw-titlebar-chip-hover);
   color: var(--dw-text);
 }
 
 .desktop-titlebar__btn--close:hover {
-  background: #e81123;
-  color: #ffffff;
+  background: var(--dw-danger);
+  color: var(--dw-on-accent);
 }
 
 .desktop-titlebar__btn svg {
-  width: 12px;
-  height: 12px;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
 }
 </style>

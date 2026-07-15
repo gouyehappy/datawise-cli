@@ -4,7 +4,7 @@
   overflow: auto;
   min-width: 0;
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg);
 }
 
@@ -12,12 +12,12 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .resizable-table th,
 .resizable-table td {
-  padding: 6px 10px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-bottom: 1px solid var(--dw-border-light);
   text-align: left;
   vertical-align: top;
@@ -31,7 +31,7 @@
   top: 0;
   z-index: 1;
   font-weight: 600;
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-secondary);
   background: color-mix(in srgb, var(--dw-bg-panel) 88%, var(--dw-bg));
   user-select: none;
@@ -46,7 +46,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 6px;
+  padding-right: var(--dw-space-3);
 }
 
 .resizable-table__resize {
@@ -66,9 +66,9 @@
   bottom: 20%;
   right: 3px;
   width: 1px;
-  border-radius: 1px;
+  border-radius: var(--dw-radius-xs);
   background: transparent;
-  transition: background 0.15s ease;
+  transition: background var(--dw-duration) var(--dw-ease) ease;
 }
 
 .resizable-table th:hover .resizable-table__resize::after,

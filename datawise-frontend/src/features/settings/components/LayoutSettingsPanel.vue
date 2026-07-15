@@ -212,7 +212,7 @@ async function onFileChange(event: Event) {
   display: block;
   margin-bottom: clamp(6px, 0.8vmin, 8px);
   color: var(--dw-text-muted);
-  font-size: clamp(10px, 1.05vmin, 11px);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -221,7 +221,7 @@ async function onFileChange(event: Event) {
 .toggle-grid {
   display: flex;
   flex-direction: column;
-  gap: clamp(6px, 0.8vmin, 8px);
+  gap: var(--dw-gap);
 }
 
 .panel-toggle-copy {
@@ -240,7 +240,7 @@ async function onFileChange(event: Event) {
 .config-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: clamp(8px, 1vmin, 10px);
+  gap: var(--dw-gap-md);
   margin-top: clamp(10px, 1.2vmin, 12px);
 }
 </style>

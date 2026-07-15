@@ -48,26 +48,26 @@ const capabilities = computed(() => tm('ai.capabilities') as { title: string; de
 .shared-ai-viewer {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--dw-space-6);
   min-height: 0;
 }
 
 .shared-ai-viewer__head h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--dw-text-xl);
   font-weight: 600;
 }
 
 .shared-ai-viewer__meta {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: var(--dw-space-2) 0 0;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .shared-ai-viewer__messages {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--dw-space-6);
   overflow: auto;
   min-height: 0;
 }

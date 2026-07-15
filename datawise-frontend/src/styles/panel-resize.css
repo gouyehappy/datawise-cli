@@ -12,9 +12,9 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    right: calc(var(--dw-panel-gap) * -0.5);
-    z-index: 3;
-    width: var(--dw-panel-gap);
+    right: calc(var(--dw-splitter-size) * -0.5);
+    z-index: var(--dw-z-raised);
+    width: var(--dw-splitter-size);
     height: auto;
     transform: translateX(50%);
 }
@@ -24,9 +24,9 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    left: calc(var(--dw-panel-gap) * -0.5);
-    z-index: 3;
-    width: var(--dw-panel-gap);
+    left: calc(var(--dw-splitter-size) * -0.5);
+    z-index: var(--dw-z-raised);
+    width: var(--dw-splitter-size);
     height: auto;
     transform: translateX(-50%);
 }

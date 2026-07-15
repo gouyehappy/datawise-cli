@@ -25,9 +25,9 @@ withDefaults(
   justify-content: center;
   flex-shrink: 0;
   border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.28),
-  0 1px 2px rgba(15, 23, 42, 0.08);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--dw-primary) 28%, transparent),
+  var(--dw-shadow-xs);
+  transition: transform var(--dw-duration) var(--dw-ease), box-shadow 0.15s ease;
 }
 
 .app-brand-logo :deep(svg) {
@@ -38,33 +38,33 @@ withDefaults(
 }
 
 .app-brand-logo--xs {
-  width: 16px;
-  height: 16px;
+  width: var(--dw-icon-size-md);
+  height: var(--dw-icon-size-md);
   box-shadow: none;
 }
 
 .app-brand-logo--titlebar {
   width: 28px;
-  height: 28px;
-  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.18);
+  height: var(--dw-btn-height);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--dw-primary) 18%, transparent);
 }
 
 .app-brand-logo--sm {
   width: 28px;
-  height: 28px;
+  height: var(--dw-btn-height);
 }
 
 .app-brand-logo--md {
   width: 40px;
   height: 40px;
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.32),
-  0 2px 4px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--dw-primary) 32%, transparent),
+  var(--dw-shadow-xs);
 }
 
 .app-brand-logo--lg {
   width: 56px;
   height: 56px;
-  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.32),
-  0 2px 6px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--dw-primary) 32%, transparent),
+  var(--dw-shadow-sm);
 }
 </style>

@@ -257,7 +257,7 @@ defineExpose({refresh: loadMetrics})
 .kafka-consumer-group-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -267,17 +267,17 @@ defineExpose({refresh: loadMetrics})
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  gap: 8px;
+  gap: var(--dw-gap);
   flex-shrink: 0;
 }
 
 .kafka-consumer-group-panel__field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   min-width: 0;
   flex: 1 1 180px;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
@@ -287,30 +287,30 @@ defineExpose({refresh: loadMetrics})
 
 .kafka-consumer-group-panel__input {
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
-  padding: 7px 10px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: var(--dw-bg-panel);
   color: var(--dw-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .kafka-consumer-group-panel__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   flex-shrink: 0;
 }
 
 .kafka-consumer-group-panel__chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   border: 1px solid var(--dw-border);
-  border-radius: 999px;
-  padding: 3px 10px;
+  border-radius: var(--dw-radius-pill);
+  padding: var(--dw-space-1) var(--dw-space-5);
   background: transparent;
   color: var(--dw-text);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   cursor: pointer;
 }
 
@@ -322,38 +322,38 @@ defineExpose({refresh: loadMetrics})
 
 .kafka-consumer-group-panel__chip-state {
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
 }
 
 .kafka-consumer-group-panel__error {
   margin: 0;
   color: var(--dw-danger);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .kafka-consumer-group-panel__summary {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   flex-shrink: 0;
 }
 
 .kafka-consumer-group-panel__badge {
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 10px;
+  padding: 1px var(--dw-space-4);
+  border-radius: var(--dw-radius-pill);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
 .kafka-consumer-group-panel__badge.is-stable {
-  background: color-mix(in srgb, #16a34a 12%, transparent);
-  color: #16a34a;
+  background: color-mix(in srgb, var(--dw-success) 12%, transparent);
+  color: var(--dw-success);
 }
 
 .kafka-consumer-group-panel__badge.is-warn {
-  background: color-mix(in srgb, #d97706 12%, transparent);
-  color: #d97706;
+  background: color-mix(in srgb, var(--mp-tone-amber) 12%, transparent);
+  color: var(--mp-tone-amber);
 }
 
 .kafka-consumer-group-panel__badge.is-muted {
@@ -362,7 +362,7 @@ defineExpose({refresh: loadMetrics})
 }
 
 .kafka-consumer-group-panel__meta {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
@@ -371,19 +371,19 @@ defineExpose({refresh: loadMetrics})
   min-height: 0;
   overflow: auto;
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-editor);
 }
 
 .kafka-consumer-group-panel__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .kafka-consumer-group-panel__table th,
 .kafka-consumer-group-panel__table td {
-  padding: 7px 10px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-bottom: 1px solid var(--dw-border);
   text-align: left;
   white-space: nowrap;
@@ -398,7 +398,7 @@ defineExpose({refresh: loadMetrics})
 }
 
 .kafka-consumer-group-panel__table tr.is-hot td:nth-child(4) {
-  color: #d97706;
+  color: var(--mp-tone-amber);
   font-weight: 600;
 }
 
@@ -406,6 +406,6 @@ defineExpose({refresh: loadMetrics})
   max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
 }
 </style>

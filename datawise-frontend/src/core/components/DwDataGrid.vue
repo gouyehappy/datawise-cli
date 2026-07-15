@@ -505,7 +505,7 @@ watch(internalCurrentPage, () => {
 .dw-data-grid__head {
   flex-shrink: 0;
   position: relative;
-  z-index: 4;
+  z-index: var(--dw-z-raised);
   overflow: visible;
   background: var(--ddg-head-bg);
 }
@@ -514,8 +514,8 @@ watch(internalCurrentPage, () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-2) var(--dw-space-4);
   border-bottom: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
 }
 
@@ -523,7 +523,7 @@ watch(internalCurrentPage, () => {
 .dw-data-grid__toolbar-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
 }
 
@@ -539,8 +539,8 @@ watch(internalCurrentPage, () => {
 
 .dw-data-grid__toolbar-divider {
   width: 1px;
-  height: 18px;
-  margin: 0 2px;
+  height: var(--dw-icon-size-lg);
+  margin: 0 var(--dw-space-1);
   background: color-mix(in srgb, var(--dw-border-light) 70%, transparent);
 }
 
@@ -555,7 +555,7 @@ watch(internalCurrentPage, () => {
   align-items: center;
   justify-content: center;
   width: 24px;
-  height: 24px;
+  height: var(--dw-control-h-xs);
   padding: 0;
   border: none;
   border-right: 1px solid color-mix(in srgb, var(--dw-border-light) 50%, transparent);
@@ -583,11 +583,11 @@ watch(internalCurrentPage, () => {
   align-items: center;
   justify-content: center;
   min-width: 28px;
-  height: 24px;
-  padding: 0 4px;
+  height: var(--dw-control-h-xs);
+  padding: 0 var(--dw-space-2);
   border-right: 1px solid color-mix(in srgb, var(--dw-border-light) 50%, transparent);
   color: var(--dw-text-primary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
 }
 
@@ -598,7 +598,7 @@ watch(internalCurrentPage, () => {
 
 .dw-data-grid__total {
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   white-space: nowrap;
 }
 
@@ -606,14 +606,14 @@ watch(internalCurrentPage, () => {
 .dw-data-grid__toolbar-right :slotted(button) {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 28px;
-  padding: 0 8px;
+  gap: var(--dw-gap-xs);
+  height: var(--dw-btn-height);
+  padding: 0 var(--dw-space-4);
   border: none;
   border-radius: 0;
   background: transparent;
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -633,14 +633,14 @@ watch(internalCurrentPage, () => {
 .dw-data-grid__toolbar-right :slotted(.dw-data-grid__end-chip) {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   max-width: 220px;
-  height: 28px;
-  padding: 0 8px;
+  height: var(--dw-btn-height);
+  padding: 0 var(--dw-space-4);
   border: 1px solid color-mix(in srgb, var(--dw-border) 75%, transparent);
   background: color-mix(in srgb, var(--dw-bg-panel) 90%, var(--dw-bg-muted));
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-data-grid__toolbar-right :slotted(.dw-data-grid__end-chip strong) {
@@ -663,7 +663,7 @@ watch(internalCurrentPage, () => {
   display: flex;
   align-items: stretch;
   width: 100%;
-  height: 32px;
+  height: var(--dw-tab-height);
   border-top: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
   background: color-mix(in srgb, var(--dw-bg-panel) 94%, var(--dw-bg-editor));
 }
@@ -679,14 +679,14 @@ watch(internalCurrentPage, () => {
 .dw-data-grid__search-field {
   display: flex;
   align-items: center;
-  height: 32px;
+  height: var(--dw-tab-height);
   min-width: 0;
 }
 
 .dw-data-grid__search-field--column {
   flex: 0 1 auto;
   max-width: min(220px, 34vw);
-  padding: 0 8px 0 10px;
+  padding: 0 var(--dw-space-4) 0 var(--dw-space-5);
   border-right: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
   background: color-mix(in srgb, var(--dw-bg-muted) 22%, transparent);
 }
@@ -695,22 +695,22 @@ watch(internalCurrentPage, () => {
   width: auto;
   min-width: 72px;
   max-width: 100%;
-  height: 32px;
+  height: var(--dw-tab-height);
 }
 
 .dw-data-grid__search-field--column :deep(.dw-select__trigger) {
   display: inline-flex;
   align-items: center;
   width: 100%;
-  height: 32px;
-  min-height: 32px;
+  height: var(--dw-tab-height);
+  min-height: var(--dw-tab-height);
   padding: 0 18px 0 0;
   border: none;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
   line-height: 1;
   color: var(--dw-text-primary);
@@ -725,8 +725,8 @@ watch(internalCurrentPage, () => {
 }
 
 .dw-data-grid__search-field--column :deep(.dw-select__chevron) {
-  width: 10px;
-  height: 10px;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
 }
 
 .dw-data-grid__search-field--column :deep(.dw-select__trigger:hover:not(:disabled)),
@@ -736,13 +736,13 @@ watch(internalCurrentPage, () => {
 }
 
 .dw-data-grid__search-field--column :deep(.dw-select__menu) {
-  z-index: 140;
+  z-index: var(--dw-z-popover);
 }
 
 .dw-data-grid__search-field--query {
   flex: 1;
-  gap: 8px;
-  padding: 0 8px;
+  gap: var(--dw-gap);
+  padding: 0 var(--dw-space-4);
 }
 
 .dw-data-grid__search-combo.is-active .dw-data-grid__search-icon {
@@ -766,24 +766,24 @@ watch(internalCurrentPage, () => {
 
 .dw-data-grid__search {
   width: 100%;
-  height: 32px;
-  padding: 0 8px 0 28px;
+  height: var(--dw-tab-height);
+  padding: 0 var(--dw-space-4) 0 var(--dw-space-11);
   border: none;
   border-top: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
   background: color-mix(in srgb, var(--dw-bg-panel) 94%, var(--dw-bg-editor));
   color: var(--dw-text-primary);
-  font-size: 12px;
-  line-height: 32px;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-tab-height);
 }
 
 .dw-data-grid__search--combo {
   flex: 1;
   min-width: 0;
-  height: 32px;
+  height: var(--dw-tab-height);
   padding: 0;
   border-top: none;
   background: transparent;
-  line-height: 32px;
+  line-height: var(--dw-tab-height);
 }
 
 .dw-data-grid__search--combo::-webkit-search-cancel-button {
@@ -796,8 +796,8 @@ watch(internalCurrentPage, () => {
   justify-content: center;
   flex-shrink: 0;
   width: 22px;
-  height: 22px;
-  margin-right: 4px;
+  height: var(--dw-control-h-xs);
+  margin-right: var(--dw-space-2);
   padding: 0;
   border: none;
   background: transparent;
@@ -822,11 +822,11 @@ watch(internalCurrentPage, () => {
 .dw-data-grid__page-size :deep(.dw-select__trigger) {
   border-radius: 0;
   box-shadow: none;
-  min-height: 24px;
-  height: 24px;
+  min-height: var(--dw-control-h-xs);
+  height: var(--dw-control-h-xs);
   border-color: color-mix(in srgb, var(--dw-border-light) 55%, transparent);
   background: transparent;
-  padding: 0 8px;
+  padding: 0 var(--dw-space-4);
 }
 
 .dw-data-grid__page-size :deep(.dw-select) {
@@ -835,7 +835,7 @@ watch(internalCurrentPage, () => {
 }
 
 .dw-data-grid__page-size :deep(.dw-select__menu) {
-  z-index: 140;
+  z-index: var(--dw-z-popover);
 }
 
 .dw-data-grid__body {
@@ -861,7 +861,7 @@ tr.dw-data-grid__virtual-spacer td {
 .dw-data-grid__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-data-grid__table th,
@@ -893,7 +893,7 @@ tr.dw-data-grid__virtual-spacer td {
 }
 
 .dw-data-grid__table td.is-mono {
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
 }
 
 .dw-data-grid__table tbody tr:hover {
@@ -910,8 +910,8 @@ tr.dw-data-grid__virtual-spacer td {
 }
 
 .col-check input[type='checkbox'] {
-  width: 14px;
-  height: 14px;
+  width: var(--dw-icon-size-sm);
+  height: var(--dw-icon-size-sm);
   accent-color: var(--dw-primary);
   cursor: pointer;
 }
@@ -921,20 +921,20 @@ tr.dw-data-grid__virtual-spacer td {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   flex: 1;
   min-height: 220px;
   color: var(--dw-text-muted);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 
 .dw-data-grid__state--error {
-  color: var(--dw-danger, #c0392b);
+  color: var(--dw-danger);
 }
 
 .dw-data-grid__spinner {
   width: 22px;
-  height: 22px;
+  height: var(--dw-control-h-xs);
   border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;

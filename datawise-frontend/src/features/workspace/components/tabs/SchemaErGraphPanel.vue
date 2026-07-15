@@ -432,19 +432,19 @@ onUnmounted(() => {
 
 <style scoped>
 .schema-er-graph {
-  --erg-canvas-bg: #151518;
+  --erg-canvas-bg: var(--dw-bg-rail);
   --erg-grid-stroke: rgb(255 255 255 / 10%);
-  --erg-node-fill: #26262b;
-  --erg-node-stroke: #5f6672;
-  --erg-header-fill: #303038;
-  --erg-center-header: color-mix(in srgb, #38bdf8 22%, #303038 78%);
-  --erg-text: #eef1f5;
-  --erg-text-type: #b8bec8;
-  --erg-text-comment: #939aa6;
-  --erg-text-more: #939aa6;
+  --erg-node-fill: var(--dw-bg-hover);
+  --erg-node-stroke: var(--dw-text-secondary);
+  --erg-header-fill: var(--dw-graph-node-dark);
+  --erg-center-header: color-mix(in srgb, var(--dw-info) 22%, var(--dw-graph-node-dark) 78%);
+  --erg-text: var(--dw-border-light);
+  --erg-text-type: var(--dw-text-muted);
+  --erg-text-comment: var(--dw-text-muted);
+  --erg-text-more: var(--dw-text-muted);
   --erg-fk-bg: rgb(56 189 248 / 18%);
   --erg-pk-bg: rgb(251 191 36 / 14%);
-  --erg-key: #fcd34d;
+  --erg-key: var(--dw-warning);
 
   display: flex;
   flex-direction: column;
@@ -454,19 +454,19 @@ onUnmounted(() => {
 }
 
 [data-theme='light'] .schema-er-graph {
-  --erg-canvas-bg: color-mix(in srgb, var(--dw-bg-editor) 94%, #e2e8f0 6%);
-  --erg-grid-stroke: color-mix(in srgb, var(--dw-border) 70%, #94a3b8 30%);
-  --erg-node-fill: #ffffff;
-  --erg-node-stroke: color-mix(in srgb, var(--dw-border) 75%, #64748b 25%);
-  --erg-header-fill: color-mix(in srgb, var(--dw-bg-muted) 45%, #fff 55%);
-  --erg-center-header: color-mix(in srgb, #38bdf8 12%, #fff 88%);
-  --erg-text: #0f172a;
-  --erg-text-type: #475569;
-  --erg-text-comment: #64748b;
-  --erg-text-more: #64748b;
-  --erg-fk-bg: color-mix(in srgb, #38bdf8 14%, transparent);
-  --erg-pk-bg: color-mix(in srgb, #f59e0b 12%, transparent);
-  --erg-key: #b45309;
+  --erg-canvas-bg: color-mix(in srgb, var(--dw-bg-editor) 94%, var(--dw-border-light) 6%);
+  --erg-grid-stroke: color-mix(in srgb, var(--dw-border) 70%, var(--dw-text-muted) 30%);
+  --erg-node-fill: var(--dw-bg);
+  --erg-node-stroke: color-mix(in srgb, var(--dw-border) 75%, var(--dw-text-secondary) 25%);
+  --erg-header-fill: color-mix(in srgb, var(--dw-bg-muted) 45%, var(--dw-on-accent) 55%);
+  --erg-center-header: color-mix(in srgb, var(--dw-info) 12%, var(--dw-on-accent) 88%);
+  --erg-text: var(--dw-text);
+  --erg-text-type: var(--dw-text-secondary);
+  --erg-text-comment: var(--dw-text-secondary);
+  --erg-text-more: var(--dw-text-secondary);
+  --erg-fk-bg: color-mix(in srgb, var(--dw-info) 14%, transparent);
+  --erg-pk-bg: color-mix(in srgb, var(--dw-warning) 12%, transparent);
+  --erg-key: var(--dw-warning-fg);
 }
 
 .schema-er-graph__canvas-wrap {
@@ -500,17 +500,17 @@ onUnmounted(() => {
 
 .schema-er-graph__edge {
   fill: none;
-  stroke: #38bdf8;
+  stroke: var(--dw-info);
   stroke-width: 1.6;
   opacity: 0.9;
 }
 
 .schema-er-graph__arrow {
-  fill: #38bdf8;
+  fill: var(--dw-info);
 }
 
 .schema-er-graph__anchor {
-  fill: #38bdf8;
+  fill: var(--dw-info);
   stroke: var(--erg-node-fill);
   stroke-width: 1.5;
 }
@@ -549,13 +549,13 @@ onUnmounted(() => {
 }
 
 .schema-er-graph__node--center .schema-er-graph__node-shell {
-  stroke: #38bdf8;
+  stroke: var(--dw-info);
   stroke-width: 2;
 }
 
 .schema-er-graph__node-title {
   fill: var(--erg-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
   pointer-events: none;
 }
@@ -574,25 +574,25 @@ onUnmounted(() => {
 
 .schema-er-graph__col-name {
   fill: var(--erg-text);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   pointer-events: none;
 }
 
 .schema-er-graph__col-type {
   fill: var(--erg-key);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   pointer-events: none;
 }
 
 .schema-er-graph__col-comment {
   fill: var(--erg-text-comment);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   pointer-events: none;
 }
 
 .schema-er-graph__more {
   fill: var(--erg-text-more);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   pointer-events: none;
 }
 
@@ -600,33 +600,33 @@ onUnmounted(() => {
   position: absolute;
   left: 16px;
   bottom: 16px;
-  z-index: 2;
+  z-index: var(--dw-z-raised);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px;
-  border-radius: 10px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-3);
+  border-radius: var(--dw-radius-lg);
   background: color-mix(in srgb, var(--dw-bg-panel) 88%, transparent);
   border: 1px solid var(--dw-border-light);
-  box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+  box-shadow: var(--dw-shadow);
 }
 
 .schema-er-graph__dock-btn {
   display: grid;
   place-items: center;
   width: 30px;
-  height: 30px;
+  height: var(--dw-control-h-sm);
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: transparent;
   color: var(--dw-text-secondary);
   cursor: pointer;
 }
 
 .schema-er-graph__dock-btn svg {
-  width: 16px;
-  height: 16px;
+  width: var(--dw-icon-size-md);
+  height: var(--dw-icon-size-md);
 }
 
 .schema-er-graph__dock-btn:hover,
@@ -640,20 +640,20 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   flex: 1;
   min-height: 220px;
   color: var(--dw-text-muted);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 
 .schema-er-graph__state--error {
-  color: var(--dw-danger, #c0392b);
+  color: var(--dw-danger);
 }
 
 .schema-er-graph__spinner {
   width: 22px;
-  height: 22px;
+  height: var(--dw-control-h-xs);
   border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;

@@ -27,7 +27,7 @@ const size = computed(() => props.size ?? 16)
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: var(--dw-icon-size-md);
+  height: var(--dw-icon-size-md);
 }
 </style>

@@ -93,62 +93,62 @@ function pairLabel(id: ExplainMetricPair['id']) {
 
 .explain-node__row {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   align-items: flex-start;
-  padding: 10px 12px;
+  padding: var(--dw-pad-control-lg);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
 .explain-node__toggle {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: var(--dw-icon-size-lg);
+  height: var(--dw-icon-size-lg);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--dw-radius-sm);
   background: var(--dw-bg-muted);
   color: var(--dw-text-secondary);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   line-height: 1;
 }
 
 .explain-node__spacer {
   flex-shrink: 0;
-  width: 18px;
+  width: var(--dw-icon-size-lg);
 }
 
 .explain-node__label {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
   color: var(--dw-text);
 }
 
 .explain-node__detail {
-  margin-top: 2px;
-  font-size: 12px;
-  line-height: 1.45;
+  margin-top: var(--dw-space-1);
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading);
   color: var(--dw-text-secondary);
 }
 
 .explain-node__metrics {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 2px 10px;
-  margin: 6px 0 0;
-  font-size: 11px;
+  gap: var(--dw-space-1) var(--dw-space-5);
+  margin: var(--dw-space-3) 0 0;
+  font-size: var(--dw-text-xs);
 }
 
 .explain-node__pairs {
   width: 100%;
-  margin: 8px 0 0;
+  margin: var(--dw-space-4) 0 0;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .explain-node__pairs th,
 .explain-node__pairs td {
-  padding: 3px 8px;
-  border: 1px solid var(--dw-border-subtle, rgba(128, 128, 128, 0.15));
+  padding: var(--dw-space-1) var(--dw-space-4);
+  border: 1px solid var(--dw-border-subtle));
   text-align: left;
 }
 
@@ -163,7 +163,7 @@ function pairLabel(id: ExplainMetricPair['id']) {
 }
 
 .explain-node__pairs td {
-  font-family: var(--dw-mono, monospace);
+  font-family: var(--dw-mono);
   color: var(--dw-text-secondary);
 }
 
@@ -174,7 +174,7 @@ function pairLabel(id: ExplainMetricPair['id']) {
 
 .explain-node__metrics dd {
   margin: 0;
-  font-family: var(--dw-mono, monospace);
+  font-family: var(--dw-mono);
   color: var(--dw-text-secondary);
 }
 </style>

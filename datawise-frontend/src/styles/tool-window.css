@@ -15,11 +15,6 @@
     flex-shrink: 0;
     min-width: 0;
     min-height: 0;
-    border: 1px solid var(--dw-panel-border);
-    border-radius: var(--dw-panel-radius);
-    background: var(--dw-bg-panel);
-    box-shadow: var(--dw-panel-shadow);
-    overflow: hidden;
 }
 
 .workbench-edge__panel > * {
@@ -50,10 +45,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--dw-gap);
     flex-shrink: 0;
     min-height: 36px;
-    padding: 8px 8px 8px 14px;
+    padding: var(--dw-space-4) var(--dw-space-4) var(--dw-space-4) var(--dw-space-7);
     border-bottom: 1px solid var(--dw-border-light);
     background: color-mix(in srgb, var(--dw-bg) 40%, var(--dw-bg-panel));
 }
@@ -67,17 +62,17 @@
 
 .tool-window__title {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--dw-text-md);
     font-weight: 600;
     letter-spacing: 0.01em;
-    line-height: 1.25;
+    line-height: var(--dw-leading-tight);
 }
 
 .tool-window__subtitle {
     margin: 0;
     color: var(--dw-text-muted);
-    font-size: 11px;
-    line-height: 1.35;
+    font-size: var(--dw-text-xs);
+    line-height: var(--dw-leading-snug);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -86,7 +81,7 @@
 .tool-window__head-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--dw-gap-xs);
     flex-shrink: 0;
 }
 
@@ -95,12 +90,12 @@
     align-items: center;
     justify-content: center;
     width: 28px;
-    height: 28px;
+    height: var(--dw-btn-height);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--dw-control-radius-sm);
     background: transparent;
     color: var(--dw-text-secondary);
-    font-size: 14px;
+    font-size: var(--dw-text-xl);
     line-height: 1;
     cursor: pointer;
 }
@@ -120,11 +115,11 @@
     position: absolute;
     top: calc(100% + 4px);
     right: 0;
-    z-index: 20;
+    z-index: var(--dw-z-toolbar);
     min-width: 168px;
-    padding: 4px;
+    padding: var(--dw-space-2);
     border: 1px solid var(--dw-border);
-    border-radius: 8px;
+    border-radius: var(--dw-control-radius);
     background: var(--dw-bg);
     box-shadow: var(--dw-shadow);
 }
@@ -132,12 +127,12 @@
 .tool-window__dropdown button {
     display: block;
     width: 100%;
-    padding: 7px 10px;
+    padding: var(--dw-space-3) var(--dw-space-5);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--dw-control-radius-sm);
     background: transparent;
     color: var(--dw-text);
-    font-size: 12px;
+    font-size: var(--dw-text-sm);
     text-align: left;
     cursor: pointer;
 }
@@ -152,7 +147,7 @@
 }
 
 .tool-window__dropdown button.is-danger {
-    color: #dc2626;
+    color: var(--dw-danger);
 }
 
 .tool-window__menu {
@@ -164,7 +159,7 @@
     top: var(--dw-panel-gap);
     right: var(--dw-shell-padding);
     bottom: calc(var(--dw-status-height) + var(--dw-panel-gap));
-    z-index: 850;
+    z-index: var(--dw-z-overlay);
     width: 320px;
     display: flex;
     flex-direction: column;
@@ -172,7 +167,7 @@
     border: 1px solid var(--dw-panel-border);
     border-radius: var(--dw-panel-radius);
     background: var(--dw-bg-panel);
-    box-shadow: var(--dw-panel-shadow), 0 8px 24px rgba(15, 23, 42, 0.12);
+    box-shadow: var(--dw-panel-shadow), var(--dw-shadow-float);
     overflow: hidden;
 }
 

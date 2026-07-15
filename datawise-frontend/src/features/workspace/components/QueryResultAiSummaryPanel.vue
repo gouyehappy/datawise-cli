@@ -71,10 +71,10 @@ async function onCopy() {
 <style scoped>
 .result-ai-summary {
   flex-shrink: 0;
-  margin: 0 0 8px;
-  padding: 10px 12px;
+  margin: 0 0 var(--dw-space-4);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-muted);
 }
 
@@ -82,13 +82,13 @@ async function onCopy() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-4);
 }
 
 .result-ai-summary__head h3 {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   color: var(--dw-text);
 }
@@ -96,14 +96,14 @@ async function onCopy() {
 .result-ai-summary__actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   flex-shrink: 0;
 }
 
 .result-ai-summary__loading {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .result-ai-summary__body {
@@ -112,8 +112,8 @@ async function onCopy() {
   word-break: break-word;
   color: var(--dw-text-secondary);
   font-family: inherit;
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   max-height: 180px;
   overflow: auto;
 }

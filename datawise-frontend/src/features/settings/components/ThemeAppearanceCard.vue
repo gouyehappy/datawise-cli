@@ -47,7 +47,7 @@ defineEmits<{ click: [] }>()
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   padding: 0;
   border: none;
   background: transparent;
@@ -57,24 +57,24 @@ defineEmits<{ click: [] }>()
 .preview-frame {
   width: 148px;
   height: 92px;
-  padding: 3px;
+  padding: var(--dw-space-1);
   border: 1.5px solid var(--dw-border);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg);
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition: var(--dw-transition-shadow);
 }
 
 .preview-frame.active {
   border-color: var(--dw-primary-border);
   border-width: 2px;
-  padding: 2px;
-  box-shadow: 0 0 0 3px var(--dw-primary-soft), var(--dw-panel-shadow);
+  padding: var(--dw-space-1);
+  box-shadow: var(--dw-focus-ring), var(--dw-panel-shadow);
 }
 
 .card-label {
   font-size: var(--mp-sub);
   color: var(--dw-text-secondary);
-  transition: color 0.12s ease;
+  transition: color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .appearance-card.active .card-label {
@@ -87,40 +87,40 @@ defineEmits<{ click: [] }>()
   width: 100%;
   height: 100%;
   overflow: hidden;
-  border-radius: 6px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: var(--dw-control-radius-sm);
+  border: 1px solid var(--dw-panel-border);
 }
 
 .preview-shell--light .preview-rail {
-  background: #eceef2;
+  background: var(--dw-bg-chrome);
 }
 
 .preview-shell--light .preview-main {
-  background: #ffffff;
+  background: var(--dw-bg);
 }
 
 .preview-shell--light .preview-line {
-  background: #e8eaee;
+  background: var(--dw-bg-hover);
 }
 
 .preview-shell--light .preview-block {
-  background: #f3f4f6;
+  background: var(--dw-bg-hover);
 }
 
 .preview-shell--dark .preview-rail {
-  background: #2a2a2e;
+  background: var(--dw-bg-hover);
 }
 
 .preview-shell--dark .preview-main {
-  background: #141416;
+  background: var(--dw-bg-rail);
 }
 
 .preview-shell--dark .preview-line {
-  background: #2e2e32;
+  background: var(--dw-border);
 }
 
 .preview-shell--dark .preview-block {
-  background: #1f1f23;
+  background: var(--dw-bg-panel);
 }
 
 .preview-shell--system {
@@ -138,15 +138,15 @@ defineEmits<{ click: [] }>()
 }
 
 .preview-half--light .preview-rail {
-  background: #eceef2;
+  background: var(--dw-bg-chrome);
 }
 
 .preview-half--light .preview-main {
-  background: #ffffff;
+  background: var(--dw-bg);
 }
 
 .preview-half--light .preview-line {
-  background: #e8eaee;
+  background: var(--dw-bg-hover);
 }
 
 .preview-half--dark {
@@ -154,15 +154,15 @@ defineEmits<{ click: [] }>()
 }
 
 .preview-half--dark .preview-rail {
-  background: #2a2a2e;
+  background: var(--dw-bg-hover);
 }
 
 .preview-half--dark .preview-main {
-  background: #141416;
+  background: var(--dw-bg-rail);
 }
 
 .preview-half--dark .preview-line {
-  background: #2e2e32;
+  background: var(--dw-border);
 }
 
 .preview-rail {
@@ -172,15 +172,15 @@ defineEmits<{ click: [] }>()
 
 .preview-main {
   flex: 1;
-  padding: 10px 8px;
+  padding: var(--dw-space-5) var(--dw-space-4);
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--dw-space-2);
 }
 
 .preview-line {
   height: 5px;
-  border-radius: 2px;
+  border-radius: var(--dw-radius-xs);
 }
 
 .preview-line.short {
@@ -189,7 +189,7 @@ defineEmits<{ click: [] }>()
 
 .preview-block {
   flex: 1;
-  margin-top: 4px;
-  border-radius: 3px;
+  margin-top: var(--dw-space-2);
+  border-radius: var(--dw-radius-sm);
 }
 </style>

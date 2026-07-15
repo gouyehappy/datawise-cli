@@ -184,13 +184,13 @@ watch(settingsScrollAnchor, scrollToSettingsAnchor)
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
+  gap: var(--dw-gap);
+  margin-top: var(--dw-space-6);
 }
 
 .config-btn--inline {
   margin-top: 0;
-  padding: 6px 12px;
-  font-size: 0.8125rem;
+  padding: var(--dw-space-3) var(--dw-space-6);
+  font-size: var(--dw-text-md);
 }
 </style>

@@ -1,20 +1,28 @@
+import type {UiSkin} from '@/core/ui-skin'
+import {UI_SKIN_IDS} from '@/core/ui-skin'
+
 export type ThemeMode = 'light' | 'dark'
 export type ThemeAppearance = ThemeMode | 'system'
 export type BackgroundTone = 'default' | 'warm' | 'cool' | 'slate'
 export type PrimaryTone = 'violet' | 'blue' | 'cyan' | 'green' | 'orange' | 'rose'
+export type {UiSkin}
 
 export interface ThemePreferences {
     appearance: ThemeAppearance
     background: BackgroundTone
     primary: PrimaryTone
+    uiSkin: UiSkin
 }
 
 export const THEME_STORAGE_KEY = 'dw-cli-theme-prefs'
+/** @deprecated 请用 @/core/ui-skin 的 UI_SKIN_IDS；保留兼容旧 import */
+export const UI_SKINS: UiSkin[] = [...UI_SKIN_IDS]
 
 export const DEFAULT_THEME_PREFERENCES: ThemePreferences = {
     appearance: 'light',
     background: 'default',
     primary: 'violet',
+    uiSkin: 'classic',
 }
 
 export function resolveThemeMode(appearance: ThemeAppearance, systemPrefersDark = false): ThemeMode {

@@ -107,9 +107,9 @@ function previewText(session: AiChatSession) {
 
 <style scoped>
 .new-chat-btn {
-  gap: 6px;
-  margin-bottom: 10px;
-  border-radius: 10px;
+  gap: var(--dw-gap-sm);
+  margin-bottom: var(--dw-space-5);
+  border-radius: var(--dw-radius-lg);
 }
 
 .new-chat-btn:hover {
@@ -131,14 +131,14 @@ function previewText(session: AiChatSession) {
   top: 8px;
   right: 28px;
   width: 22px;
-  height: 22px;
+  height: var(--dw-control-h-xs);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: transparent;
   color: var(--dw-text-muted);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+  transition: var(--dw-transition-colors), opacity var(--dw-duration-fast) var(--dw-ease);
 }
 
 :deep(.dw-list-item-wrap:hover .dw-list-item__share),

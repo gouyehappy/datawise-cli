@@ -174,26 +174,26 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
 .table-relations {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--dw-space-6);
   flex: 1;
   min-height: 0;
-  padding: 12px;
+  padding: var(--dw-space-6);
   overflow: auto;
 }
 
 .table-relations__summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .table-relations__summary-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
+  gap: var(--dw-gap-xs);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
 }
 
@@ -204,14 +204,14 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
 
 .table-relations__summary-label {
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .table-relations__summary-value {
-  font-size: 20px;
+  font-size: var(--dw-text-display-sm);
   line-height: 1.1;
   color: var(--dw-text);
 }
@@ -219,13 +219,13 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
 .table-relations__columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--dw-space-6);
   align-items: start;
 }
 
 .table-relations__section {
   border: 1px solid var(--dw-border-light);
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   background: var(--dw-bg-panel);
   overflow: hidden;
   min-width: 0;
@@ -235,54 +235,54 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-6) var(--dw-space-7);
   border-bottom: 1px solid var(--dw-border-light);
   background: color-mix(in srgb, var(--dw-bg-muted) 25%, var(--dw-bg-panel));
 }
 
 .table-relations__head h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
 }
 
 .table-relations__head p {
-  margin: 4px 0 0;
+  margin: var(--dw-space-2) 0 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .table-relations__count {
   flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: var(--dw-pad-chip);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
 .table-relations__cards {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-5);
 }
 
 .table-relations__card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-editor);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  transition: var(--dw-transition-colors), transform 0.15s ease;
 }
 
 .table-relations__card:hover {
@@ -296,39 +296,39 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
 }
 
 .table-relations__card--incoming {
-  border-left: 3px solid color-mix(in srgb, #0ea5e9 55%, var(--dw-border-light));
+  border-left: 3px solid color-mix(in srgb, var(--dw-info) 55%, var(--dw-border-light));
 }
 
 .table-relations__card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .table-relations__constraint {
   color: var(--dw-text-secondary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
 .table-relations__flow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--dw-gap);
   align-items: center;
 }
 
 .table-relations__flow-block {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
 }
 
 .table-relations__flow-label {
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -336,33 +336,33 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
 
 .table-relations__target {
   color: var(--dw-primary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
   word-break: break-all;
 }
 
 .table-relations__arrow {
   color: var(--dw-text-muted);
-  font-size: 16px;
+  font-size: var(--dw-text-xl);
   font-weight: 700;
 }
 
 .table-relations__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
 }
 
 .table-relations__chip {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
-  border-radius: 999px;
+  padding: var(--dw-space-1) var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-panel));
   color: var(--dw-text);
   font-family: var(--dw-mono);
-  font-size: 10px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .table-relations__chip--muted {
@@ -380,19 +380,19 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-height: 160px;
   color: var(--dw-text-muted);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 
 .table-relations__state--error {
-  color: var(--dw-danger, #c0392b);
+  color: var(--dw-danger);
 }
 
 .table-relations__spinner {
   width: 22px;
-  height: 22px;
+  height: var(--dw-control-h-xs);
   border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;

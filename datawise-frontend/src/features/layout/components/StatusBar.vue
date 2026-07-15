@@ -185,21 +185,21 @@ async function onOpenRuntimeLog() {
 .status-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   height: var(--dw-status-height);
-  padding: 0 10px 0 14px;
+  padding: 0 var(--dw-space-5) 0 var(--dw-space-7);
   border-top: 1px solid var(--dw-panel-border);
   background: var(--dw-bg-chrome);
   color: var(--dw-text-secondary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   user-select: none;
 }
 
 .status-bar__path {
   flex: 0 1 min(480px, 42%);
   min-width: 0;
-  padding-right: 10px;
-  margin-right: 2px;
+  padding-right: var(--dw-space-5);
+  margin-right: var(--dw-space-1);
   border-right: 1px solid var(--dw-border-light);
   overflow: hidden;
 }
@@ -207,7 +207,7 @@ async function onOpenRuntimeLog() {
 .status-bar__main {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--dw-space-6);
   flex: 1;
   min-width: 0;
 }
@@ -215,7 +215,7 @@ async function onOpenRuntimeLog() {
 .status-bar__startup {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-width: 0;
   flex: 1;
   max-width: 360px;
@@ -237,14 +237,14 @@ async function onOpenRuntimeLog() {
   min-width: 2.5em;
   text-align: right;
   font-family: var(--dw-mono);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
 .status-bar__ready {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   color: var(--dw-text-muted);
 }
 
@@ -253,23 +253,23 @@ async function onOpenRuntimeLog() {
 }
 
 .status-bar__ready--offline {
-  color: #b45309;
+  color: var(--dw-warning-fg);
 }
 
 .status-bar__dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #22c55e;
+  background: var(--dw-success);
   flex-shrink: 0;
 }
 
 .status-bar__dot--connecting {
-  background: #f59e0b;
+  background: var(--dw-warning);
 }
 
 .status-bar__dot--offline {
-  background: #f97316;
+  background: var(--mp-tone-amber);
 }
 
 .status-bar__message {
@@ -285,29 +285,29 @@ async function onOpenRuntimeLog() {
   flex-shrink: 0;
   color: var(--dw-text-muted);
   font-family: var(--dw-mono);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
 }
 
 .status-bar__sep {
-  margin: 0 4px;
+  margin: 0 var(--dw-space-2);
   opacity: 0.5;
 }
 
 .status-bar__duration--slow {
-  color: rgb(239, 68, 68);
+  color: var(--dw-danger);
   font-weight: 600;
 }
 
 .status-bar__actions {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--dw-space-1);
   flex-shrink: 0;
 }
 
 .status-bar__icon {
   display: block;
-  width: 14px;
-  height: 14px;
+  width: var(--dw-icon-size-sm);
+  height: var(--dw-icon-size-sm);
 }
 </style>

@@ -16,15 +16,15 @@ import AiIcon from '@/core/components/AiIcon.vue'
 <style scoped>
 .msg-row {
   display: flex;
-  gap: 12px;
+  gap: var(--dw-space-6);
   align-items: flex-start;
 }
 
 .avatar {
   flex-shrink: 0;
   width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  height: var(--dw-tab-height);
+  border-radius: var(--dw-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,7 +38,7 @@ import AiIcon from '@/core/components/AiIcon.vue'
   );
   border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border));
   color: var(--dw-primary);
-  box-shadow: 0 1px 0 color-mix(in srgb, #fff 30%, transparent) inset,
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--dw-on-accent) 30%, transparent) inset,
   0 2px 10px color-mix(in srgb, var(--dw-primary) 15%, transparent);
 }
 

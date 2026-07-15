@@ -235,7 +235,7 @@ defineExpose({runCommand})
 .redis-command-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
   height: 100%;
   min-height: 0;
 }
@@ -244,24 +244,24 @@ defineExpose({runCommand})
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .redis-command-panel__quick {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .redis-command-panel__quick-btn,
 .redis-command-panel__clear {
   border: 1px solid var(--dw-border);
-  border-radius: 999px;
-  padding: 2px 10px;
+  border-radius: var(--dw-radius-pill);
+  padding: var(--dw-space-1) var(--dw-space-5);
   background: var(--dw-bg-editor);
   color: var(--dw-text);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 11px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-xs);
   cursor: pointer;
 }
 
@@ -274,14 +274,14 @@ defineExpose({runCommand})
   flex: 1;
   min-height: 0;
   margin: 0;
-  padding: 10px;
+  padding: var(--dw-space-5);
   overflow: auto;
   border: 1px solid var(--dw-border);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-editor);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 12px;
-  line-height: 1.5;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-relaxed);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -291,7 +291,7 @@ defineExpose({runCommand})
   padding: 0;
   list-style: none;
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-panel);
   max-height: 110px;
   overflow: auto;
@@ -299,10 +299,10 @@ defineExpose({runCommand})
 
 .redis-command-panel__hint-item {
   display: flex;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-3) var(--dw-space-5);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .redis-command-panel__hint-item:hover {
@@ -310,24 +310,24 @@ defineExpose({runCommand})
 }
 
 .redis-command-panel__hint-cmd {
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
   font-weight: 600;
 }
 
 .redis-command-panel__hint-example {
   color: var(--dw-text-muted);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
 }
 
 .redis-command-panel__input-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .redis-command-panel__prompt {
   color: var(--dw-primary);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
   font-weight: 600;
 }
 
@@ -335,21 +335,21 @@ defineExpose({runCommand})
   flex: 1;
   min-width: 0;
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-pad-control);
   background: var(--dw-bg-panel);
   color: var(--dw-text);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 12px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-sm);
 }
 
 .redis-command-panel__run {
   border: 1px solid var(--dw-primary-ring);
-  border-radius: 6px;
-  padding: 8px 14px;
+  border-radius: var(--dw-control-radius-sm);
+  padding: var(--dw-space-4) var(--dw-space-7);
   background: var(--dw-primary-tint);
   color: var(--dw-primary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
   cursor: pointer;
 }
@@ -361,8 +361,8 @@ defineExpose({runCommand})
 .redis-command-panel__hint-text {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .redis-command-panel__run:disabled,

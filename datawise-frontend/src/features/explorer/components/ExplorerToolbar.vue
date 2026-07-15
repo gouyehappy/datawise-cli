@@ -233,9 +233,9 @@ onUnmounted(() => {
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   height: var(--dw-toolbar-height);
-  padding: 0 10px 0 6px;
+  padding: 0 var(--dw-space-5) 0 var(--dw-space-3);
   border-bottom: 1px solid var(--dw-border-light);
   min-width: 0;
 }
@@ -280,16 +280,16 @@ onUnmounted(() => {
 .search {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   width: 100%;
   min-width: 0;
   height: var(--dw-btn-height-sm);
-  padding: 0 10px;
+  padding: 0 var(--dw-space-5);
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), border-color 0.12s ease;
 }
 
 .search--active {
@@ -310,7 +310,7 @@ onUnmounted(() => {
   outline: none;
   background: transparent;
   color: var(--dw-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .search input::placeholder {
@@ -328,13 +328,13 @@ onUnmounted(() => {
 
 .hint {
   flex-shrink: 0;
-  padding: 1px 5px;
+  padding: 1px var(--dw-space-2);
   border: 1px solid var(--dw-border-light);
-  border-radius: 3px;
+  border-radius: var(--dw-radius-sm);
   background: var(--dw-bg);
   font-family: var(--dw-mono);
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   color: var(--dw-text-muted);
 }
 

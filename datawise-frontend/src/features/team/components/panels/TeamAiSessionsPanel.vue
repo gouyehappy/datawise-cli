@@ -58,35 +58,35 @@ const emit = defineEmits<{
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .detail-list__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
 }
 
 .detail-list__name {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
 }
 
 .detail-list__meta {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
-  margin-top: 2px;
+  margin-top: var(--dw-space-1);
 }
 
 .ai-sessions-layout {
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--dw-space-6);
   min-height: 320px;
 }
 
@@ -107,9 +107,9 @@ const emit = defineEmits<{
 .ai-sessions-detail {
   min-height: 0;
   overflow: auto;
-  padding: 12px;
+  padding: var(--dw-space-6);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
 }
 

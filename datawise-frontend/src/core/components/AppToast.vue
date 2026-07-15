@@ -33,27 +33,27 @@ const {message, variant} = storeToRefs(toast)
   position: fixed;
   left: 50%;
   bottom: calc(var(--dw-status-height) + 14px);
-  z-index: 1100;
+  z-index: var(--dw-z-modal);
   transform: translateX(-50%);
   display: inline-flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   max-width: min(92vw, 480px);
-  padding: 11px 16px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--dw-bg) 92%, #fff);
+  padding: var(--dw-space-5) var(--dw-space-8);
+  border-radius: var(--dw-radius-lg);
+  background: color-mix(in srgb, var(--dw-bg) 92%, var(--dw-on-accent));
   color: var(--dw-text-secondary);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--dw-text-md);
+  line-height: var(--dw-leading-relaxed);
   box-shadow: var(--dw-menu-shadow);
   border: 1px solid var(--dw-border-light);
   pointer-events: none;
 }
 
 .app-toast--error {
-  color: #b91c1c;
-  background: color-mix(in srgb, #fef2f2 88%, var(--dw-bg));
-  border-color: color-mix(in srgb, #fca5a5 55%, var(--dw-border-light));
+  color: var(--dw-danger-fg);
+  background: color-mix(in srgb, color-mix(in srgb, var(--dw-danger) 8%, var(--dw-bg)) 88%, var(--dw-bg));
+  border-color: color-mix(in srgb, color-mix(in srgb, var(--dw-danger) 35%, var(--dw-bg)) 55%, var(--dw-border-light));
 }
 
 .app-toast__icon {
@@ -67,7 +67,7 @@ const {message, variant} = storeToRefs(toast)
 
 .app-toast-enter-active,
 .app-toast-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity var(--dw-duration-slow) var(--dw-ease), transform var(--dw-duration-slow) var(--dw-ease);
 }
 
 .app-toast-enter-from,

@@ -28,9 +28,9 @@ const {t} = useI18n()
 
 <style scoped>
 .welcome-card {
-  padding: 20px 22px;
+  padding: var(--dw-space-9) 22px;
   border: 1px solid var(--dw-border-light);
-  border-radius: 16px;
+  border-radius: var(--dw-radius-xl);
   background: linear-gradient(
       165deg,
       color-mix(in srgb, var(--dw-primary) 5%, var(--dw-bg-panel)),
@@ -39,35 +39,35 @@ const {t} = useI18n()
 }
 
 .welcome-card__head {
-  margin-bottom: 16px;
+  margin-bottom: var(--dw-space-8);
 }
 
 .welcome-card h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--dw-text-3xl);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
 }
 
 .welcome-intro {
-  margin: 8px 0 0;
+  margin: var(--dw-space-4) 0 0;
   color: var(--dw-text-secondary);
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: var(--dw-text-md);
+  line-height: var(--dw-leading-loose);
 }
 
 .capability-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
+  gap: var(--dw-gap-md);
 }
 
 .cap-card {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-6) var(--dw-space-7);
+  border-radius: var(--dw-radius-xl);
   border: 1px solid var(--dw-border-light);
   background: var(--dw-bg);
 }
@@ -75,31 +75,31 @@ const {t} = useI18n()
 .cap-index {
   flex-shrink: 0;
   width: 24px;
-  height: 24px;
-  border-radius: 8px;
+  height: var(--dw-control-h-xs);
+  border-radius: var(--dw-control-radius);
   background: var(--dw-primary-soft);
   color: var(--dw-primary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
-  line-height: 24px;
+  line-height: var(--dw-control-h-xs);
   text-align: center;
 }
 
 .cap-copy {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   min-width: 0;
 }
 
 .cap-copy strong {
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: var(--dw-text-md);
+  line-height: var(--dw-leading-snug);
 }
 
 .cap-copy span {
   color: var(--dw-text-secondary);
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading);
 }
 </style>

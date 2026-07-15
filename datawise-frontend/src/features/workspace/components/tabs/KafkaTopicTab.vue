@@ -80,22 +80,22 @@ function onUseInProducer(payload: { key: string; value: string; partition: numbe
 
 .kafka-topic-tab__head {
   flex-shrink: 0;
-  padding: 11px 16px;
+  padding: var(--dw-space-5) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border);
   background: var(--dw-bg-panel);
 }
 
 .kafka-topic-tab__title h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
   font-weight: 600;
   word-break: break-all;
 }
 
 .kafka-topic-tab__title p {
-  margin: 2px 0 0;
+  margin: var(--dw-space-1) 0 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .kafka-topic-tab__body {
@@ -103,8 +103,8 @@ function onUseInProducer(payload: { key: string; value: string; partition: numbe
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  padding: 10px;
-  gap: 10px;
+  padding: var(--dw-space-5);
+  gap: var(--dw-gap-md);
 }
 
 .kafka-topic-tab__messages {
@@ -120,20 +120,20 @@ function onUseInProducer(payload: { key: string; value: string; partition: numbe
   min-height: 200px;
   max-height: 42%;
   border: 1px solid var(--dw-border);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
   overflow: hidden;
 }
 
 .kafka-topic-tab__producer-head {
-  padding: 6px 10px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-bottom: 1px solid var(--dw-border);
   background: color-mix(in srgb, var(--dw-bg-editor) 70%, transparent);
 }
 
 .kafka-topic-tab__producer-head h3 {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
 }
 
@@ -143,7 +143,7 @@ function onUseInProducer(payload: { key: string; value: string; partition: numbe
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 8px 10px 10px;
+  padding: var(--dw-space-4) var(--dw-space-5) var(--dw-space-5);
 }
 
 .kafka-topic-tab__empty {
@@ -152,6 +152,6 @@ function onUseInProducer(payload: { key: string; value: string; partition: numbe
   align-items: center;
   justify-content: center;
   color: var(--dw-text-muted);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 </style>

@@ -115,8 +115,8 @@ function fieldValue(field: {key: string; value: string}): string {
 .sp-semantic-hint {
   margin: 0;
   color: var(--dw-primary);
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading);
 }
 
 .sp-section--semantic .sp-col-item__name {

@@ -1,0 +1,15 @@
+/**
+ * 字号统一入口 — 刻度 / 语义 token 见 variables.css。
+ * 业务样式请用 var(--dw-text-* / --dw-font-size-* / --mp-*)，
+ * 不要再写死 10px / 11px / 12px / 13px 或 0.875rem。
+ */
+
+.dw-text-2xs { font-size: var(--dw-text-2xs); }
+.dw-text-xs { font-size: var(--dw-text-xs); }
+.dw-text-sm { font-size: var(--dw-text-sm); }
+.dw-text-md { font-size: var(--dw-text-md); }
+.dw-text-lg { font-size: var(--dw-text-lg); }
+.dw-text-xl { font-size: var(--dw-text-xl); }
+.dw-text-2xl { font-size: var(--dw-text-2xl); }
+.dw-text-3xl { font-size: var(--dw-text-3xl); }
+.dw-text-display { font-size: var(--dw-text-display); }

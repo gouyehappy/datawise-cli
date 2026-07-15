@@ -55,16 +55,16 @@ function toggle() {
 <style scoped>
 .collapse-section.join-standalone {
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  box-shadow: var(--dw-shadow-xs);
   overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: var(--dw-transition-shadow);
 }
 
 .collapse-section.join-standalone.expanded {
   border-color: color-mix(in srgb, var(--dw-primary) 18%, var(--dw-border-light));
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--dw-shadow-md);
 }
 
 .collapse-section.join-top,
@@ -72,13 +72,13 @@ function toggle() {
 .collapse-section.join-bottom,
 .collapse-section.join-single {
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg);
   overflow: hidden;
 }
 
 .collapse-section.join-top {
-  border-radius: 10px 10px 0 0;
+  border-radius: var(--dw-radius-lg) var(--dw-radius-lg) 0 0;
 }
 
 .collapse-section.join-middle {
@@ -87,23 +87,23 @@ function toggle() {
 }
 
 .collapse-section.join-bottom {
-  border-radius: 0 0 10px 10px;
+  border-radius: 0 0 var(--dw-radius-lg) var(--dw-radius-lg);
   border-top: none;
 }
 
 .collapse-head {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   width: 100%;
   min-height: 44px;
-  padding: 8px 12px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   border: none;
   background: transparent;
   color: var(--dw-text);
   text-align: left;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease);
 }
 
 .collapse-head:hover {
@@ -120,11 +120,11 @@ function toggle() {
   justify-content: center;
   flex-shrink: 0;
   width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  height: var(--dw-control-h-sm);
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-muted);
   color: var(--dw-text-secondary);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background var(--dw-duration) var(--dw-ease), color var(--dw-duration) var(--dw-ease);
 }
 
 .collapse-section.expanded .collapse-icon {
@@ -136,21 +136,21 @@ function toggle() {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-1);
   min-width: 0;
 }
 
 .collapse-title__main {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
 }
 
 .collapse-title__desc {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 400;
   color: var(--dw-text-muted);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
 }
 
 .collapse-badge {
@@ -161,7 +161,7 @@ function toggle() {
   flex-shrink: 0;
   color: var(--dw-text-muted);
   opacity: 0.6;
-  transition: transform 0.2s ease, opacity 0.15s ease, color 0.15s ease;
+  transition: transform var(--dw-duration-slow) var(--dw-ease), opacity 0.15s ease, color 0.15s ease;
 }
 
 .collapse-section.expanded .collapse-chevron {
@@ -183,15 +183,15 @@ function toggle() {
 .collapse-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-height: 0;
   overflow: hidden;
-  padding: 0 12px;
+  padding: 0 var(--dw-space-6);
   transition: padding 0.22s ease;
 }
 
 .collapse-body-wrap.open .collapse-body {
-  padding: 10px 12px 12px;
+  padding: var(--dw-space-5) var(--dw-space-6) var(--dw-space-6);
   border-top: 1px solid var(--dw-border-light);
   background: color-mix(in srgb, var(--dw-bg-muted) 55%, var(--dw-bg));
 }

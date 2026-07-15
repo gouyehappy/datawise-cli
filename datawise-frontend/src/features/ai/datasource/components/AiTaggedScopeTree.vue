@@ -75,15 +75,15 @@ defineExpose({
 .ai-tagged-scope-tree :deep(.datasource-tree) {
   flex: 1;
   min-height: 0;
-  padding: 2px 0 6px;
+  padding: var(--dw-space-1) 0 var(--dw-space-3);
 }
 
 .ai-tagged-scope-tree__state {
   margin: 0;
-  padding: 20px 14px;
+  padding: var(--dw-space-9) var(--dw-space-7);
   text-align: center;
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   color: var(--dw-text-muted);
 }
 
@@ -97,9 +97,9 @@ defineExpose({
 
 .ai-tagged-scope-tree__spinner {
   display: inline-block;
-  width: 14px;
-  height: 14px;
-  margin-right: 6px;
+  width: var(--dw-icon-size-sm);
+  height: var(--dw-icon-size-sm);
+  margin-right: var(--dw-space-3);
   border: 2px solid color-mix(in srgb, var(--dw-primary) 24%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;

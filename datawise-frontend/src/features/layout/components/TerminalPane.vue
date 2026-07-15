@@ -29,12 +29,12 @@ const layout = useLayoutStore()
 
 .terminal-pane :deep(.terminal-pane__resize) {
   position: absolute;
-  top: calc(var(--dw-panel-gap) * -0.5);
+  top: calc(var(--dw-splitter-size) * -0.5);
   left: 0;
   right: 0;
-  z-index: 2;
+  z-index: var(--dw-z-raised);
   width: auto;
-  height: var(--dw-panel-gap);
+  height: var(--dw-splitter-size);
   transform: translateY(-50%);
 }
 </style>

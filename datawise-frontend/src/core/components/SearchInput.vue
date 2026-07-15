@@ -23,7 +23,7 @@ withDefaults(
 
 <style scoped>
 .dw-search--sm {
-  height: 32px;
-  border-radius: 8px;
+  height: var(--dw-tab-height);
+  border-radius: var(--dw-input-radius);
 }
 </style>

@@ -39,9 +39,9 @@ withDefaults(defineProps<{
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: var(--dw-gap-sm);
     min-height: 180px;
-    padding: 24px 16px;
+    padding: var(--dw-space-10) var(--dw-space-8);
     text-align: center;
 }
 
@@ -51,15 +51,15 @@ withDefaults(defineProps<{
     justify-content: center;
     width: 52px;
     height: 52px;
-    margin-bottom: 4px;
-    border-radius: 14px;
+    margin-bottom: var(--dw-space-2);
+    border-radius: var(--dw-radius-xl);
     background: var(--dw-bg-muted);
     color: var(--dw-text-muted);
 }
 
 .dw-empty p {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--dw-text-md);
     font-weight: 600;
     color: var(--dw-text-secondary);
 }
@@ -67,18 +67,18 @@ withDefaults(defineProps<{
 .dw-empty span {
     max-width: 220px;
     color: var(--dw-text-muted);
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: var(--dw-text-sm);
+    line-height: var(--dw-leading-relaxed);
 }
 
 .dw-empty--compact {
     min-height: 120px;
-    padding: 16px 12px;
+    padding: var(--dw-space-8) var(--dw-space-6);
 }
 
 .dw-empty--embedded {
     min-height: 0;
-    padding: 20px 18px;
+    padding: var(--dw-space-9) var(--dw-space-8);
     align-items: stretch;
 }
 
@@ -89,13 +89,13 @@ withDefaults(defineProps<{
 
 .dw-empty--bordered {
     border: 1px dashed var(--dw-border-light);
-    border-radius: 10px;
-    padding: 12px;
+    border-radius: var(--dw-radius-lg);
+    padding: var(--dw-space-6);
     min-height: 0;
 }
 
 .dw-empty--bordered p {
-    font-size: 12px;
+    font-size: var(--dw-text-sm);
     font-weight: 400;
     color: var(--dw-text-muted);
 }

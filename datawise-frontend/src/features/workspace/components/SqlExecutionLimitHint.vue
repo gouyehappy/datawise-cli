@@ -16,10 +16,10 @@ const {label, compactLabel, hint} = useSqlExecutionLimitHint()
   align-items: center;
   flex-shrink: 0;
   height: var(--dw-console-btn-size);
-  padding: 0 4px;
+  padding: 0 var(--dw-space-2);
   color: var(--dw-text-muted);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 10px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;

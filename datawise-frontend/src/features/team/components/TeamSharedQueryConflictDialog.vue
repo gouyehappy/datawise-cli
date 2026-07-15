@@ -105,16 +105,16 @@ function lineClass(changed: boolean) {
 
 <style scoped>
 .team-collab-conflict-loading {
-  padding: 24px 0;
+  padding: var(--dw-space-10) 0;
   text-align: center;
   color: var(--dw-text-muted);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 
 .team-collab-conflict-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-height: 260px;
 }
 
@@ -133,14 +133,14 @@ function lineClass(changed: boolean) {
 
 .team-collab-conflict-line {
   display: block;
-  padding: 0 4px;
-  border-radius: 3px;
+  padding: 0 var(--dw-space-2);
+  border-radius: var(--dw-radius-sm);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .team-collab-conflict-line--changed {
-  background: color-mix(in srgb, var(--dw-warning, #d97706) 18%, transparent);
+  background: color-mix(in srgb, var(--dw-warning) 18%, transparent);
 }
 
 @media (max-width: 960px) {

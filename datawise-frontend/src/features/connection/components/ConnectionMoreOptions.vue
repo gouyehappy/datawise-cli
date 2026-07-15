@@ -180,8 +180,8 @@ async function onResolveDriver() {
 
 <style scoped>
 .conn-more {
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: var(--dw-space-8);
+  padding-top: var(--dw-space-7);
   border-top: 1px solid var(--dw-border-light);
 }
 
@@ -189,12 +189,12 @@ async function onResolveDriver() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-5);
 }
 
 .conn-more__label {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -202,29 +202,29 @@ async function onResolveDriver() {
 }
 
 .conn-more__count {
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: var(--dw-pad-chip);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
 .more-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .more-badge {
   max-width: 120px;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: var(--dw-pad-chip);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-secondary);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 500;
-  line-height: 1.4;
+  line-height: var(--dw-leading);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -237,34 +237,34 @@ async function onResolveDriver() {
 
 .more-mono {
   font-family: var(--dw-mono);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .more-upload {
   align-self: flex-start;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .more-resolve-msg {
   margin: 0;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .more-resolve-msg--ok {
-  color: var(--dw-success, #16a34a);
+  color: var(--dw-success);
 }
 
 .more-resolve-msg--err {
-  color: var(--dw-danger, #dc2626);
+  color: var(--dw-danger);
 }
 
 .more-subpanel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px;
-  border-radius: 8px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-5);
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg);
   border: 1px solid var(--dw-border-light);
 }
@@ -272,17 +272,17 @@ async function onResolveDriver() {
 .more-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: var(--dw-gap-md);
 }
 
 .more-textarea {
   min-height: 72px;
   resize: vertical;
   font-family: var(--dw-mono);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 :deep(.settings-switch) {
-  padding: 4px 0 2px;
+  padding: var(--dw-space-2) 0 var(--dw-space-1);
 }
 </style>

@@ -143,7 +143,7 @@ const hasSummaryText = computed(() =>
 <style scoped>
 .msg-row {
   display: flex;
-  gap: 12px;
+  gap: var(--dw-space-6);
   align-items: flex-start;
 }
 
@@ -163,12 +163,12 @@ const hasSummaryText = computed(() =>
 .avatar {
   flex-shrink: 0;
   width: 34px;
-  height: 34px;
-  border-radius: 11px;
+  height: var(--dw-control-h);
+  border-radius: var(--dw-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
 }
 
@@ -195,7 +195,7 @@ const hasSummaryText = computed(() =>
   max-width: min(720px, 88%);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .msg-body--analysis {
@@ -208,26 +208,26 @@ const hasSummaryText = computed(() =>
 
 .msg-body time {
   color: var(--dw-text-muted);
-  font-size: 11px;
-  padding: 0 2px;
+  font-size: var(--dw-text-xs);
+  padding: 0 var(--dw-space-1);
 }
 
 .msg-databases {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .bubble {
-  padding: 12px 16px;
-  border-radius: 16px;
+  padding: var(--dw-space-6) var(--dw-space-8);
+  border-radius: var(--dw-radius-xl);
   border: 1px solid var(--dw-border-light);
   background: var(--dw-bg);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--dw-text) 4%, transparent);
 }
 
 .bubble.assistant {
-  border-top-left-radius: 6px;
+  border-top-left-radius: var(--dw-control-radius-sm);
 }
 
 .bubble.user {
@@ -237,7 +237,7 @@ const hasSummaryText = computed(() =>
       color-mix(in srgb, var(--dw-primary) 6%, var(--dw-bg))
   );
   border-color: color-mix(in srgb, var(--dw-primary) 20%, var(--dw-border-light));
-  border-top-right-radius: 6px;
+  border-top-right-radius: var(--dw-control-radius-sm);
 }
 
 .bubble--analysis {
@@ -245,7 +245,7 @@ const hasSummaryText = computed(() =>
   overflow: hidden;
   border-color: color-mix(in srgb, var(--dw-primary) 20%, var(--dw-border-light));
   background: var(--dw-bg-panel);
-  box-shadow: 0 1px 0 color-mix(in srgb, #fff 35%, transparent) inset,
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--dw-on-accent) 35%, transparent) inset,
   0 12px 36px color-mix(in srgb, var(--dw-primary) 10%, transparent),
   0 4px 14px color-mix(in srgb, var(--dw-text) 5%, transparent);
 }
@@ -258,7 +258,7 @@ const hasSummaryText = computed(() =>
       90deg,
       color-mix(in srgb, var(--dw-primary) 60%, transparent),
       var(--dw-primary),
-      color-mix(in srgb, var(--dw-primary) 45%, #7dd3fc)
+      color-mix(in srgb, var(--dw-primary) 45%, var(--dw-info))
   );
 }
 
@@ -266,8 +266,8 @@ const hasSummaryText = computed(() =>
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-7) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border-light);
   background: radial-gradient(ellipse 80% 100% at 0% 0%, color-mix(in srgb, var(--dw-primary) 8%, transparent), transparent 60%),
   linear-gradient(180deg, color-mix(in srgb, var(--dw-primary) 6%, var(--dw-bg-panel)), var(--dw-bg-panel));
@@ -276,8 +276,8 @@ const hasSummaryText = computed(() =>
 .analysis-reply-badge {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  font-size: 14px;
+  gap: var(--dw-gap-md);
+  font-size: var(--dw-text-xl);
   font-weight: 600;
   color: var(--dw-text);
   letter-spacing: 0.01em;
@@ -287,18 +287,18 @@ const hasSummaryText = computed(() =>
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--dw-primary) 85%, #fff), var(--dw-primary));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dw-primary) 85%, var(--dw-on-accent)), var(--dw-primary));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--dw-primary) 18%, transparent),
   0 0 10px color-mix(in srgb, var(--dw-primary) 35%, transparent);
 }
 
 .analysis-reply-stat {
-  padding: 4px 11px;
-  border-radius: 999px;
+  padding: var(--dw-space-2) 11px;
+  border-radius: var(--dw-radius-pill);
   border: 1px solid color-mix(in srgb, var(--dw-primary) 18%, var(--dw-border-light));
   background: color-mix(in srgb, var(--dw-bg) 80%, var(--dw-primary-soft));
   color: var(--dw-primary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -306,14 +306,14 @@ const hasSummaryText = computed(() =>
 .analysis-reply-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px 18px 18px;
+  gap: var(--dw-space-8);
+  padding: var(--dw-space-8) var(--dw-space-8) var(--dw-space-8);
   background: linear-gradient(180deg, var(--dw-bg) 0%, color-mix(in srgb, var(--dw-bg-panel) 30%, var(--dw-bg)) 100%);
 }
 
 .analysis-summary {
-  padding: 14px 16px;
-  border-radius: 14px;
+  padding: var(--dw-space-7) var(--dw-space-8);
+  border-radius: var(--dw-radius-xl);
   border: 1px solid var(--dw-border-light);
   background: linear-gradient(135deg, color-mix(in srgb, var(--dw-primary) 4%, var(--dw-bg)), var(--dw-bg)),
   var(--dw-bg);
@@ -322,8 +322,8 @@ const hasSummaryText = computed(() =>
 }
 
 .analysis-summary__label {
-  margin: 0 0 8px;
-  font-size: 11px;
+  margin: 0 0 var(--dw-space-4);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -331,10 +331,10 @@ const hasSummaryText = computed(() =>
 }
 
 .text-block {
-  margin: 0 0 8px;
+  margin: 0 0 var(--dw-space-4);
   white-space: pre-wrap;
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: var(--dw-text-md);
+  line-height: var(--dw-leading-loose);
   color: var(--dw-text);
 }
 
@@ -343,17 +343,17 @@ const hasSummaryText = computed(() =>
 }
 
 .list-block {
-  margin: 0 0 8px;
+  margin: 0 0 var(--dw-space-4);
   padding-left: 18px;
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: var(--dw-text-md);
+  line-height: var(--dw-leading-loose);
 }
 
 .code-block {
-  margin-top: 4px;
+  margin-top: var(--dw-space-2);
 }
 
 .open-btn {
-  margin-top: 10px;
+  margin-top: var(--dw-space-5);
 }
 </style>

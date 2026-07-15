@@ -116,73 +116,73 @@ function cellClass(status: string) {
 .result-diff__head {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px 8px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-6) var(--dw-space-8) var(--dw-space-4);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
 .result-diff__head h3 {
-  margin: 0 0 4px;
-  font-size: 14px;
+  margin: 0 0 var(--dw-space-2);
+  font-size: var(--dw-text-xl);
 }
 
 .result-diff__meta {
-  margin: 0 0 8px;
+  margin: 0 0 var(--dw-space-4);
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .result-diff__same {
   margin: 0;
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .result-diff__summary {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .result-diff__cells {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
 .result-diff__legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  padding: 8px 16px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-4) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border-light);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .legend-item::before {
   content: '';
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
+  border-radius: var(--dw-radius-sm);
   border: 1px solid var(--dw-border-light);
 }
 
 .legend-item--modified::before {
-  background: color-mix(in srgb, #f59e0b 18%, var(--dw-bg-panel));
+  background: color-mix(in srgb, var(--dw-warning) 18%, var(--dw-bg-panel));
 }
 
 .legend-item--added::before {
-  background: color-mix(in srgb, #22c55e 16%, var(--dw-bg-panel));
+  background: color-mix(in srgb, var(--dw-success) 16%, var(--dw-bg-panel));
 }
 
 .legend-item--removed::before {
-  background: color-mix(in srgb, #ef4444 14%, var(--dw-bg-panel));
+  background: color-mix(in srgb, var(--dw-danger) 14%, var(--dw-bg-panel));
 }
 
 .result-diff__table-wrap {
@@ -194,12 +194,12 @@ function cellClass(status: string) {
 .result-diff__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .result-diff__table th,
 .result-diff__table td {
-  padding: 8px 10px;
+  padding: var(--dw-pad-control);
   border-bottom: 1px solid var(--dw-border-light);
   text-align: left;
   vertical-align: top;
@@ -225,36 +225,36 @@ function cellClass(status: string) {
 .diff-cell__value {
   display: block;
   word-break: break-word;
-  font-family: var(--dw-mono, monospace);
+  font-family: var(--dw-mono);
 }
 
 .diff-cell__previous {
   display: block;
-  margin-top: 4px;
+  margin-top: var(--dw-space-2);
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   text-decoration: line-through;
-  font-family: var(--dw-mono, monospace);
+  font-family: var(--dw-mono);
 }
 
 .diff-cell--modified {
-  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  background: color-mix(in srgb, var(--dw-warning) 12%, transparent);
 }
 
 .diff-cell--added {
-  background: color-mix(in srgb, #22c55e 10%, transparent);
+  background: color-mix(in srgb, var(--dw-success) 10%, transparent);
 }
 
 .diff-cell--removed,
 .diff-row--removed .diff-cell--removed {
-  background: color-mix(in srgb, #ef4444 10%, transparent);
+  background: color-mix(in srgb, var(--dw-danger) 10%, transparent);
 }
 
 .diff-row--added td:not(.index-col):not(.status-col) {
-  background: color-mix(in srgb, #22c55e 6%, transparent);
+  background: color-mix(in srgb, var(--dw-success) 6%, transparent);
 }
 
 .diff-row--removed td:not(.index-col):not(.status-col) {
-  background: color-mix(in srgb, #ef4444 6%, transparent);
+  background: color-mix(in srgb, var(--dw-danger) 6%, transparent);
 }
 </style>

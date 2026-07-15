@@ -324,16 +324,16 @@ defineExpose({refresh: loadData})
   min-height: 0;
   overflow: hidden;
   border: 1px solid var(--dw-border);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
-  padding: 12px;
+  padding: var(--dw-space-6);
 }
 
 .kafka-topic-detail-panel__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--dw-space-6);
   flex-shrink: 0;
 }
 
@@ -346,7 +346,7 @@ defineExpose({refresh: loadData})
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   flex-shrink: 0;
 }
 
@@ -355,11 +355,11 @@ defineExpose({refresh: loadData})
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 8px 10px;
+  gap: var(--dw-gap);
+  margin-top: var(--dw-space-5);
+  padding: var(--dw-pad-control);
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-editor);
   flex-shrink: 0;
 }
@@ -369,25 +369,25 @@ defineExpose({refresh: loadData})
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .kafka-topic-detail-panel__inline-field {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: var(--dw-gap-sm);
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
 .kafka-topic-detail-panel__select {
   min-width: 0;
   border: 1px solid var(--dw-border);
-  border-radius: 999px;
-  padding: 3px 10px;
+  border-radius: var(--dw-radius-pill);
+  padding: var(--dw-space-1) var(--dw-space-5);
   background: var(--dw-bg-panel);
   color: var(--dw-text);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   cursor: pointer;
 }
 
@@ -398,12 +398,12 @@ defineExpose({refresh: loadData})
 
 .kafka-topic-detail-panel__toggle-chip {
   border: 1px solid var(--dw-border);
-  border-radius: 999px;
-  padding: 3px 10px;
+  border-radius: var(--dw-radius-pill);
+  padding: var(--dw-space-1) var(--dw-space-5);
   background: transparent;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
@@ -428,19 +428,19 @@ defineExpose({refresh: loadData})
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .kafka-topic-detail-panel__head h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
 }
 
 .kafka-topic-detail-panel__badge {
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 10px;
+  padding: 1px var(--dw-space-4);
+  border-radius: var(--dw-radius-pill);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   background: color-mix(in srgb, var(--dw-primary) 15%, transparent);
   color: var(--dw-primary);
@@ -452,10 +452,10 @@ defineExpose({refresh: loadData})
 }
 
 .kafka-topic-detail-panel__topic {
-  margin: 4px 0 0;
+  margin: var(--dw-space-2) 0 0;
   color: var(--dw-text-muted);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 11px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-xs);
   word-break: break-all;
 }
 
@@ -464,43 +464,43 @@ defineExpose({refresh: loadData})
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  margin-top: 8px;
-  gap: 8px;
+  margin-top: var(--dw-space-4);
+  gap: var(--dw-gap);
   overflow: auto;
 }
 
 .kafka-topic-detail-panel__error {
-  margin: 8px 0 0;
+  margin: var(--dw-space-4) 0 0;
   color: var(--dw-danger);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .kafka-topic-detail-panel__meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px;
-  padding: 8px 10px;
+  gap: var(--dw-gap);
+  padding: var(--dw-pad-control);
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: color-mix(in srgb, var(--dw-bg-editor) 80%, transparent);
 }
 
 .kafka-topic-detail-panel__field {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 11px;
+  gap: var(--dw-space-1);
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
 .kafka-topic-detail-panel__field strong {
   color: var(--dw-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
 }
 
 .kafka-topic-detail-panel__key-value {
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
   word-break: break-all;
 }
 
@@ -509,23 +509,23 @@ defineExpose({refresh: loadData})
   max-height: 150px;
   overflow: auto;
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-editor);
 }
 
 .kafka-topic-detail-panel__row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 8px;
+  gap: var(--dw-space-2) var(--dw-space-4);
   align-items: baseline;
   width: 100%;
-  padding: 6px 10px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border: none;
   border-bottom: 1px solid var(--dw-border);
   background: transparent;
   text-align: left;
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .kafka-topic-detail-panel__row:last-child {
@@ -538,7 +538,7 @@ defineExpose({refresh: loadData})
 }
 
 .kafka-topic-detail-panel__row-meta {
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-family: var(--dw-font-mono);
   color: var(--dw-text);
 }
 
@@ -557,8 +557,8 @@ defineExpose({refresh: loadData})
 .kafka-topic-detail-panel__headers {
   display: grid;
   grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
-  gap: 6px 10px;
-  font-size: 11px;
+  gap: var(--dw-gap-sm) var(--dw-gap-md);
+  font-size: var(--dw-text-xs);
 }
 
 .kafka-topic-detail-panel__headers dt {
@@ -570,7 +570,7 @@ defineExpose({refresh: loadData})
 }
 
 .kafka-topic-detail-panel__header-line + .kafka-topic-detail-panel__header-line {
-  margin-top: 4px;
+  margin-top: var(--dw-space-2);
 }
 
 .kafka-topic-detail-panel__value-section {
@@ -578,17 +578,17 @@ defineExpose({refresh: loadData})
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .kafka-topic-detail-panel__value-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .kafka-topic-detail-panel__value-label {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   color: var(--dw-text-muted);
   text-transform: uppercase;
@@ -596,11 +596,11 @@ defineExpose({refresh: loadData})
 }
 
 .kafka-topic-detail-panel__value-badge {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, #2563eb 12%, transparent);
-  color: #2563eb;
-  font-size: 10px;
+  padding: 1px var(--dw-space-4);
+  border-radius: var(--dw-radius-pill);
+  background: color-mix(in srgb, var(--dw-link) 12%, transparent);
+  color: var(--dw-link);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
@@ -608,14 +608,14 @@ defineExpose({refresh: loadData})
   flex: 1 1 auto;
   min-height: 120px;
   margin: 0;
-  padding: 12px;
+  padding: var(--dw-space-6);
   overflow: auto;
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-editor);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 12px;
-  line-height: 1.6;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   white-space: pre-wrap;
   word-break: break-word;
   tab-size: 2;

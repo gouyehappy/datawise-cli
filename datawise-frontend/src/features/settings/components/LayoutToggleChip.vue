@@ -31,17 +31,15 @@ const emit = defineEmits<{ toggle: [] }>()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: clamp(10px, 1.2vmin, 12px);
+  gap: var(--dw-space-6);
   width: 100%;
-  padding: clamp(8px, 1vmin, 10px) clamp(10px, 1.2vmin, 12px);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
   border-radius: var(--dw-panel-radius);
   background: var(--dw-bg-panel);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease,
-  background 0.15s ease,
-  box-shadow 0.15s ease,
+  transition: var(--dw-transition-colors), box-shadow var(--dw-duration) var(--dw-ease),
   transform 0.12s ease;
 }
 
@@ -59,7 +57,7 @@ const emit = defineEmits<{ toggle: [] }>()
 .layout-toggle__text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-1);
   min-width: 0;
 }
 
@@ -71,8 +69,8 @@ const emit = defineEmits<{ toggle: [] }>()
 
 .layout-toggle__caption {
   color: var(--dw-text-muted);
-  font-size: clamp(10px, 1.05vmin, 11px);
-  line-height: 1.35;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
 }
 
 .layout-toggle__track {
@@ -80,9 +78,9 @@ const emit = defineEmits<{ toggle: [] }>()
   flex-shrink: 0;
   width: 36px;
   height: 20px;
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: color-mix(in srgb, var(--dw-text) 14%, transparent);
-  transition: background 0.18s ease;
+  transition: background var(--dw-duration) var(--dw-ease);
 }
 
 .layout-toggle.active .layout-toggle__track {
@@ -93,11 +91,11 @@ const emit = defineEmits<{ toggle: [] }>()
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
+  width: var(--dw-icon-size-md);
+  height: var(--dw-icon-size-md);
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+  background: var(--dw-bg);
+  box-shadow: var(--dw-shadow-md);
   transition: transform 0.18s ease;
 }
 

@@ -170,18 +170,18 @@ const composerBusy = computed(
 .ai-workspace__scope {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px 20px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-5) var(--dw-space-9);
   border-bottom: 1px solid var(--dw-border-light);
   background: color-mix(in srgb, var(--dw-bg-panel) 70%, var(--dw-bg-editor));
 }
 
 .ai-workspace__scope-hint {
   margin: 0;
-  padding: 10px 20px;
+  padding: var(--dw-space-5) var(--dw-space-9);
   border-bottom: 1px solid var(--dw-border-light);
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   background: color-mix(in srgb, var(--dw-bg-panel) 70%, var(--dw-bg-editor));
 }
 

@@ -113,34 +113,34 @@ function downloadCurrent() {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: var(--color-bg, #fff);
+  background: var(--dw-bg);
 }
 
 .metadoc-tab__toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-6) var(--dw-space-8);
+  border-bottom: 1px solid var(--dw-border);
 }
 
 .metadoc-tab__substatus {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
-  color: var(--color-text-muted, #6b7280);
-  font-size: 12px;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-4) var(--dw-space-8);
+  border-bottom: 1px solid var(--dw-border);
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-sm);
 }
 
 .metadoc-tab__subspinner {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  border: 2px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #2563eb);
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
+  border-radius: var(--dw-radius-pill);
+  border: 2px solid var(--dw-border);
+  border-top-color: var(--dw-link);
   animation: metadoc-spin 1s linear infinite;
 }
 
@@ -148,29 +148,29 @@ function downloadCurrent() {
 .metadoc-tab__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .metadoc-tab__view-btn,
 .metadoc-tab__action-btn {
-  border: 1px solid var(--color-border, #d1d5db);
-  background: var(--color-bg-soft, #f8fafc);
-  color: var(--color-text, #111827);
-  border-radius: 8px;
-  padding: 6px 12px;
+  border: 1px solid var(--dw-border);
+  background: var(--dw-bg-muted);
+  color: var(--dw-text);
+  border-radius: var(--dw-control-radius);
+  padding: var(--dw-space-3) var(--dw-space-6);
   cursor: pointer;
 }
 
 .metadoc-tab__view-btn.active {
-  background: var(--color-primary-soft, #eff6ff);
-  border-color: var(--color-primary, #3b82f6);
-  color: var(--color-primary, #2563eb);
+  background: var(--dw-info-soft);
+  border-color: var(--dw-link);
+  color: var(--dw-link);
 }
 
 .metadoc-tab__action-btn--primary {
-  background: var(--color-primary, #2563eb);
-  border-color: var(--color-primary, #2563eb);
-  color: #fff;
+  background: var(--dw-link);
+  border-color: var(--dw-link);
+  color: var(--dw-on-accent);
 }
 
 .metadoc-tab__preview-wrap,
@@ -186,13 +186,13 @@ function downloadCurrent() {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 10px;
-  padding: 24px;
-  color: var(--color-text, #111827);
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-10);
+  color: var(--dw-text);
 }
 
 .metadoc-tab__state--error {
-  color: #b91c1c;
+  color: var(--dw-danger-fg);
 }
 
 .metadoc-tab__state-title {
@@ -201,18 +201,18 @@ function downloadCurrent() {
 
 .metadoc-tab__state-detail {
   max-width: 760px;
-  color: var(--color-text-muted, #6b7280);
-  font-size: 12px;
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-sm);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .metadoc-tab__spinner {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: 2px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #2563eb);
+  width: var(--dw-icon-size-lg);
+  height: var(--dw-icon-size-lg);
+  border-radius: var(--dw-radius-pill);
+  border: 2px solid var(--dw-border);
+  border-top-color: var(--dw-link);
   animation: metadoc-spin 1s linear infinite;
 }
 
@@ -224,16 +224,16 @@ function downloadCurrent() {
   width: 100%;
   height: 100%;
   border: 0;
-  background: #fff;
+  background: var(--dw-bg);
 }
 
 .metadoc-tab__markdown {
   margin: 0;
-  padding: 16px;
+  padding: var(--dw-space-8);
   overflow: auto;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   white-space: pre-wrap;
 }
 </style>

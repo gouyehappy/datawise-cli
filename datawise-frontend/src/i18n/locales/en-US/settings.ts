@@ -134,6 +134,16 @@ export default {
     basic: {
         title: 'Basic',
         subtitle: 'Choose your preferred theme style, background and accent colors, and pick a language for your region.',
+        uiSkin: 'UI Shell',
+        uiSkinHint: 'Classic keeps the current card shell; IDE is an optional flush workbench',
+        uiSkins: {
+            classic: 'Classic Cards',
+            ide: 'IDE Workbench',
+        },
+        uiSkinHints: {
+            classic: 'Rounded cards and gaps (default)',
+            ide: 'Flush panels — IDEA-like',
+        },
         background: 'Background Color',
         backgroundHint: 'Set the background color of the interface',
         appearances: {

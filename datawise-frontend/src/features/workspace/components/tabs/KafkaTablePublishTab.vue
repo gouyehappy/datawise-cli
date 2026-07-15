@@ -76,27 +76,27 @@ const subtitle = computed(() => {
 
 .kafka-table-publish-tab__head {
   flex-shrink: 0;
-  padding: 11px 16px;
+  padding: var(--dw-space-5) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border);
   background: var(--dw-bg-panel);
 }
 
 .kafka-table-publish-tab__title h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
   font-weight: 600;
 }
 
 .kafka-table-publish-tab__title p {
-  margin: 2px 0 0;
+  margin: var(--dw-space-1) 0 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .kafka-table-publish-tab__body {
   flex: 1;
   min-height: 0;
-  padding: 10px;
+  padding: var(--dw-space-5);
   overflow: auto;
 }
 
@@ -105,19 +105,19 @@ const subtitle = computed(() => {
   flex-direction: column;
   width: min(100%, 640px);
   border: 1px solid var(--dw-border);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
 }
 
 .kafka-table-publish-tab__panel-head {
-  padding: 6px 10px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-bottom: 1px solid var(--dw-border);
   background: color-mix(in srgb, var(--dw-bg-editor) 70%, transparent);
 }
 
 .kafka-table-publish-tab__panel-head h3 {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
 }
 </style>

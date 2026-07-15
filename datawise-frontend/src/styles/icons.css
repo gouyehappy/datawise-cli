@@ -37,7 +37,7 @@
 }
 
 .dw-icon-root.dw-icon--danger {
-    color: #e5484d;
+    color: var(--dw-danger);
 }
 
 .dw-icon-root.dw-icon--filled .dw-icon__glyph path {

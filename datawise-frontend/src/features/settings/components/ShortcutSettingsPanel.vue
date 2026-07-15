@@ -135,10 +135,10 @@ function resetAll() {
 .shortcut-table__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: clamp(12px, 1.4vmin, 16px);
-  padding: 0 clamp(10px, 1.2vmin, 12px) clamp(6px, 0.8vmin, 8px);
+  gap: var(--dw-space-8);
+  padding: 0 var(--dw-space-6) clamp(6px, 0.8vmin, 8px);
   color: var(--dw-text-muted);
-  font-size: clamp(10px, 1.05vmin, 11px);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -152,11 +152,11 @@ function resetAll() {
 .shortcut-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: clamp(12px, 1.4vmin, 16px);
+  gap: var(--dw-space-8);
   align-items: center;
-  padding: clamp(8px, 1vmin, 10px) clamp(10px, 1.2vmin, 12px);
+  padding: var(--dw-pad-control-lg);
   border-radius: var(--dw-panel-radius);
-  transition: background 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease);
 }
 
 .shortcut-row:hover {
@@ -164,13 +164,13 @@ function resetAll() {
 }
 
 .shortcut-row + .shortcut-row {
-  margin-top: 2px;
+  margin-top: var(--dw-space-1);
 }
 
 .shortcut-row__action {
   display: flex;
   align-items: center;
-  gap: clamp(8px, 1vmin, 10px);
+  gap: var(--dw-gap-md);
   min-width: 0;
 }
 
@@ -181,7 +181,7 @@ function resetAll() {
   flex-shrink: 0;
   width: clamp(28px, 3.2vmin, 30px);
   height: clamp(28px, 3.2vmin, 30px);
-  border-radius: clamp(6px, 0.8vmin, 8px);
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-muted);
   color: var(--dw-text-secondary);
 }
@@ -194,7 +194,7 @@ function resetAll() {
 .shortcut-row__label {
   font-size: var(--mp-sub);
   font-weight: 500;
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
 }
 
 @media (max-width: 720px) {
@@ -204,7 +204,7 @@ function resetAll() {
 
   .shortcut-row {
     grid-template-columns: 1fr;
-    gap: clamp(8px, 1vmin, 10px);
+    gap: var(--dw-gap-md);
   }
 }
 </style>

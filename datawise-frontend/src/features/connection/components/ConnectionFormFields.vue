@@ -203,12 +203,12 @@ const authOptions = computed(() =>
 .conn-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 14px;
+  gap: var(--dw-space-6) var(--dw-space-7);
 }
 
 .url-input {
   font-family: var(--dw-mono);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   background: var(--dw-bg-muted);
   color: var(--dw-text-secondary);
 }
@@ -217,7 +217,7 @@ const authOptions = computed(() =>
   min-height: 88px;
   resize: vertical;
   font-family: var(--dw-mono);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 @media (max-width: 520px) {

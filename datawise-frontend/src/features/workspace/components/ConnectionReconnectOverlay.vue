@@ -63,14 +63,14 @@ async function onReconnect() {
 .connection-reconnect-overlay {
   position: absolute;
   inset: 0;
-  z-index: 20;
+  z-index: var(--dw-z-toolbar);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 28px;
+  padding: var(--dw-space-11);
   box-sizing: border-box;
   /* Full-tab wash: light & translucent so underlying content stays faintly visible */
-  background: color-mix(in srgb, #ffffff 72%, transparent);
+  background: color-mix(in srgb, var(--dw-on-accent) 72%, transparent);
   backdrop-filter: blur(1.5px);
   pointer-events: auto;
 }
@@ -79,7 +79,7 @@ async function onReconnect() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: var(--dw-space-7);
   max-width: 420px;
   width: min(100%, 420px);
   text-align: center;
@@ -88,12 +88,12 @@ async function onReconnect() {
 .connection-reconnect-overlay__copy {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .connection-reconnect-overlay__title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
   font-weight: 600;
   letter-spacing: 0.01em;
   color: color-mix(in srgb, var(--dw-text) 88%, transparent);
@@ -101,25 +101,25 @@ async function onReconnect() {
 
 .connection-reconnect-overlay__hint {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   color: color-mix(in srgb, var(--dw-text-muted) 92%, transparent);
 }
 
 .connection-reconnect-overlay__btn {
   border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border));
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   padding: 7px 18px;
-  background: color-mix(in srgb, #ffffff 85%, var(--dw-primary) 8%);
+  background: color-mix(in srgb, var(--dw-on-accent) 85%, var(--dw-primary) 8%);
   color: var(--dw-primary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 1px 2px color-mix(in srgb, #000 4%, transparent);
+  box-shadow: var(--dw-shadow-xs);
 }
 
 .connection-reconnect-overlay__btn:hover:not(:disabled) {
-  background: color-mix(in srgb, #ffffff 70%, var(--dw-primary) 12%);
+  background: color-mix(in srgb, var(--dw-on-accent) 70%, var(--dw-primary) 12%);
   border-color: color-mix(in srgb, var(--dw-primary) 42%, var(--dw-border));
 }
 

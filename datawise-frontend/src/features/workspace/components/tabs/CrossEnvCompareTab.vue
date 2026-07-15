@@ -476,44 +476,44 @@ watch(
 }
 
 .cross-env-compare__head {
-  padding: 16px 20px 12px;
+  padding: var(--dw-space-8) var(--dw-space-9) var(--dw-space-6);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
 .cross-env-compare__head h2 {
-  margin: 0 0 4px;
-  font-size: 16px;
+  margin: 0 0 var(--dw-space-2);
+  font-size: var(--dw-text-xl);
 }
 
 .cross-env-compare__head p {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .cross-env-compare__error {
-  margin: 10px 0 0;
-  color: var(--dw-danger, #dc2626);
-  font-size: 12px;
+  margin: var(--dw-space-5) 0 0;
+  color: var(--dw-danger);
+  font-size: var(--dw-text-sm);
 }
 
 .cross-env-compare__hint {
-  margin: 10px 0 0;
+  margin: var(--dw-space-5) 0 0;
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .cross-env-compare__panel {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 20px;
+  padding: var(--dw-space-9);
 }
 
 .cross-env-compare__panel--query {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--dw-space-8);
   max-width: 720px;
 }
 
@@ -524,23 +524,23 @@ watch(
 
 .scope-card {
   max-width: 420px;
-  padding: 16px;
+  padding: var(--dw-space-8);
   border: 1px solid var(--dw-border-light);
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   background: var(--dw-bg-panel);
 }
 
 .scope-card h3 {
-  margin: 0 0 12px;
-  font-size: 13px;
+  margin: 0 0 var(--dw-space-6);
+  font-size: var(--dw-text-md);
 }
 
 .scope-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-  font-size: 12px;
+  gap: var(--dw-gap-sm);
+  margin-bottom: var(--dw-space-6);
+  font-size: var(--dw-text-sm);
 }
 
 .scope-field--full {
@@ -549,30 +549,30 @@ watch(
 
 .scope-field__hint {
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .scope-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-  font-size: 12px;
+  gap: var(--dw-gap);
+  margin-top: var(--dw-space-2);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-secondary);
 }
 
 .sql-input,
 .sample-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg);
   color: var(--dw-text);
-  font-family: var(--dw-mono, monospace);
-  font-size: 12px;
+  font-family: var(--dw-mono);
+  font-size: var(--dw-text-sm);
 }
 
 .sample-input {
@@ -583,8 +583,8 @@ watch(
 .cross-env-compare__footer {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-6) var(--dw-space-9);
   border-top: 1px solid var(--dw-border-light);
   background: var(--dw-bg-panel);
 }

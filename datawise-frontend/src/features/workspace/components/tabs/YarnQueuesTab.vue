@@ -203,50 +203,50 @@ watch(connectionId, loadQueues)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 16px;
+  padding: var(--dw-space-5) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border);
   background: var(--dw-bg-panel);
 }
 
 .yarn-queues-tab__head h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
 }
 
 .yarn-queues-tab__head p {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: var(--dw-space-2) 0 0;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .yarn-queues-tab__scheduler {
-  margin-top: 2px !important;
+  margin-top: var(--dw-space-1) !important;
 }
 
 .yarn-queues-tab__body {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
-  gap: 16px;
+  gap: var(--dw-space-8);
   flex: 1;
   min-height: 0;
-  padding: 12px 16px;
+  padding: var(--dw-space-6) var(--dw-space-8);
 }
 
 .yarn-queues-tab__table-wrap {
   overflow: auto;
   border: 1px solid var(--dw-border);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
 }
 
 .yarn-queues-tab__table-wrap table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .yarn-queues-tab__table-wrap th,
 .yarn-queues-tab__table-wrap td {
-  padding: 8px 10px;
+  padding: var(--dw-pad-control);
   border-bottom: 1px solid var(--dw-border);
   text-align: left;
 }
@@ -262,54 +262,54 @@ watch(connectionId, loadQueues)
 
 .yarn-queues-tab__editor {
   border: 1px solid var(--dw-border);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: var(--dw-control-radius);
+  padding: var(--dw-space-6);
   background: var(--dw-bg-panel);
 }
 
 .yarn-queues-tab__editor h3 {
-  margin: 0 0 12px;
-  font-size: 14px;
+  margin: 0 0 var(--dw-space-6);
+  font-size: var(--dw-text-xl);
 }
 
 .yarn-queues-tab__form {
   display: grid;
-  gap: 10px;
+  gap: var(--dw-gap-md);
 }
 
 .yarn-queues-tab__form label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
+  gap: var(--dw-gap-xs);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .yarn-queues-tab__form input,
 .yarn-queues-tab__form select {
-  padding: 6px 8px;
+  padding: var(--dw-pad-tight);
   border: 1px solid var(--dw-border);
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-input);
   color: var(--dw-text);
 }
 
 .yarn-queues-tab__actions {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: var(--dw-gap);
+  margin-top: var(--dw-space-6);
 }
 
 .yarn-queues-tab__hint {
-  margin: 10px 0 0;
-  font-size: 11px;
+  margin: var(--dw-space-5) 0 0;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
-  line-height: 1.5;
+  line-height: var(--dw-leading-relaxed);
 }
 
 .yarn-queues-tab__status {
-  padding: 12px 16px;
-  font-size: 12px;
+  padding: var(--dw-space-6) var(--dw-space-8);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
@@ -318,6 +318,6 @@ watch(connectionId, loadQueues)
 }
 
 .yarn-queues-tab__status.is-success {
-  color: var(--dw-success, #16a34a);
+  color: var(--dw-success);
 }
 </style>

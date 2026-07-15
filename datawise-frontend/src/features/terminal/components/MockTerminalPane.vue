@@ -132,29 +132,29 @@ defineExpose({
   height: 100%;
   min-height: 200px;
   border: 1px solid var(--terminal-border, #2d3340);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--terminal-bg, #1a1d24);
-  color: var(--terminal-text, #e5e7eb);
+  color: var(--terminal-text, var(--dw-border));
   font-family: var(--dw-mono);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-relaxed);
   overflow: hidden;
 }
 
 .mock-terminal__banner {
   margin: 0;
-  padding: 6px 12px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   border-bottom: 1px solid var(--terminal-border, #2d3340);
-  background: color-mix(in srgb, #f59e0b 12%, var(--terminal-input-bg, #151820));
-  color: #fbbf24;
-  font-size: 11px;
-  line-height: 1.45;
+  background: color-mix(in srgb, var(--dw-warning) 12%, var(--terminal-input-bg, #151820));
+  color: var(--dw-warning);
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .mock-terminal__output {
   flex: 1;
   overflow-y: auto;
-  padding: 10px 12px 6px;
+  padding: var(--dw-space-5) var(--dw-space-6) var(--dw-space-3);
 }
 
 .mock-terminal__line {
@@ -163,33 +163,33 @@ defineExpose({
 }
 
 .mock-terminal__line.in {
-  color: #f3f4f6;
+  color: var(--dw-bg-hover);
 }
 
 .mock-terminal__line.out {
-  color: #d1d5db;
+  color: var(--dw-border);
 }
 
 .mock-terminal__line.err {
-  color: #f87171;
+  color: var(--dw-danger);
 }
 
 .mock-terminal__line.sys {
-  color: #9ca3af;
+  color: var(--dw-text-muted);
 }
 
 .mock-terminal__input-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px 10px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-4) var(--dw-space-6) var(--dw-space-5);
   border-top: 1px solid var(--terminal-border, #2d3340);
   background: var(--terminal-input-bg, #151820);
 }
 
 .mock-terminal__prompt {
   flex-shrink: 0;
-  color: #22c55e;
+  color: var(--dw-success);
   font-weight: 600;
 }
 
@@ -199,7 +199,7 @@ defineExpose({
   border: none;
   outline: none;
   background: transparent;
-  color: #f9fafb;
+  color: var(--dw-bg-muted);
   font: inherit;
 }
 </style>

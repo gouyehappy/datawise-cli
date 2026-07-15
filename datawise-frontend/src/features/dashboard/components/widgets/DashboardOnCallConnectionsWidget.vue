@@ -95,8 +95,8 @@ const subtitle = computed(() =>
 
 <style scoped>
 .dash-card__subtitle {
-  margin: 4px 0 0;
-  font-size: 11px;
+  margin: var(--dw-space-2) 0 0;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
   font-weight: 400;
 }
@@ -105,18 +105,18 @@ const subtitle = computed(() =>
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
   text-align: left;
   cursor: pointer;
 }
 
 .dash-on-call + .dash-on-call {
-  margin-top: 8px;
+  margin-top: var(--dw-space-4);
 }
 
 .dash-on-call:hover {
@@ -131,17 +131,17 @@ const subtitle = computed(() =>
 .dash-on-call__copy {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-1);
   min-width: 0;
 }
 
 .dash-on-call__name {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
 }
 
 .dash-on-call__id {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 </style>

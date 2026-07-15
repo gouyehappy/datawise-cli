@@ -354,18 +354,18 @@ async function copyDdl() {
 
 .table-detail__views {
   display: flex;
-  gap: 4px;
-  padding: 8px 12px 0;
+  gap: var(--dw-gap-xs);
+  padding: var(--dw-space-4) var(--dw-space-6) 0;
 }
 
 .table-detail__view-btn {
   position: relative;
-  padding: 7px 14px 9px;
+  padding: 7px var(--dw-space-7) 9px;
   border: none;
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--dw-control-radius) var(--dw-control-radius) 0 0;
   background: transparent;
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
   cursor: pointer;
 }
@@ -388,7 +388,7 @@ async function copyDdl() {
   right: 10px;
   bottom: 0;
   height: 2px;
-  border-radius: 2px 2px 0 0;
+  border-radius: var(--dw-radius-xs) var(--dw-radius-xs) 0 0;
   background: var(--dw-primary);
 }
 
@@ -397,24 +397,24 @@ async function copyDdl() {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-6);
   overflow: auto;
 }
 
 .table-detail__hero {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-7) var(--dw-space-8);
   border: 1px solid var(--dw-border-light);
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   background: linear-gradient(
       145deg,
       color-mix(in srgb, var(--dw-primary) 7%, var(--dw-bg-panel)) 0%,
       var(--dw-bg-panel) 58%
   );
-  box-shadow: var(--dw-panel-shadow, 0 1px 2px rgb(0 0 0 / 4%));
+  box-shadow: var(--dw-panel-shadow));
 }
 
 .table-detail__hero-icon {
@@ -424,7 +424,7 @@ async function copyDdl() {
   flex-shrink: 0;
   width: 42px;
   height: 42px;
-  border-radius: 11px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-primary-soft);
   color: var(--dw-primary);
 }
@@ -435,9 +435,9 @@ async function copyDdl() {
 
 .table-detail__hero-kind {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: var(--dw-space-1);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -445,17 +445,17 @@ async function copyDdl() {
 
 .table-detail__hero-title {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--dw-text-2xl);
   font-weight: 650;
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
   word-break: break-all;
 }
 
 .table-detail__hero-desc {
-  margin: 6px 0 0;
+  margin: var(--dw-space-3) 0 0;
   color: var(--dw-text-secondary);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-relaxed);
 }
 
 .table-detail__hero-desc--muted {
@@ -466,22 +466,22 @@ async function copyDdl() {
 .table-detail__stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .table-detail__stat {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
+  gap: var(--dw-gap-xs);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
 }
 
 .table-detail__stat-label {
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -489,9 +489,9 @@ async function copyDdl() {
 
 .table-detail__stat-value {
   font-family: var(--dw-mono);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   word-break: break-word;
 }
 
@@ -500,35 +500,35 @@ async function copyDdl() {
   flex: 1;
   min-height: 280px;
   border: 1px solid var(--dw-border-light);
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   overflow: hidden;
   background: var(--dw-bg-panel);
-  box-shadow: var(--dw-panel-shadow, 0 1px 2px rgb(0 0 0 / 4%));
+  box-shadow: var(--dw-panel-shadow));
 }
 
 .table-detail__sidebar {
   flex-shrink: 0;
   width: 148px;
-  padding: 10px;
+  padding: var(--dw-space-5);
   border-right: 1px solid var(--dw-border-light);
   background: color-mix(in srgb, var(--dw-bg-muted) 35%, var(--dw-bg-panel));
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
 }
 
 .table-detail__section-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--dw-gap);
   width: 100%;
-  padding: 8px 10px;
+  padding: var(--dw-pad-control);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: transparent;
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   text-align: left;
   cursor: pointer;
 }
@@ -542,13 +542,13 @@ async function copyDdl() {
   border-color: color-mix(in srgb, var(--dw-primary) 22%, var(--dw-border-light));
   background: var(--dw-bg-panel);
   color: var(--dw-primary);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+  box-shadow: var(--dw-shadow-xs);
 }
 
 .table-detail__section-label {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--dw-space-3);
   min-width: 0;
 }
 
@@ -560,11 +560,11 @@ async function copyDdl() {
 .table-detail__section-badge {
   flex-shrink: 0;
   min-width: 20px;
-  padding: 1px 6px;
-  border-radius: 999px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   text-align: center;
 }
@@ -587,24 +587,24 @@ async function copyDdl() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-5) var(--dw-space-7);
   border-bottom: 1px solid var(--dw-border-light);
   background: color-mix(in srgb, var(--dw-bg-muted) 25%, var(--dw-bg-panel));
 }
 
 .table-detail__panel-head h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
 }
 
 .table-detail__panel-count {
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: var(--dw-pad-chip);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
@@ -617,12 +617,12 @@ async function copyDdl() {
 .table-detail__grid {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .table-detail__grid th,
 .table-detail__grid td {
-  padding: 8px 12px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   border-bottom: 1px solid var(--dw-border-light);
   text-align: left;
   vertical-align: middle;
@@ -634,7 +634,7 @@ async function copyDdl() {
   z-index: 1;
   background: var(--dw-bg-panel);
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -671,13 +671,13 @@ async function copyDdl() {
 }
 
 .table-detail__type-pill {
-  font-family: var(--dw-mono, monospace);
-  font-size: 11px;
+  font-family: var(--dw-mono);
+  font-size: var(--dw-text-xs);
 }
 
 .table-detail__grid-wrap :deep(.dw-empty--compact) {
   min-height: 80px;
-  padding: 16px 12px;
+  padding: var(--dw-space-8) var(--dw-space-6);
 }
 
 .table-detail__data {
@@ -690,20 +690,20 @@ async function copyDdl() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-height: 160px;
-  padding: 24px;
+  padding: var(--dw-space-10);
   color: var(--dw-text-muted);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 
 .table-detail__state--error {
-  color: var(--dw-danger, #c0392b);
+  color: var(--dw-danger);
 }
 
 .table-detail__spinner {
   width: 22px;
-  height: 22px;
+  height: var(--dw-control-h-xs);
   border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;
@@ -719,7 +719,7 @@ async function copyDdl() {
 .table-detail__ddl {
   flex: 1;
   min-height: 0;
-  padding: 12px;
+  padding: var(--dw-space-6);
   overflow: auto;
 }
 
@@ -728,18 +728,18 @@ async function copyDdl() {
   flex-direction: column;
   min-height: 100%;
   border: 1px solid var(--dw-border-light);
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   overflow: hidden;
   background: var(--dw-bg-panel);
-  box-shadow: var(--dw-panel-shadow, 0 1px 2px rgb(0 0 0 / 4%));
+  box-shadow: var(--dw-panel-shadow));
 }
 
 .table-detail__ddl-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-6) var(--dw-space-7);
   border-bottom: 1px solid var(--dw-border-light);
   background: linear-gradient(
       180deg,
@@ -750,24 +750,24 @@ async function copyDdl() {
 
 .table-detail__ddl-kicker {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: var(--dw-space-1);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .table-detail__ddl-head-text h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--dw-text-xl);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
 }
 
 .table-detail__ddl-head-text p {
-  margin: 4px 0 0;
+  margin: var(--dw-space-2) 0 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .table-detail__ddl-body {
@@ -779,11 +779,11 @@ async function copyDdl() {
 
 .table-detail__ddl-code {
   margin: 0;
-  padding: 16px 18px;
+  padding: var(--dw-space-8) var(--dw-space-8);
   color: color-mix(in srgb, var(--dw-text-primary) 92%, #dbeafe 8%);
   font-family: var(--dw-mono);
-  font-size: 12px;
-  line-height: 1.65;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   white-space: pre-wrap;
   word-break: break-word;
 }

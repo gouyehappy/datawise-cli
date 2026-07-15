@@ -200,12 +200,12 @@ function onInputKeydown(event: KeyboardEvent) {
 .redis-db-picker {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   flex-shrink: 0;
 }
 
 .redis-db-picker__label {
-  font-size: var(--mp-sub, 12px);
+  font-size: var(--mp-sub);
   color: var(--dw-text-muted);
   white-space: nowrap;
 }
@@ -214,12 +214,12 @@ function onInputKeydown(event: KeyboardEvent) {
   position: relative;
   display: inline-flex;
   align-items: stretch;
-  height: 34px;
+  height: var(--dw-control-h);
   border: 1px solid var(--dw-border);
-  border-radius: var(--dw-panel-radius, 8px);
-  background: var(--dw-bg, var(--dw-bg-panel));
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  border-radius: var(--dw-panel-radius);
+  background: var(--dw-bg);
+  box-shadow: var(--dw-shadow-xs);
+  transition: var(--dw-transition-shadow);
 }
 
 .redis-db-picker__root:hover:not(.is-open) {
@@ -227,8 +227,8 @@ function onInputKeydown(event: KeyboardEvent) {
 }
 
 .redis-db-picker__root.is-open {
-  border-color: var(--dw-primary-border);
-  box-shadow: 0 0 0 3px var(--dw-primary-soft);
+  border-color: var(--dw-focus-border);
+  box-shadow: var(--dw-focus-ring);
 }
 
 .redis-db-picker__root.is-flash .redis-db-picker__trigger {
@@ -240,7 +240,7 @@ function onInputKeydown(event: KeyboardEvent) {
     background: transparent;
   }
   50% {
-    background: var(--dw-primary-softer, var(--dw-primary-mild));
+    background: var(--dw-primary-softer);
   }
 }
 
@@ -253,22 +253,22 @@ function onInputKeydown(event: KeyboardEvent) {
   background: transparent;
   color: var(--dw-text-muted);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .redis-db-picker__step svg {
-  width: 14px;
-  height: 14px;
+  width: var(--dw-icon-size-sm);
+  height: var(--dw-icon-size-sm);
 }
 
 .redis-db-picker__step:first-child {
   border-right: 1px solid var(--dw-border);
-  border-radius: calc(var(--dw-panel-radius, 8px) - 1px) 0 0 calc(var(--dw-panel-radius, 8px) - 1px);
+  border-radius: var(--dw-control-radius) 0 0 var(--dw-control-radius);
 }
 
 .redis-db-picker__step:last-child {
   border-left: 1px solid var(--dw-border);
-  border-radius: 0 calc(var(--dw-panel-radius, 8px) - 1px) calc(var(--dw-panel-radius, 8px) - 1px) 0;
+  border-radius: 0 var(--dw-control-radius) var(--dw-control-radius) 0;
 }
 
 .redis-db-picker__step:hover:not(:disabled) {
@@ -285,15 +285,15 @@ function onInputKeydown(event: KeyboardEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: var(--dw-space-2);
   min-width: 78px;
-  padding: 0 10px;
+  padding: 0 var(--dw-space-5);
   border: none;
   background: transparent;
   color: var(--dw-text);
   font: inherit;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease);
 }
 
 .redis-db-picker__trigger:hover {
@@ -301,26 +301,26 @@ function onInputKeydown(event: KeyboardEvent) {
 }
 
 .redis-db-picker__mono {
-  font-family: var(--dw-font-mono, ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace);
-  font-size: 11px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-xs);
   font-weight: 500;
   color: var(--dw-text-muted);
 }
 
 .redis-db-picker__value {
-  font-family: var(--dw-font-mono, ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace);
-  font-size: 13px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-md);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
 .redis-db-picker__chevron {
-  width: 14px;
-  height: 14px;
+  width: var(--dw-icon-size-sm);
+  height: var(--dw-icon-size-sm);
   margin-left: 1px;
   color: var(--dw-text-muted);
-  transition: transform 0.18s ease, color 0.15s ease;
+  transition: transform var(--dw-duration) var(--dw-ease), color var(--dw-duration) var(--dw-ease);
 }
 
 .redis-db-picker__root.is-open .redis-db-picker__chevron {
@@ -333,29 +333,29 @@ function onInputKeydown(event: KeyboardEvent) {
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  z-index: 120;
+  z-index: var(--dw-z-dropdown);
   min-width: 188px;
-  padding: 5px;
-  border: 1px solid var(--dw-border-light, var(--dw-border));
-  border-radius: calc(var(--dw-panel-radius, 8px) + 2px);
-  background: var(--dw-bg, var(--dw-bg-panel));
-  box-shadow: var(--dw-menu-shadow, 0 10px 28px rgba(15, 23, 42, 0.1));
+  padding: var(--dw-space-2);
+  border: 1px solid var(--dw-border-light);
+  border-radius: var(--dw-menu-radius);
+  background: var(--dw-bg);
+  box-shadow: var(--dw-menu-shadow));
 }
 
 .redis-db-picker__field {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-  padding: 4px;
-  border-radius: calc(var(--dw-panel-radius, 8px) - 1px);
-  background: var(--dw-bg-muted, color-mix(in srgb, var(--dw-text) 3%, transparent));
+  gap: var(--dw-gap-sm);
+  margin-bottom: var(--dw-space-2);
+  padding: var(--dw-space-2);
+  border-radius: var(--dw-control-radius);
+  background: var(--dw-bg-muted) 3%, transparent));
 }
 
 .redis-db-picker__field-prefix {
-  padding-left: 6px;
-  font-family: var(--dw-font-mono, ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace);
-  font-size: 11px;
+  padding-left: var(--dw-space-3);
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-xs);
   font-weight: 500;
   color: var(--dw-text-muted);
 }
@@ -365,11 +365,11 @@ function onInputKeydown(event: KeyboardEvent) {
   border: none;
   background: transparent;
   color: var(--dw-text);
-  font-family: var(--dw-font-mono, ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace);
-  font-size: 13px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-md);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  line-height: 1.4;
+  line-height: var(--dw-leading);
   outline: none;
 }
 
@@ -380,17 +380,17 @@ function onInputKeydown(event: KeyboardEvent) {
 
 .redis-db-picker__field-go {
   margin-left: auto;
-  height: 28px;
-  padding: 0 10px;
+  height: var(--dw-btn-height);
+  padding: 0 var(--dw-space-5);
   border: none;
-  border-radius: calc(var(--dw-panel-radius, 8px) - 2px);
+  border-radius: var(--dw-control-radius-sm);
   background: transparent;
   color: var(--dw-primary);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease);
 }
 
 .redis-db-picker__field-go:hover:not(:disabled) {
@@ -412,28 +412,28 @@ function onInputKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--dw-gap);
   width: 100%;
-  min-height: 32px;
-  padding: 0 10px;
+  min-height: var(--dw-tab-height);
+  padding: 0 var(--dw-space-5);
   border: none;
-  border-radius: calc(var(--dw-panel-radius, 8px) - 1px);
+  border-radius: var(--dw-control-radius);
   background: transparent;
   color: var(--dw-text-secondary);
   font: inherit;
-  font-size: var(--mp-sub, 12px);
+  font-size: var(--mp-sub);
   text-align: left;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .redis-db-picker__item-label {
-  font-family: var(--dw-font-mono, ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace);
+  font-family: var(--dw-font-mono);
   font-weight: 500;
 }
 
 .redis-db-picker__item:hover {
-  background: var(--dw-bg-hover, color-mix(in srgb, var(--dw-text) 4%, transparent));
+  background: var(--dw-bg-hover);
   color: var(--dw-text);
 }
 
@@ -444,14 +444,14 @@ function onInputKeydown(event: KeyboardEvent) {
 
 .redis-db-picker__check {
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
+  width: var(--dw-icon-size-sm);
+  height: var(--dw-icon-size-sm);
   color: var(--dw-primary);
 }
 
 .redis-db-menu-enter-active,
 .redis-db-menu-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity var(--dw-duration) var(--dw-ease), transform var(--dw-duration) var(--dw-ease);
 }
 
 .redis-db-menu-enter-from,

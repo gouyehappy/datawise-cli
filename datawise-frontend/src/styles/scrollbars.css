@@ -23,7 +23,7 @@
     background-color: var(--dw-scrollbar-thumb);
     border: 2px solid transparent;
     background-clip: content-box;
-    border-radius: 999px;
+    border-radius: var(--dw-radius-pill);
 }
 
 *::-webkit-scrollbar-thumb:hover {

@@ -166,7 +166,7 @@ watch(
 .audit-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--dw-space-6);
 }
 
 .audit-toolbar {
@@ -174,34 +174,34 @@ watch(
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
 }
 
 .audit-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-width: 0;
 }
 
 .audit-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
+  gap: var(--dw-gap-xs);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .audit-select,
 .audit-input {
   min-width: 140px;
-  padding: 6px 8px;
+  padding: var(--dw-pad-tight);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg);
   color: var(--dw-text);
   font: inherit;
@@ -211,11 +211,11 @@ watch(
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .audit-toggle {
-  margin-right: 4px;
+  margin-right: var(--dw-space-2);
 }
 
 .detail-list {
@@ -224,17 +224,17 @@ watch(
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .detail-list__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
 }
 
@@ -243,19 +243,19 @@ watch(
 }
 
 .detail-list__name {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
 }
 
 .detail-list__meta {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
-  margin-top: 2px;
+  margin-top: var(--dw-space-1);
 }
 
 .audit-detail {
-  margin-top: 4px;
-  font-size: 12px;
+  margin-top: var(--dw-space-2);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-secondary);
   white-space: pre-wrap;
   word-break: break-word;

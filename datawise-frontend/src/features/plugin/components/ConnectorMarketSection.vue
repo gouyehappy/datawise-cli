@@ -326,23 +326,23 @@ function focusPending() {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: var(--dw-space-6);
+    margin-bottom: var(--dw-space-6);
 }
 
 .connector-market__title {
     margin: 0;
-    font-size: 15px;
+    font-size: var(--dw-text-lg);
     font-weight: 600;
 }
 
 .connector-market__sub {
-    margin: 4px 0 0;
-    font-size: 12px;
+    margin: var(--dw-space-2) 0 0;
+    font-size: var(--dw-text-sm);
     color: var(--dw-text-muted);
 }
 
 .connector-market-toolbar--embed {
-    margin-bottom: 12px;
+    margin-bottom: var(--dw-space-6);
 }
 </style>

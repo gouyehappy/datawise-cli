@@ -152,8 +152,8 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
 
 <style scoped>
 .table-data-audit {
-  border-top: 1px solid var(--dw-border-subtle, rgba(128, 128, 128, 0.25));
-  background: var(--dw-surface-raised, rgba(128, 128, 128, 0.04));
+  border-top: 1px solid var(--dw-border-subtle));
+  background: var(--dw-surface-raised);
 }
 
 .table-data-audit__toggle {
@@ -161,8 +161,8 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-4) var(--dw-space-6);
   border: 0;
   background: transparent;
   color: inherit;
@@ -171,7 +171,7 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
 }
 
 .table-data-audit__title {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -179,14 +179,14 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
 .table-data-audit__meta {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: var(--dw-gap-sm);
+  font-size: var(--dw-text-xs);
   opacity: 0.75;
 }
 
 .table-data-audit__chevron {
   display: inline-block;
-  transition: transform 0.15s ease;
+  transition: transform var(--dw-duration) var(--dw-ease);
 }
 
 .table-data-audit.is-expanded .table-data-audit__chevron {
@@ -194,19 +194,19 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
 }
 
 .table-data-audit__body {
-  padding: 0 12px 10px;
+  padding: 0 var(--dw-space-6) var(--dw-space-5);
 }
 
 .table-data-audit__hint,
 .table-data-audit__error,
 .table-data-audit__footnote {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   opacity: 0.8;
 }
 
 .table-data-audit__error {
-  color: var(--dw-danger, #c0392b);
+  color: var(--dw-danger);
 }
 
 .table-data-audit__list {
@@ -215,7 +215,7 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   max-height: 180px;
   overflow: auto;
 }
@@ -224,10 +224,10 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: var(--dw-surface, rgba(128, 128, 128, 0.06));
+  gap: var(--dw-gap-md);
+  padding: var(--dw-pad-tight);
+  border-radius: var(--dw-control-radius-sm);
+  background: var(--dw-surface));
 }
 
 .table-data-audit__item-content {
@@ -236,8 +236,8 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
 }
 
 .table-data-audit__changes {
-  margin: 4px 0 0;
-  font-size: 10px;
+  margin: var(--dw-space-2) 0 0;
+  font-size: var(--dw-text-xs);
   opacity: 0.75;
 }
 
@@ -245,32 +245,32 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
   min-width: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: var(--dw-gap);
   align-items: center;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .table-data-audit__op {
   font-weight: 600;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   letter-spacing: 0.04em;
 }
 
 .table-data-audit__op[data-op='INSERT'] {
-  color: var(--dw-success, #2ecc71);
+  color: var(--dw-success);
 }
 
 .table-data-audit__op[data-op='UPDATE'] {
-  color: var(--dw-accent, #3498db);
+  color: var(--dw-link);
 }
 
 .table-data-audit__op[data-op='DELETE'] {
-  color: var(--dw-danger, #e74c3c);
+  color: var(--dw-danger);
 }
 
 .table-data-audit__op[data-op='RESTORE'] {
-  color: var(--dw-warning, #f39c12);
+  color: var(--dw-warning);
 }
 
 .table-data-audit__pk {
@@ -288,9 +288,9 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
 .table-data-audit__restore {
   border: 0;
   background: transparent;
-  color: var(--dw-accent, #3498db);
+  color: var(--dw-link);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   padding: 0;
 }
 
@@ -300,7 +300,7 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
 }
 
 .table-data-audit__badge {
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   opacity: 0.7;
 }
 </style>

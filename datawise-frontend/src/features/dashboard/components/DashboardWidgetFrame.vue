@@ -65,18 +65,18 @@ const emit = defineEmits<{
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 2;
+  z-index: var(--dw-z-raised);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 28px;
+  height: var(--dw-btn-height);
   padding: 0;
   border: 1px solid var(--dw-panel-border);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-editor);
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   line-height: 1;
   cursor: grab;
 }

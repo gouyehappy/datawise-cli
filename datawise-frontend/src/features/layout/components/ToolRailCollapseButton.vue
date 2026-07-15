@@ -44,14 +44,14 @@ function collapse() {
   align-items: center;
   justify-content: center;
   width: calc(100% - 8px);
-  margin: 2px 4px 4px;
-  min-height: 22px;
+  margin: var(--dw-space-1) var(--dw-space-2) var(--dw-space-2);
+  min-height: var(--dw-control-h-xs);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--dw-control-radius-sm);
   background: transparent;
   color: var(--dw-text-muted);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .tool-rail-collapse:hover {

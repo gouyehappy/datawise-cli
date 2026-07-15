@@ -79,13 +79,13 @@ const ariaLabel = computed(() => (
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 28px;
+  height: var(--dw-btn-height);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--dw-btn-radius);
   background: transparent;
   color: var(--dw-text-muted);
   transform: translateY(-50%);
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
   cursor: pointer;
 }
 
@@ -100,7 +100,7 @@ const ariaLabel = computed(() => (
 }
 
 .dw-secret-input__toggle :deep(.dw-icon-root) {
-  width: 16px;
-  height: 16px;
+  width: var(--dw-icon-size-md);
+  height: var(--dw-icon-size-md);
 }
 </style>

@@ -577,7 +577,7 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
 
 <style scoped>
 .dashboard {
-  line-height: 1.5;
+  line-height: var(--dw-leading-relaxed);
 }
 
 .dash-stats {

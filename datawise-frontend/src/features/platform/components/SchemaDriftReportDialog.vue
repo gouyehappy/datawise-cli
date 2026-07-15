@@ -123,8 +123,8 @@ function openMigration() {
 
 <style scoped>
 .drift-report__summary {
-    margin: 0 0 12px;
-    font-size: 13px;
+    margin: 0 0 var(--dw-space-6);
+    font-size: var(--dw-text-md);
     color: var(--dw-text-muted);
 }
 
@@ -134,7 +134,7 @@ function openMigration() {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--dw-gap);
     max-height: 360px;
     overflow: auto;
 }
@@ -142,8 +142,8 @@ function openMigration() {
 .drift-report__row label {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
+    gap: var(--dw-gap);
+    font-size: var(--dw-text-md);
 }
 
 .drift-report__name {
@@ -152,21 +152,21 @@ function openMigration() {
 
 .drift-report__status {
     color: var(--dw-text-muted);
-    font-size: 12px;
+    font-size: var(--dw-text-sm);
 }
 
 .drift-report__alter {
-    margin: 6px 0 0 24px;
-    padding: 6px 8px;
-    border-radius: 6px;
+    margin: var(--dw-space-3) 0 0 var(--dw-space-10);
+    padding: var(--dw-pad-tight);
+    border-radius: var(--dw-control-radius-sm);
     background: var(--dw-bg-subtle);
-    font-size: 11px;
+    font-size: var(--dw-text-xs);
     white-space: pre-wrap;
 }
 
 .drift-report__empty {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--dw-text-md);
     color: var(--dw-text-muted);
 }
 </style>

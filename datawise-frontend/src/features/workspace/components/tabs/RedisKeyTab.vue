@@ -99,9 +99,9 @@ onMounted(loadDetail)
 .redis-key-tab {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--dw-space-8);
   height: 100%;
-  padding: 20px 24px;
+  padding: var(--dw-space-9) var(--dw-space-10);
   overflow: auto;
 }
 
@@ -109,45 +109,45 @@ onMounted(loadDetail)
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--dw-space-8);
 }
 
 .redis-key-tab__head h2 {
-  margin: 0 0 4px;
-  font-size: 18px;
+  margin: 0 0 var(--dw-space-2);
+  font-size: var(--dw-text-2xl);
 }
 
 .redis-key-tab__key {
   margin: 0;
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 13px;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-md);
   color: var(--dw-text-secondary);
   word-break: break-all;
 }
 
 .redis-key-tab__error {
   margin: 0;
-  color: var(--dw-danger, #dc2626);
-  font-size: 13px;
+  color: var(--dw-danger);
+  font-size: var(--dw-text-md);
 }
 
 .redis-key-tab__meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  gap: var(--dw-space-6);
 }
 
 .redis-key-tab__field {
-  padding: 12px 14px;
+  padding: var(--dw-space-6) var(--dw-space-7);
   border: 1px solid var(--dw-panel-border);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-muted);
 }
 
 .redis-key-tab__label {
   display: block;
-  margin-bottom: 4px;
-  font-size: 11px;
+  margin-bottom: var(--dw-space-2);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -155,7 +155,7 @@ onMounted(loadDetail)
 }
 
 .redis-key-tab__value {
-  font-size: 14px;
+  font-size: var(--dw-text-xl);
   font-weight: 600;
 }
 
@@ -170,32 +170,32 @@ onMounted(loadDetail)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: var(--dw-space-6);
+  margin-bottom: var(--dw-space-4);
 }
 
 .redis-key-tab__preview-head h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
 }
 
 .redis-key-tab__truncated {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }
 
 .redis-key-tab__code {
   flex: 1;
   margin: 0;
-  padding: 14px 16px;
+  padding: var(--dw-space-7) var(--dw-space-8);
   border: 1px solid var(--dw-panel-border);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-muted);
   color: var(--dw-text);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 12px;
-  line-height: 1.55;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   white-space: pre-wrap;
   word-break: break-word;
   overflow: auto;

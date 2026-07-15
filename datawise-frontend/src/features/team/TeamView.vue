@@ -720,7 +720,7 @@ onMounted(() => {
 .team-onboarding__card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
   height: 100%;
 }
 
@@ -731,7 +731,7 @@ onMounted(() => {
 .team-onboarding__row {
   display: flex;
   align-items: stretch;
-  gap: 8px;
+  gap: var(--dw-gap);
   margin-top: auto;
 }
 
@@ -761,7 +761,7 @@ onMounted(() => {
 
 .team-sidebar__body,
 .team-detail__body {
-  padding: 8px;
+  padding: var(--dw-space-4);
 }
 
 .team-list {
@@ -780,7 +780,7 @@ onMounted(() => {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-height: var(--mp-head-h);
   height: auto;
   padding-block: 8px;
@@ -802,14 +802,14 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: var(--dw-tab-gap);
-  padding: 0 4px;
+  padding: 0 var(--dw-space-2);
   background: var(--dw-tab-bar-bg);
   border-bottom: 1px solid var(--dw-tab-bar-border);
 }
 
 .team-tab {
   height: var(--mp-btn-h);
-  padding: 0 clamp(10px, 1.2vmin, 12px);
+  padding: 0 var(--dw-space-6);
   border-radius: var(--dw-tab-pill-radius);
   font-size: var(--mp-caption);
   cursor: pointer;
@@ -823,32 +823,32 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  margin-left: 6px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--dw-danger, #dc2626);
-  color: #fff;
-  font-size: 10px;
+  min-width: var(--dw-icon-size-lg);
+  height: var(--dw-icon-size-lg);
+  margin-left: var(--dw-space-3);
+  padding: 0 var(--dw-space-2);
+  border-radius: var(--dw-radius-pill);
+  background: var(--dw-danger);
+  color: var(--dw-on-accent);
+  font-size: var(--dw-text-xs);
   font-weight: 700;
 }
 
 .join-request-list {
-  margin: 10px 0 0;
+  margin: var(--dw-space-5) 0 0;
   padding-left: 18px;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-secondary);
 }
 
 .sharing-block__hint {
-  margin-top: 10px;
-  font-size: 12px;
+  margin-top: var(--dw-space-5);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-secondary);
 }
 
 .link-btn {
-  margin-left: 4px;
+  margin-left: var(--dw-space-2);
   padding: 0;
   border: none;
   background: transparent;
@@ -864,33 +864,33 @@ onMounted(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .detail-list__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
 }
 
 .detail-list__name {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
 }
 
 .detail-list__meta {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
-  margin-top: 2px;
+  margin-top: var(--dw-space-1);
 }
 
 .role-badge {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .detail-list__row :deep(.dw-select) {
@@ -900,13 +900,13 @@ onMounted(() => {
 
 .invite-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--dw-gap);
   flex-shrink: 0;
 }
 
 .btn-sm {
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: var(--dw-space-2) var(--dw-space-5);
+  font-size: var(--dw-text-sm);
 }
 
 .audit-tab-stack {
@@ -920,26 +920,26 @@ onMounted(() => {
 }
 
 .audit-detail {
-  margin-top: 4px;
-  font-size: 12px;
+  margin-top: var(--dw-space-2);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-secondary);
 }
 
 .sharing-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--dw-space-8);
 }
 
 .sharing-block__title {
-  margin: 0 0 4px;
-  font-size: 14px;
+  margin: 0 0 var(--dw-space-2);
+  font-size: var(--dw-text-xl);
   font-weight: 600;
 }
 
 .sharing-block__desc {
-  margin: 0 0 10px;
-  font-size: 12px;
+  margin: 0 0 var(--dw-space-5);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
@@ -947,18 +947,18 @@ onMounted(() => {
   width: 100%;
   min-height: 84px;
   resize: vertical;
-  margin-bottom: 12px;
+  margin-bottom: var(--dw-space-6);
 }
 
 .shared-access-list {
   display: grid;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-6);
 }
 
 .shared-access-list__hint {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
@@ -966,15 +966,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 10px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-pad-control);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
 }
 
 .shared-access-row__id {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .shared-access-row :deep(.dw-select) {
@@ -985,31 +985,31 @@ onMounted(() => {
 .invite-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--dw-space-6);
   flex-wrap: wrap;
 }
 
 .invite-code {
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: var(--dw-space-4) var(--dw-space-6);
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-muted);
   font-family: var(--dw-mono);
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
   letter-spacing: 0.08em;
 }
 
 .share-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 13px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-6);
+  font-size: var(--dw-text-md);
 }
 
 .ai-sessions-layout {
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--dw-space-6);
   min-height: 320px;
 }
 
@@ -1030,9 +1030,9 @@ onMounted(() => {
 .ai-sessions-detail {
   min-height: 0;
   overflow: auto;
-  padding: 12px;
+  padding: var(--dw-space-6);
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
 }
 

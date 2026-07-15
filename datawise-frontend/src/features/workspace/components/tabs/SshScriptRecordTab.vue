@@ -338,9 +338,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--dw-space-6);
   flex-shrink: 0;
-  padding: 14px 18px;
+  padding: var(--dw-space-7) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border);
   background: var(--dw-bg-panel);
 }
@@ -348,7 +348,7 @@ onBeforeUnmount(() => {
 .ssh-script-record-tab__title {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-width: 0;
 }
 
@@ -357,8 +357,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  height: var(--dw-control-h);
+  border-radius: var(--dw-control-radius);
   color: var(--dw-primary);
   background: color-mix(in srgb, var(--dw-primary) 12%, transparent);
 }
@@ -372,27 +372,27 @@ onBeforeUnmount(() => {
   border: none;
   background: transparent;
   color: var(--dw-text);
-  font-size: 16px;
+  font-size: var(--dw-text-xl);
   font-weight: 600;
   outline: none;
 }
 
 .ssh-script-record-tab__meta p {
-  margin: 4px 0 0;
+  margin: var(--dw-space-2) 0 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .ssh-script-record-tab__actions {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   flex-shrink: 0;
 }
 
 .ssh-script-record-tab__body {
   flex: 1;
   min-height: 0;
-  padding: 16px 18px 18px;
+  padding: var(--dw-space-8) var(--dw-space-8) var(--dw-space-8);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -401,6 +401,6 @@ onBeforeUnmount(() => {
 .ssh-script-record-tab__empty {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 </style>

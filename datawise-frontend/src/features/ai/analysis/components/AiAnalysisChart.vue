@@ -62,7 +62,7 @@ watch(() => props.option, () => scheduleRender())
 .ai-analysis-chart {
   width: 100%;
   height: 320px;
-  padding: 12px 12px 8px;
+  padding: var(--dw-space-6) var(--dw-space-6) var(--dw-space-4);
   box-sizing: border-box;
   background: radial-gradient(ellipse 70% 60% at 50% 100%, color-mix(in srgb, var(--dw-primary) 5%, transparent), transparent 70%),
   linear-gradient(180deg, color-mix(in srgb, var(--dw-bg-panel) 40%, var(--dw-bg)), var(--dw-bg));

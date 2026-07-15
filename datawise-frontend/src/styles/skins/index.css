@@ -1,0 +1,4 @@
+/**
+ * UI 壳层皮肤入口 — 每个皮肤一个文件，由 core/ui-skin 注册表对齐。
+ */
+@import './ide.css';

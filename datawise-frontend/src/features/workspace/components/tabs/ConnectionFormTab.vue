@@ -165,9 +165,9 @@ function openJdbcTunnelSshTerminal() {
 .conn-head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--dw-space-6);
   flex-shrink: 0;
-  padding: 16px 24px;
+  padding: var(--dw-space-8) var(--dw-space-10);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
@@ -182,16 +182,16 @@ function openJdbcTunnelSshTerminal() {
 
 .conn-head__text h1 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
 }
 
 .conn-head__text p {
-  margin: 3px 0 0;
+  margin: var(--dw-space-1) 0 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .conn-loading {
@@ -200,7 +200,7 @@ function openJdbcTunnelSshTerminal() {
   align-items: center;
   justify-content: center;
   color: var(--dw-text-muted);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 
 .conn-body-wrap {
@@ -215,7 +215,7 @@ function openJdbcTunnelSshTerminal() {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 24px 8px;
+  padding: var(--dw-space-8) var(--dw-space-10) var(--dw-space-4);
   scrollbar-gutter: stable;
   transition: opacity 0.2s ease;
 }
@@ -228,10 +228,10 @@ function openJdbcTunnelSshTerminal() {
 .conn-readonly-hint {
   flex-shrink: 0;
   margin: 0;
-  padding: 10px 24px 0;
+  padding: var(--dw-space-5) var(--dw-space-10) 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading);
 }
 
 .conn-body--readonly:not(.conn-body--busy) {
@@ -241,13 +241,13 @@ function openJdbcTunnelSshTerminal() {
 .conn-busy {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: var(--dw-z-raised);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 24px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-10);
   text-align: center;
   background: color-mix(in srgb, var(--dw-bg-panel) 72%, transparent);
   backdrop-filter: blur(2px);
@@ -255,7 +255,7 @@ function openJdbcTunnelSshTerminal() {
 
 .conn-busy__spinner {
   width: 24px;
-  height: 24px;
+  height: var(--dw-control-h-xs);
   border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;
@@ -266,8 +266,8 @@ function openJdbcTunnelSshTerminal() {
   margin: 0;
   max-width: 240px;
   color: var(--dw-text-muted);
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading);
 }
 
 @keyframes conn-busy-spin {
@@ -303,8 +303,8 @@ function openJdbcTunnelSshTerminal() {
   .conn-head,
   .conn-body,
   .conn-footer {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: var(--dw-space-8);
+    padding-right: var(--dw-space-8);
   }
 }
 </style>

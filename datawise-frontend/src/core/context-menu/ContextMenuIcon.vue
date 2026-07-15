@@ -23,12 +23,12 @@ defineProps<{
 
 <style scoped>
 :deep(.dw-icon-root) {
-  width: 18px;
-  height: 18px;
+  width: var(--dw-icon-size-lg);
+  height: var(--dw-icon-size-lg);
   color: var(--dw-text-muted);
 }
 
 :deep(.dw-icon-root.dw-icon--danger) {
-  color: #e5484d;
+  color: var(--dw-danger);
 }
 </style>

@@ -311,7 +311,7 @@ function downloadSql() {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--dw-space-7);
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -334,10 +334,10 @@ function downloadSql() {
 .fake-data-toolbar {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-6);
   border: 1px solid var(--dw-panel-border);
-  border-radius: var(--dw-panel-radius, 10px);
+  border-radius: var(--dw-panel-radius);
   background: var(--dw-bg-panel);
   box-shadow: var(--dw-panel-shadow);
 }
@@ -353,10 +353,10 @@ function downloadSql() {
 .fake-data-view-switch {
   margin-left: auto;
   display: inline-flex;
-  border: 1px solid var(--dw-tab-bar-border, var(--dw-border-light));
-  border-radius: var(--dw-tab-pill-radius, 8px);
+  border: 1px solid var(--dw-tab-bar-border);
+  border-radius: var(--dw-tab-pill-radius);
   overflow: hidden;
-  background: var(--dw-tab-bar-bg, var(--dw-bg-muted));
+  background: var(--dw-tab-bar-bg);
 }
 
 .fake-data-view-switch__btn {
@@ -365,11 +365,11 @@ function downloadSql() {
   border: 0;
   background: transparent;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   letter-spacing: 0.5px;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .fake-data-view-switch__btn + .fake-data-view-switch__btn {
@@ -388,35 +388,35 @@ function downloadSql() {
 
 .fake-data-hints {
   display: grid;
-  gap: 6px;
-  font-size: 12px;
+  gap: var(--dw-gap-sm);
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
-  padding: 2px 2px 0;
+  padding: var(--dw-space-1) var(--dw-space-1) 0;
 }
 
 .fake-data-running-banner {
-  padding: 8px 10px;
+  padding: var(--dw-pad-control);
   border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border-light));
-  border-radius: var(--dw-panel-radius, 8px);
+  border-radius: var(--dw-panel-radius);
   background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg));
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .fake-data-error-banner {
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--dw-danger, #dc2626) 28%, var(--dw-border-light));
-  border-radius: var(--dw-panel-radius, 8px);
-  background: color-mix(in srgb, var(--dw-danger, #dc2626) 8%, var(--dw-bg));
-  color: var(--dw-danger, #dc2626);
-  font-size: 12px;
+  padding: var(--dw-pad-control);
+  border: 1px solid color-mix(in srgb, var(--dw-danger) 28%, var(--dw-border-light));
+  border-radius: var(--dw-panel-radius);
+  background: color-mix(in srgb, var(--dw-danger) 8%, var(--dw-bg));
+  color: var(--dw-danger);
+  font-size: var(--dw-text-sm);
 }
 
 .fake-data-panels {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--dw-space-6);
   flex: 1 1 auto;
   min-height: 240px;
   height: 0;
@@ -437,7 +437,7 @@ function downloadSql() {
   height: 100%;
   max-height: 100%;
   border: 1px solid var(--dw-panel-border);
-  border-radius: var(--dw-panel-radius, 10px);
+  border-radius: var(--dw-panel-radius);
   overflow: hidden;
   background: var(--dw-bg-panel);
   box-shadow: var(--dw-panel-shadow);
@@ -447,8 +447,8 @@ function downloadSql() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: var(--dw-gap);
+  padding: var(--dw-pad-control-lg);
   border-bottom: 1px solid var(--dw-border-light);
   background: var(--dw-bg-muted);
   color: var(--dw-text);
@@ -464,7 +464,7 @@ function downloadSql() {
 }
 
 .fake-data-panel__status {
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
@@ -473,23 +473,23 @@ function downloadSql() {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   flex-shrink: 0;
   max-width: 100%;
 }
 
 .fake-data-wrap-toggle {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 6px;
+  height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-5);
+  border-radius: var(--dw-control-radius-sm);
   border: 1px solid var(--dw-border-light);
   background: var(--dw-bg);
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
   flex-shrink: 0;
   white-space: nowrap;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition: var(--dw-transition-colors);
 }
 
 .fake-data-wrap-toggle:hover {
@@ -508,7 +508,7 @@ function downloadSql() {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  padding: 10px;
+  padding: var(--dw-space-5);
   overflow: hidden;
 }
 
@@ -522,14 +522,14 @@ function downloadSql() {
   max-width: 100%;
   overflow: auto;
   border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-panel-radius, 8px);
+  border-radius: var(--dw-panel-radius);
 }
 
 .modal-data-table {
   width: max-content;
   min-width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .modal-data-table thead {
@@ -540,8 +540,8 @@ function downloadSql() {
 
 .modal-data-table th,
 .modal-data-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--dw-border-subtle, var(--dw-border-light));
+  padding: var(--dw-pad-tight);
+  border-bottom: 1px solid var(--dw-border-subtle));
   white-space: nowrap;
 }
 
@@ -549,7 +549,7 @@ function downloadSql() {
 .modal-data-table td.is-index {
   position: sticky;
   left: 0;
-  z-index: 2;
+  z-index: var(--dw-z-raised);
   min-width: 42px;
   text-align: right;
   color: var(--dw-text-muted);
@@ -565,7 +565,7 @@ function downloadSql() {
 
 .modal-data-table td {
   color: var(--dw-text-secondary);
-  font-family: var(--dw-font-mono, monospace);
+  font-family: var(--dw-font-mono);
 }
 
 .modal-data-table tr:nth-child(2n) td {
@@ -583,14 +583,14 @@ function downloadSql() {
   min-height: 0;
   overflow: auto;
   white-space: pre;
-  font-size: 12px;
-  line-height: 1.5;
-  font-family: var(--dw-font-mono, monospace);
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-relaxed);
+  font-family: var(--dw-font-mono);
   color: var(--dw-text);
   background: var(--dw-bg-muted);
   border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-panel-radius, 8px);
-  padding: 10px;
+  border-radius: var(--dw-panel-radius);
+  padding: var(--dw-space-5);
 }
 
 .fake-data-sql-preview__code.is-wrap {

@@ -1,0 +1,13 @@
+/**
+ * 圆角统一入口 — 语义 token 见 variables.css。
+ * 业务样式请用 var(--dw-control-radius / --dw-input-radius / --dw-radius-*)，
+ * 不要再写死 4px / 6px / 8px / 10px / 12px。
+ */
+
+.dw-radius-xs { border-radius: var(--dw-radius-xs); }
+.dw-radius-sm { border-radius: var(--dw-radius-sm); }
+.dw-radius-md { border-radius: var(--dw-radius-md); }
+.dw-radius-lg { border-radius: var(--dw-radius-lg); }
+.dw-radius-xl { border-radius: var(--dw-radius-xl); }
+.dw-radius-pill { border-radius: var(--dw-radius-pill); }
+.dw-radius-full { border-radius: var(--dw-radius-full); }

@@ -367,24 +367,21 @@ onMounted(() => {
 .mode-pick-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(8px, 1vmin, 10px);
+  gap: var(--dw-gap-md);
 }
 
 .mode-pick {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: clamp(8px, 1vmin, 10px);
+  gap: var(--dw-gap-md);
   padding: clamp(10px, 1.2vmin, 12px) clamp(10px, 1.2vmin, 12px) clamp(10px, 1.2vmin, 12px) clamp(9px, 1.1vmin, 11px);
   border: 1px solid var(--dw-border-light);
   border-radius: var(--dw-panel-radius);
   background: var(--dw-bg-panel);
   text-align: left;
   cursor: pointer;
-  transition:
-      border-color 0.15s ease,
-      background 0.15s ease,
-      box-shadow 0.15s ease,
+  transition: var(--dw-transition-colors), box-shadow var(--dw-duration) var(--dw-ease),
       transform 0.12s ease;
 }
 
@@ -406,7 +403,7 @@ onMounted(() => {
   flex-shrink: 0;
   width: clamp(26px, 2.8vmin, 28px);
   height: clamp(26px, 2.8vmin, 28px);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   color: var(--dw-primary);
   background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-panel));
 }
@@ -418,21 +415,21 @@ onMounted(() => {
 .mode-pick__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-1);
   min-width: 0;
-  padding-right: 14px;
+  padding-right: var(--dw-space-7);
 }
 
 .mode-pick__title {
   font-size: var(--mp-sub);
   font-weight: 600;
   color: var(--dw-text);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
 }
 
 .mode-pick__desc {
-  font-size: clamp(10px, 1.05vmin, 11px);
-  line-height: 1.45;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
   color: var(--dw-text-muted);
 }
 
@@ -440,19 +437,19 @@ onMounted(() => {
   position: absolute;
   top: clamp(8px, 1vmin, 10px);
   right: clamp(8px, 1vmin, 10px);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   color: var(--dw-primary);
 }
 
 .setting-callout {
-  margin: clamp(10px, 1.2vmin, 12px) 0 0;
-  padding: clamp(8px, 1vmin, 10px) clamp(10px, 1.2vmin, 12px);
-  border-radius: calc(var(--dw-panel-radius) - 2px);
+  margin: var(--dw-space-6) 0 0;
+  padding: var(--dw-pad-control-lg);
+  border-radius: var(--dw-control-radius-sm);
   border: 1px solid color-mix(in srgb, var(--dw-primary) 14%, var(--dw-border-light));
   background: color-mix(in srgb, var(--dw-primary) 5%, var(--dw-bg-panel));
-  font-size: clamp(10px, 1.05vmin, 11px);
-  line-height: 1.5;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-relaxed);
   color: var(--dw-text-secondary);
 }
 
@@ -472,7 +469,7 @@ onMounted(() => {
   display: block;
   margin-bottom: clamp(6px, 0.8vmin, 8px);
   color: var(--dw-text-muted);
-  font-size: clamp(10px, 1.05vmin, 11px);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -481,21 +478,21 @@ onMounted(() => {
 .step-toggle-list {
   display: flex;
   flex-direction: column;
-  gap: clamp(6px, 0.8vmin, 8px);
+  gap: var(--dw-gap);
 }
 
 .route-list {
   display: flex;
   flex-direction: column;
-  gap: clamp(6px, 0.8vmin, 8px);
+  gap: var(--dw-gap);
 }
 
 .route-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(140px, 200px);
-  gap: clamp(8px, 1vmin, 10px);
+  gap: var(--dw-gap-md);
   align-items: center;
-  padding: clamp(8px, 1vmin, 10px) clamp(10px, 1.2vmin, 12px);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
   border-radius: var(--dw-panel-radius);
   background: var(--dw-bg-panel);
@@ -504,26 +501,26 @@ onMounted(() => {
 .route-row__meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-1);
   min-width: 0;
 }
 
 .route-row__badge {
   display: inline-flex;
   align-self: flex-start;
-  padding: 1px 7px;
-  border-radius: 999px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-panel));
   border: 1px solid color-mix(in srgb, var(--dw-primary) 16%, var(--dw-border-light));
   color: var(--dw-primary);
-  font-size: clamp(10px, 1.05vmin, 11px);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: var(--dw-leading-relaxed);
 }
 
 .route-row__hint {
-  font-size: clamp(10px, 1.05vmin, 11px);
-  line-height: 1.45;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
   color: var(--dw-text-muted);
 }
 
@@ -535,7 +532,7 @@ onMounted(() => {
 .runtime-loading {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   margin: 0;
   font-size: var(--mp-caption);
   color: var(--dw-text-muted);
@@ -557,37 +554,37 @@ onMounted(() => {
 .runtime-spec-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(6px, 0.8vmin, 8px);
+  gap: var(--dw-gap);
 }
 
 .runtime-spec {
   display: flex;
   flex-direction: column;
-  gap: clamp(4px, 0.5vmin, 6px);
-  padding: clamp(8px, 1vmin, 10px) clamp(10px, 1.2vmin, 12px);
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-pad-control-lg);
   border: 1px solid var(--dw-border-light);
-  border-radius: calc(var(--dw-panel-radius) - 1px);
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
 }
 
 .runtime-spec__label {
-  font-size: clamp(10px, 1.05vmin, 11px);
+  font-size: var(--dw-text-xs);
   font-weight: 500;
   color: var(--dw-text-muted);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
 }
 
 .runtime-spec__value {
   font-size: var(--mp-sub);
   font-weight: 600;
   color: var(--dw-text);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   word-break: break-all;
 }
 
 .runtime-spec__value.is-mono {
-  font-family: var(--dw-mono, monospace);
-  font-size: clamp(11px, 1.15vmin, 12px);
+  font-family: var(--dw-mono);
+  font-size: var(--dw-text-sm);
   font-weight: 500;
 }
 

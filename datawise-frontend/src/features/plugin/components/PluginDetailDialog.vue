@@ -299,17 +299,17 @@ function alignAllToReferencePreset() {
 
 <style scoped>
 .plugin-detail__desc {
-  margin: 0 0 16px;
-  font-size: 0.9375rem;
-  line-height: 1.55;
+  margin: 0 0 var(--dw-space-8);
+  font-size: var(--dw-text-lg);
+  line-height: var(--dw-leading-loose);
   color: var(--dw-text-secondary);
 }
 
 .plugin-detail__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-8);
 }
 
 .plugin-detail__surfaces,
@@ -318,20 +318,20 @@ function alignAllToReferencePreset() {
 .plugin-detail__preset {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-8);
 }
 
 .plugin-detail__preset-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--dw-text-md);
   color: var(--dw-text-muted);
 }
 
 .plugin-detail__align-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .plugin-detail__align-btn {
@@ -341,23 +341,23 @@ function alignAllToReferencePreset() {
 .plugin-detail__usage-text,
 .plugin-detail__usage-meta {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--dw-text-xl);
   color: var(--dw-text-secondary);
 }
 
 .plugin-detail__usage-meta {
-  font-size: 0.8125rem;
+  font-size: var(--dw-text-md);
   color: var(--dw-text-muted);
 }
 
 .plugin-detail__label {
-  font-size: 0.8125rem;
+  font-size: var(--dw-text-md);
   color: var(--dw-text-muted);
 }
 
 .plugin-detail__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 </style>

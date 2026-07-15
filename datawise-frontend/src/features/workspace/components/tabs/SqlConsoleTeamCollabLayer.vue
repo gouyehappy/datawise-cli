@@ -367,11 +367,11 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 12px;
-  padding: 8px 12px;
+  gap: var(--dw-space-4) var(--dw-space-6);
+  padding: var(--dw-space-4) var(--dw-space-6);
   border-bottom: 1px solid var(--dw-border);
   background: color-mix(in srgb, var(--dw-accent) 6%, var(--dw-bg));
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .team-collab-banner__text {
@@ -380,7 +380,7 @@ onUnmounted(() => {
 
 .team-collab-banner__viewers {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
 }
 
 .team-collab-banner__avatar {
@@ -388,10 +388,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   width: 22px;
-  height: 22px;
-  border-radius: 999px;
+  height: var(--dw-control-h-xs);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
@@ -404,13 +404,13 @@ onUnmounted(() => {
 }
 
 .team-collab-banner__hint.is-warning {
-  color: #d97706;
+  color: var(--mp-tone-amber);
 }
 
 .team-collab-banner__actions {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   margin-left: auto;
 }
 </style>

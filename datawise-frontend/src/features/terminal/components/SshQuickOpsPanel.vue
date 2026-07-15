@@ -460,9 +460,9 @@ defineExpose({
 <style scoped>
 .ssh-quick-ops {
   flex-shrink: 0;
-  margin-bottom: 8px;
+  margin-bottom: var(--dw-space-4);
   border: 1px solid var(--dw-border);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: color-mix(in srgb, var(--dw-bg-panel) 92%, transparent);
   /* Keep the SSH pane tall enough to show menus / scrollback. */
   max-height: min(240px, 32vh);
@@ -474,20 +474,20 @@ defineExpose({
 .ssh-quick-ops__head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-3) var(--dw-space-5);
   min-height: 36px;
 }
 
 .ssh-quick-ops__toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
   border: none;
   background: transparent;
   color: var(--dw-text);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
   cursor: pointer;
   text-align: left;
@@ -497,7 +497,7 @@ defineExpose({
 .ssh-quick-ops__head-tools {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   min-width: 0;
   flex: 1;
 }
@@ -507,10 +507,10 @@ defineExpose({
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: var(--dw-icon-size-md);
+  height: var(--dw-icon-size-md);
   color: var(--dw-text-muted);
-  transition: transform 0.15s ease;
+  transition: transform var(--dw-duration) var(--dw-ease);
 }
 
 .ssh-quick-ops__chevron.is-expanded {
@@ -524,7 +524,7 @@ defineExpose({
 .ssh-quick-ops__summary {
   min-width: 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
@@ -534,14 +534,14 @@ defineExpose({
 .ssh-quick-ops__empty {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .ssh-quick-ops__body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 10px 8px;
+  gap: var(--dw-gap-sm);
+  padding: 0 var(--dw-space-5) var(--dw-space-4);
   min-height: 0;
   overflow: auto;
 }
@@ -549,12 +549,12 @@ defineExpose({
 .ssh-quick-ops__search {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   flex: 1;
   min-width: 0;
-  padding: 3px 10px;
+  padding: var(--dw-space-1) var(--dw-space-5);
   border: 1px solid var(--dw-border);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg);
   color: var(--dw-text-muted);
 }
@@ -564,18 +564,18 @@ defineExpose({
   border: none;
   background: transparent;
   color: var(--dw-text);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   outline: none;
 }
 
 .ssh-quick-ops__manage {
   flex-shrink: 0;
-  padding: 3px 10px;
+  padding: var(--dw-space-1) var(--dw-space-5);
   border: 1px solid var(--dw-border);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: transparent;
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 
@@ -587,7 +587,7 @@ defineExpose({
 .ssh-quick-ops__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
 }
 
@@ -604,34 +604,34 @@ defineExpose({
 .ssh-quick-ops__related {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding-top: 2px;
+  gap: var(--dw-gap);
+  padding-top: var(--dw-space-1);
   border-top: 1px solid color-mix(in srgb, var(--dw-border) 70%, transparent);
 }
 
 .ssh-quick-ops__related-label {
   flex: 0 0 auto;
-  padding-top: 4px;
+  padding-top: var(--dw-space-2);
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
 }
 
 .ssh-quick-ops__entries {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   min-width: 0;
-  padding: 4px 8px;
-  border-radius: 8px;
-  background: color-mix(in srgb, #0ea5e9 6%, var(--dw-bg));
-  border-left: 3px solid #0ea5e9;
+  padding: var(--dw-space-2) var(--dw-space-4);
+  border-radius: var(--dw-control-radius);
+  background: color-mix(in srgb, var(--dw-info) 6%, var(--dw-bg));
+  border-left: 3px solid var(--dw-info);
 }
 
 .ssh-quick-ops__entries-label {
   flex-shrink: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -639,7 +639,7 @@ defineExpose({
 .ssh-quick-ops__entries-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
   flex: 1;
 }
@@ -647,15 +647,15 @@ defineExpose({
 .ssh-quick-ops__entry {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   max-width: 280px;
-  padding: 3px 9px;
-  border: 1px solid color-mix(in srgb, #0ea5e9 22%, var(--dw-border));
-  border-radius: 999px;
+  padding: var(--dw-space-1) 9px;
+  border: 1px solid color-mix(in srgb, var(--dw-info) 22%, var(--dw-border));
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg);
   color: var(--dw-text);
-  font-size: 12px;
-  line-height: 1.3;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-snug);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -663,26 +663,26 @@ defineExpose({
 }
 
 .ssh-quick-ops__entry:hover {
-  border-color: #0ea5e9;
-  background: color-mix(in srgb, #0ea5e9 10%, var(--dw-bg));
+  border-color: var(--dw-info);
+  background: color-mix(in srgb, var(--dw-info) 10%, var(--dw-bg));
 }
 
 .ssh-quick-ops__entry.is-run {
-  border-color: color-mix(in srgb, #22c55e 30%, var(--dw-border));
+  border-color: color-mix(in srgb, var(--dw-success) 30%, var(--dw-border));
 }
 
 .ssh-quick-ops__chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
   max-width: 200px;
-  padding: 3px 9px;
+  padding: var(--dw-space-1) 9px;
   border: 1px solid color-mix(in srgb, var(--dw-border) 80%, transparent);
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg);
   color: var(--dw-text);
-  font-size: 12px;
-  line-height: 1.3;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-snug);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -698,20 +698,20 @@ defineExpose({
 }
 
 .ssh-quick-ops__chip.is-run {
-  border-color: color-mix(in srgb, #22c55e 28%, var(--dw-border));
+  border-color: color-mix(in srgb, var(--dw-success) 28%, var(--dw-border));
 }
 
 .ssh-quick-ops__chip.is-pinned {
-  border-color: color-mix(in srgb, #f59e0b 35%, var(--dw-border));
+  border-color: color-mix(in srgb, var(--dw-warning) 35%, var(--dw-border));
 }
 
 .ssh-quick-ops__chip.is-active {
-  border-color: #0ea5e9;
-  background: color-mix(in srgb, #0ea5e9 14%, var(--dw-bg));
+  border-color: var(--dw-info);
+  background: color-mix(in srgb, var(--dw-info) 14%, var(--dw-bg));
 }
 
 .ssh-quick-ops__chip.is-folder {
-  padding-right: 6px;
+  padding-right: var(--dw-space-3);
 }
 
 .ssh-quick-ops__pin {
@@ -719,7 +719,7 @@ defineExpose({
   flex-shrink: 0;
   color: var(--dw-text-muted);
   opacity: 0;
-  transition: opacity 0.12s ease;
+  transition: opacity var(--dw-duration-fast) var(--dw-ease);
 }
 
 .ssh-quick-ops__pin.is-active,
@@ -729,17 +729,17 @@ defineExpose({
 }
 
 .ssh-quick-ops__pin.is-active {
-  color: #d97706;
+  color: var(--mp-tone-amber);
 }
 
 .ssh-quick-ops__tag {
   flex-shrink: 0;
-  padding: 0 4px;
-  border-radius: 4px;
+  padding: 0 var(--dw-space-2);
+  border-radius: var(--dw-radius-sm);
   background: color-mix(in srgb, var(--dw-text-muted) 10%, transparent);
   color: var(--dw-text-muted);
-  font-size: 10px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .ssh-quick-ops__badge {
@@ -748,18 +748,18 @@ defineExpose({
   justify-content: center;
   min-width: 15px;
   height: 15px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: color-mix(in srgb, #0ea5e9 16%, transparent);
-  color: #0369a1;
-  font-size: 10px;
+  padding: 0 var(--dw-space-2);
+  border-radius: var(--dw-radius-pill);
+  background: color-mix(in srgb, var(--dw-info) 16%, transparent);
+  color: var(--dw-info-fg);
+  font-size: var(--dw-text-xs);
   font-weight: 700;
 }
 
 .ssh-quick-ops__folder-chevron {
   display: inline-flex;
   color: var(--dw-text-muted);
-  transition: transform 0.15s ease;
+  transition: transform var(--dw-duration) var(--dw-ease);
 }
 
 .ssh-quick-ops__folder-chevron.is-open {
@@ -768,8 +768,8 @@ defineExpose({
 
 .ssh-quick-ops__action-mark {
   flex-shrink: 0;
-  color: #16a34a;
-  font-size: 9px;
+  color: var(--dw-success);
+  font-size: var(--dw-text-2xs);
   line-height: 1;
 }
 
@@ -780,16 +780,16 @@ defineExpose({
 }
 
 .ssh-quick-ops__chip--related {
-  border-color: color-mix(in srgb, #22c55e 24%, var(--dw-border));
+  border-color: color-mix(in srgb, var(--dw-success) 24%, var(--dw-border));
 }
 
 .ssh-quick-ops__overview {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
-  padding: 0 10px 8px;
-  font-size: 11px;
+  gap: var(--dw-gap-sm) var(--dw-gap-md);
+  padding: 0 var(--dw-space-5) var(--dw-space-4);
+  font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
   border-bottom: 1px solid color-mix(in srgb, var(--dw-border) 70%, transparent);
 }
@@ -800,8 +800,8 @@ defineExpose({
 }
 
 .ssh-quick-ops__overview-item {
-  padding: 1px 6px;
-  border-radius: 999px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: color-mix(in srgb, var(--dw-text-muted) 10%, transparent);
 }
 
@@ -809,12 +809,12 @@ defineExpose({
 .ssh-quick-ops__related {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .ssh-quick-ops__history-label,
 .ssh-quick-ops__related-label {
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   color: var(--dw-text-muted);
 }
@@ -822,7 +822,7 @@ defineExpose({
 .ssh-quick-ops__chip--history {
   max-width: 240px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .ssh-quick-ops__chip--ghost {
@@ -832,7 +832,7 @@ defineExpose({
 
 .ssh-quick-ops-expand-enter-active,
 .ssh-quick-ops-expand-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity var(--dw-duration) var(--dw-ease), transform var(--dw-duration) var(--dw-ease);
 }
 
 .ssh-quick-ops-expand-enter-from,
@@ -842,6 +842,6 @@ defineExpose({
 }
 
 .is-collapsed .ssh-quick-ops__head {
-  padding-bottom: 6px;
+  padding-bottom: var(--dw-space-3);
 }
 </style>

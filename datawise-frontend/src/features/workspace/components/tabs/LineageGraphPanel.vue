@@ -160,77 +160,77 @@ watch(
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-6) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border-subtle);
 }
 
 .lineage-panel__title h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
 }
 
 .lineage-panel__subtitle {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: var(--dw-space-2) 0 0;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .lineage-panel__meta {
   display: inline-block;
-  margin-top: 4px;
+  margin-top: var(--dw-space-2);
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .lineage-panel__actions {
   display: flex;
-  gap: 8px;
+  gap: var(--dw-gap);
   flex-shrink: 0;
 }
 
 .lineage-panel__warnings {
-  padding: 8px 16px;
+  padding: var(--dw-space-4) var(--dw-space-8);
   background: color-mix(in srgb, var(--dw-warning) 12%, transparent);
   color: var(--dw-text-secondary);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .lineage-panel__impact {
-  padding: 8px 16px;
+  padding: var(--dw-space-4) var(--dw-space-8);
   border-bottom: 1px solid var(--dw-border-subtle);
 }
 
 .lineage-panel__impact h3 {
-  margin: 0 0 6px;
-  font-size: 12px;
+  margin: 0 0 var(--dw-space-3);
+  font-size: var(--dw-text-sm);
   font-weight: 600;
 }
 
 .lineage-panel__impact-state {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
 }
 
 .lineage-panel__impact-list {
   margin: 0;
   padding-left: 18px;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .lineage-panel__impact-list li {
-  margin-bottom: 4px;
+  margin-bottom: var(--dw-space-2);
 }
 
 .lineage-panel__impact-stale {
-  margin-left: 8px;
+  margin-left: var(--dw-space-4);
   color: var(--dw-warning);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .lineage-panel__state {
-  padding: 24px;
+  padding: var(--dw-space-10);
   color: var(--dw-text-muted);
 }
 </style>

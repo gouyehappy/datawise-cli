@@ -23,8 +23,8 @@ const {t} = useI18n()
 .ai-chat-loading {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px 20px;
+  gap: var(--dw-space-7);
+  padding: var(--dw-space-8) var(--dw-space-9);
   min-width: min(360px, 100%);
 }
 
@@ -35,7 +35,7 @@ const {t} = useI18n()
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   background: linear-gradient(
       145deg,
       color-mix(in srgb, var(--dw-primary) 16%, var(--dw-bg)),
@@ -48,7 +48,7 @@ const {t} = useI18n()
 .ai-chat-loading__ring {
   position: absolute;
   inset: -3px;
-  border-radius: 14px;
+  border-radius: var(--dw-radius-xl);
   border: 2px solid transparent;
   border-top-color: var(--dw-primary);
   animation: ring-spin 2.4s linear infinite;
@@ -57,26 +57,26 @@ const {t} = useI18n()
 .ai-chat-loading__text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-1);
   min-width: 0;
   flex: 1;
 }
 
 .ai-chat-loading__label {
   color: var(--dw-text);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 600;
 }
 
 .ai-chat-loading__hint {
   color: var(--dw-text-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .ai-chat-loading__dots {
   display: inline-flex;
-  gap: 5px;
+  gap: var(--dw-space-2);
   flex-shrink: 0;
 }
 

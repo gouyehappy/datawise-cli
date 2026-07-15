@@ -85,7 +85,7 @@ function formatTime(value?: string | null): string {
 .query-library__status,
 .query-library__empty {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--dw-text-md);
     color: var(--dw-text-muted);
 }
 
@@ -95,7 +95,7 @@ function formatTime(value?: string | null): string {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--dw-gap-md);
     max-height: 400px;
     overflow: auto;
 }
@@ -103,21 +103,21 @@ function formatTime(value?: string | null): string {
 .query-library__head {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: var(--dw-text-sm);
     color: var(--dw-text-muted);
 }
 
 .query-library__note {
-    margin: 4px 0;
-    font-size: 12px;
+    margin: var(--dw-space-2) 0;
+    font-size: var(--dw-text-sm);
 }
 
 .query-library__sql {
     margin: 0;
-    padding: 8px;
-    border-radius: 6px;
+    padding: var(--dw-space-4);
+    border-radius: var(--dw-control-radius-sm);
     background: var(--dw-bg-subtle);
-    font-size: 11px;
+    font-size: var(--dw-text-xs);
     white-space: pre-wrap;
     max-height: 120px;
     overflow: auto;

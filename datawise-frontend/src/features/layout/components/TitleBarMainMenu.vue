@@ -230,15 +230,13 @@ defineExpose({
   position: fixed;
   left: calc(var(--dw-rail-width) + 8px);
   top: 10px;
-  z-index: 3300;
+  z-index: var(--dw-z-max);
   width: min(300px, calc(100vw - 24px));
-  padding: 5px 0;
+  padding: var(--dw-space-2) 0;
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
-  box-shadow:
-      0 16px 40px rgba(15, 23, 42, 0.16),
-      0 0 0 1px color-mix(in srgb, var(--dw-text) 4%, transparent);
+  box-shadow: var(--dw-menu-shadow);
 }
 
 .titlebar-main-menu--anchored {
@@ -249,12 +247,12 @@ defineExpose({
 .titlebar-main-menu__section {
   display: flex;
   flex-direction: column;
-  padding: 2px 0;
+  padding: var(--dw-space-1) 0;
 }
 
 .titlebar-main-menu__divider {
   height: 1px;
-  margin: 4px 0;
+  margin: var(--dw-space-2) 0;
   background: var(--dw-border-light);
 }
 
@@ -262,17 +260,17 @@ defineExpose({
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   width: 100%;
-  min-height: 30px;
-  padding: 0 12px;
+  min-height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-6);
   border: none;
   background: transparent;
   color: var(--dw-text);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   text-align: left;
   cursor: pointer;
-  transition: background 0.1s ease;
+  transition: var(--dw-transition-bg);
 }
 
 .titlebar-main-menu__item:hover,
@@ -287,13 +285,13 @@ defineExpose({
 
 .titlebar-main-menu__badge {
   justify-self: end;
-  padding: 1px 6px;
-  border-radius: 999px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-primary-soft);
   color: var(--dw-primary);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: var(--dw-leading-relaxed);
 }
 
 .titlebar-main-menu__icon {
@@ -316,19 +314,19 @@ defineExpose({
 
 .titlebar-main-menu__shortcut {
   justify-self: end;
-  padding: 1px 6px;
+  padding: 1px var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
-  border-radius: 5px;
+  border-radius: var(--dw-control-radius-sm);
   background: color-mix(in srgb, var(--dw-bg) 88%, var(--dw-text) 4%);
   color: var(--dw-text-muted);
   font-family: inherit;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading);
 }
 
 .titlebar-main-menu__arrow {
-  width: 10px;
-  height: 10px;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
   margin-left: auto;
   opacity: 0.55;
 }
@@ -345,25 +343,25 @@ defineExpose({
   width: min(320px, calc(100vw - 48px));
   max-height: min(360px, 50vh);
   overflow: auto;
-  padding: 5px 0;
+  padding: var(--dw-space-2) 0;
   border: 1px solid var(--dw-border-light);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-panel);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+  box-shadow: var(--dw-shadow);
 }
 
 .titlebar-main-menu__flyout-item {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: var(--dw-space-1);
   width: 100%;
-  padding: 7px 12px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   border: none;
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background 0.1s ease;
+  transition: var(--dw-transition-bg);
 }
 
 .titlebar-main-menu__flyout-item:hover,
@@ -372,7 +370,7 @@ defineExpose({
 }
 
 .titlebar-main-menu__flyout-name {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 500;
   color: var(--dw-text);
 }
@@ -380,8 +378,8 @@ defineExpose({
 .titlebar-main-menu__flyout-path {
   max-width: 100%;
   font-family: var(--dw-mono);
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
   color: var(--dw-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -390,17 +388,17 @@ defineExpose({
 
 .titlebar-main-menu__flyout-empty {
   margin: 0;
-  padding: 10px 12px;
+  padding: var(--dw-pad-control-lg);
   color: var(--dw-text-muted);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
 }
 
 .titlebar-main-menu__flyout-item--accent {
   border-top: 1px solid var(--dw-border-light);
-  margin-top: 2px;
+  margin-top: var(--dw-space-1);
   padding-top: 9px;
   color: var(--dw-primary);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 500;
 }
 </style>

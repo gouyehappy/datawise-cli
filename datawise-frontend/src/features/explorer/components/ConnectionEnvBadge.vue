@@ -35,11 +35,11 @@ const label = computed(() => resolveConnectionEnvTreeLabel(props.env, props.envC
     align-items: center;
     justify-content: center;
     min-width: 30px;
-    height: 18px;
-    padding: 0 6px;
-    border-radius: 4px;
+    height: var(--dw-icon-size-lg);
+    padding: 0 var(--dw-space-3);
+    border-radius: var(--dw-radius-sm);
     border: 1px solid transparent;
-    font-size: 10px;
+    font-size: var(--dw-text-xs);
     font-weight: 600;
     line-height: 1;
     letter-spacing: 0.04em;
@@ -47,15 +47,15 @@ const label = computed(() => resolveConnectionEnvTreeLabel(props.env, props.envC
 }
 
 .conn-env-badge--prod {
-    background: color-mix(in srgb, #dc2626 10%, var(--dw-bg));
-    color: #b91c1c;
-    border-color: color-mix(in srgb, #dc2626 24%, transparent);
+    background: color-mix(in srgb, var(--dw-danger) 10%, var(--dw-bg));
+    color: var(--dw-danger-fg);
+    border-color: color-mix(in srgb, var(--dw-danger) 24%, transparent);
 }
 
 .conn-env-badge--staging {
-    background: color-mix(in srgb, #d97706 10%, var(--dw-bg));
-    color: #b45309;
-    border-color: color-mix(in srgb, #d97706 24%, transparent);
+    background: color-mix(in srgb, var(--mp-tone-amber) 10%, var(--dw-bg));
+    color: var(--dw-warning-fg);
+    border-color: color-mix(in srgb, var(--mp-tone-amber) 24%, transparent);
 }
 
 .conn-env-badge--dev {
@@ -65,7 +65,7 @@ const label = computed(() => resolveConnectionEnvTreeLabel(props.env, props.envC
 }
 
 .conn-env-badge--custom {
-    background: color-mix(in srgb, #64748b 8%, var(--dw-bg));
+    background: color-mix(in srgb, var(--dw-text-secondary) 8%, var(--dw-bg));
     color: var(--dw-text-secondary);
     border-color: color-mix(in srgb, var(--dw-border) 90%, transparent);
 }

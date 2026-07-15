@@ -26,7 +26,11 @@ const glyphSize = computed(() =>
         : boxSize.value,
 )
 const frameRadius = computed(() =>
-    boxSize.value >= 44 ? 12 : boxSize.value >= 32 ? 10 : 6,
+    boxSize.value >= 44
+        ? 'var(--dw-radius-xl)'
+        : boxSize.value >= 32
+            ? 'var(--dw-radius-lg)'
+            : 'var(--dw-control-radius-sm)',
 )
 const tint = computed(() => dbIconTint(props.dbType as DbType, isDark.value))
 
@@ -49,7 +53,7 @@ const labelFontSize = computed(() => {
         ? {
             width: `${boxSize}px`,
             height: `${boxSize}px`,
-            borderRadius: `${frameRadius}px`,
+            borderRadius: frameRadius,
             background: tint,
           }
         : {

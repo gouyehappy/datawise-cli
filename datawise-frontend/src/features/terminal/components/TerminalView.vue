@@ -50,7 +50,7 @@ defineExpose({
 
 .terminal--native {
   border: 1px solid var(--terminal-border, #2d3340);
-  border-radius: 10px;
+  border-radius: var(--dw-radius-lg);
   background: var(--terminal-bg, #1a1d24);
 }
 
@@ -67,7 +67,7 @@ defineExpose({
 
 .terminal--native.terminal--compact {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
 }
 
 .terminal__mock {
@@ -77,6 +77,6 @@ defineExpose({
 
 .terminal__mock--compact {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
 }
 </style>

@@ -14,7 +14,9 @@ import {
     type ThemeAppearance,
     type ThemeMode,
     type ThemePreferences,
+    type UiSkin,
 } from '@/features/settings/constants/theme-presets'
+import {isRegisteredUiSkin, resolveUiSkinDefinition} from '@/core/ui-skin'
 import {APP_CONFIG_KEY, resolveAppConfigStorageKey} from '@/shared/config/app-config-storage-scope'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import {
@@ -125,6 +127,10 @@ function isThemeAppearance(value: unknown): value is ThemeAppearance {
     return typeof value === 'string' && APPEARANCES.includes(value as ThemeAppearance)
 }
 
+function isUiSkin(value: unknown): value is UiSkin {
+    return isRegisteredUiSkin(value)
+}
+
 function withAlpha(hex: string, alpha: number): string {
     const normalized = hex.replace('#', '')
     const value = normalized.length === 3
@@ -142,6 +148,19 @@ function readAppearance(parsed: Partial<ThemePreferences> & { mode?: ThemeMode }
     return 'light'
 }
 
+export function normalizeThemePreferences(
+    parsed: Partial<ThemePreferences> & { mode?: ThemeMode } = {},
+): ThemePreferences {
+    return {
+        appearance: readAppearance(parsed),
+        background: isBackgroundTone(parsed.background)
+            ? parsed.background
+            : DEFAULT_THEME_PREFERENCES.background,
+        primary: isPrimaryTone(parsed.primary) ? parsed.primary : DEFAULT_THEME_PREFERENCES.primary,
+        uiSkin: isUiSkin(parsed.uiSkin) ? parsed.uiSkin : DEFAULT_THEME_PREFERENCES.uiSkin,
+    }
+}
+
 function clearManagedThemeVars(root: HTMLElement) {
     for (const name of MANAGED_THEME_VARS) {
         root.style.removeProperty(name)
@@ -152,12 +171,18 @@ function buildThemeVars(
     mode: ThemeMode,
     background: BackgroundTone,
     primaryTone: PrimaryTone,
+    uiSkin: UiSkin = 'classic',
 ): Record<string, string> {
     const primary = PRIMARY_PRESETS[primaryTone] ?? PRIMARY_PRESETS.violet
     const surfaces = mode === 'dark'
         ? BACKGROUND_PRESETS_DARK[background] ?? BACKGROUND_PRESETS_DARK.default
         : BACKGROUND_PRESETS_LIGHT[background] ?? BACKGROUND_PRESETS_LIGHT.default
     const ui = mode === 'dark' ? DARK_UI : LIGHT_UI
+    const skinDef = resolveUiSkinDefinition(uiSkin)
+    const panelShadow = skinDef.panelShadow === 'none' ? 'none' : ui.panelShadow
+
+    const chrome = mode === 'dark' ? surfaces.rail : LIGHT_UI.chrome
+    const isIde = uiSkin === 'ide'
 
     const vars: Record<string, string> = {
         '--dw-primary': primary.primary,
@@ -176,11 +201,11 @@ function buildThemeVars(
         '--dw-bg-hover': surfaces.hover,
         '--dw-bg-rail': surfaces.rail,
         '--dw-bg-editor': surfaces.bg,
-        '--dw-bg-chrome': mode === 'dark' ? surfaces.rail : LIGHT_UI.chrome,
+        '--dw-bg-chrome': chrome,
         '--dw-border': ui.border,
         '--dw-border-light': ui.borderLight,
         '--dw-panel-border': ui.panelBorder,
-        '--dw-panel-shadow': ui.panelShadow,
+        '--dw-panel-shadow': panelShadow,
         '--dw-text': ui.text,
         '--dw-text-secondary': ui.textSecondary,
         '--dw-text-muted': ui.textMuted,
@@ -192,14 +217,23 @@ function buildThemeVars(
         '--dw-tool-pill-active': mode === 'dark'
             ? DARK_UI.toolPillActive
             : 'color-mix(in srgb, var(--dw-text) 9%, var(--dw-bg-hover))',
-        '--dw-tab-bar-bg': ui.tabBarBg,
-        '--dw-tab-bar-border': ui.tabBarBorder,
-        '--dw-tab-active-bg': ui.tabActiveBg,
-        '--dw-tab-active-border': ui.tabActiveBorder,
-        '--dw-tab-active-text': ui.tabActiveText,
+        // IDE：激活 Tab 贴合编辑器底；classic 保留描边胶囊色
+        '--dw-tab-bar-bg': isIde ? chrome : ui.tabBarBg,
+        '--dw-tab-bar-border': isIde ? ui.panelBorder : ui.tabBarBorder,
+        '--dw-tab-active-bg': isIde ? surfaces.bg : ui.tabActiveBg,
+        '--dw-tab-active-border': isIde ? 'transparent' : ui.tabActiveBorder,
+        '--dw-tab-active-text': isIde ? ui.text : ui.tabActiveText,
         '--dw-tab-inactive-text': ui.tabInactiveText,
-        '--dw-tab-hover-bg': ui.tabHoverBg,
-        '--dw-tab-close-hover': ui.tabCloseHover,
+        '--dw-tab-hover-bg': isIde
+            ? (mode === 'dark'
+                ? 'color-mix(in srgb, #fff 5%, transparent)'
+                : 'color-mix(in srgb, var(--dw-text) 6%, transparent)')
+            : ui.tabHoverBg,
+        '--dw-tab-close-hover': isIde
+            ? (mode === 'dark'
+                ? 'color-mix(in srgb, #fff 10%, transparent)'
+                : 'color-mix(in srgb, var(--dw-text) 10%, transparent)')
+            : ui.tabCloseHover,
         '--dw-shadow': ui.shadow,
         '--dw-menu-shadow': ui.menuShadow,
     }
@@ -216,11 +250,7 @@ export function readStoredThemePreferences(): ThemePreferences {
         const raw = localStorage.getItem(key)
         if (!raw) return {...DEFAULT_THEME_PREFERENCES}
         const parsed = JSON.parse(raw) as Partial<ThemePreferences> & { mode?: ThemeMode }
-        return {
-            appearance: readAppearance(parsed),
-            background: isBackgroundTone(parsed.background) ? parsed.background : DEFAULT_THEME_PREFERENCES.background,
-            primary: isPrimaryTone(parsed.primary) ? parsed.primary : DEFAULT_THEME_PREFERENCES.primary,
-        }
+        return normalizeThemePreferences(parsed)
     } catch {
         return {...DEFAULT_THEME_PREFERENCES}
     }
@@ -240,15 +270,7 @@ export function readThemePreferencesOnBoot(): ThemePreferences {
         if (raw) {
             const parsed = JSON.parse(raw) as { theme?: Partial<ThemePreferences> & { mode?: ThemeMode } }
             if (parsed.theme) {
-                return {
-                    appearance: readAppearance(parsed.theme),
-                    background: isBackgroundTone(parsed.theme.background)
-                        ? parsed.theme.background
-                        : DEFAULT_THEME_PREFERENCES.background,
-                    primary: isPrimaryTone(parsed.theme.primary)
-                        ? parsed.theme.primary
-                        : DEFAULT_THEME_PREFERENCES.primary,
-                }
+                return normalizeThemePreferences(parsed.theme)
             }
         }
     } catch {
@@ -279,12 +301,14 @@ export function applyThemePreferences(prefs: ThemePreferences, resolvedMode?: Th
     const root = document.documentElement
     const mode = resolvedMode ?? resolveThemeMode(prefs.appearance, getSystemPrefersDark())
 
+    const skin = prefs.uiSkin ?? DEFAULT_THEME_PREFERENCES.uiSkin
     clearManagedThemeVars(root)
     root.setAttribute('data-theme', mode)
     root.setAttribute('data-bg-tone', prefs.background)
+    root.setAttribute('data-ui-skin', skin)
     root.style.colorScheme = mode
 
-    const vars = buildThemeVars(mode, prefs.background, prefs.primary)
+    const vars = buildThemeVars(mode, prefs.background, prefs.primary, skin)
     for (const [name, value] of Object.entries(vars)) {
         root.style.setProperty(name, value)
     }

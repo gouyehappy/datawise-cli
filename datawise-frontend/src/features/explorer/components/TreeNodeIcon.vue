@@ -126,34 +126,34 @@ const treeIcon = computed(() => resolveTreeIcon(props.type, props.expanded, prop
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  color: #fff;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
+  border-radius: var(--dw-radius-xs);
+  color: var(--dw-on-accent);
   border: 1px solid var(--dw-bg-panel);
   box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--dw-text) 8%, transparent);
 }
 
 .conn-health--ok {
-  background: #22c55e;
+  background: var(--dw-success);
 }
 
 .conn-health--error {
-  background: #ef4444;
+  background: var(--dw-danger);
 }
 
 .node-pin-mark {
   position: absolute;
   top: -2px;
   left: -3px;
-  z-index: 2;
+  z-index: var(--dw-z-raised);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  color: #fff;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
+  border-radius: var(--dw-radius-sm);
+  color: var(--dw-on-accent);
   background: var(--dw-primary);
   border: 1px solid var(--dw-bg-panel);
   box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--dw-text) 8%, transparent);
@@ -171,13 +171,13 @@ const treeIcon = computed(() => resolveTreeIcon(props.type, props.expanded, prop
 
 .node-icon--group {
   width: 24px;
-  height: 24px;
+  height: var(--dw-control-h-xs);
 }
 
 .node-icon--database {
   width: 21px;
   height: 21px;
-  color: #0891b2;
+  color: var(--dw-info-fg);
 }
 
 .node-icon--database svg {
@@ -192,28 +192,28 @@ const treeIcon = computed(() => resolveTreeIcon(props.type, props.expanded, prop
 
 .node-icon--folder {
   width: 22px;
-  height: 22px;
+  height: var(--dw-control-h-xs);
 }
 
 .node-icon--table,
 .node-icon--view {
   width: 21px;
   height: 21px;
-  color: #7c3aed;
+  color: var(--dw-primary);
 }
 
 .node-icon--columns {
   width: 21px;
   height: 21px;
-  color: #6366f1;
+  color: var(--mp-tone-indigo);
 }
 
 .node-icon--keys {
-  color: #ea580c;
+  color: var(--mp-tone-amber);
 }
 
 .node-icon--indexes {
-  color: #0d9488;
+  color: var(--mp-tone-emerald);
 }
 
 .node-icon--column {
@@ -223,24 +223,24 @@ const treeIcon = computed(() => resolveTreeIcon(props.type, props.expanded, prop
 }
 
 .node-icon--primary_key {
-  color: #ea580c;
+  color: var(--mp-tone-amber);
 }
 
 .node-icon--sql_file {
-  color: #2563eb;
+  color: var(--dw-link);
 }
 
 .node-icon--view_model {
-  color: #7c3aed;
+  color: var(--dw-primary);
 }
 
 .node-icon--kafka-feature {
-  color: #0d9488;
+  color: var(--mp-tone-emerald);
 }
 
 .node-icon--redis-feature,
 .node-icon--redis-browser {
-  color: #dc2626;
+  color: var(--dw-danger);
 }
 
 .node-icon--load_more {
@@ -248,8 +248,8 @@ const treeIcon = computed(() => resolveTreeIcon(props.type, props.expanded, prop
 }
 
 .node-load-more-spinner {
-  width: 12px;
-  height: 12px;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
   border: 1.5px solid color-mix(in srgb, var(--dw-text-muted) 35%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;

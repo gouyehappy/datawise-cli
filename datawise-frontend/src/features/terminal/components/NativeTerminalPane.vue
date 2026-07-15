@@ -49,8 +49,8 @@ onMounted(async () => {
     scrollback: 5000,
     theme: {
       background: '#1a1d24',
-      foreground: '#e5e7eb',
-      cursor: '#22c55e',
+      foreground: 'var(--dw-border)',
+      cursor: 'var(--dw-success)',
       selectionBackground: '#264f78',
     },
   })
@@ -109,7 +109,7 @@ defineExpose({focus: focusTerminal, clear: clearTerminal})
   width: 100%;
   height: 100%;
   min-height: 0;
-  padding: 4px 2px 2px;
+  padding: var(--dw-space-2) var(--dw-space-1) var(--dw-space-1);
   background: #1a1d24;
 }
 

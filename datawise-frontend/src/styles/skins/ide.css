@@ -1,0 +1,236 @@
+/**
+ * IDE 工作台壳层覆盖（classic 不写任何覆盖，走 :root / theme.service 原值）
+ * 由 ui-skin 插件注册表挂载：html[data-ui-skin='ide']
+ */
+
+html[data-ui-skin='ide'] {
+    --mp-radius: 4px;
+    --dw-panel-gap: 0;
+    --dw-shell-padding: 0;
+    --dw-panel-radius: 0;
+    --dw-splitter-size: 4px;
+    --dw-tool-stripe-width: 52px;
+    --dw-tool-pill-radius: 4px;
+    --dw-status-height: var(--dw-control-h-xs);
+    --dw-titlebar-height: 36px;
+    --dw-tab-height: 35px;
+    --dw-tab-pill-height: 35px;
+    --dw-tab-pill-radius: 0;
+    --dw-tab-gap: 0;
+    --dw-tab-title-size: 12px;
+    --dw-tab-title-line: 16px;
+    --dw-toolbar-height: var(--dw-tab-height);
+    --dw-radius-xs: 1px;
+    --dw-radius-sm: 2px;
+    --dw-radius-md: 4px;
+    --dw-radius-lg: 6px;
+    --dw-radius-xl: 6px;
+    --dw-control-radius: 4px;
+    --dw-control-radius-sm: 3px;
+    --dw-input-radius: 4px;
+    --dw-btn-radius: 4px;
+    --dw-menu-radius: 6px;
+    --dw-menu-item-radius: 4px;
+    --dw-modal-radius: 6px;
+    --dw-titlebar-chip-radius: 3px;
+    --mp-title: 16px;
+    --mp-title-sm: 15px;
+    --mp-section: 13px;
+    --mp-sub: 12px;
+    --mp-body: 12px;
+    --mp-caption: 10px;
+    --mp-stat-num: 20px;
+    --dw-space-3: 4px;
+    --dw-space-4: 6px;
+    --dw-space-5: 8px;
+    --dw-space-6: 10px;
+}
+
+html[data-ui-skin='ide'] .app--desktop {
+    --dw-titlebar-height: 36px;
+}
+
+html[data-ui-skin='ide'] .shell-main {
+    border-left: 1px solid var(--dw-panel-border);
+    background: var(--dw-bg);
+}
+
+html[data-ui-skin='ide'] .tool-stripe--right {
+    border-left: 1px solid var(--dw-panel-border);
+}
+
+html[data-ui-skin='ide'] .tool-btn--stack.active::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 var(--dw-radius-xs) var(--dw-radius-xs) 0;
+    background: var(--dw-primary);
+}
+
+html[data-ui-skin='ide'] .tool-stripe--right .tool-btn--stack.active::before {
+    left: auto;
+    right: -3px;
+    border-radius: var(--dw-radius-xs) 0 0 var(--dw-radius-xs);
+}
+
+html[data-ui-skin='ide'] .tool-btn--brand.active::before {
+    display: none;
+}
+
+html[data-ui-skin='ide'] .desktop-titlebar {
+    border-bottom: 1px solid var(--dw-panel-border);
+}
+
+html[data-ui-skin='ide'] .desktop-titlebar__controls {
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+}
+
+html[data-ui-skin='ide'] .desktop-titlebar__btn {
+    width: 46px;
+    height: 100%;
+    border-radius: 0;
+}
+
+html[data-ui-skin='ide'] .status-bar {
+    background: var(--dw-bg-muted);
+}
+
+html[data-ui-skin='ide'] .terminal-pane {
+    border-top: 1px solid var(--dw-panel-border);
+}
+
+html[data-ui-skin='ide'] .app-brand-logo {
+    border-radius: var(--dw-control-radius-sm);
+    box-shadow: none;
+}
+
+html[data-ui-skin='ide'] .app-brand-logo--titlebar,
+html[data-ui-skin='ide'] .app-brand-logo--sm {
+    border-radius: var(--dw-control-radius-sm);
+}
+
+/* ---- IDE 编辑器 Tab：直角平铺、贴满栏高、顶缘高亮（VS Code / IDEA 系） ---- */
+html[data-ui-skin='ide'] .dw-tab-bar {
+    height: var(--dw-tab-height);
+    padding: 0;
+    border-bottom-color: var(--dw-tab-bar-border);
+}
+
+html[data-ui-skin='ide'] .dw-tab-scroll {
+    gap: 0;
+    padding: 0;
+    align-items: stretch;
+    height: 100%;
+}
+
+html[data-ui-skin='ide'] .dw-tab {
+    height: 100%;
+    max-width: 200px;
+    min-width: 72px;
+    padding: 0 var(--dw-space-5) 0 var(--dw-space-4);
+    border: 0;
+    border-radius: 0;
+    border-right: 1px solid color-mix(in srgb, var(--dw-tab-bar-border) 85%, transparent);
+    background: transparent;
+    box-shadow: inset 0 -1px 0 var(--dw-tab-bar-border);
+}
+
+html[data-ui-skin='ide'] .dw-tab:hover:not(.active) {
+    background: var(--dw-tab-hover-bg);
+    color: var(--dw-text);
+}
+
+html[data-ui-skin='ide'] .dw-tab.active,
+html[data-ui-skin='ide'] .dw-tab.active:hover {
+    background: var(--dw-tab-active-bg);
+    border-right-color: var(--dw-tab-bar-border);
+    color: var(--dw-tab-active-text);
+    box-shadow:
+        inset 0 2px 0 var(--dw-primary),
+        inset 0 -1px 0 var(--dw-tab-active-bg);
+    z-index: 1;
+}
+
+html[data-ui-skin='ide'] .dw-tab__close {
+    width: 16px;
+    height: 16px;
+    margin-left: var(--dw-space-2);
+    border-radius: var(--dw-radius-xs);
+    opacity: 0;
+}
+
+html[data-ui-skin='ide'] .dw-tab:hover .dw-tab__close,
+html[data-ui-skin='ide'] .dw-tab.active .dw-tab__close {
+    opacity: 0.65;
+}
+
+html[data-ui-skin='ide'] .dw-tab__close:hover {
+    opacity: 1;
+    background: var(--dw-tab-close-hover);
+}
+
+html[data-ui-skin='ide'] .dw-tab-add {
+    width: var(--dw-tab-height);
+    height: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    border-right: 1px solid color-mix(in srgb, var(--dw-tab-bar-border) 85%, transparent);
+}
+
+html[data-ui-skin='ide'] .dw-tab-overflow {
+    height: 100%;
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 1px solid var(--dw-tab-bar-border);
+}
+
+html[data-ui-skin='ide'] .dw-tab-overflow__btn {
+    width: var(--dw-tab-height);
+    height: 100%;
+    border-radius: 0;
+}
+
+html[data-ui-skin='ide'] .dw-ide-tab-strip {
+    gap: 0;
+    padding: 0;
+    min-height: var(--dw-tab-height);
+}
+
+html[data-ui-skin='ide'] .dw-ide-tab,
+html[data-ui-skin='ide'] .team-tab,
+html[data-ui-skin='ide'] .migration-panel__tab,
+html[data-ui-skin='ide'] .sql-monitor__tab,
+html[data-ui-skin='ide'] .plugin-dev-tab {
+    border-radius: 0;
+    border-color: transparent;
+}
+
+html[data-ui-skin='ide'] .dw-ide-tab.active,
+html[data-ui-skin='ide'] .dw-ide-tab.is-active,
+html[data-ui-skin='ide'] .team-tab.is-active,
+html[data-ui-skin='ide'] .migration-panel__tab.is-active,
+html[data-ui-skin='ide'] .sql-monitor__tab--active,
+html[data-ui-skin='ide'] .plugin-dev-tab.is-active {
+    border-color: transparent;
+    box-shadow: inset 0 2px 0 var(--dw-primary);
+}
+
+/* 设置里的分段控件仍保持紧凑圆角，不跟编辑器 Tab 抢风格 */
+html[data-ui-skin='ide'] .modal-segment__btn,
+html[data-ui-skin='ide'] .mp-segment__btn,
+html[data-ui-skin='ide'] .mode-segment__btn {
+    border-radius: var(--dw-control-radius-sm);
+}
+
+html[data-ui-skin='ide'] .modal-segment__btn.is-active,
+html[data-ui-skin='ide'] .mp-segment__btn.is-active,
+html[data-ui-skin='ide'] .mode-segment__btn.is-active {
+    box-shadow: none;
+    border-color: var(--dw-primary-border);
+}

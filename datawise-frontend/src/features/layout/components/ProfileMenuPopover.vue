@@ -62,13 +62,13 @@ const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
   position: fixed;
   left: calc(var(--dw-rail-width) + 8px);
   top: 10px;
-  z-index: 1200;
+  z-index: var(--dw-z-toast);
   width: 268px;
-  padding: 6px;
+  padding: var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   background: var(--dw-bg);
-  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--dw-shadow-float);
 }
 
 .profile-menu--anchored {
@@ -79,8 +79,8 @@ const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
 .menu-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 10px 8px;
+  gap: var(--dw-gap-md);
+  padding: var(--dw-space-5) var(--dw-space-5) var(--dw-space-4);
 }
 
 .menu-avatar {
@@ -89,16 +89,16 @@ const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-  color: #fff;
-  font-size: 18px;
+  border-radius: var(--dw-radius-lg);
+  background: linear-gradient(135deg, var(--dw-primary), var(--dw-primary-hover));
+  color: var(--dw-on-accent);
+  font-size: var(--dw-text-2xl);
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .menu-avatar--guest {
-  background: linear-gradient(135deg, #94a3b8, #64748b);
+  background: linear-gradient(135deg, var(--dw-text-muted), var(--dw-text-secondary));
 }
 
 .menu-user {
@@ -108,12 +108,12 @@ const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
 .menu-name-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
 }
 
 .menu-name {
-  font-size: 14px;
+  font-size: var(--dw-text-xl);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -122,19 +122,19 @@ const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
 
 .menu-guest-badge {
   flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: 999px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: color-mix(in srgb, var(--dw-text-muted) 12%, transparent);
   color: var(--dw-text-secondary);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: var(--dw-leading-relaxed);
 }
 
 .menu-email {
-  margin-top: 2px;
+  margin-top: var(--dw-space-1);
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -143,23 +143,23 @@ const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
 .menu-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-1);
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   width: 100%;
-  min-height: 34px;
-  padding: 0 10px;
+  min-height: var(--dw-control-h);
+  padding: 0 var(--dw-space-5);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: transparent;
   color: var(--dw-text-secondary);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   text-align: left;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
 }
 
 .menu-item svg {
@@ -181,18 +181,18 @@ const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
 
 .menu-badge {
   flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: 999px;
+  padding: 1px var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-primary-soft);
   color: var(--dw-primary);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: var(--dw-leading-relaxed);
 }
 
 .menu-divider {
   height: 1px;
-  margin: 4px 8px;
+  margin: var(--dw-space-2) var(--dw-space-4);
   background: var(--dw-border-light);
 }
 </style>

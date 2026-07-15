@@ -30,11 +30,6 @@
     flex: 1;
     min-width: 0;
     min-height: 0;
-    border: 1px solid var(--dw-panel-border);
-    border-radius: var(--dw-panel-radius);
-    background: var(--dw-bg-editor);
-    box-shadow: var(--dw-panel-shadow);
-    overflow: hidden;
 }
 
 .module-panel > :deep(*),

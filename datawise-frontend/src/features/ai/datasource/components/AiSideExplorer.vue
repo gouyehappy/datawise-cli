@@ -111,14 +111,14 @@ function activate(panel: AiSidePanel) {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  gap: 2px;
-  padding: 2px;
+  gap: var(--dw-space-1);
+  padding: var(--dw-space-1);
 }
 
 .ai-side-stack__history,
 .ai-side-stack__scope {
   min-height: 0;
-  border-radius: calc(var(--dw-panel-radius) - 2px);
+  border-radius: var(--dw-control-radius-sm);
   overflow: hidden;
 }
 </style>

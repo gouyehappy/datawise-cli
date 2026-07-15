@@ -384,67 +384,67 @@ async function openNode(node: TableRelationGraphNode) {
 
 <style scoped>
 .relation-graph {
-  --rg-canvas-bg: color-mix(in srgb, var(--dw-bg-editor) 94%, #e2e8f0 6%);
-  --rg-grid-stroke: color-mix(in srgb, var(--dw-border) 70%, #94a3b8 30%);
-  --rg-node-fill: #ffffff;
-  --rg-node-stroke: color-mix(in srgb, var(--dw-border) 75%, #64748b 25%);
-  --rg-header-fill: color-mix(in srgb, var(--dw-bg-muted) 45%, #fff 55%);
-  --rg-center-header: color-mix(in srgb, #38bdf8 12%, #fff 88%);
-  --rg-text: #0f172a;
-  --rg-text-type: #475569;
-  --rg-text-more: #64748b;
+  --rg-canvas-bg: color-mix(in srgb, var(--dw-bg-editor) 94%, var(--dw-border-light) 6%);
+  --rg-grid-stroke: color-mix(in srgb, var(--dw-border) 70%, var(--dw-text-muted) 30%);
+  --rg-node-fill: var(--dw-bg);
+  --rg-node-stroke: color-mix(in srgb, var(--dw-border) 75%, var(--dw-text-secondary) 25%);
+  --rg-header-fill: color-mix(in srgb, var(--dw-bg-muted) 45%, var(--dw-on-accent) 55%);
+  --rg-center-header: color-mix(in srgb, var(--dw-info) 12%, var(--dw-on-accent) 88%);
+  --rg-text: var(--dw-text);
+  --rg-text-type: var(--dw-text-secondary);
+  --rg-text-more: var(--dw-text-secondary);
   --rg-row-alt: color-mix(in srgb, var(--dw-bg-muted) 28%, transparent);
-  --rg-fk-bg: color-mix(in srgb, #38bdf8 14%, transparent);
-  --rg-pk-bg: color-mix(in srgb, #f59e0b 12%, transparent);
-  --rg-key: #b45309;
+  --rg-fk-bg: color-mix(in srgb, var(--dw-info) 14%, transparent);
+  --rg-pk-bg: color-mix(in srgb, var(--dw-warning) 12%, transparent);
+  --rg-key: var(--dw-warning-fg);
 
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  gap: 8px;
-  padding: 12px;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-6);
 }
 
 [data-theme='dark'] .relation-graph {
-  --rg-canvas-bg: #151518;
+  --rg-canvas-bg: var(--dw-bg-rail);
   --rg-grid-stroke: rgb(255 255 255 / 10%);
-  --rg-node-fill: #26262b;
-  --rg-node-stroke: #5f6672;
-  --rg-header-fill: #303038;
-  --rg-center-header: color-mix(in srgb, #38bdf8 22%, #303038 78%);
-  --rg-text: #eef1f5;
-  --rg-text-type: #b8bec8;
-  --rg-text-more: #939aa6;
+  --rg-node-fill: var(--dw-bg-hover);
+  --rg-node-stroke: var(--dw-text-secondary);
+  --rg-header-fill: var(--dw-graph-node-dark);
+  --rg-center-header: color-mix(in srgb, var(--dw-info) 22%, var(--dw-graph-node-dark) 78%);
+  --rg-text: var(--dw-border-light);
+  --rg-text-type: var(--dw-text-muted);
+  --rg-text-more: var(--dw-text-muted);
   --rg-row-alt: rgb(255 255 255 / 4%);
   --rg-fk-bg: rgb(56 189 248 / 18%);
   --rg-pk-bg: rgb(251 191 36 / 14%);
-  --rg-key: #fcd34d;
+  --rg-key: var(--dw-warning);
 }
 
 .relation-graph__toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--dw-space-6);
 }
 
 .relation-graph__hint {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
 }
 
 .relation-graph__reset {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-2) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
   color: var(--dw-text-secondary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   cursor: pointer;
 }
 
@@ -462,7 +462,7 @@ async function openNode(node: TableRelationGraphNode) {
   flex: 1;
   min-height: 360px;
   border: 1px solid var(--dw-border-light);
-  border-radius: 12px;
+  border-radius: var(--dw-radius-xl);
   background: var(--rg-canvas-bg);
   overflow: auto;
 }
@@ -493,43 +493,43 @@ async function openNode(node: TableRelationGraphNode) {
 }
 
 [data-theme='dark'] .relation-graph__edge--outgoing {
-  stroke: #7dd3fc;
+  stroke: var(--dw-info);
 }
 
 [data-theme='dark'] .relation-graph__edge--incoming {
-  stroke: #6ee7b7;
+  stroke: var(--dw-success);
 }
 
 [data-theme='dark'] .relation-graph__arrow-out {
-  fill: #7dd3fc;
+  fill: var(--dw-info);
 }
 
 [data-theme='dark'] .relation-graph__arrow-in {
-  fill: #6ee7b7;
+  fill: var(--dw-success);
 }
 
 [data-theme='dark'] .relation-graph__anchor--outgoing {
-  fill: #7dd3fc;
+  fill: var(--dw-info);
 }
 
 [data-theme='dark'] .relation-graph__anchor--incoming {
-  fill: #6ee7b7;
+  fill: var(--dw-success);
 }
 
 .relation-graph__edge--outgoing {
-  stroke: #38bdf8;
+  stroke: var(--dw-info);
 }
 
 .relation-graph__edge--incoming {
-  stroke: #34d399;
+  stroke: var(--dw-success);
 }
 
 .relation-graph__arrow-out {
-  fill: #38bdf8;
+  fill: var(--dw-info);
 }
 
 .relation-graph__arrow-in {
-  fill: #34d399;
+  fill: var(--dw-success);
 }
 
 .relation-graph__anchor {
@@ -538,11 +538,11 @@ async function openNode(node: TableRelationGraphNode) {
 }
 
 .relation-graph__anchor--outgoing {
-  fill: #38bdf8;
+  fill: var(--dw-info);
 }
 
 .relation-graph__anchor--incoming {
-  fill: #34d399;
+  fill: var(--dw-success);
 }
 
 .relation-graph__node {
@@ -578,21 +578,21 @@ async function openNode(node: TableRelationGraphNode) {
 }
 
 .relation-graph__node--center .relation-graph__node-shell {
-  stroke: #38bdf8;
+  stroke: var(--dw-info);
   stroke-width: 2;
 }
 
 .relation-graph__node--reference .relation-graph__node-shell {
-  stroke: color-mix(in srgb, #38bdf8 75%, var(--rg-node-stroke));
+  stroke: color-mix(in srgb, var(--dw-info) 75%, var(--rg-node-stroke));
 }
 
 .relation-graph__node--referrer .relation-graph__node-shell {
-  stroke: color-mix(in srgb, #34d399 75%, var(--rg-node-stroke));
+  stroke: color-mix(in srgb, var(--dw-success) 75%, var(--rg-node-stroke));
 }
 
 .relation-graph__node-title {
   fill: var(--rg-text);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 700;
   pointer-events: none;
 }
@@ -616,7 +616,7 @@ async function openNode(node: TableRelationGraphNode) {
 .relation-graph__col-name {
   fill: var(--rg-text);
   font-family: var(--dw-mono);
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   pointer-events: none;
 }
@@ -634,7 +634,7 @@ async function openNode(node: TableRelationGraphNode) {
 .relation-graph__col-type {
   fill: var(--rg-text-type);
   font-family: var(--dw-mono);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 500;
   pointer-events: none;
 }
@@ -642,14 +642,14 @@ async function openNode(node: TableRelationGraphNode) {
 .relation-graph__col-key {
   fill: var(--rg-key);
   font-family: var(--dw-mono);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 800;
   pointer-events: none;
 }
 
 .relation-graph__more {
   fill: var(--rg-text-more);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   pointer-events: none;
 }
 
@@ -662,19 +662,19 @@ async function openNode(node: TableRelationGraphNode) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--dw-gap-md);
   min-height: 220px;
   color: var(--dw-text-muted);
-  font-size: 13px;
+  font-size: var(--dw-text-md);
 }
 
 .relation-graph__state--error {
-  color: var(--dw-danger, #c0392b);
+  color: var(--dw-danger);
 }
 
 .relation-graph__spinner {
   width: 22px;
-  height: 22px;
+  height: var(--dw-control-h-xs);
   border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
   border-top-color: var(--dw-primary);
   border-radius: 50%;

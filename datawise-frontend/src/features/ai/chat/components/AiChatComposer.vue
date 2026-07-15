@@ -273,31 +273,28 @@ defineExpose({
 <style scoped>
 .composer-wrap {
   flex-shrink: 0;
-  padding: 12px 24px 16px;
+  padding: var(--dw-space-6) var(--dw-space-10) var(--dw-space-8);
 }
 
 .composer-targets {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: var(--dw-gap);
+  margin-bottom: var(--dw-space-5);
 }
 
 .composer-card {
   border: 1px solid var(--dw-border-light);
-  border-radius: 18px;
+  border-radius: var(--dw-radius-xl);
   background: var(--dw-bg);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
-  0 8px 24px rgba(15, 23, 42, 0.05);
-  padding: 14px 14px 10px;
-  transition: border-color 0.18s ease,
-  box-shadow 0.18s ease;
+  box-shadow: var(--dw-composer-shell-shadow);
+  padding: var(--dw-space-7) var(--dw-space-7) var(--dw-space-5);
+  transition: var(--dw-transition-shadow);
 }
 
 .composer-card:focus-within {
   border-color: color-mix(in srgb, var(--dw-border) 70%, var(--dw-text-muted));
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
-  0 10px 28px rgba(15, 23, 42, 0.07);
+  box-shadow: var(--dw-composer-shell-shadow);
 }
 
 .composer-card.is-listening {
@@ -307,8 +304,8 @@ defineExpose({
 .composer-attachments {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: var(--dw-gap-sm);
+  margin-bottom: var(--dw-space-4);
 }
 
 .composer-input {
@@ -323,8 +320,8 @@ defineExpose({
   resize: none;
   background: transparent;
   color: var(--dw-text);
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: var(--dw-text-xl);
+  line-height: var(--dw-leading-loose);
   font-family: inherit;
 }
 
@@ -340,12 +337,12 @@ defineExpose({
 .composer-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 6px;
-  padding-top: 8px;
+  gap: var(--dw-gap-xs);
+  margin-top: var(--dw-space-3);
+  padding-top: var(--dw-space-4);
   border-top: 1px solid var(--dw-border-light);
   min-width: 0;
-  min-height: 34px;
+  min-height: var(--dw-control-h);
 }
 
 .composer-file-input {
@@ -364,7 +361,7 @@ defineExpose({
 .composer-toolbar__end {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   flex-shrink: 0;
 }
 
@@ -373,14 +370,14 @@ defineExpose({
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 32px;
+  height: var(--dw-tab-height);
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-bg-muted);
   color: var(--dw-text-secondary);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background var(--dw-duration) var(--dw-ease), color var(--dw-duration) var(--dw-ease);
 }
 
 .tool-btn:hover:not(:disabled) {
@@ -403,14 +400,14 @@ defineExpose({
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 32px;
+  height: var(--dw-tab-height);
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--dw-text);
   color: var(--dw-bg);
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity var(--dw-duration) var(--dw-ease), transform var(--dw-duration) var(--dw-ease);
 }
 
 .send-btn:hover:not(:disabled) {
@@ -424,8 +421,8 @@ defineExpose({
 }
 
 .send-btn__spin {
-  width: 14px;
-  height: 14px;
+  width: var(--dw-icon-size-sm);
+  height: var(--dw-icon-size-sm);
   border: 2px solid color-mix(in srgb, var(--dw-bg) 35%, transparent);
   border-top-color: var(--dw-bg);
   border-radius: 50%;

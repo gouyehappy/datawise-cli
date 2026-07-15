@@ -135,40 +135,40 @@ function toggleNode(id: string) {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 14px 16px 16px;
+  padding: var(--dw-space-7) var(--dw-space-8) var(--dw-space-8);
   display: block;
 }
 
 .explain-plan__head {
-  margin-bottom: 10px;
+  margin-bottom: var(--dw-space-5);
 }
 
 .explain-plan__title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--dw-space-6);
 }
 
 .explain-plan__title-group {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-gap);
   min-width: 0;
 }
 
 .explain-plan__title {
-  font-size: 13px;
+  font-size: var(--dw-text-md);
   font-weight: 700;
   color: var(--dw-text);
 }
 
 .explain-plan__mode {
-  padding: 2px 7px;
-  border-radius: 999px;
+  padding: var(--dw-space-1) var(--dw-space-3);
+  border-radius: var(--dw-radius-pill);
   background: color-mix(in srgb, var(--dw-text) 6%, transparent);
   color: var(--dw-text-muted);
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -176,24 +176,24 @@ function toggleNode(id: string) {
 .explain-plan__actions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   flex-shrink: 0;
 }
 
 .explain-plan__action {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 10px;
+  gap: var(--dw-space-2);
+  height: var(--dw-btn-height);
+  padding: 0 var(--dw-space-5);
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: var(--dw-control-radius-sm);
   background: transparent;
   color: var(--dw-text-secondary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: var(--dw-transition-colors);
 }
 
 .explain-plan__action--ai {
@@ -220,9 +220,9 @@ function toggleNode(id: string) {
 .explain-plan__sql-panel,
 .explain-plan__hints-panel,
 .explain-plan__steps-panel {
-  margin-bottom: 10px;
+  margin-bottom: var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: color-mix(in srgb, var(--dw-bg-panel) 90%, var(--dw-bg));
 }
 
@@ -231,10 +231,10 @@ function toggleNode(id: string) {
 .explain-plan__steps-summary {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-4) var(--dw-space-6);
   color: var(--dw-text-secondary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -253,7 +253,7 @@ function toggleNode(id: string) {
 .explain-plan__hints-chevron,
 .explain-plan__steps-chevron {
   color: var(--dw-text-muted);
-  transition: transform 0.15s ease;
+  transition: transform var(--dw-duration) var(--dw-ease);
 }
 
 .explain-plan__sql-panel[open] .explain-plan__sql-chevron,
@@ -264,11 +264,11 @@ function toggleNode(id: string) {
 
 .explain-plan__sql {
   margin: 0;
-  padding: 10px 12px 12px;
+  padding: var(--dw-space-5) var(--dw-space-6) var(--dw-space-6);
   border-top: 1px solid var(--dw-border-light);
-  font-family: var(--dw-font-mono, ui-monospace, monospace);
-  font-size: 12px;
-  line-height: 1.55;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   white-space: pre-wrap;
   color: var(--dw-text-secondary);
 }
@@ -276,27 +276,27 @@ function toggleNode(id: string) {
 .explain-plan__hints {
   list-style: none;
   margin: 0;
-  padding: 0 12px 10px;
+  padding: 0 var(--dw-space-6) var(--dw-space-5);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-gap);
 }
 
 .explain-plan__hint {
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  line-height: 1.45;
+  padding: var(--dw-pad-control);
+  border-radius: var(--dw-control-radius);
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading);
   border: 1px solid var(--dw-border-light);
 }
 
 .explain-plan__hint strong {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: var(--dw-space-1);
 }
 
 .explain-plan__hint--warning {
-  background: color-mix(in srgb, #f59e0b 12%, var(--dw-bg-panel));
+  background: color-mix(in srgb, var(--dw-warning) 12%, var(--dw-bg-panel));
 }
 
 .explain-plan__hint--info {
@@ -304,7 +304,7 @@ function toggleNode(id: string) {
 }
 
 .explain-plan__steps-content {
-  padding: 0 12px 12px;
+  padding: 0 var(--dw-space-6) var(--dw-space-6);
 }
 
 .explain-plan__tree {
@@ -312,7 +312,7 @@ function toggleNode(id: string) {
   margin: 0;
   padding: 0;
   border: 1px solid var(--dw-border-light);
-  border-radius: 8px;
+  border-radius: var(--dw-control-radius);
   background: var(--dw-bg-panel);
 }
 </style>

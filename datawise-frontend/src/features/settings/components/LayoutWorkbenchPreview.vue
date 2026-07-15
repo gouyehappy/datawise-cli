@@ -81,7 +81,7 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
 <style scoped>
 .workbench-preview {
   border: 1px solid var(--dw-border-light);
-  border-radius: 16px;
+  border-radius: var(--dw-radius-xl);
   overflow: hidden;
   background: radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--dw-primary) 8%, transparent), transparent 55%),
   var(--dw-bg-panel);
@@ -91,8 +91,8 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
 .preview-chrome {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-5) var(--dw-space-7);
   border-bottom: 1px solid var(--dw-border-light);
   background: color-mix(in srgb, var(--dw-bg) 70%, transparent);
 }
@@ -119,25 +119,25 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
 .preview-title {
   margin-left: 6px;
   color: var(--dw-text-muted);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 500;
   letter-spacing: 0.02em;
 }
 
 .preview-body {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-height: 148px;
-  padding: 14px;
+  padding: var(--dw-space-7);
 }
 
 .preview-side {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--dw-space-2);
   width: 28px;
-  padding: 6px 4px;
-  border-radius: 10px;
+  padding: var(--dw-space-3) var(--dw-space-2);
+  border-radius: var(--dw-radius-lg);
   background: var(--dw-bg-rail);
   border: 1px solid var(--dw-border-light);
   transition: opacity 0.2s ease, filter 0.2s ease;
@@ -150,8 +150,8 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
 
 .preview-btn {
   width: 100%;
-  height: 14px;
-  border-radius: 5px;
+  height: var(--dw-icon-size-sm);
+  border-radius: var(--dw-control-radius-sm);
   background: color-mix(in srgb, var(--dw-text) 8%, transparent);
 }
 
@@ -164,20 +164,20 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
   display: flex;
   flex: 1;
   min-width: 0;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
 }
 
 .preview-explorer {
   width: 34%;
   flex-shrink: 0;
-  padding: 8px;
-  border-radius: 10px;
+  padding: var(--dw-space-4);
+  border-radius: var(--dw-radius-lg);
   border: 1px solid var(--dw-border-light);
   background: var(--dw-bg);
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  transition: width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  gap: var(--dw-space-2);
+  transition: width var(--dw-duration-slow) var(--dw-ease), opacity 0.2s ease, padding 0.25s ease;
 }
 
 .preview-explorer.hidden {
@@ -194,7 +194,7 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
 
 .preview-tree-line {
   height: 5px;
-  border-radius: 3px;
+  border-radius: var(--dw-radius-sm);
   background: color-mix(in srgb, var(--dw-text) 10%, transparent);
 }
 
@@ -207,22 +207,22 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 10px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-4);
+  border-radius: var(--dw-radius-lg);
   border: 1px solid var(--dw-border-light);
-  background: var(--dw-bg-editor, var(--dw-bg));
+  background: var(--dw-bg-editor);
 }
 
 .preview-tabs {
   display: flex;
-  gap: 4px;
+  gap: var(--dw-gap-xs);
 }
 
 .preview-tab {
   width: 28%;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: color-mix(in srgb, var(--dw-text) 8%, transparent);
 }
 
@@ -234,13 +234,13 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--dw-space-2);
   padding-top: 4px;
 }
 
 .preview-code-line {
   height: 5px;
-  border-radius: 3px;
+  border-radius: var(--dw-radius-sm);
   background: color-mix(in srgb, var(--dw-text) 9%, transparent);
 }
 
@@ -251,17 +251,17 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
 .preview-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  padding: 10px 14px 12px;
+  gap: var(--dw-space-4) var(--dw-space-7);
+  padding: var(--dw-space-5) var(--dw-space-7) var(--dw-space-6);
   border-top: 1px solid var(--dw-border-light);
 }
 
 .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   color: var(--dw-text-secondary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 500;
 }
 
@@ -270,9 +270,9 @@ const showRightRail = computed(() => appConfig.showShortcutRail)
 }
 
 .legend-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
+  border-radius: var(--dw-radius-sm);
 }
 
 .legend-swatch--left {

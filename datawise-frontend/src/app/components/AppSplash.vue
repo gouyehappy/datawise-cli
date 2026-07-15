@@ -76,10 +76,10 @@ const statusText = computed(() => {
 
 <style scoped>
 .app-splash {
-  --splash-bg: #f8fafc;
-  --splash-text: #0f172a;
-  --splash-muted: #94a3b8;
-  --splash-track: #e2e8f0;
+  --splash-bg: var(--dw-bg-muted);
+  --splash-text: var(--dw-text);
+  --splash-muted: var(--dw-text-muted);
+  --splash-track: var(--dw-border-light);
   --splash-accent: #6d72f8;
   --splash-accent-end: #5248e8;
 
@@ -136,15 +136,15 @@ const statusText = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 32px 48px 24px;
+  gap: var(--dw-space-7);
+  padding: var(--dw-space-12) 48px var(--dw-space-10);
   animation: splash-fade-in 0.5s ease both;
 }
 
 .app-splash__brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--dw-space-7);
 }
 
 .app-splash__logo {
@@ -153,7 +153,7 @@ const statusText = computed(() => {
 
 .app-splash__title {
   margin: 0;
-  font-size: 32px;
+  font-size: var(--dw-text-display);
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -162,7 +162,7 @@ const statusText = computed(() => {
 
 .app-splash__tagline {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--dw-text-lg);
   font-weight: 500;
   color: var(--splash-muted);
   letter-spacing: 0.01em;
@@ -176,14 +176,14 @@ const statusText = computed(() => {
 }
 
 .app-splash__status {
-  margin: 0 0 10px;
-  font-size: 12px;
+  margin: 0 0 var(--dw-space-5);
+  font-size: var(--dw-text-sm);
   color: var(--splash-muted);
 }
 
 .app-splash__progress {
   height: 2px;
-  border-radius: 999px;
+  border-radius: var(--dw-radius-pill);
   background: var(--splash-track);
   overflow: hidden;
 }
@@ -197,9 +197,9 @@ const statusText = computed(() => {
 }
 
 .app-splash__version {
-  margin: 16px 0 0;
+  margin: var(--dw-space-8) 0 0;
   text-align: center;
-  font-size: 12px;
+  font-size: var(--dw-text-sm);
   color: var(--splash-muted);
 }
 
@@ -217,16 +217,16 @@ const statusText = computed(() => {
 @media (max-width: 520px) {
   .app-splash__main,
   .app-splash__footer {
-    padding-left: 28px;
-    padding-right: 28px;
+    padding-left: var(--dw-space-11);
+    padding-right: var(--dw-space-11);
   }
 
   .app-splash__title {
-    font-size: 26px;
+    font-size: var(--dw-text-display);
   }
 
   .app-splash__tagline {
-    font-size: 14px;
+    font-size: var(--dw-text-xl);
     text-align: center;
   }
 }

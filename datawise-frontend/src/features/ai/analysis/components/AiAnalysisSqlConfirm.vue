@@ -63,37 +63,37 @@ const {t} = useI18n()
 .sql-confirm {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--dw-space-7);
   min-width: min(480px, 100%);
 }
 
 .sql-confirm__header {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--dw-space-6);
 }
 
 .sql-confirm__heading {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-gap-sm);
   min-width: 0;
 }
 
 .sql-confirm__badge {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--dw-space-3);
   align-self: flex-start;
-  padding: 4px 12px 4px 9px;
-  border-radius: 999px;
+  padding: var(--dw-space-2) var(--dw-space-6) var(--dw-space-2) 9px;
+  border-radius: var(--dw-radius-pill);
   border: 1px solid color-mix(in srgb, var(--dw-primary) 32%, var(--dw-border-light));
-  background: linear-gradient(180deg, color-mix(in srgb, var(--dw-primary-soft) 85%, #fff), var(--dw-primary-soft));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dw-primary-soft) 85%, var(--dw-on-accent)), var(--dw-primary-soft));
   color: var(--dw-primary);
-  font-size: 11px;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   letter-spacing: 0.03em;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 45%, transparent),
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--dw-on-accent) 45%, transparent),
   0 2px 8px color-mix(in srgb, var(--dw-primary) 12%, transparent);
 }
 
@@ -109,22 +109,22 @@ const {t} = useI18n()
 
 .sql-confirm__title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--dw-text-xl);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   color: var(--dw-text);
   letter-spacing: -0.01em;
 }
 
 .sql-confirm__hint {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   color: var(--dw-text-muted);
 }
 
 .sql-confirm__readonly {
-  font-size: 10px;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -133,14 +133,14 @@ const {t} = useI18n()
 
 .sql-confirm__sql pre {
   margin: 0;
-  padding: 12px 14px;
+  padding: var(--dw-space-6) var(--dw-space-7);
   max-height: 220px;
   overflow: auto;
 }
 
 .sql-confirm__sql code {
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-leading-loose);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -150,9 +150,9 @@ const {t} = useI18n()
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  padding-top: 6px;
-  margin-top: 4px;
+  gap: var(--dw-gap-md);
+  padding-top: var(--dw-space-3);
+  margin-top: var(--dw-space-2);
   border-top: 1px solid var(--dw-border-light);
 }
 
