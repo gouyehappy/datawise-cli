@@ -31,25 +31,33 @@ public class ConnectionAccessService {
             return ConnectionAccessLevel.DDL;
         }
 
-        ConnectionAccessLevel effective = null;
+        ConnectionAccessLevel fromTeam = null;
         for (TeamMemberEntity membership : teamStore.findMembersByUserId(userId)) {
             TeamEntity team = teamStore.findTeamById(membership.getTeamId()).orElse(null);
             if (team == null || !team.getSharedConnectionIds().contains(connectionId)) {
                 continue;
             }
             ConnectionAccessLevel level = levelForMembership(team, membership, connectionId);
-            effective = effective == null ? level : effective.restrict(level);
+            fromTeam = fromTeam == null ? level : fromTeam.restrict(level);
         }
 
-        if (effective != null) {
-            return effective;
-        }
-        return connectionStore.findConnectionById(connectionId)
+        ConnectionAccessLevel fromOwnership = connectionStore.findConnectionById(connectionId)
                 .map(connection -> defaultAccessForConnection(userId, connection))
-                .orElse(ConnectionAccessLevel.READONLY);
+                .orElse(null);
+
+        // Owners keep full DDL on their own connections even when the same id is shared
+        // into a team with a tighter member/viewer policy.
+        if (fromOwnership == ConnectionAccessLevel.DDL) {
+            return ConnectionAccessLevel.DDL;
+        }
+        if (fromTeam != null) {
+            return fromTeam;
+        }
+        return fromOwnership != null ? fromOwnership : ConnectionAccessLevel.READONLY;
     }
 
     private static ConnectionAccessLevel defaultAccessForConnection(Long userId, ConnectionEntity connection) {
+        // Legacy / unowned connections are read-only until they have an owner or an explicit team share grant.
         if (connection.getUserId() == null) {
             return ConnectionAccessLevel.READONLY;
         }

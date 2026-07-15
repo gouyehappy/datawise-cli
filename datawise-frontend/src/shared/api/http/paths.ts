@@ -230,6 +230,14 @@ export const API_PATHS = {
             `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/apps/${encodeURIComponent(appId)}/queue`,
         yarnRemoveQueue: (connectionId: string) =>
             `/api/explorer/connections/${encodeURIComponent(connectionId)}/yarn/queues/remove`,
+        createDatabase: (connectionId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/databases`,
+        deleteDatabase: (connectionId: string, name: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/databases/${encodeURIComponent(name)}`,
+        createSchema: (connectionId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/schemas`,
+        mysqlCharsets: (connectionId: string) =>
+            `/api/explorer/connections/${encodeURIComponent(connectionId)}/mysql/charsets`,
     },
     workspace: {
         sqlLogs: '/api/workspace/sql-logs',

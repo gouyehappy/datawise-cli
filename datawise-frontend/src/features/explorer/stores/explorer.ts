@@ -987,6 +987,17 @@ export const useExplorerStore = defineStore('explorer', () => {
         }
     }
 
+    async function reloadConnectionCatalog(connectionId: string) {
+        const node = findNode(connectionId)
+        if (!node || node.type !== 'connection') return
+        node.children = []
+        node.meta = undefined
+        childEtags.delete(`${connectionId}:${connectionId}`)
+        await loadNodeChildren(connectionId, connectionId, {refresh: true})
+        node.expanded = true
+        touchTree()
+    }
+
     async function reloadTablesFolder(
         connectionId: string,
         databaseLabel: string,
@@ -1482,6 +1493,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         reloadModelsFolder,
         reloadViewsFolder,
         reloadTablesFolder,
+        reloadConnectionCatalog,
         importConnections,
         reloadRedisKeys,
         probeAllConnectionHealth,

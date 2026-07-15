@@ -389,6 +389,50 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         return id
     }
 
+    function openCreateNamespace(options: {
+        connectionId: string
+        connectionName?: string
+        dbType?: DbType
+        mode: 'database' | 'schema'
+        catalog?: string
+        hostLabel?: string
+        explorerNodeId?: string
+    }) {
+        const existing = tabs.value.find(
+            (tab) =>
+                tab.type === 'create-database'
+                && tab.connectionId === options.connectionId
+                && tab.createNamespaceMode === options.mode
+                && (tab.createNamespaceCatalog ?? '') === (options.catalog ?? ''),
+        )
+        if (existing) {
+            activeTabId.value = existing.id
+            return existing.id
+        }
+
+        const seq = tabs.value.filter((tab) => tab.type === 'create-database').length + 1
+        const host = options.hostLabel?.trim()
+            || (options.connectionName ? options.connectionName : options.connectionId)
+        const id = nextTabId('create-database')
+        const titleKey = options.mode === 'schema'
+            ? 'explorer.createNamespace.schemaTabTitle'
+            : 'explorer.createNamespace.databaseTabTitle'
+        tabs.value.push({
+            id,
+            title: t(titleKey, {n: seq, host}),
+            type: 'create-database',
+            closable: true,
+            connectionId: options.connectionId,
+            dbType: options.dbType,
+            createNamespaceMode: options.mode,
+            createNamespaceCatalog: options.catalog,
+            createNamespaceHostLabel: host,
+            explorerNodeId: options.explorerNodeId ?? options.connectionId,
+        })
+        activeTabId.value = id
+        return id
+    }
+
     function openRedisKey(options: {
         connectionId: string
         key: string
@@ -1857,6 +1901,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (type === 'ssh-terminal') return 'ssh-terminal'
         if (type === 'ssh-script-record') return 'ssh-script-record'
         if (type === 'platform_catalog') return 'platform-catalog'
+        if (type === 'create-database') return 'create-database'
         if (type === 'view_model_lineage') return 'lineage'
         return 'tab'
     }
@@ -1927,6 +1972,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         openConsole,
         openTable,
         openConnectionForm,
+        openCreateNamespace,
         openTerminal,
         openSshTerminal,
         openSshScriptRecord,

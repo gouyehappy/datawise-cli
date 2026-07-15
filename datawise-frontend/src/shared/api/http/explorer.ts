@@ -262,5 +262,17 @@ export function createHttpExplorerApi(): ExplorerApi {
 
         importConnections: async (configs) =>
             postJson<ExplorerImportResult>(API_PATHS.explorer.importConnections, {configs}),
+
+        createDatabase: async (connectionId, payload) =>
+            postJson(API_PATHS.explorer.createDatabase(connectionId), payload),
+
+        deleteDatabase: async (connectionId, name) =>
+            deleteJson(API_PATHS.explorer.deleteDatabase(connectionId, name)),
+
+        createSchema: async (connectionId, payload) =>
+            postJson(API_PATHS.explorer.createSchema(connectionId), payload),
+
+        fetchMysqlCharsets: async (connectionId) =>
+            getJson(API_PATHS.explorer.mysqlCharsets(connectionId)),
     }
 }

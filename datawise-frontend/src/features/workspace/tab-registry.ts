@@ -67,6 +67,8 @@ const definitions = [
 
     {key: 'platform_catalog' as const, component: lazyTab(() => import('./components/tabs/PlatformCatalogTab.vue'))},
 
+    {key: 'create-database' as const, component: lazyTab(() => import('./components/tabs/CreateDatabaseTab.vue'))},
+
 ]
 
 

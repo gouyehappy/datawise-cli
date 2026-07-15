@@ -185,6 +185,7 @@ export type WorkspaceTabType =
     | 'ssh-terminal'
     | 'ssh-script-record'
     | 'platform_catalog'
+    | 'create-database'
 
 export interface WorkspaceTab {
     id: string
@@ -257,6 +258,10 @@ export interface WorkspaceTab {
     sshScriptRecordUpdatedAt?: number
     /** 同一连接的 SSH 终端序号（多会话） */
     sshTerminalIndex?: number
+    /** 新建库 / Schema Tab */
+    createNamespaceMode?: 'database' | 'schema'
+    createNamespaceCatalog?: string
+    createNamespaceHostLabel?: string
     /** YARN 应用列表 Tab 打开时预选的应用 ID */
     yarnAppFilterId?: string
     /** 元数据文档预览 */

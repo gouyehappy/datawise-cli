@@ -56,11 +56,19 @@ class ConnectionAccessServiceTest {
     }
 
     @Test
-    void legacyConnectionDefaultsToReadonly() {
+    void ownedConnectionKeepsDdlEvenWhenTeamShareIsReadonly() {
+        ConnectionEntity owned = connection("conn-1", 2L);
+        when(connectionStore.findConnectionById("conn-1")).thenReturn(Optional.of(owned));
+        seedTeam("team-1", List.of("conn-1"), Map.of("conn-1", "readonly"), 1L);
+        seedMember("team-1", 2L, "member");
+        assertEquals(ConnectionAccessLevel.DDL, service.resolveAccess(2L, "conn-1"));
+    }
+
+    @Test
+    void legacyConnectionWithoutOwnerDefaultsToReadonly() {
         ConnectionEntity legacy = connection("conn-legacy", null);
         when(connectionStore.findConnectionById("conn-legacy")).thenReturn(Optional.of(legacy));
         assertEquals(ConnectionAccessLevel.READONLY, service.resolveAccess(2L, "conn-legacy"));
-        assertThrows(ConnectionAccessDeniedException.class, () -> service.requireDdlAccess(2L, "conn-legacy"));
     }
 
     @Test

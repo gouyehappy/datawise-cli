@@ -79,12 +79,17 @@ export function getContextMenuForNodeType(type: string, t: ComposerTranslation):
         {id: 'migrate-data', label: c('migrateData'), icon: 'import'},
         {id: 'divider-1', label: '', divider: true},
         {id: 'copy-name', label: c('copyName'), icon: 'copy'},
+        {id: 'divider-2', label: '', divider: true},
+        {id: 'delete-database', label: c('deleteDatabase'), icon: 'delete', shortcut: 'Delete', danger: true},
     ]
 
     const connectionMenu: ContextMenuItem[] = [
         {id: 'console', label: c('console'), icon: 'console', shortcut: 'Ctrl+Shift+L'},
+        {id: 'create-database', label: c('createDatabase'), icon: 'file'},
+        {id: 'create-schema', label: c('createSchema'), icon: 'file'},
         {id: 'edit', label: c('editConnection'), icon: 'edit', shortcut: 'F4'},
         {id: 'move', label: c('moveConnection'), icon: 'file'},
+        {id: 'refresh', label: c('refresh'), icon: 'edit'},
         {id: 'copy-name', label: c('copyName'), icon: 'copy'},
         {id: 'divider-1', label: '', divider: true},
         {id: 'delete', label: c('deleteConnection'), icon: 'delete', shortcut: 'Delete', danger: true},

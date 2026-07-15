@@ -2,6 +2,7 @@ package org.apache.datawise.backend.controller.explorer;
 
 import org.apache.datawise.backend.common.ApiResponse;
 import org.apache.datawise.backend.common.support.PerfLogger;
+import org.apache.datawise.backend.database.explorer.CreateNamespaceService;
 import org.apache.datawise.backend.database.explorer.ExplorerConnectionAdminService;
 import org.apache.datawise.backend.database.explorer.ExplorerConnectionLifecycleService;
 import org.apache.datawise.backend.database.explorer.ExplorerKafkaService;
@@ -16,7 +17,11 @@ import org.apache.datawise.backend.domain.ConnectionConfig;
 import org.apache.datawise.backend.domain.ConnectionResult;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
 import org.apache.datawise.backend.domain.CreateConnectionRequest;
+import org.apache.datawise.backend.domain.CreateDatabaseRequest;
+import org.apache.datawise.backend.domain.CreateNamespaceResult;
+import org.apache.datawise.backend.domain.CreateSchemaRequest;
 import org.apache.datawise.backend.domain.GroupResult;
+import org.apache.datawise.backend.domain.MysqlCharsetOptionsResult;
 import org.apache.datawise.backend.domain.ImportConnectionsRequest;
 import org.apache.datawise.backend.domain.ImportConnectionsResult;
 import org.apache.datawise.backend.domain.KafkaConsumerGroupMetricsDto;
@@ -78,6 +83,7 @@ public class ExplorerController {
     private final ExplorerYarnService yarnService;
     private final ExplorerConnectionAdminService connectionAdminService;
     private final ExplorerConnectionLifecycleService connectionLifecycleService;
+    private final CreateNamespaceService createNamespaceService;
     private final FeaturePermissionAccess featurePermissionAccess;
 
     public ExplorerController(
@@ -88,6 +94,7 @@ public class ExplorerController {
             ExplorerYarnService yarnService,
             ExplorerConnectionAdminService connectionAdminService,
             ExplorerConnectionLifecycleService connectionLifecycleService,
+            CreateNamespaceService createNamespaceService,
             FeaturePermissionAccess featurePermissionAccess
     ) {
         this.schemaService = schemaService;
@@ -97,6 +104,7 @@ public class ExplorerController {
         this.yarnService = yarnService;
         this.connectionAdminService = connectionAdminService;
         this.connectionLifecycleService = connectionLifecycleService;
+        this.createNamespaceService = createNamespaceService;
         this.featurePermissionAccess = featurePermissionAccess;
     }
 
@@ -376,6 +384,42 @@ public class ExplorerController {
         featurePermissionAccess.requireExplorerCatalogMutation();
         String label = body.getOrDefault("label", "");
         return ApiResponse.ok(new TreePayload(connectionAdminService.updateGroup(groupId, label)));
+    }
+
+    @PostMapping("/connections/{connectionId}/databases")
+    public ApiResponse<CreateNamespaceResult> createDatabase(
+            @PathVariable String connectionId,
+            @RequestBody CreateDatabaseRequest request
+    ) {
+        HeadlessSqlAuth.requireSqlAccess();
+        featurePermissionAccess.requireExplorerContextDangerous();
+        return ApiResponse.ok(createNamespaceService.createDatabase(connectionId, request));
+    }
+
+    @DeleteMapping("/connections/{connectionId}/databases/{name}")
+    public ApiResponse<CreateNamespaceResult> deleteDatabase(
+            @PathVariable String connectionId,
+            @PathVariable String name
+    ) {
+        HeadlessSqlAuth.requireSqlAccess();
+        featurePermissionAccess.requireExplorerContextDangerous();
+        return ApiResponse.ok(createNamespaceService.deleteDatabase(connectionId, name));
+    }
+
+    @PostMapping("/connections/{connectionId}/schemas")
+    public ApiResponse<CreateNamespaceResult> createSchema(
+            @PathVariable String connectionId,
+            @RequestBody CreateSchemaRequest request
+    ) {
+        HeadlessSqlAuth.requireSqlAccess();
+        featurePermissionAccess.requireExplorerContextDangerous();
+        return ApiResponse.ok(createNamespaceService.createSchema(connectionId, request));
+    }
+
+    @GetMapping("/connections/{connectionId}/mysql/charsets")
+    public ApiResponse<MysqlCharsetOptionsResult> listMysqlCharsets(@PathVariable String connectionId) {
+        HeadlessSqlAuth.requireSqlAccess();
+        return ApiResponse.ok(createNamespaceService.listMysqlCharsetOptions(connectionId));
     }
 
     @PostMapping("/connections")

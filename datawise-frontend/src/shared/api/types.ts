@@ -919,6 +919,32 @@ export interface ExplorerApi {
     deleteNode(nodeId: string): Promise<TreeNode[]>
 
     importConnections(configs: ConnectionConfig[]): Promise<ExplorerImportResult>
+
+    createDatabase(
+        connectionId: string,
+        payload: { name: string; charset?: string; collation?: string },
+    ): Promise<CreateNamespaceResult>
+
+    deleteDatabase(connectionId: string, name: string): Promise<CreateNamespaceResult>
+
+    createSchema(
+        connectionId: string,
+        payload: { name: string; catalog?: string },
+    ): Promise<CreateNamespaceResult>
+
+    fetchMysqlCharsets(connectionId: string): Promise<MysqlCharsetOptionsResult>
+}
+
+export interface CreateNamespaceResult {
+    name: string
+    kind: string
+    sql: string
+    created: boolean
+}
+
+export interface MysqlCharsetOptionsResult {
+    charsets: Array<{ name: string; description: string; defaultCollation: string }>
+    collations: Array<{ name: string; charset: string; isDefault: boolean }>
 }
 
 // ── Workspace (shortcut panel) ──────────────────────────────────────────────

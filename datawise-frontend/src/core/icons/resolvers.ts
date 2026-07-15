@@ -37,6 +37,8 @@ export function workspaceTabDwIcon(type: WorkspaceTabType): DwIconName {
             return 'tab-table'
         case 'connection':
             return 'tab-connection'
+        case 'create-database':
+            return 'tab-table'
         case 'terminal':
             return 'tab-terminal'
         case 'schema-compare':

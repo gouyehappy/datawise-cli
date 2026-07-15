@@ -101,4 +101,15 @@ export const explorerApi = {
         api.explorer.moveConnection(connectionId, targetGroupId),
     deleteNode: (nodeId: string) => api.explorer.deleteNode(nodeId),
     importConnections: (configs: ConnectionConfig[]) => api.explorer.importConnections(configs),
+    createDatabase: (
+        connectionId: string,
+        payload: { name: string; charset?: string; collation?: string },
+    ) => api.explorer.createDatabase(connectionId, payload),
+    deleteDatabase: (connectionId: string, name: string) =>
+        api.explorer.deleteDatabase(connectionId, name),
+    createSchema: (
+        connectionId: string,
+        payload: { name: string; catalog?: string },
+    ) => api.explorer.createSchema(connectionId, payload),
+    fetchMysqlCharsets: (connectionId: string) => api.explorer.fetchMysqlCharsets(connectionId),
 }

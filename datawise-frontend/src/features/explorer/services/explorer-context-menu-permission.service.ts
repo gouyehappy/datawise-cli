@@ -43,6 +43,10 @@ const EXPLORER_CONTEXT_MENU_PERMISSION_BY_ID: Record<string, FeaturePermissionKe
     'redis-console': FeaturePermission.WorkbenchExplorerContextConsole,
     'kafka-console': FeaturePermission.WorkbenchExplorerContextConsole,
 
+    'create-database': FeaturePermission.WorkbenchExplorerContextDangerous,
+    'create-schema': FeaturePermission.WorkbenchExplorerContextDangerous,
+    'delete-database': FeaturePermission.WorkbenchExplorerContextDangerous,
+
     edit: FeaturePermission.WorkbenchExplorerContextEdit,
     rename: FeaturePermission.WorkbenchExplorerContextEdit,
     'new-subgroup': FeaturePermission.WorkbenchExplorerContextEdit,
@@ -68,6 +72,8 @@ const EXPLORER_CONTEXT_MENU_PERMISSION_BY_ID: Record<string, FeaturePermissionKe
     'copy-data': FeaturePermission.WorkbenchExplorerContextCopy,
 
     pin: FeaturePermission.WorkbenchExplorerContextPin,
+
+    refresh: FeaturePermission.WorkbenchExplorerContextOpen,
 
     connect: FeaturePermission.WorkbenchExplorerContextConnection,
     disconnect: FeaturePermission.WorkbenchExplorerContextConnection,

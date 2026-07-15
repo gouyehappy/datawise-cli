@@ -45,6 +45,9 @@ import {
     pickSpreadsheetFile,
     resolveTableContext,
 } from '@/features/explorer/services/table-context-actions.service'
+import {filterCreateNamespaceMenuItems, resolveCreateNamespaceErrorMessage} from '@/features/explorer/services/create-namespace.service'
+import {canDdlConnection} from '@/features/team/services/connection-access.service'
+import {useTeamStore} from '@/features/team/stores/team-store'
 import {
     applySqlExportWizardOutput,
     countTablesUnderDatabase,
@@ -130,7 +133,7 @@ import {
     canRunExplorerContextMenuAction,
     filterExplorerContextMenuByPermission,
 } from '@/features/explorer/services/explorer-context-menu-permission.service'
-import {instanceSqlApi, sqlApi, tableDataApi, tableDetailApi} from '@/api'
+import {explorerApi, instanceSqlApi, sqlApi, tableDataApi, tableDetailApi} from '@/api'
 import {
     resolveViewModelScope,
     resolveViewsFolderScope,
@@ -163,6 +166,7 @@ export function useConnectionTree() {
     const shortcutPanel = useShortcutPanelStore()
     const catalogStore = useDatasourceCatalogStore()
     const auth = useAuthStore()
+    const teamStore = useTeamStore()
     const connectionDragEnabled = computed(() => canMutateConnectionCatalog(auth.isGuest))
 
     const {visible: menuVisible, pos: menuPos, target: contextNode, open, close: closeMenu} =
@@ -200,6 +204,8 @@ export function useConnectionTree() {
         node: TreeNode
         message: string
     } | null>(null)
+    const showDeleteDatabaseDialog = ref(false)
+    const pendingDeleteDatabase = ref<TreeNode | null>(null)
     const showSqlExportWizard = ref(false)
     const sqlExportWizardContext = ref<SqlExportWizardContext | null>(null)
     const sqlExportWizardExporting = ref(false)
@@ -705,6 +711,7 @@ export function useConnectionTree() {
                 {id: 'open-redis-command', label: t('explorer.context.openRedisCommand'), icon: 'console'},
                 {id: 'edit', label: t('explorer.context.editConnection'), icon: 'edit', shortcut: 'F4'},
                 {id: 'move', label: t('explorer.context.moveConnection'), icon: 'file'},
+                {id: 'refresh', label: t('explorer.context.refresh'), icon: 'edit'},
                 {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
                 {id: 'divider-1', label: '', divider: true},
                 {id: 'delete', label: t('explorer.context.deleteConnection'), icon: 'delete', shortcut: 'Delete', danger: true},
@@ -717,6 +724,7 @@ export function useConnectionTree() {
                 {id: 'publish-table-data', label: t('explorer.context.publishTableData'), icon: 'export'},
                 {id: 'edit', label: t('explorer.context.editConnection'), icon: 'edit', shortcut: 'F4'},
                 {id: 'move', label: t('explorer.context.moveConnection'), icon: 'file'},
+                {id: 'refresh', label: t('explorer.context.refresh'), icon: 'edit'},
                 {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
                 {id: 'divider-1', label: '', divider: true},
                 {id: 'delete', label: t('explorer.context.deleteConnection'), icon: 'delete', shortcut: 'Delete', danger: true},
@@ -729,6 +737,7 @@ export function useConnectionTree() {
                 {id: 'open-yarn-queues', label: t('explorer.context.openYarnQueues'), icon: 'open'},
                 {id: 'edit', label: t('explorer.context.editConnection'), icon: 'edit', shortcut: 'F4'},
                 {id: 'move', label: t('explorer.context.moveConnection'), icon: 'file'},
+                {id: 'refresh', label: t('explorer.context.refresh'), icon: 'edit'},
                 {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
                 {id: 'divider-1', label: '', divider: true},
                 {id: 'delete', label: t('explorer.context.deleteConnection'), icon: 'delete', shortcut: 'Delete', danger: true},
@@ -740,6 +749,7 @@ export function useConnectionTree() {
                 {id: 'new-ssh-terminal', label: t('explorer.context.newSshTerminal'), icon: 'console'},
                 {id: 'edit', label: t('explorer.context.editConnection'), icon: 'edit', shortcut: 'F4'},
                 {id: 'move', label: t('explorer.context.moveConnection'), icon: 'file'},
+                {id: 'refresh', label: t('explorer.context.refresh'), icon: 'edit'},
                 {id: 'copy-name', label: t('explorer.context.copyName'), icon: 'copy'},
                 {id: 'divider-1', label: '', divider: true},
                 {id: 'delete', label: t('explorer.context.deleteConnection'), icon: 'delete', shortcut: 'Delete', danger: true},
@@ -747,7 +757,11 @@ export function useConnectionTree() {
         }
         return prependConnectionLifecycleMenu(
             withMove(filterSqlContextMenuItems(
-                getContextMenuForNodeType('connection', t),
+                filterCreateNamespaceMenuItems(
+                    getContextMenuForNodeType('connection', t),
+                    node.dbType,
+                    {canDdl: canDdlConnection(node.id, teamStore.teams)},
+                ),
                 node.dbType,
                 catalogStore.items,
             )),
@@ -875,6 +889,12 @@ export function useConnectionTree() {
         const connectionDbType = resolveConnectionDbType(explorer.tree, node.id)
         if (node.type === 'database' || node.type === 'table') {
             items = filterConnectionCapabilityMenuItems(items, connectionDbType, catalogStore.items)
+        }
+        if (node.type === 'database') {
+            const connectionId = findConnectionId(node)
+            items = filterCreateNamespaceMenuItems(items, connectionDbType, {
+                canDdl: connectionId ? canDdlConnection(connectionId, teamStore.teams) : false,
+            })
         }
         items = filterPluginGatedMenuItems(items, (id) => usePluginStore().isEnabled(id))
         items = buildPinContextMenuItems(node, items)
@@ -1253,6 +1273,34 @@ export function useConnectionTree() {
         } finally {
             pendingTableAction.value = null
             showTableActionDialog.value = false
+        }
+    }
+
+    async function confirmDeleteDatabase() {
+        const node = pendingDeleteDatabase.value
+        if (!node || node.type !== 'database') return
+        const connectionId = findConnectionId(node)
+        if (!connectionId) {
+            layout.showToast(t('explorer.tableActionContextMissing'))
+            return
+        }
+        try {
+            await explorerApi.deleteDatabase(connectionId, node.label)
+            for (const tab of workspace.tabs.filter(
+                (item) => item.connectionId === connectionId && item.database === node.label,
+            )) {
+                workspace.closeTab(tab.id)
+            }
+            if (explorer.selectedNodeId === node.id) {
+                explorer.selectNode(connectionId)
+            }
+            await explorer.reloadConnectionCatalog(connectionId)
+            layout.showToast(t('explorer.deleteDatabaseSuccess', {name: node.label}))
+        } catch (error) {
+            layout.showErrorToast(resolveCreateNamespaceErrorMessage(error, t))
+        } finally {
+            pendingDeleteDatabase.value = null
+            showDeleteDatabaseDialog.value = false
         }
     }
 
@@ -1808,6 +1856,65 @@ export function useConnectionTree() {
             return
         }
 
+        if ((id === 'create-database' || id === 'create-schema') && node.type === 'connection') {
+            if (!canDdlConnection(node.id, teamStore.teams)) {
+                layout.showErrorToast(t('explorer.createNamespace.accessDenied'))
+                closeMenu()
+                return
+            }
+            const connectionId = node.id
+            const mode = id === 'create-schema' ? 'schema' as const : 'database' as const
+            layout.setModule('database')
+            void (async () => {
+                await explorer.connectConnection(connectionId, {notify: false}).catch(() => undefined)
+                let hostLabel = node.label
+                try {
+                    const config = await explorerApi.fetchConnection(connectionId)
+                    if (config.host) {
+                        hostLabel = config.port ? `${config.host}:${config.port}` : config.host
+                    }
+                } catch {
+                    // fall back to connection label
+                }
+                workspace.openCreateNamespace({
+                    connectionId,
+                    connectionName: node.label,
+                    dbType: node.dbType,
+                    mode,
+                    hostLabel,
+                    explorerNodeId: connectionId,
+                })
+            })()
+            closeMenu()
+            return
+        }
+        if (id === 'refresh' && node.type === 'connection') {
+            void (async () => {
+                try {
+                    await explorer.connectConnection(node.id, {notify: false}).catch(() => undefined)
+                    await explorer.reloadConnectionCatalog(node.id)
+                    layout.showToast(t('explorer.refreshDone'))
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : undefined
+                    layout.showErrorToast(message ?? t('explorer.refreshFailed'))
+                }
+            })()
+            closeMenu()
+            return
+        }
+        if (id === 'delete-database' && node.type === 'database') {
+            const connectionId = findConnectionId(node)
+            if (!connectionId || !canDdlConnection(connectionId, teamStore.teams)) {
+                layout.showErrorToast(t('explorer.createNamespace.accessDenied'))
+                closeMenu()
+                return
+            }
+            pendingDeleteDatabase.value = node
+            showDeleteDatabaseDialog.value = true
+            closeMenu()
+            return
+        }
+
         if (id === 'edit' && node.type === 'connection' && node.dbType) {
             workspace.openConnectionForm(node.dbType, {
                 connectionId: node.id,
@@ -2083,6 +2190,7 @@ export function useConnectionTree() {
             showSubgroupDialog.value ||
             showRecentSqlDialog.value ||
             showTableActionDialog.value ||
+            showDeleteDatabaseDialog.value ||
             showSqlExportWizard.value ||
             showRenameViewModelDialog.value ||
             showDeleteViewModelDialog.value ||
@@ -2129,6 +2237,19 @@ export function useConnectionTree() {
         if (isExplorerDialogOpen()) return
         const node = explorer.selectedNode
         if (!node) return
+
+        if (node.type === 'database') {
+            if (!canRunExplorerContextMenuAction('delete-database', {nodeType: node.type})) return
+            const connectionId = findConnectionId(node)
+            if (!connectionId || !canDdlConnection(connectionId, teamStore.teams)) {
+                layout.showErrorToast(t('explorer.createNamespace.accessDenied'))
+                return
+            }
+            pendingDeleteDatabase.value = node
+            showDeleteDatabaseDialog.value = true
+            return
+        }
+
         if (!canRunExplorerContextMenuAction('delete', {nodeType: node.type})) return
 
         if (node.type === 'table') {
@@ -2243,6 +2364,8 @@ export function useConnectionTree() {
         recentSqlContext,
         showTableActionDialog,
         pendingTableAction,
+        showDeleteDatabaseDialog,
+        pendingDeleteDatabase,
         showSqlExportWizard,
         sqlExportWizardContext,
         sqlExportWizardExporting,
@@ -2259,6 +2382,7 @@ export function useConnectionTree() {
         confirmCreateSubgroup,
         performMoveConnection,
         confirmTableAction,
+        confirmDeleteDatabase,
         showRenameViewModelDialog,
         renameViewModelDefaultName,
         showDeleteViewModelDialog,

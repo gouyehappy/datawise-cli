@@ -52,6 +52,9 @@ const {
   confirmTableAction,
   showTableActionDialog,
   pendingTableAction,
+  confirmDeleteDatabase,
+  showDeleteDatabaseDialog,
+  pendingDeleteDatabase,
   showSqlExportWizard,
   sqlExportWizardContext,
   sqlExportWizardExporting,
@@ -227,6 +230,25 @@ onUnmounted(() => {
               ? t('explorer.context.deleteTable')
               : t('explorer.context.truncate')
         }}
+      </DwButton>
+    </template>
+  </AppModal>
+
+  <AppModal
+      :open="showDeleteDatabaseDialog"
+      :title="t('explorer.deleteDatabaseTitle')"
+      width="420px"
+      @close="showDeleteDatabaseDialog = false; pendingDeleteDatabase = null"
+  >
+    <p class="modal-message">
+      {{ t('explorer.deleteDatabaseMessage', {name: pendingDeleteDatabase?.label ?? ''}) }}
+    </p>
+    <template #footer>
+      <DwButton variant="ghost" @click="showDeleteDatabaseDialog = false; pendingDeleteDatabase = null">
+        {{ t('common.cancel') }}
+      </DwButton>
+      <DwButton variant="danger" @click="confirmDeleteDatabase()">
+        {{ t('explorer.context.deleteDatabase') }}
       </DwButton>
     </template>
   </AppModal>
