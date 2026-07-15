@@ -101,6 +101,8 @@ export const useAppConfigStore = defineStore('app-config', () => {
     const sqlEditorShortcuts = useSqlEditorShortcutsStore()
 
     const config = ref<AppConfigFile>(readAppConfig())
+    /** 结果面板展开状态仅会话内有效；配置加载时重置为收起 */
+    const showConsoleResultPanel = ref(false)
     let syncing = false
     let heavyPersistTimer: ReturnType<typeof setTimeout> | null = null
     let lightPersistTimer: ReturnType<typeof setTimeout> | null = null
@@ -360,7 +362,8 @@ export const useAppConfigStore = defineStore('app-config', () => {
                 tabs: session.tabs,
                 activeTabIndex: session.activeTabIndex >= 0 ? session.activeTabIndex : 0,
                 consoleEditorHeight: config.value.workspace?.consoleEditorHeight ?? 400,
-                showConsoleResultPanel: config.value.workspace?.showConsoleResultPanel ?? true,
+                // 结果面板展开态不落盘；下次打开工作台始终从收起条开始
+                showConsoleResultPanel: false,
             },
             profile: {
                 name: layout.profileName,
@@ -555,7 +558,11 @@ export const useAppConfigStore = defineStore('app-config', () => {
                 applyExpandedNodeIds(explorer.tree, explorerPrefs.expandedNodeIds)
             },
             applyWorkspace: (workspacePrefs) => {
-                config.value.workspace = workspacePrefs
+                config.value.workspace = {
+                    ...workspacePrefs,
+                    showConsoleResultPanel: false,
+                }
+                showConsoleResultPanel.value = false
                 if (workspacePrefs.restoreSession && workspacePrefs.tabs.length) {
                     workspace.restoreSession(workspacePrefs.tabs, workspacePrefs.activeTabIndex)
                 } else {
@@ -643,9 +650,6 @@ export const useAppConfigStore = defineStore('app-config', () => {
     const shortcutPanelWidth = computed(() => preferences.value.shortcutPanelWidth)
     const shortcutPanelMaxHeight = computed(() => preferences.value.shortcutPanelMaxHeight)
     const consoleEditorHeight = computed(() => config.value.workspace?.consoleEditorHeight ?? 400)
-    const showConsoleResultPanel = computed(
-        () => config.value.workspace?.showConsoleResultPanel ?? true,
-    )
 
     function patchWorkspacePreferences(
         patch: Partial<NonNullable<AppConfigFile['workspace']>>,
@@ -658,9 +662,11 @@ export const useAppConfigStore = defineStore('app-config', () => {
                     tabs: [],
                     activeTabIndex: 0,
                     consoleEditorHeight: 400,
-                    showConsoleResultPanel: true,
+                    showConsoleResultPanel: false,
                 }),
                 ...patch,
+                // 不持久化展开态；磁盘侧始终保持收起
+                showConsoleResultPanel: false,
             },
         }
         persistSoon()
@@ -671,7 +677,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
     }
 
     function setShowConsoleResultPanel(visible: boolean) {
-        patchWorkspacePreferences({showConsoleResultPanel: visible})
+        showConsoleResultPanel.value = visible
     }
 
     function setShortcutPanelWidth(width: number) {

@@ -9,7 +9,7 @@ import {
 } from '@/features/workspace/services/query-result-batch.utils'
 
 function batchOverviewLabel() {
-    return t('queryResult.overview')
+    return t('queryResult.batchTab')
 }
 
 function batchLabels() {

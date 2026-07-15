@@ -888,7 +888,7 @@ export default {
         sending: 'Sending…',
         sent: 'Message sent',
         failed: 'Send failed',
-        success: 'Written to partition {partition} @ offset {offset}',
+        success: "Written to partition {partition} {'@'} offset {offset}",
         shortcut: 'Ctrl+Enter to send',
     },
     kafkaConsumerGroup: {

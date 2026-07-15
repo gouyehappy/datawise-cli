@@ -1653,7 +1653,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (!consoleQueryByTabId.value[tabId]) {
             consoleQueryByTabId.value[tabId] = {
                 results: [],
-                activeView: 'overview',
+                activeView: 0,
             }
         }
         return consoleQueryByTabId.value[tabId]
@@ -1678,7 +1678,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         }))
 
         const activeView: ConsoleQueryState['activeView'] =
-            nextResults.length === 0 ? 'overview' : nextResults.length - 1
+            nextResults.length === 0 ? 0 : nextResults.length - 1
 
         consoleQueryByTabId.value = {
             ...consoleQueryByTabId.value,
@@ -1715,7 +1715,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         setExecutionResult(totalRows, totalDuration)
     }
 
-    function setConsoleActiveView(tabId: string, view: 'overview' | number) {
+    function setConsoleActiveView(tabId: string, view: number) {
         const state = consoleQueryByTabId.value[tabId]
         if (!state) return
         consoleQueryByTabId.value = {
@@ -1735,13 +1735,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         renumberResultLabels(state.results)
 
         if (state.results.length === 0) {
-            state.activeView = 'overview'
+            state.activeView = 0
             return
         }
 
         const current = state.activeView
-        if (current === 'overview') return
-
         if (current === index) {
             state.activeView = Math.min(index, state.results.length - 1)
         } else if (current > index) {
@@ -1766,14 +1764,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         renumberResultLabels(state.results)
 
         if (state.results.length === 0) {
-            state.activeView = 'overview'
+            state.activeView = 0
             return
         }
 
-        if (state.activeView === 'overview') return
-        if (typeof state.activeView === 'number') {
-            state.activeView = Math.max(0, state.activeView - index)
-        }
+        state.activeView = Math.max(0, state.activeView - index)
     }
 
     function closeConsoleQueryResultsToRight(tabId: string, index: number) {
@@ -1783,7 +1778,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         state.results.splice(index + 1)
         renumberResultLabels(state.results)
 
-        if (typeof state.activeView === 'number' && state.activeView > index) {
+        if (state.activeView > index) {
             state.activeView = index
         }
     }
@@ -1805,7 +1800,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         const state = consoleQueryByTabId.value[tabId]
         if (!state) return
         state.results = []
-        state.activeView = 'overview'
+        state.activeView = 0
     }
 
     function updateTabSql(tabId: string, sql: string) {

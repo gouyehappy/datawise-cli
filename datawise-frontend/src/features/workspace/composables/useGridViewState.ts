@@ -42,7 +42,7 @@ export function useGridViewState(scope: Ref<string | null | undefined>) {
     )
 
     function resetViewState() {
-        viewState.value = clearGridViewState()
+        viewState.value = clearGridViewState(viewState.value)
     }
 
     return {

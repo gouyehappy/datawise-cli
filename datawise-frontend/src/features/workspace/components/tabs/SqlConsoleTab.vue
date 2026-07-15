@@ -117,7 +117,8 @@ const editorHeight = computed({
   set: (value: number) => appConfig.setConsoleEditorHeight(clampEditorHeight(value)),
 })
 
-const showResultPanel = computed(() => appConfig.showConsoleResultPanel)
+/** 本 Tab 内控制；打开工作台默认收起，不跟配置/其它 Tab 粘连 */
+const showResultPanel = ref(false)
 
 const sqlFormatEnabled = computed(() => pluginStore.isEnabled('p-sql-format'))
 const consoleAiEnabled = computed(() => pluginStore.isEnabled('p-console-ai'))
@@ -154,11 +155,11 @@ function getConsoleSql() {
 }
 
 function collapseResultPanel() {
-  appConfig.setShowConsoleResultPanel(false)
+  showResultPanel.value = false
 }
 
 function expandResultPanel() {
-  appConfig.setShowConsoleResultPanel(true)
+  showResultPanel.value = true
 }
 
 const {connectionId, instanceId, dataSources, source, activeInstance, workspaceBound} =
@@ -614,21 +615,19 @@ function onEditorContextMenu(payload: { x: number; y: number; selectedText: stri
 
 function onRequestAiSummary() {
   const view = consoleQuery.value.activeView
-  if (view === 'overview') return
   const result = consoleQuery.value.results[view]
   if (result) aiLayerRef.value?.onRequestAiSummary(result)
 }
 
 function onRequestAiExplain() {
   const view = consoleQuery.value.activeView
-  if (view === 'overview') return
   const result = consoleQuery.value.results[view]
   if (result) aiLayerRef.value?.onRequestAiExplain(result)
 }
 
 const consoleQuery = computed(() => {
   const state = consoleQueryByTabId.value[props.tab.id]
-  return state ?? {results: [], activeView: 'overview' as const}
+  return state ?? {results: [], activeView: 0}
 })
 
 watch(
@@ -644,12 +643,15 @@ watch(
     },
 )
 
-function onActiveViewChange(view: 'overview' | number) {
+function onActiveViewChange(view: number) {
   workspace.setConsoleActiveView(props.tab.id, view)
 }
 
 function onCloseResult(index: number) {
   workspace.closeConsoleQueryResult(props.tab.id, index)
+  if (consoleQuery.value.results.length === 0) {
+    collapseResultPanel()
+  }
 }
 
 function onCloseOtherResults(index: number) {
@@ -658,6 +660,7 @@ function onCloseOtherResults(index: number) {
 
 function onCloseAllResults() {
   workspace.closeAllConsoleQueryResults(props.tab.id)
+  collapseResultPanel()
 }
 
 function refreshActiveResult(payload?: QueryResultRefreshRequest) {
@@ -697,11 +700,20 @@ watch(sql, (value) => {
   }
 })
 
+watch(running, (isRunning) => {
+  if (isRunning) expandResultPanel()
+})
+
 watch(
     () => consoleQuery.value.results.length,
     (count, prev) => {
       if (count > 0 && count !== prev) {
         expandResultPanel()
+        return
+      }
+      // 结果清空且未在执行 → 收到底部（叉掉结果 / 新开工作台）
+      if (count === 0 && !running.value) {
+        collapseResultPanel()
       }
     },
 )
@@ -739,6 +751,12 @@ function clampEditorHeight(value: number) {
 
 onMounted(async () => {
   layout.setModule('database')
+  // 打开/切回工作台：仅当本 Tab 有结果或正在查询时展开
+  if (running.value || consoleQuery.value.results.length > 0) {
+    expandResultPanel()
+  } else {
+    collapseResultPanel()
+  }
   await ensureSqlEditorPlugin()
   if (!splitRef.value) {
     requestAnimationFrame(() => {
@@ -1000,6 +1018,7 @@ onMounted(async () => {
           :results="consoleQuery.results"
           :active-view="consoleQuery.activeView"
           always-show-overview
+          :running="running"
           closable-results
           :enable-dml-generate="dmlGenerateEnabled"
           :enable-ai-fix="aiSqlFixEnabled"

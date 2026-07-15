@@ -44,5 +44,6 @@ export interface QueryResultItem {
 
 export interface ConsoleQueryState {
     results: QueryResultItem[]
-    activeView: 'overview' | number
+    /** 右侧结果集选中下标；无结果时为 0 */
+    activeView: number
 }

@@ -3,11 +3,15 @@ import assert from 'node:assert/strict'
 import {
     applyGridViewStateToRows,
     cellMatchesFilter,
+    clearGridViewState,
     compareCellValues,
     createEmptyGridViewState,
     gridViewStateIsActive,
+    moveGridColumnOrder,
     normalizeGridViewState,
+    resolveDisplayColumns,
     setGridColumnFilter,
+    setGridColumnWidth,
     toggleGridSort,
 } from '@/features/workspace/services/grid-view-state.service'
 import type {TableColumn, TableRow} from '@/core/types'
@@ -52,9 +56,36 @@ describe('grid-view-state.service', () => {
             columnFilters: {c2: 'x'},
             sortColumn: 'c1',
             sortDirection: 'desc',
+            columnWidths: {c1: 200, c2: 10},
+            columnOrder: ['c2', 'c1'],
         })
         assert.equal(state.columnFilters.c2, 'x')
         assert.equal(state.sortDirection, 'desc')
+        assert.equal(state.columnWidths.c1, 200)
+        assert.equal(state.columnWidths.c2, 64)
+        assert.deepEqual(state.columnOrder, ['c2', 'c1'])
+    })
+
+    it('reorders and clamps column layout', () => {
+        let state = createEmptyGridViewState()
+        state = setGridColumnWidth(state, 'c1', 999)
+        assert.equal(state.columnWidths.c1, 720)
+        state = moveGridColumnOrder(state, columns, 'c1', 'c2')
+        assert.deepEqual(state.columnOrder, ['c2', 'c1'])
+        assert.deepEqual(
+            resolveDisplayColumns(columns, state.columnOrder).map((column) => column.key),
+            ['c2', 'c1'],
+        )
+    })
+
+    it('clear keeps column layout', () => {
+        let state = setGridColumnWidth(createEmptyGridViewState(), 'c1', 180)
+        state = moveGridColumnOrder(state, columns, 'c2', 'c1')
+        state = setGridColumnFilter(state, 'c1', '1')
+        state = clearGridViewState(state)
+        assert.equal(state.columnFilters.c1, undefined)
+        assert.equal(state.columnWidths.c1, 180)
+        assert.deepEqual(state.columnOrder, ['c2', 'c1'])
     })
 
     it('detects active filters or sort', () => {

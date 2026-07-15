@@ -6,6 +6,7 @@ import {DwIcon} from '@/core/icons'
 import {ContextMenuHost} from '@/core/context-menu'
 import TabBar from '@/core/components/TabBar.vue'
 import TabItem from '@/core/components/TabItem.vue'
+import SplitHandle from '@/core/components/SplitHandle.vue'
 import DataGrid from '@/core/components/DataGrid.vue'
 import ExplainPlanTree from '@/features/workspace/components/ExplainPlanTree.vue'
 import GenerateDmlDialog from '@/features/workspace/components/GenerateDmlDialog.vue'
@@ -30,15 +31,30 @@ import {
     canCompareQueryResults,
 } from '@/features/workspace/services/query-result-diff.service'
 
-const OVERVIEW_TAB_ID = 'overview'
+const MESSAGES_WIDTH_DEFAULT = 280
+const MESSAGES_WIDTH_MIN = 180
+const MESSAGES_WIDTH_MAX = 480
+
+interface MessageLogEntry {
+  key: string
+  resultIndex: number
+  statementNo: number
+  sql: string
+  status: 'success' | 'error'
+  durationMs: number
+  errorMessage?: string
+}
 
 const {t} = useI18n()
 
 const props = withDefaults(
     defineProps<{
       results?: QueryResultItem[]
-      activeView?: 'overview' | number
+      activeView?: number
+      /** 控制台：左侧常显消息面板 */
       alwaysShowOverview?: boolean
+      /** 控制台：查询执行中（仅消息区、隐藏结果主区） */
+      running?: boolean
       closableResults?: boolean
       collapsible?: boolean
       columns?: TableColumn[]
@@ -87,6 +103,7 @@ const props = withDefaults(
     {
       showFilter: true,
       alwaysShowOverview: false,
+      running: false,
       closableResults: false,
       exportName: 'query_result.csv',
       editable: false,
@@ -100,7 +117,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  'update:activeView': ['overview' | number]
+  'update:activeView': [number]
   collapse: []
   'close-result': [index: number]
   'close-other-results': [index: number]
@@ -123,8 +140,18 @@ const pluginStore = usePluginStore()
 const editorSettings = useEditorSettingsStore()
 const tabBarRef = ref<InstanceType<typeof TabBar>>()
 const batchSummaryRef = ref<HTMLElement | null>(null)
+const messagesCollapsed = ref(false)
+const messagesWidth = ref(MESSAGES_WIDTH_DEFAULT)
 
 const isConsoleMode = computed(() => props.results !== undefined)
+const showMessagesPanel = computed(() => isConsoleMode.value && props.alwaysShowOverview)
+/** 有结果且非执行中才展示结果主区；执行中/无结果时仅消息页 */
+const showResultsMain = computed(() => {
+  if (!showMessagesPanel.value) return true
+  if (props.running) return false
+  return (props.results?.length ?? 0) > 0
+})
+const messagesOnly = computed(() => showMessagesPanel.value && !showResultsMain.value)
 
 const normalizedResults = computed<QueryResultItem[]>(() => {
   if (isConsoleMode.value) return props.results ?? []
@@ -172,42 +199,61 @@ const {
 /** 仅 SQL 控制台（有编辑区 + 多结果）需要结果 Tab 栏；直接打开表数据时不显示 */
 const showTabBar = computed(() => isConsoleMode.value)
 
-const showOverviewTab = computed(() => {
-  if (normalizedResults.value.some((item) => item.batchEntries != null)) return false
-  return props.alwaysShowOverview || normalizedResults.value.length > 1
-})
-
 const currentView = computed({
   get: () => {
     if (props.activeView !== undefined) return props.activeView
-    return showOverviewTab.value ? 'overview' : 0
+    return 0
   },
-  set: (value: 'overview' | number) => emit('update:activeView', value),
+  set: (value: number) => emit('update:activeView', value),
 })
 
 const activeTabId = computed<string | null>(() => {
-  if (currentView.value === 'overview') return OVERVIEW_TAB_ID
-  const item = normalizedResults.value[currentView.value as number]
+  const item = normalizedResults.value[currentView.value]
   return item?.id ?? null
 })
 
 const tabsSignature = computed(() => normalizedResults.value.map((item) => item.id).join(','))
 
-const overflowItems = computed(() => {
-  const items = []
-  if (showOverviewTab.value) {
-    items.push({id: OVERVIEW_TAB_ID, label: t('queryResult.overview')})
-  }
-  for (const item of normalizedResults.value) {
-    items.push({id: item.id, label: item.label})
-  }
-  return items
-})
+const overflowItems = computed(() =>
+    normalizedResults.value.map((item) => ({id: item.id, label: item.label})),
+)
 
 const activeResult = computed(() => {
-  if (currentView.value === 'overview') return null
-  const index = currentView.value as number
+  const index = currentView.value
   return normalizedResults.value[index] ?? null
+})
+
+const messageLogEntries = computed<MessageLogEntry[]>(() => {
+  const entries: MessageLogEntry[] = []
+  let statementNo = 0
+  normalizedResults.value.forEach((item, resultIndex) => {
+    if (item.batchEntries?.length) {
+      for (const [batchIndex, entry] of item.batchEntries.entries()) {
+        statementNo += 1
+        entries.push({
+          key: `${item.id}-batch-${batchIndex}`,
+          resultIndex,
+          statementNo,
+          sql: entry.sql,
+          status: entry.status,
+          durationMs: entry.durationMs,
+          errorMessage: entry.errorMessage,
+        })
+      }
+      return
+    }
+    statementNo += 1
+    entries.push({
+      key: item.id,
+      resultIndex,
+      statementNo,
+      sql: item.sql,
+      status: item.status,
+      durationMs: item.durationMs,
+      errorMessage: item.errorMessage,
+    })
+  })
+  return entries
 })
 
 const generateDmlOpen = ref(false)
@@ -305,13 +351,6 @@ const gridScope = computed(() => {
 
 const {viewState} = useGridViewState(gridScope)
 
-const overviewSummary = computed(() => {
-  const items = normalizedResults.value
-  const totalRows = items.reduce((sum, item) => sum + item.total, 0)
-  const totalDuration = items.reduce((sum, item) => sum + item.durationMs, 0)
-  return {count: items.length, totalRows, totalDuration}
-})
-
 const batchSummaryStats = computed(() => {
   const result = activeResult.value
   if (!result?.batchEntries) return null
@@ -351,10 +390,6 @@ watch(
 )
 
 function setViewByTabId(tabId: string) {
-  if (tabId === OVERVIEW_TAB_ID) {
-    currentView.value = 'overview'
-    return
-  }
   const index = normalizedResults.value.findIndex((item) => item.id === tabId)
   if (index >= 0) currentView.value = index
 }
@@ -378,8 +413,7 @@ function onExported(fileName: string) {
 }
 
 function onRefresh() {
-  if (currentView.value === 'overview') return
-  const index = currentView.value as number
+  const index = currentView.value
   const payload = resolveQueryResultRefreshRequest(activeResult.value, index)
   if (payload) emit('refresh', payload)
 }
@@ -408,9 +442,7 @@ function jumpToErrorLine(lineNumber: number) {
   emit('jump-to-error-line', lineNumber)
 }
 
-const activeResultIndex = computed(() =>
-    currentView.value === 'overview' ? -1 : (currentView.value as number),
-)
+const activeResultIndex = computed(() => currentView.value)
 
 const gridHasMore = computed(() => {
   if (props.resultHasMore != null) return props.resultHasMore
@@ -464,104 +496,167 @@ function onRequestAiExplain() {
   if (!canRequestAiExplain.value) return
   emit('request-ai-explain')
 }
+
+watch(
+    () => [props.running, props.results?.length ?? 0] as const,
+    ([isRunning, count]) => {
+      if (!showMessagesPanel.value) return
+      if (isRunning || count === 0) {
+        messagesCollapsed.value = false
+        return
+      }
+      messagesCollapsed.value = true
+    },
+    {immediate: true},
+)
 </script>
 
 <template>
-  <div class="result-pane">
-    <TabBar
-        v-if="showTabBar"
-        ref="tabBarRef"
-        bar-class="result-tab-bar"
-        :active-tab-id="activeTabId"
-        :tabs-signature="tabsSignature"
-        :overflow-items="overflowItems"
-        :overflow-title="t('workspace.allTabs')"
-        :overflow-search-placeholder="t('workspace.searchTabs')"
-        @select="handleTabSelect"
-    >
-      <template #default="{ bindTabRef }">
-        <TabItem
-            v-if="showOverviewTab"
-            :tab-id="OVERVIEW_TAB_ID"
-            :title="t('queryResult.overview')"
-            :active="currentView === 'overview'"
-            :set-ref="bindTabRef(OVERVIEW_TAB_ID)"
-            @select="handleTabSelect(OVERVIEW_TAB_ID)"
-        />
-        <TabItem
-            v-for="(item, index) in normalizedResults"
-            :key="item.id"
-            :tab-id="item.id"
-            :title="item.label"
-            :active="currentView === index"
-            :closable="closableResults"
-            :set-ref="bindTabRef(item.id)"
-            @select="handleTabSelect(item.id)"
-            @close="closeResult(index)"
-            @contextmenu="onTabContextMenu($event, index, closableResults)"
-        >
-          <template #leading>
-            <span
-                v-if="item.batchRunning"
-                class="dw-tab__status dw-tab__status--running"
-                aria-hidden="true"
+  <div
+      class="result-pane"
+      :class="{
+        'result-pane--split': showMessagesPanel,
+        'result-pane--messages-only': messagesOnly,
+      }"
+  >
+    <template v-if="showMessagesPanel">
+      <button
+          v-if="messagesCollapsed && showResultsMain"
+          type="button"
+          class="messages-rail"
+          :title="t('queryResult.messagesExpand')"
+          @click="messagesCollapsed = false"
+      >
+        <span class="messages-rail__label">{{ t('queryResult.messages') }}</span>
+        <DwIcon name="chevrons-right" size="sm" :stroke-width="1.75"/>
+      </button>
+      <aside
+          v-else
+          class="messages-panel"
+          :class="{ 'messages-panel--full': messagesOnly }"
+          :style="messagesOnly ? undefined : { width: `${messagesWidth}px` }"
+      >
+        <header class="messages-panel__head">
+          <span class="messages-panel__title">{{ t('queryResult.messages') }}</span>
+          <div class="messages-panel__actions">
+            <button
+                v-if="!messagesOnly"
+                type="button"
+                class="messages-panel__collapse"
+                :title="t('queryResult.messagesCollapse')"
+                @click="messagesCollapsed = true"
+            >
+              <DwIcon name="chevrons-left" size="xs" :stroke-width="1.75"/>
+            </button>
+            <CollapseButton
+                v-if="collapsible && messagesOnly"
+                @click="emit('collapse')"
             />
-            <span v-else-if="item.status === 'success'" class="dw-tab__status" aria-hidden="true">✓</span>
-            <span v-else-if="item.status === 'error'" class="dw-tab__status dw-tab__status--error"
-                  aria-hidden="true">✕</span>
-          </template>
-        </TabItem>
-      </template>
-      <template v-if="collapsible" #actions>
-        <CollapseButton @click="emit('collapse')"/>
-      </template>
-    </TabBar>
-
-    <div v-if="currentView === 'overview'" class="overview">
-      <p v-if="normalizedResults.length" class="overview-head">
-        {{
-          t('queryResult.overviewSummaryPrefix', {
-            count: overviewSummary.count,
-            rows: overviewSummary.totalRows,
-          })
-        }}
-        <span
-            class="query-duration"
-            :class="{ 'query-duration--slow': isSlowQueryDuration(overviewSummary.totalDuration) }"
-        >{{ overviewSummary.totalDuration }}ms</span>{{ t('queryResult.overviewDurationSuffix') }}
-      </p>
-      <p v-else class="overview-empty">{{ t('queryResult.overviewEmpty') }}</p>
-      <ul v-if="normalizedResults.length" class="overview-list">
-        <li v-for="(item, index) in normalizedResults" :key="item.id">
-          <button class="overview-item" type="button" @click="selectResult(index)">
-            <span
-                class="overview-ok"
-                :class="{ 'overview-err': item.status === 'error' }"
-                aria-hidden="true"
-            >{{ item.status === 'error' ? '✕' : '✓' }}</span>
-            <span class="overview-meta">
+          </div>
+        </header>
+        <div class="messages-panel__sub">
+          {{ t('queryResult.messagesAll', {count: messageLogEntries.length}) }}
+        </div>
+        <div class="messages-log">
+          <p v-if="running && !messageLogEntries.length" class="messages-running">
+            <span class="messages-running__spinner" aria-hidden="true"/>
+            {{ t('queryResult.messagesRunning') }}
+          </p>
+          <p v-else-if="!messageLogEntries.length" class="messages-empty">
+            {{ t('queryResult.messagesEmpty') }}
+          </p>
+          <button
+              v-for="entry in messageLogEntries"
+              :key="entry.key"
+              type="button"
+              class="messages-entry"
+              :class="{
+                'is-active': currentView === entry.resultIndex,
+                'is-error': entry.status === 'error',
+              }"
+              @click="selectResult(entry.resultIndex)"
+          >
+            <div class="messages-entry__title">
+              {{ t('queryResult.messageStatement', {n: entry.statementNo}) }}
+            </div>
+            <pre class="messages-entry__sql">{{ entry.sql || '—' }}</pre>
+            <p
+                class="messages-entry__status"
+                :class="{ 'query-duration--slow': isSlowQueryDuration(entry.durationMs) }"
+            >
               {{
-                t('queryResult.overviewItemPrefix', {
-                  label: item.label,
-                  rows: item.total,
-                })
+                entry.status === 'error'
+                  ? t('queryResult.messageFailed', {duration: entry.durationMs})
+                  : t('queryResult.messageSuccess', {duration: entry.durationMs})
               }}
-              <span
-                  class="query-duration"
-                  :class="{ 'query-duration--slow': isSlowQueryDuration(item.durationMs) }"
-              >{{ item.durationMs }}ms</span>
-            </span>
-            <span class="overview-sql">{{ item.sql }}</span>
+            </p>
+            <pre
+                v-if="entry.status === 'error' && entry.errorMessage"
+                class="messages-entry__error"
+            >{{ entry.errorMessage }}</pre>
+            <p class="messages-entry__done">{{ t('queryResult.messageFinished') }}</p>
           </button>
-        </li>
-      </ul>
-    </div>
+        </div>
+      </aside>
+      <SplitHandle
+          v-if="!messagesCollapsed && showResultsMain"
+          v-model="messagesWidth"
+          direction="vertical"
+          :min="MESSAGES_WIDTH_MIN"
+          :max="MESSAGES_WIDTH_MAX"
+      />
+    </template>
 
-    <div
-        v-else-if="activeResult?.batchEntries && batchSummaryStats"
-        ref="batchSummaryRef"
-        class="overview batch-summary"
-    >
+    <div v-if="showResultsMain" class="result-pane__main">
+      <TabBar
+          v-if="showTabBar"
+          ref="tabBarRef"
+          bar-class="result-tab-bar"
+          :active-tab-id="activeTabId"
+          :tabs-signature="tabsSignature"
+          :overflow-items="overflowItems"
+          :overflow-title="t('workspace.allTabs')"
+          :overflow-search-placeholder="t('workspace.searchTabs')"
+          @select="handleTabSelect"
+      >
+        <template #default="{ bindTabRef }">
+          <TabItem
+              v-for="(item, index) in normalizedResults"
+              :key="item.id"
+              :tab-id="item.id"
+              :title="item.label"
+              :active="currentView === index"
+              :closable="closableResults"
+              :set-ref="bindTabRef(item.id)"
+              @select="handleTabSelect(item.id)"
+              @close="closeResult(index)"
+              @contextmenu="onTabContextMenu($event, index, closableResults)"
+          >
+            <template #leading>
+              <span
+                  v-if="item.batchRunning"
+                  class="dw-tab__status dw-tab__status--running"
+                  aria-hidden="true"
+              />
+              <span v-else-if="item.status === 'success'" class="dw-tab__status" aria-hidden="true">✓</span>
+              <span
+                  v-else-if="item.status === 'error'"
+                  class="dw-tab__status dw-tab__status--error"
+                  aria-hidden="true"
+              >✕</span>
+            </template>
+          </TabItem>
+        </template>
+        <template v-if="collapsible" #actions>
+          <CollapseButton @click="emit('collapse')"/>
+        </template>
+      </TabBar>
+
+      <div
+          v-if="activeResult?.batchEntries && batchSummaryStats"
+          ref="batchSummaryRef"
+          class="overview batch-summary"
+      >
       <p v-if="activeResult.batchRunning" class="batch-running">
         <span class="batch-running__spinner" aria-hidden="true"/>
         {{
@@ -764,6 +859,11 @@ function onRequestAiExplain() {
         </template>
       </DataGrid>
     </div>
+
+    <div v-else-if="showMessagesPanel" class="result-main-empty">
+      {{ t('queryResult.messagesEmpty') }}
+    </div>
+    </div>
   </div>
 
   <GenerateDmlDialog
@@ -792,6 +892,216 @@ function onRequestAiExplain() {
   height: 100%;
   min-height: 0;
   background: var(--dw-bg-editor);
+}
+
+.result-pane--split {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.result-pane--messages-only .messages-panel--full {
+  flex: 1;
+  width: auto;
+  border-right: none;
+}
+
+.result-pane__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.messages-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--dw-space-3);
+  flex-shrink: 0;
+  width: var(--dw-icon-size-lg);
+  min-width: var(--dw-icon-size-lg);
+  padding: var(--dw-space-5) 0;
+  border-right: 1px solid var(--dw-panel-border);
+  background: var(--dw-bg-muted);
+  color: var(--dw-text-secondary);
+}
+
+.messages-rail:hover {
+  color: var(--dw-primary);
+  background: var(--dw-bg-hover);
+}
+
+.messages-rail__label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: var(--dw-tab-title-size);
+  line-height: var(--dw-tab-title-line);
+  letter-spacing: 0.12em;
+}
+
+.messages-panel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  border-right: 1px solid var(--dw-panel-border);
+  background: var(--dw-bg-muted);
+}
+
+.messages-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dw-space-3);
+  height: var(--dw-tab-height);
+  padding: 0 var(--dw-space-4);
+  border-bottom: 1px solid var(--dw-panel-border);
+  background: var(--dw-tab-bar-bg);
+}
+
+.messages-panel__title {
+  font-size: var(--dw-text-sm);
+  font-weight: 600;
+  color: var(--dw-text);
+}
+
+.messages-panel__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-space-1);
+}
+
+.messages-panel__collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dw-icon-size-md);
+  height: var(--dw-icon-size-md);
+  border-radius: var(--dw-radius-xs);
+  color: var(--dw-text-secondary);
+}
+
+.messages-panel__collapse:hover {
+  background: var(--dw-tab-hover-bg);
+  color: var(--dw-text);
+}
+
+.messages-panel__sub {
+  padding: var(--dw-space-2) var(--dw-space-4);
+  border-bottom: 1px solid var(--dw-border-light);
+  background: var(--dw-bg-panel);
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-xs);
+}
+
+.messages-log {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--dw-space-4);
+}
+
+.messages-empty,
+.messages-running,
+.result-main-empty {
+  margin: 0;
+  padding: var(--dw-space-6);
+  color: var(--dw-text-muted);
+  font-size: var(--dw-text-sm);
+}
+
+.messages-running {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+}
+
+.messages-running__spinner {
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
+  border: 2px solid color-mix(in srgb, var(--dw-link) 25%, transparent);
+  border-top-color: var(--dw-link);
+  border-radius: 50%;
+  animation: batch-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.result-main-empty {
+  flex: 1;
+}
+
+.messages-entry {
+  display: block;
+  width: 100%;
+  margin: 0 0 var(--dw-space-5);
+  padding: var(--dw-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--dw-control-radius-sm);
+  background: var(--dw-bg);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.messages-entry:hover {
+  border-color: var(--dw-border);
+  background: var(--dw-bg-panel);
+}
+
+.messages-entry.is-active {
+  border-color: color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border));
+  box-shadow: inset 2px 0 0 var(--dw-primary);
+}
+
+.messages-entry__title {
+  margin-bottom: var(--dw-space-2);
+  color: var(--dw-text);
+  font-size: var(--dw-text-sm);
+  font-weight: 600;
+}
+
+.messages-entry__sql {
+  margin: 0 0 var(--dw-space-3);
+  padding: 0;
+  color: var(--dw-text);
+  font-family: var(--dw-mono);
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.messages-entry__status {
+  margin: 0 0 var(--dw-space-1);
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-xs);
+}
+
+.messages-entry.is-error .messages-entry__status {
+  color: var(--dw-danger-fg);
+}
+
+.messages-entry__error {
+  margin: 0 0 var(--dw-space-2);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  border-radius: var(--dw-radius-xs);
+  background: var(--dw-danger-soft);
+  color: var(--dw-danger-fg);
+  font-family: var(--dw-mono);
+  font-size: var(--dw-text-2xs);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.messages-entry__done {
+  margin: 0;
+  color: var(--dw-text-muted);
+  font-size: var(--dw-text-xs);
 }
 
 .result-tab-bar {

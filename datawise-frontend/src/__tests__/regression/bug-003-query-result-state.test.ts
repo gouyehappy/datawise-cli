@@ -6,11 +6,11 @@ import assert from 'node:assert/strict'
  * 此处用纯数据结构模拟 store 更新策略，防止回退为仅 mutate 嵌套 results。
  */
 function applyConsoleQueryResults(
-    byTabId: Record<string, { results: { id: string }[]; activeView: 'overview' | number }>,
+    byTabId: Record<string, { results: { id: string }[]; activeView: number }>,
     tabId: string,
     results: { id: string }[],
-): Record<string, { results: { id: string }[]; activeView: 'overview' | number }> {
-    const activeView: 'overview' | number = results.length === 0 ? 'overview' : results.length - 1
+): Record<string, { results: { id: string }[]; activeView: number }> {
+    const activeView = results.length === 0 ? 0 : results.length - 1
     return {
         ...byTabId,
         [tabId]: {results, activeView},
@@ -20,7 +20,7 @@ function applyConsoleQueryResults(
 describe('BUG-003: console query state replace-by-reference', () => {
     it('replaces tab entry so top-level record reference changes', () => {
         const before = {
-            tab1: {results: [{id: 'old'}], activeView: 0 as const},
+            tab1: {results: [{id: 'old'}], activeView: 0},
         }
         const after = applyConsoleQueryResults(before, 'tab1', [{id: 'new'}])
         assert.notEqual(after, before)
@@ -29,9 +29,9 @@ describe('BUG-003: console query state replace-by-reference', () => {
         assert.equal(after.tab1.activeView, 0)
     })
 
-    it('sets activeView to overview when results empty', () => {
+    it('sets activeView to 0 when results empty', () => {
         const after = applyConsoleQueryResults({}, 'tab1', [])
-        assert.equal(after.tab1.activeView, 'overview')
+        assert.equal(after.tab1.activeView, 0)
         assert.equal(after.tab1.results.length, 0)
     })
 })

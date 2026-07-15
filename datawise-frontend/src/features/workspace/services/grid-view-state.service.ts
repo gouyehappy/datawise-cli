@@ -4,10 +4,18 @@ import {columnRowKey, readRowCell} from '@/core/utils/query-result-column'
 
 export type GridSortDirection = 'asc' | 'desc'
 
+export const GRID_COLUMN_WIDTH_DEFAULT = 120
+export const GRID_COLUMN_WIDTH_MIN = 64
+export const GRID_COLUMN_WIDTH_MAX = 720
+
 export interface GridViewState {
     columnFilters: Record<string, string>
     sortColumn: string | null
     sortDirection: GridSortDirection | null
+    /** 列宽（按 columnRowKey） */
+    columnWidths: Record<string, number>
+    /** 列展示顺序（columnRowKey 列表）；空则跟随数据源顺序 */
+    columnOrder: string[]
 }
 
 export const GRID_VIEW_STATE_STORAGE_KEY = 'dw-grid-view-state-v1'
@@ -17,6 +25,8 @@ export function createEmptyGridViewState(): GridViewState {
         columnFilters: {},
         sortColumn: null,
         sortDirection: null,
+        columnWidths: {},
+        columnOrder: [],
     }
 }
 
@@ -82,6 +92,80 @@ export function applyGridViewStateToRows(
     return result
 }
 
+function normalizeColumnWidths(raw: unknown): Record<string, number> {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+    const widths: Record<string, number> = {}
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+        const width = typeof value === 'number' ? value : Number(value)
+        if (!Number.isFinite(width)) continue
+        widths[key] = clampColumnWidth(width)
+    }
+    return widths
+}
+
+function normalizeColumnOrder(raw: unknown): string[] {
+    if (!Array.isArray(raw)) return []
+    return raw.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+}
+
+export function clampColumnWidth(width: number): number {
+    return Math.min(GRID_COLUMN_WIDTH_MAX, Math.max(GRID_COLUMN_WIDTH_MIN, Math.round(width)))
+}
+
+/** 按持久化顺序重排列；未知 key 追加在末尾 */
+export function resolveDisplayColumns(
+    columns: TableColumn[],
+    columnOrder: string[] | undefined,
+): TableColumn[] {
+    if (!columnOrder?.length) return columns
+    const byKey = new Map(columns.map((column) => [columnRowKey(column), column]))
+    const ordered: TableColumn[] = []
+    const used = new Set<string>()
+    for (const key of columnOrder) {
+        const column = byKey.get(key)
+        if (!column || used.has(key)) continue
+        ordered.push(column)
+        used.add(key)
+    }
+    for (const column of columns) {
+        const key = columnRowKey(column)
+        if (used.has(key)) continue
+        ordered.push(column)
+    }
+    return ordered
+}
+
+export function setGridColumnWidth(
+    state: GridViewState,
+    columnKey: string,
+    width: number,
+): GridViewState {
+    return {
+        ...state,
+        columnWidths: {
+            ...state.columnWidths,
+            [columnKey]: clampColumnWidth(width),
+        },
+    }
+}
+
+export function moveGridColumnOrder(
+    state: GridViewState,
+    columns: TableColumn[],
+    fromKey: string,
+    toKey: string,
+): GridViewState {
+    if (fromKey === toKey) return state
+    const current = resolveDisplayColumns(columns, state.columnOrder).map((column) => columnRowKey(column))
+    const fromIndex = current.indexOf(fromKey)
+    const toIndex = current.indexOf(toKey)
+    if (fromIndex < 0 || toIndex < 0) return state
+    const next = [...current]
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+    return {...state, columnOrder: next}
+}
+
 export function normalizeGridViewState(raw: unknown): GridViewState {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
         return createEmptyGridViewState()
@@ -103,6 +187,8 @@ export function normalizeGridViewState(raw: unknown): GridViewState {
         columnFilters,
         sortColumn: sortDirection ? sortColumn : null,
         sortDirection: sortColumn ? sortDirection : null,
+        columnWidths: normalizeColumnWidths(record.columnWidths),
+        columnOrder: normalizeColumnOrder(record.columnOrder),
     }
 }
 
@@ -131,6 +217,13 @@ export function setGridColumnFilter(
     return {...state, columnFilters: nextFilters}
 }
 
-export function clearGridViewState(): GridViewState {
-    return createEmptyGridViewState()
+/** 清除筛选/排序，保留列宽与顺序 */
+export function clearGridViewState(state?: GridViewState): GridViewState {
+    return {
+        columnFilters: {},
+        sortColumn: null,
+        sortDirection: null,
+        columnWidths: state?.columnWidths ?? {},
+        columnOrder: state?.columnOrder ?? [],
+    }
 }

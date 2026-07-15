@@ -72,7 +72,7 @@ export const DEFAULT_EXPLORER_PREFERENCES: ExplorerPreferences = {
 
 export const DEFAULT_WORKSPACE_PREFERENCES: WorkspacePreferences = {
     consoleEditorHeight: CONSOLE_EDITOR_HEIGHT_DEFAULT,
-    showConsoleResultPanel: true,
+    showConsoleResultPanel: false,
     restoreSession: true,
     tabs: [],
     activeTabIndex: 0,

@@ -23,9 +23,12 @@ import {
 } from '@/core/utils/cell-value-format'
 import {
   applyGridViewStateToRows,
-  cellMatchesFilter,
   clearGridViewState,
   compareCellValues,
+  GRID_COLUMN_WIDTH_DEFAULT,
+  moveGridColumnOrder,
+  resolveDisplayColumns,
+  setGridColumnWidth,
   toggleGridSort,
   type GridViewState,
 } from '@/features/workspace/services/grid-view-state.service'
@@ -54,6 +57,11 @@ import {
 import {CONSOLE_GRID_PAGE_SIZE_OPTIONS} from '@/features/settings/constants/editor-presets'
 import {resolveGridPageSizeOption} from '@/features/settings/services/grid-pagination.service'
 import {CURSOR_LOADED_ROWS_WARN_THRESHOLD} from '@/features/workspace/constants/query-result-limits'
+import {
+  isGridColumnPrimaryKey,
+  isGridNumericColumn,
+  resolveGridColumnTypeLabel,
+} from '@/core/components/data-grid-column-meta'
 
 const {t} = useI18n()
 const pluginStore = usePluginStore()
@@ -143,7 +151,44 @@ const viewState = defineModel<GridViewState>('viewState')
 
 const columnFiltersEnabled = computed(() => viewState.value !== undefined)
 
-const filterColumnOptions = computed(() => gridColumns.value.map((col) => col.name))
+/** 无 viewState 绑定时仍支持本地列宽/顺序 */
+const localColumnWidths = ref<Record<string, number>>({})
+const localColumnOrder = ref<string[]>([])
+
+const displayColumns = computed(() =>
+    resolveDisplayColumns(
+        gridColumns.value,
+        viewState.value?.columnOrder ?? localColumnOrder.value,
+    ),
+)
+
+function columnWidthPx(columnKey: string): number {
+    const widths = viewState.value?.columnWidths ?? localColumnWidths.value
+    return widths[columnKey] ?? GRID_COLUMN_WIDTH_DEFAULT
+}
+
+const tableMinWidthPx = computed(() =>
+    44 + displayColumns.value.reduce((sum, column) => sum + columnWidthPx(columnRowKey(column)), 0),
+)
+
+function patchViewLayout(next: GridViewState | ((state: GridViewState) => GridViewState)) {
+    const base: GridViewState = viewState.value ?? {
+        columnFilters: {},
+        sortColumn: null,
+        sortDirection: null,
+        columnWidths: {...localColumnWidths.value},
+        columnOrder: [...localColumnOrder.value],
+    }
+    const resolved = typeof next === 'function' ? next(base) : next
+    if (viewState.value) {
+        viewState.value = resolved
+        return
+    }
+    localColumnWidths.value = {...resolved.columnWidths}
+    localColumnOrder.value = [...resolved.columnOrder]
+}
+
+const filterColumnOptions = computed(() => displayColumns.value.map((col) => col.name))
 
 const filterColumnSelectOptions = computed<SelectOption[]>(() =>
     filterColumnOptions.value.map((name) => ({value: name, label: name})),
@@ -165,8 +210,10 @@ watch(
     {immediate: true},
 )
 
+const tableColumnCount = computed(() => displayColumns.value.length + 1)
+
 function resolveFilterColumnKey(columnName: string): string {
-    const column = gridColumns.value.find((col) => col.name === columnName)
+    const column = displayColumns.value.find((col) => col.name === columnName)
     return column ? columnRowKey(column) : ''
 }
 
@@ -337,8 +384,6 @@ const {
   scrollToRowIndex,
 } = useGridVirtualWindow(gridBodyRef, pagedRowsRef, {enabled: virtualScrollEnabled})
 
-const tableColumnCount = computed(() => gridColumns.value.length + 1)
-
 const exportEnabled = computed(() => pluginStore.isEnabled('p-grid-export'))
 const maskExportEnabled = computed(() => pluginStore.isEnabled('p-export-mask'))
 
@@ -404,7 +449,7 @@ watch(
 const showFilterBar = computed(() => props.showFilter && !!(props.where || props.orderBy))
 
 function openExportDialog() {
-  if (!exportEnabled.value || !gridColumns.value.length) return
+  if (!exportEnabled.value || !displayColumns.value.length) return
   exportDialogOpen.value = true
 }
 
@@ -412,7 +457,7 @@ async function onExportConfirm(payload: { format: GridExportFormat; mask?: GridE
   exportSubmitting.value = true
   try {
     const resolved = await downloadGridExport(
-        gridColumns.value,
+        displayColumns.value,
         exportDialogRows.value,
         payload.format,
         props.exportBaseName,
@@ -431,19 +476,101 @@ function onGenerateDmlClick() {
 
 function onHeaderSort(columnKey: string) {
   if (!viewState.value) return
+  if (suppressNextSortClick.value) {
+    suppressNextSortClick.value = false
+    return
+  }
   viewState.value = toggleGridSort(viewState.value, columnKey)
 }
 
-function sortIndicator(columnKey: string): string | null {
+function sortDirection(columnKey: string): 'asc' | 'desc' | null {
   if (!viewState.value || viewState.value.sortColumn !== columnKey || !viewState.value.sortDirection) {
     return null
   }
-  return viewState.value.sortDirection === 'asc' ? '↑' : '↓'
+  return viewState.value.sortDirection
+}
+
+function columnTypeLabel(column: TableColumn): string {
+  return resolveGridColumnTypeLabel(column, props.columnDetails)
+}
+
+function isPrimaryKeyColumn(column: TableColumn): boolean {
+  return isGridColumnPrimaryKey(column, props.pkColumns, props.columnDetails)
+}
+
+function isNumericColumn(column: TableColumn): boolean {
+  return isGridNumericColumn(column, props.columnDetails)
+}
+
+const suppressNextSortClick = ref(false)
+const dragFromKey = ref<string | null>(null)
+const dragOverKey = ref<string | null>(null)
+const resizingKey = ref<string | null>(null)
+
+function onResizeStart(event: MouseEvent, column: TableColumn) {
+  event.preventDefault()
+  event.stopPropagation()
+  const key = columnRowKey(column)
+  const startX = event.clientX
+  const startWidth = columnWidthPx(key)
+  resizingKey.value = key
+  const previousCursor = document.body.style.cursor
+  document.body.style.cursor = 'col-resize'
+
+  function onMove(moveEvent: MouseEvent) {
+    const nextWidth = startWidth + (moveEvent.clientX - startX)
+    patchViewLayout((state) => setGridColumnWidth(state, key, nextWidth))
+  }
+
+  function onUp() {
+    resizingKey.value = null
+    document.body.style.cursor = previousCursor
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+  }
+
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+}
+
+function onHeaderDragStart(event: DragEvent, column: TableColumn) {
+  const key = columnRowKey(column)
+  dragFromKey.value = key
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', key)
+  }
+}
+
+function onHeaderDragOver(event: DragEvent, column: TableColumn) {
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  dragOverKey.value = columnRowKey(column)
+}
+
+function onHeaderDrop(event: DragEvent, column: TableColumn) {
+  event.preventDefault()
+  const fromKey = dragFromKey.value || event.dataTransfer?.getData('text/plain')
+  const toKey = columnRowKey(column)
+  if (fromKey && toKey && fromKey !== toKey) {
+    suppressNextSortClick.value = true
+    patchViewLayout((state) => moveGridColumnOrder(state, gridColumns.value, fromKey, toKey))
+  }
+  dragFromKey.value = null
+  dragOverKey.value = null
+}
+
+function onHeaderDragEnd() {
+  if (dragFromKey.value) {
+    suppressNextSortClick.value = true
+  }
+  dragFromKey.value = null
+  dragOverKey.value = null
 }
 
 function clearViewState() {
   if (!viewState.value) return
-  viewState.value = clearGridViewState()
+  viewState.value = clearGridViewState(viewState.value)
   filterDraft.value = ''
 }
 
@@ -907,27 +1034,72 @@ function dismissColumnStats() {
         </div>
 
         <div ref="gridBodyRef" class="grid-body">
-      <table class="grid-table">
+      <table
+          class="grid-table"
+          :class="{ 'is-resizing': resizingKey }"
+          :style="{ minWidth: `${tableMinWidthPx}px` }"
+      >
         <colgroup>
           <col class="col-index"/>
-          <col v-for="col in columns" :key="columnRowKey(col)" class="col-data"/>
+          <col
+              v-for="col in displayColumns"
+              :key="columnRowKey(col)"
+              class="col-data"
+              :style="{
+                width: `${columnWidthPx(columnRowKey(col))}px`,
+                minWidth: `${columnWidthPx(columnRowKey(col))}px`,
+              }"
+          />
         </colgroup>
         <thead>
         <tr>
-          <th class="index-col">#</th>
+          <th class="index-col th--meta">#</th>
           <th
-              v-for="col in columns"
+              v-for="col in displayColumns"
               :key="columnRowKey(col)"
+              class="th--meta"
               :class="{
                 'is-sortable': columnFiltersEnabled,
                 'is-sorted': viewState?.sortColumn === columnRowKey(col),
                 'is-stats-active': statsColumnName === col.name,
+                'is-numeric': isNumericColumn(col),
+                'is-drag-over': dragOverKey === columnRowKey(col) && dragFromKey !== columnRowKey(col),
+                'is-dragging': dragFromKey === columnRowKey(col),
               }"
+              draggable="true"
               @click="columnFiltersEnabled ? onHeaderSort(columnRowKey(col)) : undefined"
               @contextmenu="onHeaderContextMenu($event, col)"
+              @dragstart="onHeaderDragStart($event, col)"
+              @dragover="onHeaderDragOver($event, col)"
+              @drop="onHeaderDrop($event, col)"
+              @dragend="onHeaderDragEnd"
           >
-            <span class="th-label">{{ col.name }}</span>
-            <span v-if="sortIndicator(columnRowKey(col))" class="th-sort">{{ sortIndicator(columnRowKey(col)) }}</span>
+            <div class="th-main">
+              <DwIcon
+                  v-if="isPrimaryKeyColumn(col)"
+                  class="th-key"
+                  name="key"
+                  size="xs"
+                  :stroke-width="1.75"
+              />
+              <span class="th-label">{{ col.name }}</span>
+              <DwIcon
+                  v-if="sortDirection(columnRowKey(col))"
+                  class="th-sort"
+                  :class="{ 'th-sort--asc': sortDirection(columnRowKey(col)) === 'asc' }"
+                  name="chevron-down"
+                  size="xs"
+                  :stroke-width="2"
+              />
+            </div>
+            <div v-if="columnTypeLabel(col)" class="th-type">{{ columnTypeLabel(col) }}</div>
+            <span
+                class="th-resize"
+                title=""
+                @mousedown="onResizeStart($event, col)"
+                @click.stop
+                @dragstart.stop.prevent
+            />
           </th>
         </tr>
         </thead>
@@ -950,12 +1122,13 @@ function dismissColumnStats() {
             {{ rowOffset + rowIndex + 1 }}
           </td>
           <td
-              v-for="col in columns"
+              v-for="col in displayColumns"
               :key="columnRowKey(col)"
               class="data-cell"
               :class="{
                 'is-cell-active': isCellActive(item, col.name) && item.kind !== 'insert',
                 'is-cell-editing': isCellInputVisible(item, col.name),
+                'is-numeric': isNumericColumn(col),
               }"
               @click="onCellClick(item, col.name)"
               @dblclick="onCellDblClick(item, col.name, $event, rowIndex)"
@@ -1034,7 +1207,7 @@ function dismissColumnStats() {
 
     <GridExportDialog
         v-model:open="exportDialogOpen"
-        :columns="columns"
+        :columns="displayColumns"
         :suggest-mask="suggestExportMask"
         :mask-export-enabled="maskExportEnabled"
         :exporting="exportSubmitting"
@@ -1378,6 +1551,7 @@ th.is-stats-active .th-label {
   flex: 1;
   overflow: auto;
   min-height: 0;
+  background: var(--dw-bg-editor);
 }
 
 tr.grid-virtual-spacer td {
@@ -1388,19 +1562,32 @@ tr.grid-virtual-spacer td {
 }
 
 table.grid-table {
-  width: 100%;
-  min-width: 100%;
-  /* 固定列宽：编辑态叠加 input 时不因内容长短撑开列 */
+  /* 固定列宽：编辑态叠加 input 时不因内容长短撑开列；minWidth 由脚本按列宽合计注入 */
   table-layout: fixed;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 col.col-index {
-  width: 48px;
+  width: 44px;
 }
 
 col.col-data {
   width: 120px;
+}
+
+.grid-table.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.grid-table.is-resizing th,
+.grid-table.is-resizing td {
+  pointer-events: none;
+}
+
+.grid-table.is-resizing .th-resize {
+  pointer-events: auto;
 }
 
 th,
@@ -1409,6 +1596,7 @@ td {
   max-height: var(--dw-control-h-sm);
   padding: 0;
   border-bottom: 1px solid var(--dw-border-light);
+  border-right: 1px solid color-mix(in srgb, var(--dw-border-light) 88%, var(--dw-border));
   text-align: left;
   white-space: nowrap;
   font-size: var(--dw-text-sm);
@@ -1416,12 +1604,36 @@ td {
   overflow: hidden;
 }
 
+td {
+  color: var(--dw-text);
+  background: var(--dw-bg-editor);
+}
+
+td.is-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+td.is-numeric .cell-text,
+td.is-numeric .cell-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .index-col {
-  width: 48px;
-  padding: 0 var(--dw-space-4);
+  width: 44px;
+  padding: 0 var(--dw-space-3);
   color: var(--dw-text-muted);
   text-align: center;
-  font-size: var(--dw-text-xs);
+  font-size: var(--dw-text-2xs);
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--dw-bg-muted) 55%, var(--dw-bg-editor));
+}
+
+th.index-col {
+  color: var(--dw-text-muted);
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .index-col--selectable {
@@ -1432,30 +1644,173 @@ th {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--dw-bg-muted);
+  height: auto;
+  max-height: none;
+  background: color-mix(in srgb, var(--dw-bg-muted) 92%, var(--dw-bg-panel));
   color: var(--dw-text-secondary);
   font-weight: 500;
-  font-size: var(--dw-text-xs);
-  padding: 0 var(--dw-space-4);
+  font-size: var(--dw-text-sm);
+  padding: var(--dw-space-3) var(--dw-space-5) var(--dw-space-3) var(--dw-space-4);
+  border-bottom: 1px solid var(--dw-border);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--dw-border) 35%, transparent);
+  vertical-align: top;
+}
+
+th.index-col {
+  vertical-align: middle;
+  z-index: 2;
+  padding: 0 var(--dw-space-3);
 }
 
 th.is-sortable {
-  cursor: pointer;
+  cursor: grab;
   user-select: none;
 }
 
+th.is-sortable:active {
+  cursor: grabbing;
+}
+
 th.is-sortable:hover {
-  background: color-mix(in srgb, var(--dw-primary) 6%, var(--dw-bg-muted));
+  background: color-mix(in srgb, var(--dw-primary) 5%, var(--dw-bg-muted));
+}
+
+th.is-stats-active {
+  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-muted));
+}
+
+th.is-sorted {
+  background: color-mix(in srgb, var(--dw-primary) 7%, var(--dw-bg-muted));
+}
+
+th.is-dragging {
+  opacity: 0.45;
+  background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-muted));
+}
+
+th.is-drag-over {
+  box-shadow:
+      inset 2px 0 0 var(--dw-primary),
+      0 1px 0 color-mix(in srgb, var(--dw-border) 35%, transparent);
+  background: color-mix(in srgb, var(--dw-primary) 9%, var(--dw-bg-muted));
 }
 
 th.is-sorted .th-label {
   color: var(--dw-primary);
 }
 
+th.is-numeric .th-main {
+  justify-content: flex-end;
+}
+
+th.is-numeric .th-type {
+  text-align: right;
+}
+
+.th-main {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  min-width: 0;
+  padding-right: var(--dw-space-4);
+}
+
+.th-key {
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--dw-warning) 72%, var(--dw-warning-fg));
+}
+
+.th-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--dw-text);
+  font-size: var(--dw-text-sm);
+  font-weight: 600;
+  line-height: var(--dw-leading-snug);
+}
+
+.th-type {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--dw-text-muted);
+  font-family: var(--dw-mono);
+  font-size: var(--dw-text-2xs);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  padding-right: var(--dw-space-4);
+  opacity: 0.92;
+}
+
 .th-sort {
-  margin-left: var(--dw-space-2);
+  flex-shrink: 0;
+  margin-left: auto;
   color: var(--dw-primary);
-  font-size: var(--dw-text-xs);
+  opacity: 0.9;
+}
+
+.th-sort--asc {
+  transform: rotate(180deg);
+}
+
+.th-resize {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  z-index: 3;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity var(--dw-duration-fast) var(--dw-ease);
+}
+
+.th-resize::after {
+  content: '';
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  left: 50%;
+  width: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--dw-primary) 55%, var(--dw-border));
+  transform: translateX(-50%);
+}
+
+th:hover .th-resize,
+th.is-sorted .th-resize,
+.th-resize:hover,
+.th-resize:active,
+.grid-table.is-resizing .th-resize {
+  opacity: 1;
+}
+
+.th-resize:hover::after,
+.th-resize:active::after {
+  background: var(--dw-primary);
+}
+
+th.th--meta {
+  overflow: visible;
+}
+
+tbody tr:hover td {
+  background: color-mix(in srgb, var(--dw-primary) 3.5%, var(--dw-bg-editor));
+}
+
+tbody tr:hover .index-col {
+  background: color-mix(in srgb, var(--dw-primary) 4%, var(--dw-bg-muted));
+}
+
+tbody tr.is-selected td {
+  background: color-mix(in srgb, var(--dw-primary) 9%, var(--dw-bg-editor));
+}
+
+tbody tr.is-selected .index-col {
+  background: color-mix(in srgb, var(--dw-primary) 12%, var(--dw-bg-muted));
+  color: var(--dw-primary);
 }
 
 .clear-filters-btn {
@@ -1567,30 +1922,35 @@ th.is-sorted .th-label {
   box-sizing: border-box;
 }
 
-tbody tr.is-selected {
-  background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-editor));
-}
-
-tbody tr.is-pending-delete {
-  background: color-mix(in srgb, var(--dw-danger) 12%, var(--dw-bg));
+tbody tr.is-pending-delete td {
+  background: color-mix(in srgb, var(--dw-danger) 12%, var(--dw-bg-editor));
   color: var(--dw-danger-fg);
 }
 
 tbody tr.is-pending-delete .index-col,
 tbody tr.is-pending-delete .cell-text.null {
   color: var(--dw-danger-fg);
+  background: color-mix(in srgb, var(--dw-danger) 14%, var(--dw-bg-muted));
 }
 
-tbody tr.is-pending-delete.is-selected {
-  background: color-mix(in srgb, var(--dw-danger) 22%, var(--dw-bg));
+tbody tr.is-pending-delete.is-selected td {
+  background: color-mix(in srgb, var(--dw-danger) 20%, var(--dw-bg-editor));
 }
 
-tbody tr.is-modified {
+tbody tr.is-modified td {
   background: color-mix(in srgb, var(--dw-warning) 10%, var(--dw-bg-editor));
 }
 
-tbody tr.is-insert-row {
+tbody tr.is-modified .index-col {
+  background: color-mix(in srgb, var(--dw-warning) 12%, var(--dw-bg-muted));
+}
+
+tbody tr.is-insert-row td {
   background: color-mix(in srgb, var(--dw-success) 8%, var(--dw-bg-editor));
+}
+
+tbody tr.is-insert-row .index-col {
+  background: color-mix(in srgb, var(--dw-success) 10%, var(--dw-bg-muted));
 }
 
 .data-grid.is-wrap-cells table.grid-table {

@@ -216,12 +216,17 @@ export function useSqlEditorActions(options: SqlEditorActionsOptions) {
         const isRefresh = refreshIndex !== undefined
 
         running.value = true
+        appConfig.setShowConsoleResultPanel(true)
         void (async () => {
             const started = performance.now()
         const editorText = options.getSql()
         const trimmedExecutable = executable.trim()
         const resolvedSql = options.applyParameters?.(trimmedExecutable) ?? trimmedExecutable
         const tabId = options.getTabId()
+            // 新查询开始时清空上次结果，保证执行中只显示消息区
+            if (!isRefresh) {
+                workspace.setConsoleQueryResults(tabId, [])
+            }
             const pageSize = resolveSqlPageSize(options.getProductionPerfActive?.() ?? false)
             const maxRows = resolveClientMaxResultRows(options.getProductionPerfActive?.() ?? false)
             const connection = {
