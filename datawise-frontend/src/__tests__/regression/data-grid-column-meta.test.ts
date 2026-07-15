@@ -1,4 +1,5 @@
-import {describe, expect, it} from 'vitest'
+import {describe, it} from 'node:test'
+import assert from 'node:assert/strict'
 import type {TableColumn} from '@/core/types'
 import type {TableColumnDetail} from '@/shared/api/types'
 import {
@@ -18,27 +19,27 @@ describe('data-grid-column-meta', () => {
             nullable: false,
             autoIncrement: false,
         }]
-        expect(resolveGridColumnTypeLabel(col('price', 'DOUBLE'), details)).toBe('DECIMAL(10,2)')
-        expect(resolveGridColumnTypeLabel(col('price', 'DOUBLE'), [])).toBe('DOUBLE')
+        assert.equal(resolveGridColumnTypeLabel(col('price', 'DOUBLE'), details), 'DECIMAL(10,2)')
+        assert.equal(resolveGridColumnTypeLabel(col('price', 'DOUBLE'), []), 'DOUBLE')
     })
 
     it('detects primary key from pkColumns or keyType', () => {
-        expect(isGridColumnPrimaryKey(col('id'), ['id'], [])).toBe(true)
-        expect(isGridColumnPrimaryKey(col('id'), [], [{
+        assert.equal(isGridColumnPrimaryKey(col('id'), ['id'], []), true)
+        assert.equal(isGridColumnPrimaryKey(col('id'), [], [{
             ordinal: 1,
             name: 'id',
             dataType: 'INT',
             nullable: false,
             autoIncrement: true,
             keyType: 'PRI',
-        }])).toBe(true)
-        expect(isGridColumnPrimaryKey(col('name'), [], [])).toBe(false)
+        }]), true)
+        assert.equal(isGridColumnPrimaryKey(col('name'), [], []), false)
     })
 
     it('detects numeric types for right alignment', () => {
-        expect(isGridNumericColumn(col('n', 'INT'))).toBe(true)
-        expect(isGridNumericColumn(col('n', 'DECIMAL(10,2)'))).toBe(true)
-        expect(isGridNumericColumn(col('n', 'VARCHAR(32)'))).toBe(false)
-        expect(isGridNumericColumn(col('n', 'DATETIME(3)'))).toBe(false)
+        assert.equal(isGridNumericColumn(col('n', 'INT')), true)
+        assert.equal(isGridNumericColumn(col('n', 'DECIMAL(10,2)')), true)
+        assert.equal(isGridNumericColumn(col('n', 'VARCHAR(32)')), false)
+        assert.equal(isGridNumericColumn(col('n', 'DATETIME(3)')), false)
     })
 })

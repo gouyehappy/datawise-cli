@@ -23,6 +23,7 @@ import {
 } from '@/core/utils/cell-value-format'
 import {
   applyGridViewStateToRows,
+  cellMatchesFilter,
   clearGridViewState,
   compareCellValues,
   GRID_COLUMN_WIDTH_DEFAULT,
