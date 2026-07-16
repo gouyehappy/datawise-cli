@@ -50,12 +50,19 @@ export function attachSshTerminalAddons(terminal: Terminal): SshTerminalAddonHan
     try {
         const addon = new WebglAddon()
         addon.onContextLoss(() => {
+            // Disposing WebGL without a canvas fallback leaves a blank terminal
+            // (connected badge, no cursor) after GPU context loss from long idle tabs.
             try {
                 addon.dispose()
             } catch {
                 // ignore
             }
             webgl = null
+            try {
+                terminal.refresh(0, terminal.rows - 1)
+            } catch {
+                // canvas renderer resumes after WebGL dispose
+            }
         })
         terminal.loadAddon(addon)
         webgl = addon

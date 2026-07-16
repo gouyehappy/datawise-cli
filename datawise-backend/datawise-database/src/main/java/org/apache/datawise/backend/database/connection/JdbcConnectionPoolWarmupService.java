@@ -24,8 +24,10 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * After a successful connect probe, borrows connections up to {@link JdbcPoolProperties#getMinimumIdle()}
- * so the first SQL / explorer load avoids cold-pool latency.
+ * On-demand pool priming after an <em>explicit</em> user connect.
+ * Borrows up to {@link JdbcPoolProperties#getMinimumIdle()} so the first SQL / explorer load
+ * avoids cold-pool latency. Tree load / create / update must not call this — idle datasources
+ * stay disconnected until the user connects.
  */
 @Service
 public class JdbcConnectionPoolWarmupService {

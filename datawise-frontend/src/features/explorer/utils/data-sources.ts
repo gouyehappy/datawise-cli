@@ -18,15 +18,12 @@ export function findDataSource<T extends { id: string }>(sources: T[], id: strin
 
 export type ConnectionHealthState = 'ok' | 'error'
 
-/** 控制台可选数据源：连接失败不可选；未探测但树里已有实例的仍可选 */
+/** 控制台可选数据源：探测失败不可选；未探测的冷连接仍可选（按需再连）。 */
 export function isDataSourceSelectable(
     source: DataSourceOption,
     healthById: Record<string, ConnectionHealthState>,
 ): boolean {
-    const health = healthById[source.id]
-    if (health === 'error') return false
-    if (health === 'ok') return true
-    return source.instances.length > 0
+    return healthById[source.id] !== 'error'
 }
 
 export function filterSelectableDataSources(
@@ -40,16 +37,24 @@ export function pickDefaultDataSource(
     sources: DataSourceOption[],
     healthById: Record<string, ConnectionHealthState>,
     preferredId?: string | null,
+    preferPooledIds?: ReadonlySet<string>,
 ): DataSourceOption | undefined {
     const selectable = filterSelectableDataSources(sources, healthById)
     if (preferredId) {
         const preferred = selectable.find((source) => source.id === preferredId)
         if (preferred) return preferred
     }
+    if (preferPooledIds?.size) {
+        const pooled = selectable.find((source) => preferPooledIds.has(source.id))
+        if (pooled) return pooled
+    }
     return selectable[0]
 }
 
-/** 新建控制台前探测各连接，填充 health 与 instances */
+/**
+ * @deprecated Prefer loading a single chosen connection. Kept for tests / rare callers.
+ * Do not use on app start or blank console open — it wakes every datasource.
+ */
 export async function probeAllConnections(
     tree: TreeNode[],
     ensureLoaded: (connectionId: string) => Promise<void>,

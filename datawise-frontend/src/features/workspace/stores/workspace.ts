@@ -31,10 +31,12 @@ import {
     extractDataSources,
     findDataSource,
     pickDefaultDataSource,
-    probeAllConnections,
 } from '@/features/explorer/utils/data-sources'
 import {isConsoleTabDirty} from '@/features/workspace/services/console-tab-dirty'
-import {disposeSshTerminalHandle} from '@/features/terminal/services/ssh-terminal-session.service'
+import {
+    disposeSshTerminalHandle,
+    disposeSshTerminalsForConnection as suspendSshTerminalsForConnection,
+} from '@/features/terminal/services/ssh-terminal-session.service'
 import {
     replaceConsoleQueryResultAtIndex,
     sumConsoleQueryTotals,
@@ -124,7 +126,12 @@ export const useWorkspaceStore = defineStore('workspace', () => {
                 instanceId = instanceId ?? active.instanceId
                 database = database ?? active.database
             } else {
-                const defaultSource = pickDefaultDataSource(sources, healthById)
+                const defaultSource = pickDefaultDataSource(
+                    sources,
+                    healthById,
+                    null,
+                    explorer.pooledConnectionIds,
+                )
                 if (defaultSource) connectionId = defaultSource.id
             }
         }
@@ -197,11 +204,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         const explorer = useExplorerStore()
         const resolved = resolveOpenConsoleOptions(options)
 
-        if (!resolved.connectionId) {
-            await probeAllConnections(explorer.tree, (connectionId) =>
-                explorer.ensureChildrenLoaded(connectionId),
-            )
-        } else {
+        // Load only the chosen datasource — never probe/wake every configured connection.
+        if (resolved.connectionId) {
             const sources = extractDataSources(explorer.tree)
             const source = findDataSource(sources, resolved.connectionId)
             if (!source?.instances.length) {
@@ -1384,12 +1388,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
 
     function disposeSshTerminalsForConnection(connectionId: string) {
-        if (!connectionId) return
-        for (const tab of tabs.value) {
-            if (tab.type === 'ssh-terminal' && tab.connectionId === connectionId) {
-                void disposeSshTerminalHandle(tab.id)
-            }
-        }
+        void suspendSshTerminalsForConnection(connectionId)
     }
 
     function closeTab(tabId: string) {

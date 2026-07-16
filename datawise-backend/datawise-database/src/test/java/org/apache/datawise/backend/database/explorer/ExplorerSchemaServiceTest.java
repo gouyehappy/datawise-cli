@@ -1,9 +1,6 @@
 package org.apache.datawise.backend.database.explorer;
 
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
-import org.apache.datawise.backend.database.connection.JdbcConnectionPoolWarmupService;
-
-
 
 import org.apache.datawise.backend.common.ExplorerConnectionException;
 
@@ -121,9 +118,6 @@ class ExplorerSchemaServiceTest {
     private ConnectionVisibilityService connectionVisibilityService;
 
     @Mock
-    private JdbcConnectionPoolWarmupService poolWarmupService;
-
-    @Mock
     private SchemaSession schemaSession;
 
     @Mock
@@ -163,8 +157,6 @@ class ExplorerSchemaServiceTest {
 
                 cacheHydrator,
 
-                poolWarmupService,
-
                 connectionVisibilityService,
 
                 schemaProperties,
@@ -184,17 +176,12 @@ class ExplorerSchemaServiceTest {
     }
 
     @Test
-    void fetchTree_prewarmJdbcConnectionsInExpandedGroups() {
+    void fetchTree_doesNotPrewarmJdbcPools() {
         ConnectionGroupEntity expanded = group("group-open", true);
-        ConnectionGroupEntity collapsed = group("group-closed", false);
         ConnectionEntity warm = connectionEntity("conn-warm", "mysql");
         warm.setGroupId(expanded.getId());
-        ConnectionEntity redis = connectionEntity("conn-redis", "redis");
-        redis.setGroupId(expanded.getId());
-        ConnectionEntity cold = connectionEntity("conn-cold", "mysql");
-        cold.setGroupId(collapsed.getId());
-        List<ConnectionGroupEntity> groups = List.of(expanded, collapsed);
-        List<ConnectionEntity> connections = List.of(warm, redis, cold);
+        List<ConnectionGroupEntity> groups = List.of(expanded);
+        List<ConnectionEntity> connections = List.of(warm);
         List<TreeNode> tree = List.of(treeNode("group-open", "group", "Default"));
 
         when(connectionContext.requireUserId()).thenReturn(1L);
@@ -203,10 +190,7 @@ class ExplorerSchemaServiceTest {
         when(treeBuilder.buildGroups(groups)).thenReturn(tree);
 
         assertEquals(tree, service.fetchTree(false));
-
-        verify(poolWarmupService).warmupInBackground(warm);
-        verify(poolWarmupService, never()).warmupInBackground(redis);
-        verify(poolWarmupService, never()).warmupInBackground(cold);
+        verify(treeBuilder).buildGroups(groups);
     }
 
     @Test

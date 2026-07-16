@@ -179,15 +179,18 @@ async function startSession() {
     fitAddon = new FitAddon()
     const terminal = new Terminal({
       cursorBlink: true,
+      cursorStyle: 'block',
       fontFamily: 'Consolas, "Cascadia Mono", "Courier New", monospace',
       fontSize: fontSize.value,
       // Integer row math for FitAddon — lineHeight > 1 clipped the bottom prompt.
       lineHeight: 1,
       scrollback: 5000,
+      // xterm canvas/WebGL cannot resolve CSS variables — use concrete colors.
       theme: {
         background: '#1a1d24',
-        foreground: 'var(--dw-border)',
-        cursor: 'var(--dw-success)',
+        foreground: '#d1d5db',
+        cursor: '#16a34a',
+        cursorAccent: '#1a1d24',
         selectionBackground: '#264f78',
       },
     })
@@ -305,13 +308,21 @@ async function sendInput(text: string): Promise<boolean> {
 }
 
 async function reconnect() {
-  term.value?.clear()
   await startSession()
+}
+
+/** Idle / explorer disconnect: drop the shell but keep this KeepAlive pane registrable. */
+async function suspendSession() {
+  await teardown(true)
+  setStatus('disconnected', t('terminal.sshDisconnected'))
 }
 
 async function refreshActiveSession() {
   if (starting) return
+  // After idle suspend, term is null with status disconnected — wait for explorer
+  // overlay reconnect (reconnectSshTerminalsForConnection) rather than racing here.
   if (!term.value || status.value === 'connecting' || status.value === 'error') {
+    if (status.value === 'disconnected') return
     await startSession()
     return
   }
@@ -414,6 +425,7 @@ onMounted(async () => {
     focus: focusTerminal,
     getStatus: () => status.value,
     reconnect,
+    suspend: suspendSession,
     dispose: () => teardown(true),
   })
   await startSession()

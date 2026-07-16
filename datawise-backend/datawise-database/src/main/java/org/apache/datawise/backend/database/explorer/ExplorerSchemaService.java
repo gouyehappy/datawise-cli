@@ -1,7 +1,6 @@
 package org.apache.datawise.backend.database.explorer;
 
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
-import org.apache.datawise.backend.database.connection.JdbcConnectionPoolWarmupService;
 
 import org.apache.datawise.backend.common.ExplorerConnectionException;
 
@@ -20,7 +19,6 @@ import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.domain.TreePayload;
 
 import org.apache.datawise.backend.model.ConnectionEntity;
-import org.apache.datawise.backend.model.ConnectionGroupEntity;
 
 import org.apache.datawise.backend.schema.SchemaDialectRegistry;
 
@@ -47,12 +45,10 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import java.util.List;
 
 import java.util.Optional;
-import java.util.Set;
 
 /**
 
@@ -90,8 +86,6 @@ public class ExplorerSchemaService {
 
     private final ExplorerSchemaCacheHydrator cacheHydrator;
 
-    private final JdbcConnectionPoolWarmupService poolWarmupService;
-
     private final ExplorerSchemaProperties schemaProperties;
 
     private final FeaturePermissionAccess featurePermissionAccess;
@@ -117,8 +111,6 @@ public class ExplorerSchemaService {
             SchemaDialectRegistry dialectRegistry,
 
             ExplorerSchemaCacheHydrator cacheHydrator,
-
-            JdbcConnectionPoolWarmupService poolWarmupService,
 
             ConnectionVisibilityService connectionVisibilityService,
 
@@ -147,8 +139,6 @@ public class ExplorerSchemaService {
         this.dialectRegistry = dialectRegistry;
 
         this.cacheHydrator = cacheHydrator;
-
-        this.poolWarmupService = poolWarmupService;
 
         this.connectionVisibilityService = connectionVisibilityService;
 
@@ -184,49 +174,9 @@ public class ExplorerSchemaService {
 
         ConnectionVisibilityService.VisibleCatalog catalog = connectionVisibilityService.visibleCatalogForCurrentUser();
 
-        prewarmExpandedGroupConnections(catalog);
-
+        // Lazy connect only: do not warm JDBC pools when the tree loads. Connections open
+        // when the user expands / connects a datasource (or via explicit connect API).
         return treeBuilder.buildGroups(catalog.groups());
-
-    }
-
-    private void prewarmExpandedGroupConnections(ConnectionVisibilityService.VisibleCatalog catalog) {
-
-        if (catalog == null || catalog.connections() == null || catalog.connections().isEmpty()) {
-
-            return;
-
-        }
-
-        Set<String> expandedGroupIds = new HashSet<>();
-
-        for (ConnectionGroupEntity group : catalog.groups()) {
-
-            if (group != null && group.isExpanded()) {
-
-                expandedGroupIds.add(group.getId());
-
-            }
-
-        }
-
-        if (expandedGroupIds.isEmpty()) {
-
-            return;
-
-        }
-
-        for (ConnectionEntity connection : catalog.connections()) {
-
-            if (connection != null
-                    && expandedGroupIds.contains(connection.getGroupId())
-                    && JdbcConnectionPoolWarmupService.usesJdbcPool(connection)) {
-
-                poolWarmupService.warmupInBackground(connection);
-
-            }
-
-        }
 
     }
 

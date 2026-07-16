@@ -8,6 +8,11 @@ export interface SshTerminalHandle {
     focus: () => void
     getStatus: () => SshTerminalStatus
     reconnect: () => Promise<void>
+    /**
+     * Tear down the remote shell while keeping the KeepAlive pane + handle registered
+     * (idle disconnect / explorer reconnect overlay). Status becomes disconnected.
+     */
+    suspend?: () => void | Promise<void>
     /** Release remote shell + WebSocket (e.g. tab closed while KeepAlive still caches the pane). */
     dispose?: () => void | Promise<void>
 }
@@ -38,11 +43,45 @@ export function listSshTerminalHandles(connectionId: string): SshTerminalHandle[
     return [...handles.values()].filter((item) => item.connectionId === connectionId)
 }
 
-/** Tear down all interactive shells for a connection (idle disconnect / manual disconnect). */
+/**
+ * Suspend interactive shells for a connection (idle disconnect / manual disconnect).
+ * Keeps handles registered so a later explorer reconnect can revive the KeepAlive panes.
+ */
 export async function disposeSshTerminalsForConnection(connectionId: string): Promise<void> {
     if (!connectionId) return
     const targets = listSshTerminalHandles(connectionId)
-    await Promise.all(targets.map((handle) => disposeSshTerminalHandle(handle.tabId)))
+    await Promise.all(
+        targets.map(async (handle) => {
+            try {
+                if (handle.suspend) {
+                    await handle.suspend()
+                    return
+                }
+                // Legacy handles without suspend: full dispose (unregisters).
+                await disposeSshTerminalHandle(handle.tabId)
+            } catch {
+                // best-effort cleanup
+            }
+        }),
+    )
+}
+
+/** Recreate suspended shells after the explorer connection is back (idle overlay). */
+export async function reconnectSshTerminalsForConnection(connectionId: string): Promise<void> {
+    if (!connectionId) return
+    const targets = listSshTerminalHandles(connectionId)
+    await Promise.all(
+        targets.map(async (handle) => {
+            const status = handle.getStatus()
+            // Leave healthy / in-flight sessions alone (tree connect must not bounce a live shell).
+            if (status === 'connected' || status === 'connecting') return
+            try {
+                await handle.reconnect()
+            } catch {
+                // best-effort revive
+            }
+        }),
+    )
 }
 
 export function findSshTerminalHandle(

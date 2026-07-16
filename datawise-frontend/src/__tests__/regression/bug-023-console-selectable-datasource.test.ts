@@ -50,4 +50,19 @@ describe('selectable console data sources', () => {
             'conn-ok',
         )
     })
+
+    it('allows cold (unprobed) sources so openConsole need not wake every datasource', () => {
+        const cold: DataSourceOption = {
+            id: 'conn-cold',
+            label: 'idle',
+            dbType: 'mysql',
+            instances: [],
+        }
+        assert.equal(isDataSourceSelectable(cold, {}), true)
+        assert.equal(pickDefaultDataSource([cold, ...sources], {})?.id, 'conn-cold')
+        assert.equal(
+            pickDefaultDataSource(sources, health, null, new Set(['conn-unknown']))?.id,
+            'conn-unknown',
+        )
+    })
 })

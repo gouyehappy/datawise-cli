@@ -500,6 +500,9 @@ watch(searchQuery, () => {
 })
 
 watch(status, (next) => {
+  if (next === 'disconnected' || next === 'error') {
+    onConnectApplied.value = false
+  }
   if (next === 'connected') {
     void applyOnConnectProfile()
   }

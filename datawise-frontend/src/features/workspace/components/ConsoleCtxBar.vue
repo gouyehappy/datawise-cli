@@ -12,6 +12,7 @@ import DbTypeIcon from '@/core/components/DbTypeIcon.vue'
 import {DwIcon} from '@/core/icons'
 import {DB_TYPE_ICON_SIZE} from '@/features/connection/constants/db-type-icon-sizes'
 import type {DataSourceOption, DbType} from '@/core/types'
+import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {
   resolveBoundInstanceId,
   resolveInstanceDisplayLabel,
@@ -24,6 +25,7 @@ import {
 } from '@/features/workspace/services/console-instance-display'
 
 const {t} = useI18n()
+const explorer = useExplorerStore()
 
 const props = defineProps<{
   dataSources: DataSourceOption[]
@@ -140,9 +142,14 @@ function sourceNeedsInstancePicker(source: DataSourceOption | undefined): boolea
   return showsConsoleInstanceSelector(source.dbType)
 }
 
-function pickSource(id: string) {
-  const source = props.dataSources.find((item) => item.id === id)
+async function pickSource(id: string) {
   connectionId.value = id
+  // On-demand: load schema for the chosen source only (cold connections have empty instances).
+  let source = props.dataSources.find((item) => item.id === id)
+  if (!source?.instances.length) {
+    await explorer.ensureChildrenLoaded(id)
+    source = props.dataSources.find((item) => item.id === id)
+  }
   if (sourceNeedsInstancePicker(source)) {
     menuTab.value = 'instance'
     return

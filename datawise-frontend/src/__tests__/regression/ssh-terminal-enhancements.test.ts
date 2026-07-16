@@ -5,7 +5,15 @@ import {
     appendTerminalOutputToRecordHtml,
     terminalOutputToRecordHtml,
 } from '@/features/ssh/services/ssh-terminal-snippet.service'
-import {formatSshEndpoint} from '@/features/terminal/services/ssh-terminal-session.service'
+import {
+    formatSshEndpoint,
+    registerSshTerminalHandle,
+    unregisterSshTerminalHandle,
+    disposeSshTerminalsForConnection,
+    reconnectSshTerminalsForConnection,
+    listSshTerminalHandles,
+    type SshTerminalStatus,
+} from '@/features/terminal/services/ssh-terminal-session.service'
 import {buildSshTerminalContextMenu} from '@/features/terminal/constants/ssh-terminal-context-menu'
 
 const t = ((key: string) => key) as never
@@ -46,5 +54,43 @@ describe('ssh-terminal-context-menu', () => {
 describe('ssh-terminal-session.service', () => {
     it('formats ssh endpoint', () => {
         assert.equal(formatSshEndpoint('root', '10.0.0.1', '2222'), 'root@10.0.0.1:2222')
+    })
+
+    it('suspends shells on idle without unregistering, then reconnects', async () => {
+        const tabId = 'ssh-tab-idle'
+        let status: SshTerminalStatus = 'connected'
+        let reconnectCalls = 0
+        let suspendCalls = 0
+        registerSshTerminalHandle({
+            tabId,
+            connectionId: 'conn-ssh',
+            label: 'SSH',
+            sendInput: async () => true,
+            focus: () => undefined,
+            getStatus: () => status,
+            reconnect: async () => {
+                reconnectCalls += 1
+                status = 'connected'
+            },
+            suspend: async () => {
+                suspendCalls += 1
+                status = 'disconnected'
+            },
+            dispose: async () => {
+                status = 'disconnected'
+            },
+        })
+        try {
+            await disposeSshTerminalsForConnection('conn-ssh')
+            assert.equal(suspendCalls, 1)
+            assert.equal(listSshTerminalHandles('conn-ssh').length, 1)
+            assert.equal(status, 'disconnected')
+
+            await reconnectSshTerminalsForConnection('conn-ssh')
+            assert.equal(reconnectCalls, 1)
+            assert.equal(status, 'connected')
+        } finally {
+            unregisterSshTerminalHandle(tabId)
+        }
     })
 })

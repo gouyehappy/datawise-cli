@@ -48,7 +48,10 @@ import {resolveSqlFileForLocate} from '@/features/workspace/services/console-tab
 import {explorerApi, platformApi} from '@/api'
 import {applyExplorerTreeStructure} from '@/shared/config/connections-explorer-tree'
 import {resolveConnectionErrorMessage} from '@/features/explorer/services/connection-error-message'
-import {buildConnectionDisplayHealthMap} from '@/features/explorer/services/explorer-connection-state.service'
+import {
+    buildConnectionDisplayHealthMap,
+    mergePooledConnectionSync,
+} from '@/features/explorer/services/explorer-connection-state.service'
 import {i18n} from '@/i18n'
 import {
     readPinnedExplorerNodeIds,
@@ -69,7 +72,10 @@ import {
 } from '@/features/explorer/services/explorer-favorites-ui.service'
 import {isExplorerFavoritesGroupId} from '@/features/explorer/services/explorer-favorites.constants'
 import {useLayoutStore} from '@/features/layout/stores/layout'
-import {disposeSshTerminalsForConnection} from '@/features/terminal/services/ssh-terminal-session.service'
+import {
+    disposeSshTerminalsForConnection,
+    reconnectSshTerminalsForConnection,
+} from '@/features/terminal/services/ssh-terminal-session.service'
 import {useDebouncedRef} from '@/core/utils/debounced-ref'
 import {
     EXPLORER_HEALTH_PROBE_CONCURRENCY,
@@ -1207,6 +1213,8 @@ export const useExplorerStore = defineStore('explorer', () => {
         if (!node || node.type !== 'connection') return
         const hadLoadedTree = Boolean(node.children?.length) || node.expanded
         resetConnectionTreeState(connectionId)
+        setConnectionHealth(connectionId, null)
+        unmarkConnectionPooled(connectionId)
         markConnectionNeedsReconnect(connectionId)
         if (options?.notify && hadLoadedTree) {
             useLayoutStore().showWarningToast(
@@ -1229,16 +1237,19 @@ export const useExplorerStore = defineStore('explorer', () => {
     async function syncPooledConnectionState(options?: {notifyIdleDisconnect?: boolean}) {
         try {
             const pooled = await explorerApi.listPooledConnections()
-            const nextPooled = new Set(pooled)
             const prevPooled = pooledConnectionIds.value
-            pooledConnectionIds.value = nextPooled
+            const {nextPooledIds, evictedIds} = mergePooledConnectionSync({
+                serverPooledIds: pooled,
+                previousPooledIds: prevPooled,
+                resolveDbType: (connectionId) => findNode(connectionId)?.dbType,
+                isUiConnected: (connectionId) => connectionHealthById.value[connectionId] === 'ok',
+            })
+            pooledConnectionIds.value = nextPooledIds
 
-            for (const connectionId of prevPooled) {
-                if (!nextPooled.has(connectionId)) {
-                    handleServerIdleDisconnect(connectionId, {
-                        notify: options?.notifyIdleDisconnect,
-                    })
-                }
+            for (const connectionId of evictedIds) {
+                handleServerIdleDisconnect(connectionId, {
+                    notify: options?.notifyIdleDisconnect,
+                })
             }
         } catch {
             // best effort: backend may be offline during startup
@@ -1250,6 +1261,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         if (!node || node.type !== 'connection') return false
         try {
             await explorerApi.disconnectConnection(connectionId)
+            // Drop green badge immediately after server confirms disconnect.
             clearConnectionLoadedState(connectionId)
             markConnectionNeedsReconnect(connectionId)
             return true
@@ -1277,23 +1289,32 @@ export const useExplorerStore = defineStore('explorer', () => {
             if (!result.ok) {
                 markConnectionAttempted(connectionId)
                 setConnectionHealth(connectionId, 'error')
+                unmarkConnectionPooled(connectionId)
                 if (options?.notify === true) {
                     useLayoutStore().showErrorToast(result.message || resolveConnectionErrorMessage(result))
                 }
                 return false
             }
             markConnectionAttempted(connectionId)
-            const expandStartedAt = perfNow()
-            await expandAndLoad(connectionId, {notify: options?.notify})
-            logPerf('connection.expand', expandStartedAt, {connectionId})
-            logPerf('connection.total', startedAt, {connectionId, ok: true})
+            // Show green badge as soon as connect succeeds — don't wait for tree expand.
             setConnectionHealth(connectionId, 'ok')
             markConnectionPooled(connectionId)
             clearConnectionNeedsReconnect(connectionId)
+            const expandStartedAt = perfNow()
+            try {
+                await expandAndLoad(connectionId, {notify: options?.notify})
+                logPerf('connection.expand', expandStartedAt, {connectionId})
+            } catch (expandError) {
+                // Pool is already warm — keep the green badge; tree can be expanded again later.
+                reportConnectionFailure(connectionId, expandError, {notify: options?.notify})
+            }
+            logPerf('connection.total', startedAt, {connectionId, ok: true})
+            void reconnectSshTerminalsForConnection(connectionId)
             return true
         } catch (error) {
             markConnectionAttempted(connectionId)
             setConnectionHealth(connectionId, 'error')
+            unmarkConnectionPooled(connectionId)
             reportConnectionFailure(connectionId, error, {notify: options?.notify})
             return false
         } finally {
@@ -1321,6 +1342,7 @@ export const useExplorerStore = defineStore('explorer', () => {
             if (!result.ok) {
                 markConnectionAttempted(connectionId)
                 setConnectionHealth(connectionId, 'error')
+                unmarkConnectionPooled(connectionId)
                 markConnectionNeedsReconnect(connectionId)
                 if (options?.notify === true) {
                     useLayoutStore().showErrorToast(result.message || resolveConnectionErrorMessage(result))
@@ -1328,17 +1350,23 @@ export const useExplorerStore = defineStore('explorer', () => {
                 return false
             }
             markConnectionAttempted(connectionId)
-            const expandStartedAt = perfNow()
-            await expandAndLoad(connectionId, {notify: options?.notify})
-            logPerf('connection.reconnect.expand', expandStartedAt, {connectionId})
-            logPerf('connection.reconnect.total', startedAt, {connectionId, ok: true})
             setConnectionHealth(connectionId, 'ok')
             markConnectionPooled(connectionId)
             clearConnectionNeedsReconnect(connectionId)
+            const expandStartedAt = perfNow()
+            try {
+                await expandAndLoad(connectionId, {notify: options?.notify})
+                logPerf('connection.reconnect.expand', expandStartedAt, {connectionId})
+            } catch (expandError) {
+                reportConnectionFailure(connectionId, expandError, {notify: options?.notify})
+            }
+            logPerf('connection.reconnect.total', startedAt, {connectionId, ok: true})
+            void reconnectSshTerminalsForConnection(connectionId)
             return true
         } catch (error) {
             markConnectionAttempted(connectionId)
             setConnectionHealth(connectionId, 'error')
+            unmarkConnectionPooled(connectionId)
             markConnectionNeedsReconnect(connectionId)
             reportConnectionFailure(connectionId, error, {notify: options?.notify})
             return false

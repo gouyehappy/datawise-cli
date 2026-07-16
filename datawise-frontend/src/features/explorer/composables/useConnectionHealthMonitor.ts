@@ -13,7 +13,10 @@ import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useNotificationStore} from '@/features/layout/stores/notification-store'
 
-/** 定时同步温热连接池并探测已连接库的健康；空闲回收后同步 Explorer UI */
+/**
+ * 定时同步已温热连接池状态，并仅探测「当前已连接」的数据源健康。
+ * 不会主动 connect / reconnect；空闲回收后只同步 UI（需用户手动重连）。
+ */
 export function useConnectionHealthMonitor() {
     const {t} = useI18n()
     const appConfig = useAppConfigStore()

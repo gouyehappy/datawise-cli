@@ -49,8 +49,8 @@ onMounted(async () => {
     scrollback: 5000,
     theme: {
       background: '#1a1d24',
-      foreground: 'var(--dw-border)',
-      cursor: 'var(--dw-success)',
+      foreground: '#d1d5db',
+      cursor: '#16a34a',
       selectionBackground: '#264f78',
     },
   })
