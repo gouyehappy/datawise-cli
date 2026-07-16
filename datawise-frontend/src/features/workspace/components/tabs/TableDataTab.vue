@@ -55,6 +55,12 @@ const {
   refresh,
   databaseName,
   changeRevision,
+  supportsDocumentFilter,
+  documentFilterDraft,
+  documentFilterError,
+  appliedDocumentFilter,
+  applyDocumentFilter,
+  clearDocumentFilter,
 } = useTableDataView(props.tab)
 
 async function onAuditRestored() {
@@ -117,6 +123,51 @@ function onRequestAiSummary() {
 
 <template>
   <div class="table-data-tab">
+    <div
+        v-if="supportsDocumentFilter"
+        class="mongo-filter-bar"
+        :class="{
+          'is-active': Boolean(appliedDocumentFilter),
+          'is-error': Boolean(documentFilterError),
+        }"
+    >
+      <div class="mongo-filter-bar__label-field">
+        <label class="mongo-filter-bar__label" for="mongo-document-filter">
+          {{ t('dataGrid.documentFilter.label') }}
+        </label>
+      </div>
+      <div class="mongo-filter-bar__query-field">
+        <input
+            id="mongo-document-filter"
+            v-model="documentFilterDraft"
+            class="mongo-filter-bar__input"
+            type="text"
+            spellcheck="false"
+            autocomplete="off"
+            :placeholder="t('dataGrid.documentFilter.placeholder')"
+            :title="appliedDocumentFilter
+              ? t('dataGrid.documentFilter.active')
+              : `${t('dataGrid.documentFilter.hint')} · ${t('dataGrid.documentView.openHint')}`"
+            @keydown.enter.prevent="applyDocumentFilter"
+        />
+        <button
+            class="mongo-filter-bar__action mongo-filter-bar__action--primary"
+            type="button"
+            @click="applyDocumentFilter"
+        >
+          {{ t('dataGrid.documentFilter.apply') }}
+        </button>
+        <button
+            class="mongo-filter-bar__action"
+            type="button"
+            :disabled="!documentFilterDraft && !appliedDocumentFilter"
+            @click="clearDocumentFilter"
+        >
+          {{ t('dataGrid.documentFilter.clear') }}
+        </button>
+      </div>
+      <p v-if="documentFilterError" class="mongo-filter-bar__error">{{ documentFilterError }}</p>
+    </div>
     <QueryResultPane
         :enable-ai-summary="aiResultSummaryEnabled"
         :enable-fake-data="showFakeDataAction"
@@ -145,6 +196,7 @@ function onRequestAiSummary() {
         :cursor-loading="cursorLoading"
         :cursor-trimmed-rows="tableData.cursorTrimmedRows"
         :production-perf-active="productionPerfActive"
+        :enable-row-document-view="supportsDocumentFilter"
         @refresh="refresh"
         @load-more="loadMore"
         @request-ai-summary="onRequestAiSummary"
@@ -168,5 +220,122 @@ function onRequestAiSummary() {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+}
+
+.mongo-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  flex-shrink: 0;
+  min-height: var(--dw-tab-height);
+  border-bottom: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
+  background: color-mix(in srgb, var(--dw-bg-panel) 94%, var(--dw-bg-editor));
+}
+
+.mongo-filter-bar.is-active {
+  border-bottom-color: color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border-light));
+}
+
+.mongo-filter-bar.is-error {
+  border-bottom-color: color-mix(in srgb, var(--dw-danger) 40%, var(--dw-border-light));
+}
+
+.mongo-filter-bar__label-field {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 0 var(--dw-space-5);
+  border-right: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
+  background: color-mix(in srgb, var(--dw-bg-muted) 22%, transparent);
+}
+
+.mongo-filter-bar__label {
+  color: var(--dw-text-primary);
+  font-size: var(--dw-text-sm);
+  font-weight: 500;
+  font-family: var(--dw-mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mongo-filter-bar.is-active .mongo-filter-bar__label {
+  color: var(--dw-primary);
+}
+
+.mongo-filter-bar__query-field {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  gap: var(--dw-gap-sm);
+  min-width: 0;
+  padding: 0 var(--dw-space-4);
+}
+
+.mongo-filter-bar__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--dw-tab-height);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--dw-text-primary);
+  font-family: var(--dw-mono);
+  font-size: var(--dw-text-sm);
+  line-height: var(--dw-tab-height);
+}
+
+.mongo-filter-bar__input::placeholder {
+  color: var(--dw-text-muted);
+}
+
+.mongo-filter-bar__input:focus {
+  outline: none;
+}
+
+.mongo-filter-bar__action {
+  flex-shrink: 0;
+  height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-4);
+  border: 1px solid var(--dw-border-light);
+  border-radius: var(--dw-control-radius-sm);
+  background: var(--dw-bg-panel);
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-xs);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--dw-transition-colors);
+}
+
+.mongo-filter-bar__action:hover:not(:disabled) {
+  background: var(--dw-bg-hover);
+  color: var(--dw-text-primary);
+}
+
+.mongo-filter-bar__action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mongo-filter-bar__action--primary {
+  border-color: color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border-light));
+  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-panel));
+  color: var(--dw-primary);
+  font-weight: 600;
+}
+
+.mongo-filter-bar__action--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--dw-primary) 14%, var(--dw-bg-panel));
+  color: var(--dw-primary);
+}
+
+.mongo-filter-bar__error {
+  flex: 1 0 100%;
+  margin: 0;
+  padding: var(--dw-space-2) var(--dw-space-5) var(--dw-space-3);
+  border-top: 1px solid color-mix(in srgb, var(--dw-danger) 20%, var(--dw-border-light));
+  background: color-mix(in srgb, var(--dw-danger) 6%, var(--dw-bg-panel));
+  color: var(--dw-danger);
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
 }
 </style>

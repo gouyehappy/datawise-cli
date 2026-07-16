@@ -34,16 +34,37 @@ public final class MongoDocumentSupport {
             int offset,
             int limit
     ) {
+        return fetchCollectionPage(entity, database, collection, offset, limit, null);
+    }
+
+    public static TableDataResult fetchCollectionPage(
+            ConnectionEntity entity,
+            String database,
+            String collection,
+            int offset,
+            int limit,
+            String filterJson
+    ) {
         if (offset < 0) {
             throw new IllegalArgumentException("offset must be >= 0");
         }
         if (limit <= 0) {
             throw new IllegalArgumentException("limit must be > 0");
         }
+        Document filter;
+        try {
+            filter = parseFilter(filterJson);
+        } catch (IllegalArgumentException ex) {
+            throw new TableDataException(
+                    ex.getMessage(),
+                    TableDataException.FETCH_FAILED,
+                    ex
+            );
+        }
         try {
             return MongoClientSupport.withCollection(entity, database, collection, coll -> {
                 List<Document> docs = new ArrayList<>(limit + 1);
-                try (MongoCursor<Document> cursor = coll.find().skip(offset).limit(limit + 1).iterator()) {
+                try (MongoCursor<Document> cursor = coll.find(filter).skip(offset).limit(limit + 1).iterator()) {
                     while (cursor.hasNext()) {
                         docs.add(cursor.next());
                     }
@@ -61,12 +82,26 @@ public final class MongoDocumentSupport {
                 String cursorId = hasMore ? DocumentCursorSupport.OFFSET_PREFIX + (offset + limit) : null;
                 return new TableDataResult(columns, rows, cursorId, hasMore, offset, limit);
             });
+        } catch (TableDataException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new TableDataException(
                     MongoConnectionErrors.toUserMessage(entity, ex),
                     TableDataException.FETCH_FAILED,
                     ex
             );
+        }
+    }
+
+    /** Blank filter matches all documents; invalid JSON throws {@link IllegalArgumentException}. */
+    static Document parseFilter(String filterJson) {
+        if (filterJson == null || filterJson.isBlank()) {
+            return new Document();
+        }
+        try {
+            return Document.parse(filterJson.trim());
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Invalid MongoDB filter JSON: " + ex.getMessage(), ex);
         }
     }
 

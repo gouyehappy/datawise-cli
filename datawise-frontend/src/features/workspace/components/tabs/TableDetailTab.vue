@@ -2,19 +2,36 @@
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import IconButton from '@/core/components/IconButton.vue'
-import {DwPanelState, EmptyState, StatusPill} from '@/core/components'
+import {DwButton, DwPanelState, EmptyState, StatusPill} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import type {StatusVariant} from '@/core/utils/status-variant'
 import type {WorkspaceTab} from '@/core/types'
 import TableDataTab from '@/features/workspace/components/tabs/TableDataTab.vue'
 import TableRelationsPanel from '@/features/workspace/components/tabs/TableRelationsPanel.vue'
 import TableRelationGraphPanel from '@/features/workspace/components/tabs/TableRelationGraphPanel.vue'
+import AlterColumnDialog from '@/features/workspace/components/AlterColumnDialog.vue'
 import {useTableDetail} from '@/features/workspace/composables/useTableDetail'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useExplorerStore} from '@/features/explorer/stores/explorer'
+import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useTeamStore} from '@/features/team/stores/team-store'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {supportsAlterColumnWizard} from '@/features/workspace/services/alter-column-ddl.service'
+import {executeAlterColumnSql} from '@/features/workspace/services/execute-alter-column.service'
+import {supportsSqlExecute} from '@/shared/capabilities/db-type-capabilities'
+import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource-catalog'
+import {canDdlConnection} from '@/features/team/services/connection-access.service'
+import {isProductionEnvironment} from '@/features/connection/services/connection-environment.service'
+import type {ModalFeedback} from '@/core/composables/useModalFeedback'
 
 const props = defineProps<{ tab: WorkspaceTab }>()
 const {t} = useI18n()
 const layout = useLayoutStore()
+const explorer = useExplorerStore()
+const workspace = useWorkspaceStore()
+const teamStore = useTeamStore()
+const auth = useAuthStore()
+const catalogStore = useDatasourceCatalogStore()
 
 type TableView = NonNullable<WorkspaceTab['tableView']>
 type TableSection = NonNullable<WorkspaceTab['tableSection']>
@@ -43,12 +60,106 @@ const {
   loadingDdl,
   propertiesError,
   ddlError,
+  loadProperties,
   loadDdl,
 } = useTableDetail(props.tab, {
   shouldLoadDdl: () => activeView.value === 'ddl',
 })
 
 const ddlCopied = ref(false)
+const alterColumnOpen = ref(false)
+const alterExecuting = ref(false)
+const alterActionFeedback = ref<ModalFeedback | null>(null)
+
+const connectionNode = computed(() => {
+  if (!props.tab.connectionId) return undefined
+  return explorer.findNode(props.tab.connectionId)
+})
+
+const connectionDbType = computed(() => connectionNode.value?.dbType)
+
+const canAlterColumn = computed(() => {
+  if ((props.tab.relationKind ?? 'table') !== 'table') return false
+  if (!supportsAlterColumnWizard(connectionDbType.value)) return false
+  return supportsSqlExecute(connectionDbType.value, catalogStore.items)
+})
+
+const canExecuteAlter = computed(() => {
+  if (auth.isGuest) return false
+  if (!props.tab.connectionId) return false
+  return canDdlConnection(props.tab.connectionId, teamStore.teams)
+})
+
+const alterExecuteDisabledHint = computed(() => {
+  if (auth.isGuest) return t('workspace.tableDetail.alterColumn.guestDenied')
+  if (!canExecuteAlter.value) return t('workspace.tableDetail.alterColumn.writeDenied')
+  return undefined
+})
+
+const alterProductionEnv = computed(() =>
+    isProductionEnvironment(connectionNode.value?.env, connectionNode.value?.envCustom),
+)
+
+const databaseName = computed(() => props.tab.database?.trim() || undefined)
+
+function openAlterColumn() {
+  if (!canAlterColumn.value) {
+    workspace.setStatus(t('workspace.tableDetail.alterColumn.unsupported'))
+    return
+  }
+  alterColumnOpen.value = true
+}
+
+function openAlterSqlInConsole(sql: string) {
+  void workspace.openConsole({
+    connectionId: props.tab.connectionId,
+    instanceId: props.tab.instanceId,
+    database: databaseName.value,
+    sql,
+  })
+}
+
+async function executeAlterColumn(sql: string) {
+  if (!props.tab.connectionId || alterExecuting.value) return
+  if (!canExecuteAlter.value) {
+    alterActionFeedback.value = {
+      variant: 'warning',
+      message: alterExecuteDisabledHint.value ?? t('workspace.tableDetail.alterColumn.writeDenied'),
+    }
+    return
+  }
+  alterExecuting.value = true
+  alterActionFeedback.value = null
+  try {
+    const result = await executeAlterColumnSql(sql, {
+      connectionId: props.tab.connectionId,
+      database: databaseName.value,
+      dbType: connectionDbType.value,
+    })
+    if (!result.ok) {
+      alterActionFeedback.value = {
+        variant: 'error',
+        message: t('workspace.tableDetail.alterColumn.failedWithDetail', {message: result.message}),
+      }
+      return
+    }
+    alterColumnOpen.value = false
+    await loadProperties()
+    if (activeView.value === 'ddl') {
+      await loadDdl()
+    }
+    workspace.bumpTableDataRefresh(props.tab.id)
+    layout.showSuccessToast(t('workspace.tableDetail.alterColumn.success'))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('workspace.tableDetail.alterColumn.failed')
+    alterActionFeedback.value = {
+      variant: 'error',
+      message: t('workspace.tableDetail.alterColumn.failedWithDetail', {message}),
+    }
+  } finally {
+    alterExecuting.value = false
+  }
+}
 
 watch(
     activeView,
@@ -188,9 +299,20 @@ async function copyDdl() {
           <section class="table-detail__panel">
             <header class="table-detail__panel-head">
               <h3>{{ t(`workspace.tableDetail.${activeSection}`) }}</h3>
-              <span class="table-detail__panel-count">
-                {{ t('workspace.tableDetail.itemCount', {count: activeSectionCount}) }}
-              </span>
+              <div class="table-detail__panel-actions">
+                <DwButton
+                    v-if="activeSection === 'columns' && canAlterColumn"
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    @click="openAlterColumn"
+                >
+                  {{ t('workspace.tableDetail.alterColumn.action') }}
+                </DwButton>
+                <span class="table-detail__panel-count">
+                  {{ t('workspace.tableDetail.itemCount', {count: activeSectionCount}) }}
+                </span>
+              </div>
             </header>
 
             <div v-if="activeSection === 'columns'" class="table-detail__grid-wrap">
@@ -344,6 +466,22 @@ async function copyDdl() {
           :message="t('workspace.tableDetail.noDdl')"
       />
     </section>
+
+    <AlterColumnDialog
+        v-model:open="alterColumnOpen"
+        :db-type="connectionDbType"
+        :table-name="properties.tableName || tab.tableName || ''"
+        :database="databaseName"
+        :columns="properties.columns"
+        :can-execute="canExecuteAlter"
+        :execute-disabled-hint="alterExecuteDisabledHint"
+        :executing="alterExecuting"
+        :production-env="alterProductionEnv"
+        :action-feedback="alterActionFeedback"
+        @open-console="openAlterSqlInConsole"
+        @execute="executeAlterColumn"
+        @clear-action-feedback="alterActionFeedback = null"
+    />
   </div>
 </template>
 
@@ -601,6 +739,13 @@ async function copyDdl() {
   padding: var(--dw-space-5) var(--dw-space-7);
   border-bottom: 1px solid var(--dw-border-light);
   background: color-mix(in srgb, var(--dw-bg-muted) 25%, var(--dw-bg-panel));
+}
+
+.table-detail__panel-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-gap-sm);
+  flex-shrink: 0;
 }
 
 .table-detail__panel-head h3 {

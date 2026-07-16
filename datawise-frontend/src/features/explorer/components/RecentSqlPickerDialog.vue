@@ -103,10 +103,10 @@ async function createNewScript() {
   if (!props.context) return
   const ctx = props.context
   layout.setModule('database')
-  void createNewSqlEditor(explorer.tree, ctx.databaseNode, ctx.connectionName)
-      .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
   emit('opened')
   close()
+  void createNewSqlEditor(explorer.tree, ctx.databaseNode, ctx.connectionName)
+      .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
 }
 
 function onRowDblClick(item: InstanceSqlFileItem) {

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MongoDocumentSupportTest {
@@ -63,5 +63,22 @@ class MongoDocumentSupportTest {
     void documentCursorPrefixMatchesSharedConstant() {
         assertTrue(DocumentCursorSupport.isOffsetCursor(DocumentCursorSupport.OFFSET_PREFIX + "100"));
         assertEquals(100, DocumentCursorSupport.parseOffset(DocumentCursorSupport.OFFSET_PREFIX + "100"));
+    }
+
+    @Test
+    void parseFilterAcceptsBlankAndJsonObject() {
+        assertTrue(MongoDocumentSupport.parseFilter(null).isEmpty());
+        assertTrue(MongoDocumentSupport.parseFilter("  ").isEmpty());
+        Document filter = MongoDocumentSupport.parseFilter("{\"status\":\"active\"}");
+        assertEquals("active", filter.getString("status"));
+    }
+
+    @Test
+    void parseFilterRejectsInvalidJson() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> MongoDocumentSupport.parseFilter("{status:")
+        );
+        assertTrue(ex.getMessage().contains("Invalid MongoDB filter JSON"));
     }
 }

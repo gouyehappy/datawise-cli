@@ -23,12 +23,24 @@ public class ConnectorDocumentAccess {
             int offset,
             int limit
     ) {
+        return fetchCollectionPage(connection, database, collection, offset, limit, null);
+    }
+
+    public TableDataResult fetchCollectionPage(
+            ConnectionEntity connection,
+            String database,
+            String collection,
+            int offset,
+            int limit,
+            String filterJson
+    ) {
         return catalog.resolve(connection).document().fetchCollectionPage(
                 connection,
                 database,
                 collection,
                 offset,
-                limit
+                limit,
+                filterJson
         );
     }
 

@@ -19,6 +19,7 @@ import {
 import {useConnectionCapabilities} from '@/shared/capabilities/useConnectionCapabilities'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {normalizeMongoDocumentFilter} from '@/features/workspace/services/mongo-document-filter.service'
 import {useI18n} from 'vue-i18n'
 
 const EMPTY: TableDataResult = {columns: [], rows: []}
@@ -51,6 +52,10 @@ export function useTableDataView(tab: WorkspaceTab) {
     const mutating = ref(false)
     const loadError = ref<string | null>(null)
     const changeRevision = ref(0)
+    /** 已应用到服务端的 Mongo find filter（规范化后的 JSON 字符串） */
+    const appliedDocumentFilter = ref<string | undefined>(undefined)
+    const documentFilterDraft = ref('')
+    const documentFilterError = ref<string | null>(null)
 
     const databaseName = computed(() => resolveDatabaseName(tab, explorer.tree))
     const {productionPerfActive} = useProductionPerfMode(() => tab.connectionId)
@@ -58,6 +63,7 @@ export function useTableDataView(tab: WorkspaceTab) {
         if (!tab.connectionId) return undefined
         return explorer.findNode(tab.connectionId)?.dbType
     })
+    const supportsDocumentFilter = computed(() => connectionDbType.value === 'mongodb')
     const {caps: connectionCaps, hint: capabilityHint} = useConnectionCapabilities(connectionDbType)
     const primaryKeyColumns = computed(() => resolvePrimaryKeyColumns(tableProperties.value.columns))
     const canDelete = computed(() => primaryKeyColumns.value.length > 0)
@@ -136,6 +142,7 @@ export function useTableDataView(tab: WorkspaceTab) {
                 connectionId: tab.connectionId,
                 database: databaseName.value,
                 maxRows: resolveSqlPageSize(productionPerfActive.value),
+                filter: appliedDocumentFilter.value,
             })
             logPerf('table.open.data', startedAt, {
                 ...details,
@@ -190,11 +197,41 @@ export function useTableDataView(tab: WorkspaceTab) {
         () =>
             [tab.tableName, tab.connectionId, tab.instanceId, tab.database, databaseName.value, explorer.treeReady] as const,
         () => {
+            appliedDocumentFilter.value = undefined
+            documentFilterDraft.value = ''
+            documentFilterError.value = null
             void loadProperties()
             void load()
         },
         {immediate: true, deep: true},
     )
+
+    function applyDocumentFilter() {
+        if (!supportsDocumentFilter.value) return
+        const normalized = normalizeMongoDocumentFilter(documentFilterDraft.value)
+        if (normalized.error === 'invalidJson') {
+            documentFilterError.value = t('dataGrid.documentFilter.invalidJson')
+            return
+        }
+        if (normalized.error === 'notObject') {
+            documentFilterError.value = t('dataGrid.documentFilter.notObject')
+            return
+        }
+        documentFilterError.value = null
+        appliedDocumentFilter.value = normalized.filter
+        if (normalized.filter) {
+            documentFilterDraft.value = normalized.filter
+        }
+        void load()
+    }
+
+    function clearDocumentFilter() {
+        documentFilterDraft.value = ''
+        documentFilterError.value = null
+        if (!appliedDocumentFilter.value) return
+        appliedDocumentFilter.value = undefined
+        void load()
+    }
 
     watch(
         () => workspace.tableDataRefreshSeq[tab.id],
@@ -214,6 +251,7 @@ export function useTableDataView(tab: WorkspaceTab) {
                 connectionId: tab.connectionId,
                 database: databaseName.value,
                 cursorId,
+                filter: appliedDocumentFilter.value,
             })
             const windowed = appendCursorRowsWithWindow(tableData.value.rows, page.rows, {
                 previousTrimmed: tableData.value.cursorTrimmedRows ?? 0,
@@ -260,5 +298,11 @@ export function useTableDataView(tab: WorkspaceTab) {
         refresh: load,
         databaseName,
         changeRevision,
+        supportsDocumentFilter,
+        documentFilterDraft,
+        documentFilterError,
+        appliedDocumentFilter,
+        applyDocumentFilter,
+        clearDocumentFilter,
     }
 }

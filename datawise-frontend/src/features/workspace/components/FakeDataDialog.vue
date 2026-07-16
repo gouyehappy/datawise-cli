@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref, watch} from 'vue'
+import {computed, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {AppModal, DwButton, DwInlineAlert, DwPanelState, FormField} from '@/core/components'
 import type {TablePropertiesResult} from '@/shared/api/types'
@@ -11,8 +11,8 @@ import {
     FAKE_DATA_MAX_ROWS,
     FAKE_DATA_PREVIEW_ROWS,
 } from '@/features/workspace/services/fake-data.service'
-import {useLayoutStore} from '@/features/layout/stores/layout'
 import {downloadTextFile} from '@/features/ai/analysis/services/analysis-export.service'
+import {useModalFeedback} from '@/core/composables/useModalFeedback'
 
 const props = defineProps<{
   open: boolean
@@ -36,7 +36,7 @@ const emit = defineEmits<{
 }>()
 
 const {t} = useI18n()
-const layout = useLayoutStore()
+const {feedback, showSuccess, showError, clearFeedback} = useModalFeedback(toRef(props, 'open'))
 const rowCount = ref(FAKE_DATA_DEFAULT_ROWS)
 const rowCountError = ref('')
 const activeView = ref<'split' | 'preview' | 'sql'>('split')
@@ -68,6 +68,7 @@ watch(
       rowCountError.value = ''
       activeView.value = 'split'
       sqlWrap.value = false
+      clearFeedback()
     },
 )
 
@@ -109,9 +110,9 @@ async function copySql() {
   if (!sql) return
   try {
     await navigator.clipboard.writeText(sql)
-    layout.showSuccessToast(t('explorer.exportSqlCopied'))
+    showSuccess(t('explorer.exportSqlCopied'))
   } catch {
-    layout.showErrorToast(t('explorer.exportSqlFailed'))
+    showError(t('explorer.exportSqlFailed'))
   }
 }
 
@@ -121,7 +122,7 @@ function downloadSql() {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
   const tableName = effectiveTableName.value || 'table'
   downloadTextFile(sql, `${tableName}-fake-data-${stamp}.sql`, 'text/plain;charset=utf-8')
-  layout.showSuccessToast(t('workspace.fakeData.exported'))
+  showSuccess(t('workspace.fakeData.exported'))
 }
 </script>
 
@@ -287,6 +288,13 @@ function downloadSql() {
           class="fake-data-status-banner"
           density="banner"
           :message="errorMessage"
+      />
+      <DwInlineAlert
+          v-else-if="feedback"
+          class="fake-data-status-banner"
+          density="banner"
+          :variant="feedback.variant"
+          :message="feedback.message"
       />
     </div>
 

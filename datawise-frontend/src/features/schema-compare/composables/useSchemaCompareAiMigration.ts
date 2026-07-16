@@ -76,14 +76,14 @@ export function useSchemaCompareAiMigration(options: UseSchemaCompareAiMigration
             })
             const parsed = parseSchemaCompareAiMigrationReply(reply.reply?.trim() ?? '')
             if (!parsed?.up.trim()) {
-                toast.error(formatAiErrorMessage(new Error('Empty AI migration response')))
                 dialogOpen.value = false
+                toast.error(formatAiErrorMessage(new Error('Empty AI migration response')))
                 return
             }
             suggestion.value = parsed
         } catch (error) {
-            toast.error(formatAiErrorMessage(error))
             dialogOpen.value = false
+            toast.error(formatAiErrorMessage(error))
         } finally {
             loading.value = false
         }

@@ -39,10 +39,18 @@ public class TableDataController {
             @RequestParam(required = false) String connectionId,
             @RequestParam(required = false) String database,
             @RequestParam(required = false) Integer maxRows,
-            @RequestParam(required = false) String cursorId
+            @RequestParam(required = false) String cursorId,
+            @RequestParam(required = false) String filter
     ) {
         long startedAt = System.currentTimeMillis();
-        TableDataResult result = tableDataService.fetch(tableName, connectionId, database, maxRows, cursorId);
+        TableDataResult result = tableDataService.fetch(
+                tableName,
+                connectionId,
+                database,
+                maxRows,
+                cursorId,
+                filter
+        );
         PerfLogger.log(
                 log,
                 "table.open.data",

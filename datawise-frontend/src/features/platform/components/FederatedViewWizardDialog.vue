@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, reactive, ref, watch} from 'vue'
+import {computed, reactive, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {AppModal, DwInlineAlert, FormField, ModalActions} from '@/core/components'
 import DwSelect from '@/core/components/DwSelect.vue'
@@ -8,7 +8,7 @@ import type {WorkspaceTab} from '@/core/types'
 import {platformApi} from '@/api'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {extractConnectionsFromTree} from '@/features/explorer/utils/tree-targets'
-import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useModalFeedback} from '@/core/composables/useModalFeedback'
 import {
     buildInitialFederatedWizardSources,
     canAccessFederatedWizardStep,
@@ -37,7 +37,7 @@ const emit = defineEmits<{
 
 const {t} = useI18n()
 const explorer = useExplorerStore()
-const layout = useLayoutStore()
+const {feedback, showSuccess, clearFeedback} = useModalFeedback(toRef(props, 'open'))
 
 const wizardStep = ref<FederatedViewWizardStep>('sources')
 const saving = ref(false)
@@ -228,13 +228,14 @@ async function generateSql() {
     }
     generating.value = true
     error.value = ''
+    clearFeedback()
     try {
         const result = await platformApi.generateFederatedSql({
             prompt: form.prompt.trim(),
             sources,
         })
         form.sql = result.sql
-        layout.showSuccessToast(t('platform.federated.generateDone'))
+        showSuccess(t('platform.federated.generateDone'))
     } catch (err) {
         error.value = err instanceof Error ? err.message : String(err)
     } finally {
@@ -428,6 +429,12 @@ async function save() {
     </section>
 
     <DwInlineAlert v-if="error" :message="error"/>
+    <DwInlineAlert
+        v-else-if="feedback"
+        density="banner"
+        :variant="feedback.variant"
+        :message="feedback.message"
+    />
     <DwInlineAlert v-else-if="footerHint" variant="info" :message="footerHint"/>
 
     <template #footer>

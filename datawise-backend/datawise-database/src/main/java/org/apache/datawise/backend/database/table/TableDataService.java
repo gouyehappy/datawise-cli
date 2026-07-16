@@ -41,7 +41,18 @@ public class TableDataService {
             Integer maxRows,
             String cursorId
     ) {
-        return queryService.fetch(tableName, connectionId, database, maxRows, cursorId);
+        return queryService.fetch(tableName, connectionId, database, maxRows, cursorId, null);
+    }
+
+    public TableDataResult fetch(
+            String tableName,
+            String connectionId,
+            String database,
+            Integer maxRows,
+            String cursorId,
+            String filter
+    ) {
+        return queryService.fetch(tableName, connectionId, database, maxRows, cursorId, filter);
     }
 
     public TableRowMutateResult insertRow(

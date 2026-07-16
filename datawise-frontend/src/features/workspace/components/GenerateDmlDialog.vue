@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import {computed, ref, watch} from 'vue'
+import {computed, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {AppModal, FormField, ModalActions} from '@/core/components'
+import {AppModal, DwInlineAlert, FormField, ModalActions} from '@/core/components'
 import type {TableColumn, TableRow} from '@/core/types'
 import {
     buildResultDmlSql,
     type ResultDmlKind,
 } from '@/features/workspace/services/result-dml.service'
-import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useModalFeedback} from '@/core/composables/useModalFeedback'
 
 const props = defineProps<{
   open: boolean
@@ -22,7 +22,7 @@ const emit = defineEmits<{
 }>()
 
 const {t} = useI18n()
-const layout = useLayoutStore()
+const {feedback, showSuccess, showError, clearFeedback} = useModalFeedback(toRef(props, 'open'))
 
 const tableName = ref('')
 const kind = ref<ResultDmlKind>('insert')
@@ -37,6 +37,7 @@ watch(
         tableName.value = props.defaultTableName?.trim() || 'query_result'
         kind.value = 'insert'
         pkInput.value = props.pkColumns?.join(', ') ?? inferPkFromColumns(props.columns)
+        clearFeedback()
     },
 )
 
@@ -71,8 +72,12 @@ function close() {
 }
 
 async function copySql() {
-  await navigator.clipboard.writeText(generatedSql.value)
-  layout.showSuccessToast(t('console.generateDml.copied'))
+  try {
+    await navigator.clipboard.writeText(generatedSql.value)
+    showSuccess(t('console.generateDml.copied'))
+  } catch {
+    showError(t('explorer.exportSqlFailed'))
+  }
 }
 </script>
 
@@ -122,6 +127,13 @@ async function copySql() {
         </header>
         <pre class="modal-code-block modal-code-block--preview">{{ generatedSql }}</pre>
       </section>
+
+      <DwInlineAlert
+          v-if="feedback"
+          density="banner"
+          :variant="feedback.variant"
+          :message="feedback.message"
+      />
     </div>
 
     <template #footer>

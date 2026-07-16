@@ -16,7 +16,10 @@ import type {
 
 import {toColumnSnapshot} from '@/features/schema-compare/types/schema-compare.types'
 
-import {buildSchemaMigrateDdl} from '@/features/schema-compare/services/schema-compare-ddl.service'
+import {
+    buildCreateTableDdlFromColumns,
+    buildSchemaMigrateDdl,
+} from '@/features/schema-compare/services/schema-compare-ddl.service'
 
 import {
 
@@ -42,6 +45,31 @@ async function fetchTableColumns(scope: SchemaScope, tableName: string): Promise
 
     return properties.columns.map(toColumnSnapshot)
 
+}
+
+/** 优先参考侧真实 DDL；失败或为空时用列快照按目标方言合成 CREATE TABLE */
+async function resolveCreateTableDdl(
+    left: SchemaScope,
+    right: SchemaScope,
+    tableName: string,
+): Promise<string | null> {
+    try {
+        const ddl = await tableDetailApi.fetchDdl(tableName, {
+            connectionId: left.connectionId,
+            database: left.database,
+        })
+        const text = ddl.ddl?.trim()
+        if (text) return text
+    } catch {
+        // fall through to column synthesis
+    }
+
+    try {
+        const columns = await fetchTableColumns(left, tableName)
+        return buildCreateTableDdlFromColumns(right.dbType, tableName, columns, right.database)
+    } catch {
+        return null
+    }
 }
 
 
@@ -108,15 +136,9 @@ export async function compareSchemaScopes(
 
         if (item.status === 'added') {
 
-            const ddl = await tableDetailApi.fetchDdl(item.tableName, {
+            const createDdl = await resolveCreateTableDdl(left, right, item.tableName)
 
-                connectionId: left.connectionId,
-
-                database: left.database,
-
-            })
-
-            createDdls.set(item.tableName, ddl.ddl)
+            if (createDdl) createDdls.set(item.tableName, createDdl)
 
         }
 

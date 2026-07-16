@@ -114,4 +114,18 @@ export default {
             idCard: '身份证',
         },
     },
+    documentFilter: {
+        label: 'find',
+        placeholder: '{"status":"active"}',
+        apply: '应用',
+        clear: '清除',
+        hint: 'MongoDB find 过滤（JSON 对象）；留空表示匹配全部文档',
+        active: '已应用服务端过滤；加载更多将沿用此条件',
+        invalidJson: 'Filter 不是合法 JSON',
+        notObject: 'Filter 必须是 JSON 对象',
+    },
+    documentView: {
+        title: '文档 JSON',
+        openHint: '点击行号查看完整文档 JSON',
+    },
 }

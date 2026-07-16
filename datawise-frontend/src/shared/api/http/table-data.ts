@@ -18,6 +18,7 @@ export function createHttpTableDataApi(): TableDataApi {
                     database: options?.database,
                     maxRows: options?.maxRows,
                     cursorId: options?.cursorId,
+                    filter: options?.filter,
                 }),
             )
         },

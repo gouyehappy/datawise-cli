@@ -33,6 +33,7 @@ export type CapabilityHintKey =
     | 'sshTunnel'
     | 'sqlExecute'
     | 'tableMutation'
+    | 'csvImport'
 
 export const CAPABILITY_HINT_I18N: Record<CapabilityHintKey, string> = {
     sqlExplain: 'capabilities.unsupported.sqlExplain',
@@ -43,4 +44,5 @@ export const CAPABILITY_HINT_I18N: Record<CapabilityHintKey, string> = {
     sshTunnel: 'capabilities.unsupported.sshTunnel',
     sqlExecute: 'capabilities.unsupported.sqlExecute',
     tableMutation: 'capabilities.unsupported.tableMutation',
+    csvImport: 'capabilities.unsupported.csvImport',
 }

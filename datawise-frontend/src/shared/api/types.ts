@@ -383,6 +383,8 @@ export interface TableDataFetchOptions {
     database?: string
     maxRows?: number
     cursorId?: string
+    /** MongoDB find filter (extended JSON object string) */
+    filter?: string
 }
 
 export interface TableRowMutateRequest {

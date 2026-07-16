@@ -99,6 +99,7 @@ const props = withDefaults(
       enableCrossEnvCompare?: boolean
       showExport?: boolean
       enableFakeData?: boolean
+      enableRowDocumentView?: boolean
     }>(),
     {
       showFilter: true,
@@ -113,6 +114,7 @@ const props = withDefaults(
       pkColumns: () => [],
       enableDmlGenerate: false,
       showExport: true,
+      enableRowDocumentView: false,
     },
 )
 
@@ -828,6 +830,7 @@ watch(
           :on-submit-changes="onSubmitChanges"
           :show-dml-actions="canGenerateDml"
           :show-export="showExport"
+          :enable-row-document-view="enableRowDocumentView"
           full-toolbar
           :has-more="gridHasMore"
           :cursor-loading="gridCursorLoading"

@@ -15,6 +15,20 @@ public interface ConnectorDocumentOperations {
             int limit
     );
 
+    /**
+     * @param filterJson optional MongoDB find filter as extended JSON; blank means match all
+     */
+    default TableDataResult fetchCollectionPage(
+            ConnectionEntity connection,
+            String database,
+            String collection,
+            int offset,
+            int limit,
+            String filterJson
+    ) {
+        return fetchCollectionPage(connection, database, collection, offset, limit);
+    }
+
     TablePropertiesResult loadCollectionProperties(
             ConnectionEntity connection,
             String database,

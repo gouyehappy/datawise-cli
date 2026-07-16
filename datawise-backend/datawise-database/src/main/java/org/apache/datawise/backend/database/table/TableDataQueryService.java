@@ -33,7 +33,7 @@ public class TableDataQueryService {
     }
 
     public TableDataResult fetch(String tableName, String connectionId, String database, Integer maxRows) {
-        return fetch(tableName, connectionId, database, maxRows, null);
+        return fetch(tableName, connectionId, database, maxRows, null, null);
     }
 
     public TableDataResult fetch(
@@ -42,6 +42,17 @@ public class TableDataQueryService {
             String database,
             Integer maxRows,
             String cursorId
+    ) {
+        return fetch(tableName, connectionId, database, maxRows, cursorId, null);
+    }
+
+    public TableDataResult fetch(
+            String tableName,
+            String connectionId,
+            String database,
+            Integer maxRows,
+            String cursorId,
+            String filter
     ) {
         ConnectionContext context = TableDataSupport.resolveContext(
                 connectionContext,
@@ -53,7 +64,7 @@ public class TableDataQueryService {
         int pageSize = sqlCursorService.resolvePageSize(maxRows);
 
         if (DocumentCursorSupport.isOffsetCursor(cursorId)) {
-            return fetchDocumentPage(context, tableName, cursorId, pageSize);
+            return fetchDocumentPage(context, tableName, cursorId, pageSize, filter);
         }
         if (cursorId != null && !cursorId.isBlank()) {
             ExecuteSqlResult page = sqlCursorService.fetchCursorPage(cursorId, maxRows);
@@ -73,7 +84,8 @@ public class TableDataQueryService {
                     context.database(),
                     tableName,
                     0,
-                    pageSize
+                    pageSize,
+                    filter
             );
         }
 
@@ -124,7 +136,8 @@ public class TableDataQueryService {
             ConnectionContext context,
             String tableName,
             String cursorId,
-            int pageSize
+            int pageSize,
+            String filter
     ) {
         int offset = DocumentCursorSupport.parseOffset(cursorId);
         return connectorFacade.document().fetchCollectionPage(
@@ -132,7 +145,8 @@ public class TableDataQueryService {
                 context.database(),
                 tableName,
                 offset,
-                pageSize
+                pageSize,
+                filter
         );
     }
 }

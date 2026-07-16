@@ -8,6 +8,8 @@ const props = defineProps<{
   columnName: string
   rowLabel: string
   content: string
+  /** 覆盖默认「列名 · 完整内容」标题（如整行文档） */
+  title?: string
 }>()
 
 const emit = defineEmits<{
@@ -34,7 +36,7 @@ async function onCopy() {
 <template>
   <AppModal
       :open="open"
-      :title="t('dataGrid.cellDetailTitle', { column: columnName })"
+      :title="title || t('dataGrid.cellDetailTitle', { column: columnName })"
       :subtitle="rowLabel"
       width="min(920px, 92vw)"
       @close="emit('close')"

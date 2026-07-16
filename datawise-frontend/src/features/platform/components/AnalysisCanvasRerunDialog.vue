@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import {computed, reactive, ref, watch} from 'vue'
+import {computed, reactive, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {platformApi} from '@/api'
 import {AppModal, DwInlineAlert, FormField, ModalActions} from '@/core/components'
 import type {AiCanvasParameter, RerunAnalysisCanvasResult} from '@/features/platform/types/platform.types'
 import {buildParameterValueMap} from '@/features/platform/services/analysis-canvas-parameters.service'
-import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useModalFeedback} from '@/core/composables/useModalFeedback'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useLayoutStore} from '@/features/layout/stores/layout'
 
 const props = defineProps<{
     open: boolean
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 const {t} = useI18n()
 const layout = useLayoutStore()
 const workspace = useWorkspaceStore()
+const {feedback, showSuccess, clearFeedback} = useModalFeedback(toRef(props, 'open'))
 
 const loading = ref(false)
 const running = ref(false)
@@ -39,6 +41,7 @@ watch(
         loading.value = true
         error.value = ''
         lastResult.value = null
+        clearFeedback()
         try {
             const detail = await platformApi.getAnalysisCanvas(canvasId)
             canvasTitle.value = detail.title
@@ -67,6 +70,7 @@ async function rerun() {
     if (!props.canvasId || running.value) return
     running.value = true
     error.value = ''
+    clearFeedback()
     try {
         const result = await platformApi.rerunAnalysisCanvas({
             canvasId: props.canvasId,
@@ -74,7 +78,7 @@ async function rerun() {
         })
         lastResult.value = result
         emit('completed', result)
-        layout.showSuccessToast(t('platform.canvas.rerunDone'))
+        showSuccess(t('platform.canvas.rerunDone'))
     } catch (err) {
         error.value = err instanceof Error ? err.message : String(err)
     } finally {
@@ -85,8 +89,12 @@ async function rerun() {
 async function copySql() {
     const sql = lastResult.value?.sql?.trim()
     if (!sql) return
-    await navigator.clipboard.writeText(sql)
-    layout.showSuccessToast(t('platform.canvas.copiedSql'))
+    try {
+        await navigator.clipboard.writeText(sql)
+        showSuccess(t('platform.canvas.copiedSql'))
+    } catch {
+        error.value = t('explorer.exportSqlFailed')
+    }
 }
 
 function openInConsole() {
@@ -109,6 +117,12 @@ function openInConsole() {
     <DwInlineAlert v-else-if="error" :message="error"/>
 
     <template v-else>
+      <DwInlineAlert
+          v-if="feedback"
+          density="banner"
+          :variant="feedback.variant"
+          :message="feedback.message"
+      />
       <p v-if="!hasParameters" class="canvas-rerun__hint">{{ t('platform.canvas.rerunNoParams') }}</p>
       <form v-else class="canvas-rerun__form" @submit.prevent="rerun">
         <FormField

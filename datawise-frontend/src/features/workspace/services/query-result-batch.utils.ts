@@ -12,6 +12,20 @@ export function shouldCollapseBatchResults(items: QueryResultItem[]): boolean {
     return items.length > 1 && items.every(isNonGridResult)
 }
 
+/**
+ * 批量执行流式进度快照：全非 grid 时只显示摘要；
+ * 一旦出现结果集则展示已完成 Tab + 进度摘要。
+ */
+export function buildStreamingProgressSnapshot(
+    items: QueryResultItem[],
+    streamingSummary: QueryResultItem,
+): QueryResultItem[] {
+    if (items.every(isNonGridResult)) {
+        return [streamingSummary]
+    }
+    return [...items, streamingSummary]
+}
+
 export interface BatchSummaryLabels {
     summaryLabel: string
     resultTabLabel: (index: number, item: QueryResultItem) => string

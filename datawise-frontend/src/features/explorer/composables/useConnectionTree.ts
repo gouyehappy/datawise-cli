@@ -116,6 +116,7 @@ import {
     filterSqlContextMenuItems,
     isCsvImportSupported,
 } from '@/shared/capabilities/db-type-capabilities'
+import {CAPABILITY_HINT_I18N} from '@/shared/capabilities/capability-keys'
 import {executeSqlBatch} from '@/features/workspace/services/sql-batch-execute.service'
 import {resolveClientMaxResultRows} from '@/features/settings/services/query-limit.service'
 import {sqlFileNameFromTabLabel} from '@/features/workspace/services/console-tab-title'
@@ -850,7 +851,15 @@ export function useConnectionTree() {
         if (node.type === 'table') {
             const ctx = resolveTableContext(explorer.tree, node)
             if (!isCsvImportSupported(ctx?.dbType, catalogStore.items)) {
-                items = items.filter((item) => item.id !== 'import')
+                items = items.map((item) =>
+                    item.id === 'import'
+                        ? {
+                              ...item,
+                              disabled: true,
+                              disabledHint: t(CAPABILITY_HINT_I18N.csvImport),
+                          }
+                        : item,
+                )
             }
         }
         if (node.type === 'connection') {
@@ -1673,6 +1682,7 @@ export function useConnectionTree() {
         if (id === 'import' && node.type === 'table') {
             const ctx = resolveTableContext(explorer.tree, node)
             if (!isCsvImportSupported(ctx?.dbType, catalogStore.items)) {
+                workspace.setStatus(t(CAPABILITY_HINT_I18N.csvImport))
                 closeMenu()
                 return
             }

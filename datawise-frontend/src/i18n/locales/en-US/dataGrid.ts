@@ -114,4 +114,18 @@ export default {
             idCard: 'ID card',
         },
     },
+    documentFilter: {
+        label: 'find',
+        placeholder: '{"status":"active"}',
+        apply: 'Apply',
+        clear: 'Clear',
+        hint: 'MongoDB find filter (JSON object); leave empty to match all documents',
+        active: 'Server-side filter applied; Load more keeps this filter',
+        invalidJson: 'Filter is not valid JSON',
+        notObject: 'Filter must be a JSON object',
+    },
+    documentView: {
+        title: 'Document JSON',
+        openHint: 'Click the row number to view the full document JSON',
+    },
 }

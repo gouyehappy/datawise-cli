@@ -8,6 +8,7 @@ import {
 import type {QueryResultItem} from '@/features/workspace/types'
 import {
     appendStreamingBatchSummaryItem,
+    buildStreamingProgressSnapshot,
     collapseBatchResultsToSummary,
     createStreamingBatchSummaryItem,
     finishStreamingBatchSummaryItem,
@@ -66,9 +67,21 @@ export async function executeSqlBatch(
         options!.onProgress!([streamingSummary])
     }
 
+    /** 全非 grid 时只推摘要；一旦出现结果集则边跑边出已完成 Tab + 进度摘要 */
+    const emitStreamingProgress = (statementIndex: number) => {
+        if (!streamingSummary || !options?.onProgress) return
+        streamingSummary = appendStreamingBatchSummaryItem(
+            streamingSummary,
+            items[items.length - 1],
+            statementIndex,
+        )
+        options.onProgress(buildStreamingProgressSnapshot(items, streamingSummary))
+    }
+
     for (let i = 0; i < statements.length; i++) {
         let sql = statements[i]
         const stmtStarted = performance.now()
+        let stopped = false
 
         if (options?.isPluginEnabled) {
             const hooked = await runPluginBeforeExecute(
@@ -98,6 +111,7 @@ export async function executeSqlBatch(
                     },
                     options.isPluginEnabled,
                 )
+                emitStreamingProgress(i)
                 break
             }
             sql = hooked.sql ?? sql
@@ -163,17 +177,11 @@ export async function executeSqlBatch(
                 durationMs,
                 status: 'error',
             }).catch(() => {})
-            break
+            stopped = true
         }
 
-        if (streamingSummary && options?.onProgress) {
-            streamingSummary = appendStreamingBatchSummaryItem(
-                streamingSummary,
-                items[items.length - 1],
-                i,
-            )
-            options.onProgress([streamingSummary])
-        }
+        emitStreamingProgress(i)
+        if (stopped) break
     }
 
     const collapsed = collapseBatchResultsToSummary(items)

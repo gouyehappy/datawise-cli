@@ -25,6 +25,7 @@ import {
 import {analyzeDangerousSql} from '@/features/workspace/services/dangerous-sql-preview.service'
 import {DEFAULT_DANGEROUS_SQL_PREFERENCES} from '@/shared/config/app-config.defaults'
 import {isCsvImportSupported, isDbTypeSupported, supportsSqlExecute, supportsTableMutation, supportsSqlExplain, supportsSessionKill, supportsLockMonitor, supportsOnlineDdl, filterConnectionCapabilityMenuItems} from '@/shared/capabilities/db-type-capabilities'
+import {CAPABILITY_HINT_I18N} from '@/shared/capabilities/capability-keys'
 import type {ContextMenuItem} from '@/core/types'
 
 describe('ai-knowledge.types', () => {
@@ -102,6 +103,7 @@ describe('db-type-capabilities', () => {
         assert.equal(isCsvImportSupported('mysql'), true)
         assert.equal(isCsvImportSupported('postgresql'), true)
         assert.equal(isCsvImportSupported('redis'), false)
+        assert.equal(CAPABILITY_HINT_I18N.csvImport, 'capabilities.unsupported.csvImport')
     })
 
     it('prefers catalog DML for csv import', () => {

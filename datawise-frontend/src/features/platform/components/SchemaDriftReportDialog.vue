@@ -72,8 +72,8 @@ function openMigration() {
         source,
         preselectedTables: selectedTables.value.length ? selectedTables.value : undefined,
     })
-    layout.showSuccessToast(t('platform.drift.openMigrationDone'))
     close()
+    layout.showSuccessToast(t('platform.drift.openMigrationDone'))
 }
 </script>
 

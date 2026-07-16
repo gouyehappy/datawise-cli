@@ -78,9 +78,9 @@ async function handleSubmit() {
   clearErrors()
   try {
     await auth.login(form.userName.trim(), form.userPassword)
-    toast.success(t('auth.success'))
     emit('success')
     close()
+    toast.success(t('auth.success'))
   } catch (err) {
     errors.form = resolveErrorMessage(err)
   } finally {

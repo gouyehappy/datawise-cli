@@ -1,6 +1,9 @@
 import type {DbType} from '@/core/types'
 import {quoteSqlIdentifier} from '@/features/connection/services/sql-dialect.service'
-import type {TableSchemaDiff} from '@/features/schema-compare/types/schema-compare.types'
+import type {
+    ColumnSchemaSnapshot,
+    TableSchemaDiff,
+} from '@/features/schema-compare/types/schema-compare.types'
 
 function quoteTable(dbType: DbType | undefined, tableName: string, database?: string): string {
     const table = quoteSqlIdentifier(dbType, tableName)
@@ -33,6 +36,19 @@ function formatColumnDefinition(
     return `${name} ${formatColumnTypeClause(dbType, column)}`
 }
 
+/** 用列快照合成 CREATE TABLE（DDL 拉取失败/为空时的兜底） */
+export function buildCreateTableDdlFromColumns(
+    dbType: DbType | undefined,
+    tableName: string,
+    columns: readonly ColumnSchemaSnapshot[],
+    targetDatabase?: string,
+): string | null {
+    if (!columns.length) return null
+    const qualified = quoteTable(dbType, tableName, targetDatabase)
+    const defs = columns.map((column) => formatColumnDefinition(dbType, column))
+    return `CREATE TABLE ${qualified} (\n  ${defs.join(',\n  ')}\n);`
+}
+
 export function buildSchemaMigrateDdl(
     tableDiffs: TableSchemaDiff[],
     targetDbType: DbType | undefined,
@@ -48,9 +64,12 @@ export function buildSchemaMigrateDdl(
         const qualified = quoteTable(targetDbType, table.tableName, targetDatabase)
 
         if (table.status === 'added') {
-            const ddl = createDdls.get(table.tableName)
+            const ddl = createDdls.get(table.tableName)?.trim()
             lines.push(`-- Create missing table: ${table.tableName}`)
-            lines.push(ddl ?? `-- TODO: CREATE TABLE ${qualified};`)
+            lines.push(
+                ddl
+                    || `-- Unable to generate CREATE TABLE for ${qualified} (DDL unavailable and no columns)`,
+            )
             lines.push('')
             continue
         }

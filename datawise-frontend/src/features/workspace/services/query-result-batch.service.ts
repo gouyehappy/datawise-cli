@@ -24,6 +24,7 @@ function batchLabels() {
 
 export {
     buildCollapsedBatchSummary,
+    buildStreamingProgressSnapshot,
     isNonGridResult,
     shouldCollapseBatchResults,
 } from '@/features/workspace/services/query-result-batch.utils'

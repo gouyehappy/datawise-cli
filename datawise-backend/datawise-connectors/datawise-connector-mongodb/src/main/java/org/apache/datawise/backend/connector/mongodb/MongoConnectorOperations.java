@@ -85,7 +85,26 @@ public class MongoConnectorOperations
             int offset,
             int limit
     ) {
-        return MongoDocumentSupport.fetchCollectionPage(connection, database, collection, offset, limit);
+        return fetchCollectionPage(connection, database, collection, offset, limit, null);
+    }
+
+    @Override
+    public TableDataResult fetchCollectionPage(
+            ConnectionEntity connection,
+            String database,
+            String collection,
+            int offset,
+            int limit,
+            String filterJson
+    ) {
+        return MongoDocumentSupport.fetchCollectionPage(
+                connection,
+                database,
+                collection,
+                offset,
+                limit,
+                filterJson
+        );
     }
 
     @Override

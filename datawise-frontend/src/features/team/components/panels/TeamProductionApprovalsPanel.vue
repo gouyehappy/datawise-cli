@@ -26,9 +26,11 @@ const statusFilter = ref<string>('pending')
 const detailOpen = ref(false)
 const detailLoading = ref(false)
 const detail = ref<TeamProductionApprovalDetail | null>(null)
+const detailError = ref('')
 const actionId = ref<string | null>(null)
 const rejectOpen = ref(false)
 const rejectComment = ref('')
+const rejectError = ref('')
 
 const filteredItems = computed(() => filterProductionApprovalsByStatus(items.value, statusFilter.value))
 
@@ -49,12 +51,12 @@ async function openDetail(summary: TeamProductionApprovalSummary) {
     detailOpen.value = true
     detailLoading.value = true
     detail.value = null
+    detailError.value = ''
     try {
         detail.value = await teamStore.getProductionApproval(props.teamId, summary.id)
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.productionApprovals.detailFailed')
-        layout.showErrorToast(message)
-        detailOpen.value = false
+        detailError.value = message
     } finally {
         detailLoading.value = false
     }
@@ -63,13 +65,16 @@ async function openDetail(summary: TeamProductionApprovalSummary) {
 function closeDetail() {
     detailOpen.value = false
     detail.value = null
+    detailError.value = ''
 }
 
 async function approve(approvalId: string) {
     if (actionId.value) return
     actionId.value = approvalId
+    detailError.value = ''
     try {
         const result = await teamStore.approveProductionApproval(props.teamId, approvalId)
+        closeDetail()
         if (result.status === 'executed') {
             layout.showSuccessToast(t('team.productionApprovals.approveSuccess'))
         } else {
@@ -77,11 +82,10 @@ async function approve(approvalId: string) {
                 t('team.productionApprovals.approveFailed', {error: result.executionError ?? ''}),
             )
         }
-        closeDetail()
         await reload()
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.productionApprovals.approveError')
-        layout.showErrorToast(message)
+        detailError.value = message
     } finally {
         actionId.value = null
     }
@@ -89,27 +93,30 @@ async function approve(approvalId: string) {
 
 function openReject(approvalId: string) {
     rejectComment.value = ''
+    rejectError.value = ''
     rejectOpen.value = true
     actionId.value = approvalId
 }
 
 function closeReject() {
     rejectOpen.value = false
+    rejectError.value = ''
     actionId.value = null
 }
 
 async function confirmReject() {
     const approvalId = actionId.value
     if (!approvalId) return
+    rejectError.value = ''
     try {
         await teamStore.rejectProductionApproval(props.teamId, approvalId, rejectComment.value.trim() || undefined)
-        layout.showSuccessToast(t('team.productionApprovals.rejectSuccess'))
         closeReject()
         closeDetail()
+        layout.showSuccessToast(t('team.productionApprovals.rejectSuccess'))
         await reload()
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.productionApprovals.rejectError')
-        layout.showErrorToast(message)
+        rejectError.value = message
     } finally {
         actionId.value = null
     }
@@ -179,6 +186,7 @@ watch(
         @close="closeDetail"
     >
       <p v-if="detailLoading" class="modal-empty-state">{{ t('common.loading') }}</p>
+      <DwInlineAlert v-else-if="detailError" density="banner" :message="detailError"/>
       <div v-else-if="detail" class="modal-form">
         <p class="modal-meta-row">
           {{ detail.requestedByUserName }} · {{ detail.requestedAt }}
@@ -204,6 +212,7 @@ watch(
           {{ t('team.productionApprovals.reviewComment', {comment: detail.reviewComment}) }}
         </p>
         <DwInlineAlert :message="detail.executionError"/>
+        <DwInlineAlert v-if="detailError" density="banner" :message="detailError"/>
       </div>
 
       <template v-if="detail && canManage && detail.status === 'pending'" #footer>
@@ -228,6 +237,7 @@ watch(
           <textarea :id="id" v-model="rejectComment" class="modal-textarea" rows="4" />
         </template>
       </FormField>
+      <DwInlineAlert v-if="rejectError" density="banner" :message="rejectError"/>
 
       <template #footer>
         <ModalActions

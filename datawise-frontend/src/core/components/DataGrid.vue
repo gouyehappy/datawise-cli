@@ -63,6 +63,11 @@ import {
   isGridNumericColumn,
   resolveGridColumnTypeLabel,
 } from '@/core/components/data-grid-column-meta'
+import {
+  buildDocumentFromGridRow,
+  formatMongoDocumentJson,
+  resolveMongoDocumentRowLabel,
+} from '@/features/workspace/services/mongo-document-row.service'
 
 const {t} = useI18n()
 const pluginStore = usePluginStore()
@@ -115,6 +120,8 @@ const props = withDefaults(
       connectionId?: string
       database?: string
       showExport?: boolean
+      /** Mongo 等文档源：点击行号打开整行 JSON 文档 */
+      enableRowDocumentView?: boolean
     }>(),
     {
       total: 0,
@@ -129,6 +136,7 @@ const props = withDefaults(
       showDmlActions: false,
       suggestExportMask: false,
       showExport: true,
+      enableRowDocumentView: false,
     },
 )
 
@@ -139,7 +147,12 @@ const exportDialogOpen = ref(false)
 const exportSubmitting = ref(false)
 const wrapCells = ref(false)
 const cellDetailOpen = ref(false)
-const cellDetail = ref<{ columnName: string; rowLabel: string; content: string } | null>(null)
+const cellDetail = ref<{
+  columnName: string
+  rowLabel: string
+  content: string
+  title?: string
+} | null>(null)
 
 const emit = defineEmits<{
   refresh: []
@@ -634,6 +647,19 @@ function openCellDetail(item: typeof displayRows.value[number], column: TableCol
   cellDetailOpen.value = true
 }
 
+function openRowDocument(item: typeof displayRows.value[number], rowIndex: number) {
+  if (!props.enableRowDocumentView || item.kind !== 'existing' || !item.originalRow) return
+  const document = buildDocumentFromGridRow(gridColumns.value, item.originalRow)
+  const absoluteRow = rowOffset.value + rowIndex + 1
+  cellDetail.value = {
+    columnName: t('dataGrid.documentView.title'),
+    title: t('dataGrid.documentView.title'),
+    rowLabel: resolveMongoDocumentRowLabel(document, absoluteRow),
+    content: formatMongoDocumentJson(document),
+  }
+  cellDetailOpen.value = true
+}
+
 function closeCellDetail() {
   cellDetailOpen.value = false
   cellDetail.value = null
@@ -704,7 +730,11 @@ watch(hasPendingChanges, (pending) => {
   if (!pending) activeCell.value = null
 })
 
-function onIndexColClick(item: typeof displayRows.value[number]) {
+function onIndexColClick(item: typeof displayRows.value[number], rowIndex: number) {
+  if (props.enableRowDocumentView && item.kind === 'existing') {
+    openRowDocument(item, rowIndex)
+    return
+  }
   if (!inlineEnabled.value) return
   selectRow(item)
   activeCell.value = null
@@ -1116,10 +1146,15 @@ function dismissColumnStats() {
               'is-modified': isRowModified(item),
               'is-insert-row': item.kind === 'insert',
               'is-pending-delete': isRowPendingDelete(item),
-              'is-selectable-row': inlineEnabled,
+              'is-selectable-row': inlineEnabled || enableRowDocumentView,
             }"
         >
-          <td class="index-col index-col--selectable" @click="onIndexColClick(item)">
+          <td
+              class="index-col"
+              :class="{ 'index-col--selectable': inlineEnabled || enableRowDocumentView }"
+              :title="enableRowDocumentView ? t('dataGrid.documentView.openHint') : undefined"
+              @click="onIndexColClick(item, rowIndex)"
+          >
             {{ rowOffset + rowIndex + 1 }}
           </td>
           <td
@@ -1185,6 +1220,7 @@ function dismissColumnStats() {
         :column-name="cellDetail?.columnName ?? ''"
         :row-label="cellDetail?.rowLabel ?? ''"
         :content="cellDetail?.content ?? ''"
+        :title="cellDetail?.title"
         @close="closeCellDetail"
     />
 

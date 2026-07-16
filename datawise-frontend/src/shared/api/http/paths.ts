@@ -38,13 +38,23 @@ export const API_PATHS = {
         tablePreview: '/api/datagen/table/preview',
         tableExecute: '/api/datagen/table/execute',
     },
-    tableData: (tableName: string, options?: { connectionId?: string; database?: string; maxRows?: number; cursorId?: string }) => {
+    tableData: (
+        tableName: string,
+        options?: {
+            connectionId?: string
+            database?: string
+            maxRows?: number
+            cursorId?: string
+            filter?: string
+        },
+    ) => {
         const base = `/api/tables/${encodeURIComponent(tableName)}/data`
         const params = new URLSearchParams()
         if (options?.connectionId) params.set('connectionId', options.connectionId)
         if (options?.database) params.set('database', options.database)
         if (options?.maxRows != null && options.maxRows > 0) params.set('maxRows', String(options.maxRows))
         if (options?.cursorId) params.set('cursorId', options.cursorId)
+        if (options?.filter?.trim()) params.set('filter', options.filter.trim())
         const qs = params.toString()
         return qs ? `${base}?${qs}` : base
     },

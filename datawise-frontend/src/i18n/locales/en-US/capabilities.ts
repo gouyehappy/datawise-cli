@@ -8,5 +8,6 @@ export default {
         onlineDdl: 'Online DDL is not supported for this datasource',
         sshTunnel: 'SSH tunnel is not supported for this datasource',
         tableMutation: 'Table data mutations are not supported for this datasource',
+        csvImport: 'CSV import is not supported for this datasource',
     },
 }

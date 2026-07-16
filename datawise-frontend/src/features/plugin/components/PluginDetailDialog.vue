@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, toRef} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {PluginItem} from '@/core/types'
-import {AppModal, DwButton, StatusPill} from '@/core/components'
+import {AppModal, DwButton, DwInlineAlert, StatusPill} from '@/core/components'
 import {
     PLUGIN_REGISTRY,
     listPluginRequires,
@@ -11,7 +11,7 @@ import {
     type PluginId,
 } from '@/features/plugin/services/plugin-registry.service'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
-import {useAppToast} from '@/features/layout/composables/useAppToast'
+import {useModalFeedback} from '@/core/composables/useModalFeedback'
 import {
     getPluginUsage,
     pluginUsageTotal,
@@ -42,7 +42,7 @@ const emit = defineEmits<{
 
 const {t, te} = useI18n()
 const pluginStore = usePluginStore()
-const toast = useAppToast()
+const {feedback, showSuccess} = useModalFeedback(toRef(props, 'open'))
 
 const meta = computed(() =>
     props.plugin ? PLUGIN_REGISTRY[props.plugin.id as PluginId] : undefined,
@@ -144,7 +144,7 @@ function enableSuggestedRequires() {
   if (!props.plugin) return
   const touched = pluginStore.satisfyPluginRequires(props.plugin.id as PluginId)
   if (touched.length) {
-    toast.success(t('plugin.enableRequiresSuccess', {count: touched.length}))
+    showSuccess(t('plugin.enableRequiresSuccess', {count: touched.length}))
     const updated = pluginStore.items.find((item) => item.id === props.plugin!.id) ?? null
     emit('pluginUpdated', updated)
   }
@@ -157,7 +157,7 @@ function alignToReferencePreset() {
       props.referencePresetId,
   )
   if (aligned) {
-    toast.success(t('plugin.detail.presetAlignSuccess', {preset: presetLabel.value}))
+    showSuccess(t('plugin.detail.presetAlignSuccess', {preset: presetLabel.value}))
     const updated = pluginStore.items.find((item) => item.id === props.plugin!.id) ?? null
     emit('pluginUpdated', updated)
   }
@@ -183,6 +183,13 @@ function alignAllToReferencePreset() {
       @close="emit('close')"
   >
     <p class="plugin-detail__desc">{{ pluginDesc }}</p>
+
+    <DwInlineAlert
+        v-if="feedback"
+        density="banner"
+        :variant="feedback.variant"
+        :message="feedback.message"
+    />
 
     <div class="plugin-detail__meta">
       <StatusPill :variant="plugin.enabled ? 'success' : 'neutral'">

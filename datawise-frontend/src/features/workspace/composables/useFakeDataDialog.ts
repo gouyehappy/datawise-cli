@@ -128,8 +128,8 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
                 t,
             })
             if (result.ok) {
-                layout.showSuccessToast(result.message)
                 resetDialog()
+                layout.showSuccessToast(result.message)
                 await onExecuted?.(current)
                 return
             }
@@ -155,7 +155,13 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
                 rowCount,
                 seed: seed.value ?? undefined,
                 t,
-            }).then((message) => layout.showSuccessToast(message))
+            }).then((message) => {
+                resetDialog()
+                layout.showSuccessToast(message)
+            }).catch((error) => {
+                const message = error instanceof Error ? error.message : String(error)
+                executeError.value = t('workspace.fakeData.failedWithDetail', {message})
+            })
     }
 
     return {
