@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {AppModal, DwButton, FormField} from '@/core/components'
+import {AppModal, DwButton, DwInlineAlert, DwPanelState, FormField} from '@/core/components'
 import type {TablePropertiesResult} from '@/shared/api/types'
 import type {TableRow} from '@/core/types'
 import {
@@ -109,9 +109,9 @@ async function copySql() {
   if (!sql) return
   try {
     await navigator.clipboard.writeText(sql)
-    layout.showToast(t('explorer.exportSqlCopied'))
+    layout.showSuccessToast(t('explorer.exportSqlCopied'))
   } catch {
-    layout.showToast(t('explorer.exportSqlFailed'))
+    layout.showErrorToast(t('explorer.exportSqlFailed'))
   }
 }
 
@@ -121,7 +121,7 @@ function downloadSql() {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
   const tableName = effectiveTableName.value || 'table'
   downloadTextFile(sql, `${tableName}-fake-data-${stamp}.sql`, 'text/plain;charset=utf-8')
-  layout.showToast(t('workspace.fakeData.exported'))
+  layout.showSuccessToast(t('workspace.fakeData.exported'))
 }
 </script>
 
@@ -134,13 +134,19 @@ function downloadSql() {
       max-height="min(90vh, 860px)"
       @close="close"
   >
-    <div v-if="loading" class="fake-data-empty-state">
-      {{ t('workspace.fakeData.loading') }}
-    </div>
+    <DwPanelState
+        v-if="loading"
+        status="loading"
+        :message="t('workspace.fakeData.loading')"
+        fill
+    />
 
-    <div v-else-if="!insertColumns.length" class="fake-data-empty-state">
-      {{ t('workspace.fakeData.noColumns') }}
-    </div>
+    <DwPanelState
+        v-else-if="!insertColumns.length"
+        status="empty"
+        :message="t('workspace.fakeData.noColumns')"
+        fill
+    />
 
     <div v-else class="fake-data-modal">
       <section class="fake-data-toolbar">
@@ -197,7 +203,7 @@ function downloadSql() {
           </button>
         </div>
       </section>
-      <p v-if="rowCountError" class="dw-form-error" role="alert">{{ rowCountError }}</p>
+      <DwInlineAlert :message="rowCountError"/>
 
       <section class="fake-data-hints">
         <span>{{ t('workspace.fakeData.columnHint', {count: insertColumns.length}) }}</span>
@@ -269,12 +275,19 @@ function downloadSql() {
         </article>
       </section>
 
-      <div v-if="executing" class="fake-data-running-banner" role="status" aria-live="polite">
-        {{ t('workspace.fakeData.executing') }}
-      </div>
-      <div v-else-if="errorMessage" class="fake-data-error-banner" role="alert">
-        {{ errorMessage }}
-      </div>
+      <DwInlineAlert
+          v-if="executing"
+          class="fake-data-status-banner"
+          density="banner"
+          variant="info"
+          :message="t('workspace.fakeData.executing')"
+      />
+      <DwInlineAlert
+          v-else-if="errorMessage"
+          class="fake-data-status-banner"
+          density="banner"
+          :message="errorMessage"
+      />
     </div>
 
     <template #footer>
@@ -319,16 +332,8 @@ function downloadSql() {
 
 .fake-data-toolbar,
 .fake-data-hints,
-.fake-data-running-banner,
-.fake-data-error-banner {
+.fake-data-status-banner {
   flex-shrink: 0;
-}
-
-.fake-data-empty-state {
-  min-height: 220px;
-  display: grid;
-  place-items: center;
-  color: var(--dw-text-muted);
 }
 
 .fake-data-toolbar {
@@ -392,24 +397,6 @@ function downloadSql() {
   font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
   padding: var(--dw-space-1) var(--dw-space-1) 0;
-}
-
-.fake-data-running-banner {
-  padding: var(--dw-pad-control);
-  border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border-light));
-  border-radius: var(--dw-panel-radius);
-  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg));
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-sm);
-}
-
-.fake-data-error-banner {
-  padding: var(--dw-pad-control);
-  border: 1px solid color-mix(in srgb, var(--dw-danger) 28%, var(--dw-border-light));
-  border-radius: var(--dw-panel-radius);
-  background: color-mix(in srgb, var(--dw-danger) 8%, var(--dw-bg));
-  color: var(--dw-danger);
-  font-size: var(--dw-text-sm);
 }
 
 .fake-data-panels {

@@ -27,7 +27,7 @@ import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWrit
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
 import SettingsSegmentTabs from '@/features/settings/components/SettingsSegmentTabs.vue'
-import {DwButton, DwInput, DwSecretInput, FormField, StatusPill} from '@/core/components'
+import {DwActionFeedback, DwButton, DwInlineAlert, DwInput, DwSecretInput, FormField, StatusPill} from '@/core/components'
 import type {
   AiEmbeddingProfile,
   AiEmbeddingProviderId,
@@ -62,6 +62,8 @@ const markDefaultOnSave = ref(false)
 const saving = ref(false)
 const testing = ref(false)
 const embeddingTesting = ref(false)
+const formError = ref('')
+const testFeedback = ref<{message: string; ok: boolean} | null>(null)
 const profileQuery = ref('')
 const chatDraft = ref<AiLlmProfile | null>(null)
 const embeddingDraft = ref<AiEmbeddingProfile | null>(null)
@@ -354,10 +356,12 @@ function setEditingDefault() {
 
 function saveProfile() {
   if (denyIfReadOnly() || saving.value) return
+  formError.value = ''
+  testFeedback.value = null
   if (isEditingChat.value) {
     const draft = chatDraft.value
     if (!draft?.name.trim()) {
-      layout.showToast(t('settings.ai.errors.profileNameRequired'))
+      formError.value = t('settings.ai.errors.profileNameRequired')
       return
     }
     saving.value = true
@@ -371,7 +375,7 @@ function saveProfile() {
       }
       if (markDefaultOnSave.value) appConfig.setDefaultLlmProfile(payload.id)
       appConfig.persistConfigNow()
-      layout.showToast(t('settings.ai.saveSuccess'))
+      layout.showSuccessToast(t('settings.ai.saveSuccess'))
       discardDraft()
       viewMode.value = 'list'
     } finally {
@@ -382,7 +386,7 @@ function saveProfile() {
 
   const draft = embeddingDraft.value
   if (!draft?.name.trim()) {
-    layout.showToast(t('settings.ai.errors.profileNameRequired'))
+    formError.value = t('settings.ai.errors.profileNameRequired')
     return
   }
   saving.value = true
@@ -396,7 +400,7 @@ function saveProfile() {
     }
     if (markDefaultOnSave.value) appConfig.setDefaultEmbeddingProfile(payload.id)
     appConfig.persistConfigNow()
-    layout.showToast(t('settings.ai.saveSuccess'))
+    layout.showSuccessToast(t('settings.ai.saveSuccess'))
     discardDraft()
     viewMode.value = 'list'
   } finally {
@@ -421,9 +425,10 @@ function removeEditingProfile() {
 async function runChatTest() {
   if (testing.value || !chatDraft.value) return
   testing.value = true
+  testFeedback.value = null
   try {
     const result = await aiApi.testConnection(chatDraft.value)
-    layout.showToast(result.message)
+    testFeedback.value = {message: result.message, ok: result.ok !== false}
   } finally {
     testing.value = false
   }
@@ -432,9 +437,10 @@ async function runChatTest() {
 async function runEmbeddingTest() {
   if (embeddingTesting.value || !embeddingDraft.value) return
   embeddingTesting.value = true
+  testFeedback.value = null
   try {
     const result = await aiApi.testEmbedding(embeddingDraft.value)
-    layout.showToast(result.message)
+    testFeedback.value = {message: result.message, ok: result.ok !== false}
   } finally {
     embeddingTesting.value = false
   }
@@ -683,9 +689,14 @@ async function runEmbeddingTest() {
                 <DwButton variant="secondary" :loading="testing" :disabled="!isApiReady" @click="runChatTest">
                   {{ testing ? t('settings.ai.testing') : t('settings.ai.testConnection') }}
                 </DwButton>
+                <DwActionFeedback
+                    :message="testFeedback?.message"
+                    :ok="testFeedback?.ok ?? null"
+                />
               </div>
             </div>
           </template>
+          <DwInlineAlert :message="formError && isEditingChat ? formError : null"/>
         </div>
 
         <div v-else-if="embeddingDraft" class="ai-edit-card">
@@ -816,9 +827,14 @@ async function runEmbeddingTest() {
                   {{ embeddingTesting ? t('settings.ai.testing') : t('settings.ai.testEmbedding') }}
                 </DwButton>
                 <p class="field-hint">{{ t('settings.ai.embeddingUsageNote') }}</p>
+                <DwActionFeedback
+                    :message="testFeedback?.message"
+                    :ok="testFeedback?.ok ?? null"
+                />
               </div>
             </div>
           </template>
+          <DwInlineAlert :message="formError && !isEditingChat ? formError : null"/>
         </div>
 
         <footer class="ai-edit-footer">

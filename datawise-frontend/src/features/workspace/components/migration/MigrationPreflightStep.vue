@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useI18n} from 'vue-i18n'
-import {DwButton, DwSelect, StatusPill} from '@/core/components'
+import {DwButton, DwPanelState, DwSelect, StatusPill} from '@/core/components'
 import {useMigrationWizard} from '@/features/workspace/composables/useMigrationWizardInject'
 
 const {t} = useI18n()
@@ -16,17 +16,23 @@ const w = useMigrationWizard()
       <span class="route-summary__count">{{ w.selectedCountLabel }}</span>
     </section>
 
-    <div v-if="w.preflightLoading" class="migration-flow-panel__loading">
-      <span class="table-migration__spinner" aria-hidden="true"/>
-      {{ t('explorer.tableMigrationWizard.checking') }}
-    </div>
+    <DwPanelState
+        v-if="w.preflightLoading"
+        status="loading"
+        :message="t('explorer.tableMigrationWizard.checking')"
+    />
 
-    <div v-else-if="w.preflightError" class="migration-flow-panel__error">
-      <p>{{ w.preflightError }}</p>
-      <DwButton variant="secondary" size="sm" :disabled="!w.canCheck" @click="w.runPreflight">
-        {{ t('explorer.tableMigrationWizard.retryPreflight') }}
-      </DwButton>
-    </div>
+    <DwPanelState
+        v-else-if="w.preflightError"
+        status="error"
+        :message="w.preflightError"
+    >
+      <template #actions>
+        <DwButton variant="secondary" size="sm" :disabled="!w.canCheck" @click="w.runPreflight">
+          {{ t('explorer.tableMigrationWizard.retryPreflight') }}
+        </DwButton>
+      </template>
+    </DwPanelState>
 
     <section v-else-if="w.preflightResult" class="preflight-inspector">
       <header class="preflight-inspector__head">

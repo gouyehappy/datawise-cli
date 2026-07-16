@@ -14,7 +14,7 @@ import IconButton from '@/core/components/IconButton.vue'
 import ConsoleToolbarIcon from '@/core/components/ConsoleToolbarIcon.vue'
 import EditorFullscreenButton from '@/core/components/EditorFullscreenButton.vue'
 import SplitHandle from '@/core/components/SplitHandle.vue'
-import {DwButton} from '@/core/components'
+import {DwButton, DwInlineAlert} from '@/core/components'
 import type {WorkspaceTab} from '@/core/types'
 import {shortcutTooltip} from '@/features/layout/composables/useAppShortcutListener'
 import {useViewModelEditor} from '@/features/workspace/composables/useViewModelEditor'
@@ -339,7 +339,6 @@ async function refreshViewsTreeAfterSave() {
 
 function denyGuestWrite(): boolean {
     if (!guestReadOnly.value) return false
-    layout.showErrorToast(guestReadOnlyHint.value)
     return true
 }
 
@@ -348,18 +347,16 @@ async function onPublish() {
     const result = await save()
     if (!result) return
     if (result.outcome === 'published') {
-        layout.showToast(t('viewModel.saved', {name: viewModelTitle.value}))
+        layout.showSuccessToast(t('viewModel.saved', {name: viewModelTitle.value}))
         await refreshViewsTreeAfterSave()
         return
     }
+    // Validation / publish failure: saveError is rendered inline
     if (result.reason === 'single_select_required' || result.reason === 'sql_required' || result.reason === 'missing_scope') {
-        layout.showErrorToast(mapSaveError(result.reason))
         return
     }
-    if (result.reason) {
-        layout.showErrorToast(`${t('viewModel.publishFallbackDraft')}: ${mapSaveError(result.reason)}`)
-    } else {
-        layout.showToast(t('viewModel.savedDraft', {name: viewModelTitle.value}))
+    if (!result.reason) {
+        layout.showSuccessToast(t('viewModel.savedDraft', {name: viewModelTitle.value}))
     }
     await refreshViewsTreeAfterSave()
 }
@@ -368,11 +365,8 @@ async function onSaveDraft() {
     if (denyGuestWrite()) return
     const result = await saveDraft()
     if (!result) return
-    if (result.reason) {
-        layout.showErrorToast(mapSaveError(result.reason))
-        return
-    }
-    layout.showToast(t('viewModel.savedDraft', {name: viewModelTitle.value}))
+    if (result.reason) return
+    layout.showSuccessToast(t('viewModel.savedDraft', {name: viewModelTitle.value}))
     await refreshViewsTreeAfterSave()
 }
 
@@ -505,7 +499,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <p v-if="saveErrorMessage" class="vm-editor-tab__error" role="alert">{{ saveErrorMessage }}</p>
+    <DwInlineAlert :message="saveErrorMessage"/>
 
     <div ref="splitRef" class="split">
       <div
@@ -566,13 +560,7 @@ onMounted(async () => {
           :cursor-loading="previewLoading"
           :show-export="false"
       />
-      <p
-          v-if="previewErrorMessage && !isEditorFullscreen && showPreview"
-          class="vm-editor-tab__error vm-editor-tab__error--inline"
-          role="alert"
-      >
-        {{ previewErrorMessage }}
-      </p>
+      <DwInlineAlert :message="previewErrorMessage && !isEditorFullscreen && showPreview ? previewErrorMessage : null"/>
     </div>
   </div>
 </template>
@@ -733,16 +721,5 @@ onMounted(async () => {
   flex-shrink: 0;
   height: 220px;
   min-height: 160px;
-}
-
-.vm-editor-tab__error {
-  margin: 0;
-  padding: var(--dw-space-4) var(--dw-space-6);
-  color: var(--dw-danger);
-  font-size: var(--dw-text-sm);
-}
-
-.vm-editor-tab__error--inline {
-  border-top: 1px solid var(--dw-border);
 }
 </style>

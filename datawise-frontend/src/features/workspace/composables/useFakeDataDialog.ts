@@ -58,7 +58,7 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
 
     async function openForTable(target: WorkspaceTab) {
         if (target.type !== 'table' || !target.tableName?.trim()) {
-            layout.showToast(t('workspace.fakeData.failed'))
+            layout.showErrorToast(t('workspace.fakeData.failed'))
             return
         }
         tab.value = target
@@ -82,7 +82,7 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
         } catch (error) {
             resetDialog()
             const message = error instanceof Error ? error.message : String(error)
-            layout.showToast(t('workspace.fakeData.failedWithDetail', {message}))
+            layout.showErrorToast(t('workspace.fakeData.failedWithDetail', {message}))
         } finally {
             loading.value = false
         }
@@ -112,13 +112,12 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
         const props = properties.value
         if (!current || !props) {
             executeError.value = t('workspace.fakeData.failed')
-            layout.showToast(executeError.value)
             return
         }
         executeError.value = ''
         executing.value = true
         try {
-            const ok = await executeFakeDataForTab({
+            const result = await executeFakeDataForTab({
                 tab: current,
                 tree: explorer.tree,
                 properties: props,
@@ -126,20 +125,20 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
                 seed: seed.value ?? undefined,
                 teams: teamStore.teams,
                 isGuest: auth.isGuest,
-                showToast: (message) => layout.showToast(message),
                 t,
             })
-            if (ok) {
+            if (result.ok) {
+                layout.showSuccessToast(result.message)
                 resetDialog()
                 await onExecuted?.(current)
-            } else {
-                executeError.value = t('workspace.fakeData.failed')
-                layout.showToast(executeError.value)
+                return
             }
+            if (result.silent) return
+            executeError.value = result.message || t('workspace.fakeData.failed')
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
             executeError.value = t('workspace.fakeData.failedWithDetail', {message})
-            layout.showToast(executeError.value)
+            // 就地 error banner；不再 toast，避免与对话框内提示双通道
         } finally {
             executing.value = false
         }
@@ -155,9 +154,8 @@ export function useFakeDataDialog(onExecuted?: (tab: WorkspaceTab) => void | Pro
                 properties: props,
                 rowCount,
                 seed: seed.value ?? undefined,
-                showToast: (message) => layout.showToast(message),
                 t,
-            })
+            }).then((message) => layout.showSuccessToast(message))
     }
 
     return {

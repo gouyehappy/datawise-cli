@@ -2,7 +2,7 @@
 import {computed, reactive, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {platformApi} from '@/api'
-import {AppModal, FormField, ModalActions} from '@/core/components'
+import {AppModal, DwInlineAlert, FormField, ModalActions} from '@/core/components'
 import type {AiCanvasParameter, RerunAnalysisCanvasResult} from '@/features/platform/types/platform.types'
 import {buildParameterValueMap} from '@/features/platform/services/analysis-canvas-parameters.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -74,7 +74,7 @@ async function rerun() {
         })
         lastResult.value = result
         emit('completed', result)
-        layout.showToast(t('platform.canvas.rerunDone'))
+        layout.showSuccessToast(t('platform.canvas.rerunDone'))
     } catch (err) {
         error.value = err instanceof Error ? err.message : String(err)
     } finally {
@@ -86,7 +86,7 @@ async function copySql() {
     const sql = lastResult.value?.sql?.trim()
     if (!sql) return
     await navigator.clipboard.writeText(sql)
-    layout.showToast(t('platform.canvas.copiedSql'))
+    layout.showSuccessToast(t('platform.canvas.copiedSql'))
 }
 
 function openInConsole() {
@@ -106,7 +106,7 @@ function openInConsole() {
       @close="close"
   >
     <p v-if="loading" class="canvas-rerun__status">{{ t('platform.common.loading') }}</p>
-    <p v-else-if="error" class="canvas-rerun__error">{{ error }}</p>
+    <DwInlineAlert v-else-if="error" :message="error"/>
 
     <template v-else>
       <p v-if="!hasParameters" class="canvas-rerun__hint">{{ t('platform.canvas.rerunNoParams') }}</p>
@@ -156,12 +156,6 @@ function openInConsole() {
     margin: 0;
     font-size: var(--dw-text-md);
     color: var(--dw-text-muted);
-}
-
-.canvas-rerun__error {
-    margin: 0;
-    font-size: var(--dw-text-md);
-    color: var(--dw-danger);
 }
 
 .canvas-rerun__form {

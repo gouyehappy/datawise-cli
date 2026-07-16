@@ -5,7 +5,7 @@ import {DwIcon} from '@/core/icons'
 import {SqlSnippetsEditorWorkbench} from '@datawise/sql-editor'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {getAppSqlEditorShortcutsController} from '@/features/settings/services/sql-editor-shortcuts.controller'
 import {ensureSqlEditorPlugin} from '@/features/workspace/services/ensure-sql-editor-plugin'
 import {useSqlEditorShortcutsStore} from '@/features/settings/stores/sql-editor-shortcuts-store'
@@ -14,7 +14,7 @@ import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vu
 import SqlSnippetsSourcesBar from '@/features/settings/components/SqlSnippetsSourcesBar.vue'
 
 const {t} = useI18n()
-const toast = useToastStore()
+const toast = useAppToast()
 const store = useSqlEditorShortcutsStore()
 const snippetsReady = ref(false)
 const controller = shallowRef<ReturnType<typeof getAppSqlEditorShortcutsController> | null>(null)
@@ -60,9 +60,10 @@ async function onSharedFileChange(event: Event) {
   try {
     const text = await file.text()
     const ok = store.importSharedConfigText(text)
-    toast.show(ok ? t('settings.sqlEditor.sharedImportSuccess') : t('settings.sqlEditor.sharedImportFailed'))
+    if (ok) toast.success(t('settings.sqlEditor.sharedImportSuccess'))
+    else toast.error(t('settings.sqlEditor.sharedImportFailed'))
   } catch {
-    toast.show(t('settings.sqlEditor.sharedImportFailed'))
+    toast.error(t('settings.sqlEditor.sharedImportFailed'))
   }
 }
 </script>

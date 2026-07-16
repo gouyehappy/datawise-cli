@@ -53,9 +53,9 @@ export function useQueryBookmarkSave(resolveDefaults: () => BookmarkDefaults) {
                 })
             }
             bookmarkDialogOpen.value = false
-            layout.showToast(t('shortcut.bookmarks.saveSuccess'))
+            layout.showSuccessToast(t('shortcut.bookmarks.saveSuccess'))
         } catch {
-            layout.showToast(t('shortcut.bookmarks.saveFailed'))
+            layout.showErrorToast(t('shortcut.bookmarks.saveFailed'))
         } finally {
             bookmarkSaving.value = false
         }

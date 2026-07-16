@@ -2,7 +2,7 @@
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import IconButton from '@/core/components/IconButton.vue'
-import {EmptyState, StatusPill} from '@/core/components'
+import {DwPanelState, EmptyState, StatusPill} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import type {StatusVariant} from '@/core/utils/status-variant'
 import type {WorkspaceTab} from '@/core/types'
@@ -101,12 +101,12 @@ async function copyDdl() {
   try {
     await navigator.clipboard.writeText(text)
     ddlCopied.value = true
-    layout.showToast(t('workspace.tableDetail.copyDdlSuccess'))
+    layout.showSuccessToast(t('workspace.tableDetail.copyDdlSuccess'))
     window.setTimeout(() => {
       ddlCopied.value = false
     }, 2000)
   } catch {
-    layout.showToast(t('workspace.tableDetail.copyDdlFailed'))
+    layout.showErrorToast(t('workspace.tableDetail.copyDdlFailed'))
   }
 }
 </script>
@@ -129,13 +129,16 @@ async function copyDdl() {
     </header>
 
     <div v-if="activeView === 'properties'" class="table-detail__properties">
-      <div v-if="loadingProperties" class="table-detail__state">
-        <span class="table-detail__spinner" aria-hidden="true"/>
-        {{ t('workspace.tableDetail.loading') }}
-      </div>
-      <div v-else-if="propertiesError" class="table-detail__state table-detail__state--error">
-        {{ propertiesError }}
-      </div>
+      <DwPanelState
+          v-if="loadingProperties"
+          status="loading"
+          :message="t('workspace.tableDetail.loading')"
+      />
+      <DwPanelState
+          v-else-if="propertiesError"
+          status="error"
+          :message="propertiesError"
+      />
       <template v-else>
         <section class="table-detail__hero">
           <div class="table-detail__hero-icon" aria-hidden="true">
@@ -304,13 +307,16 @@ async function copyDdl() {
     <TableRelationGraphPanel v-else-if="activeView === 'relationGraph'" :tab="tab"/>
 
     <section v-else-if="activeView === 'ddl'" class="table-detail__ddl">
-      <div v-if="loadingDdl" class="table-detail__state">
-        <span class="table-detail__spinner" aria-hidden="true"/>
-        {{ t('workspace.tableDetail.loading') }}
-      </div>
-      <div v-else-if="ddlError" class="table-detail__state table-detail__state--error">
-        {{ ddlError }}
-      </div>
+      <DwPanelState
+          v-if="loadingDdl"
+          status="loading"
+          :message="t('workspace.tableDetail.loading')"
+      />
+      <DwPanelState
+          v-else-if="ddlError"
+          status="error"
+          :message="ddlError"
+      />
       <div v-else-if="ddl?.ddl" class="table-detail__ddl-card">
         <header class="table-detail__ddl-head">
           <div class="table-detail__ddl-head-text">
@@ -332,7 +338,11 @@ async function copyDdl() {
           <pre class="table-detail__ddl-code"><code>{{ ddl.ddl }}</code></pre>
         </div>
       </div>
-      <div v-else class="table-detail__state">{{ t('workspace.tableDetail.noDdl') }}</div>
+      <DwPanelState
+          v-else
+          status="empty"
+          :message="t('workspace.tableDetail.noDdl')"
+      />
     </section>
   </div>
 </template>
@@ -683,37 +693,6 @@ async function copyDdl() {
 .table-detail__data {
   flex: 1;
   min-height: 0;
-}
-
-.table-detail__state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--dw-gap-md);
-  min-height: 160px;
-  padding: var(--dw-space-10);
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-md);
-}
-
-.table-detail__state--error {
-  color: var(--dw-danger);
-}
-
-.table-detail__spinner {
-  width: 22px;
-  height: var(--dw-control-h-xs);
-  border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
-  border-top-color: var(--dw-primary);
-  border-radius: 50%;
-  animation: table-detail-spin 0.75s linear infinite;
-}
-
-@keyframes table-detail-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .table-detail__ddl {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {EmptyState} from '@/core/components'
+import {DwPanelState, EmptyState} from '@/core/components'
 import type {WorkspaceTab} from '@/core/types'
 import {useTableRelations} from '@/features/workspace/composables/useTableRelations'
 import {openRelatedTableFromRelation} from '@/features/workspace/services/table-relations.actions'
@@ -26,13 +26,16 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
 
 <template>
   <div class="table-relations">
-    <div v-if="loading" class="table-relations__state">
-      <span class="table-relations__spinner" aria-hidden="true"/>
-      {{ t('workspace.tableDetail.loading') }}
-    </div>
-    <div v-else-if="error" class="table-relations__state table-relations__state--error">
-      {{ error }}
-    </div>
+    <DwPanelState
+        v-if="loading"
+        status="loading"
+        :message="t('workspace.tableDetail.loading')"
+    />
+    <DwPanelState
+        v-else-if="error"
+        status="error"
+        :message="error"
+    />
     <template v-else>
       <header class="table-relations__summary">
         <article class="table-relations__summary-card">
@@ -375,39 +378,10 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
   font-family: var(--dw-mono);
 }
 
-.table-relations__state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--dw-gap-md);
-  min-height: 160px;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-md);
-}
-
-.table-relations__state--error {
-  color: var(--dw-danger);
-}
-
-.table-relations__spinner {
-  width: 22px;
-  height: var(--dw-control-h-xs);
-  border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
-  border-top-color: var(--dw-primary);
-  border-radius: 50%;
-  animation: table-relations-spin 0.75s linear infinite;
-}
-
 @media (max-width: 1080px) {
   .table-relations__columns {
     grid-template-columns: 1fr;
   }
 }
 
-@keyframes table-relations-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

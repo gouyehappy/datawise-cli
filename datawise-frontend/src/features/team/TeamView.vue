@@ -12,7 +12,7 @@ import TeamProductionApprovalsPanel from '@/features/team/components/panels/Team
 import TeamSharingPanel from '@/features/team/components/panels/TeamSharingPanel.vue'
 import TeamAiSessionsPanel from '@/features/team/components/panels/TeamAiSessionsPanel.vue'
 import TeamSharedQueriesPanel from '@/features/team/components/panels/TeamSharedQueriesPanel.vue'
-import {DwButton, EmptyState} from '@/core/components'
+import {DwButton, EmptyState, DwInlineAlert} from '@/core/components'
 import type {SelectOption} from '@/core/components/select.types'
 import {
     buildConnectionAccessMap,
@@ -48,6 +48,8 @@ const auth = useAuthStore()
 
 const createName = ref('')
 const joinCode = ref('')
+const createError = ref('')
+const joinError = ref('')
 const activeTab = ref<TeamTab>('members')
 const sharedConnectionsInput = ref('')
 const sharedConnectionAccess = ref<Record<string, ConnectionAccessLevel>>({})
@@ -180,7 +182,7 @@ async function loadMembers(teamId: string) {
         members.value = await teamStore.fetchMembers(teamId)
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.membersLoadFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         loadingMembers.value = false
     }
@@ -192,7 +194,7 @@ async function loadInvites(teamId: string) {
         invites.value = await teamStore.fetchInvites(teamId)
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.invitesLoadFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         loadingInvites.value = false
     }
@@ -205,7 +207,7 @@ async function loadSharedAiSessions(teamId: string) {
         sharedAiSessions.value = await teamStore.fetchSharedAiSessions(teamId)
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedAiSessions.loadFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         loadingSharedAiSessions.value = false
     }
@@ -219,7 +221,7 @@ async function openSharedSession(sessionId: string) {
         selectedSharedSession.value = await teamStore.getSharedAiSession(team.id, sessionId)
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedAiSessions.detailFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         loadingSharedSessionDetail.value = false
     }
@@ -227,43 +229,44 @@ async function openSharedSession(sessionId: string) {
 
 async function submitCreate() {
     const name = createName.value.trim()
+    createError.value = ''
     if (!name) {
-        layout.showToast(t('team.nameRequired'))
+        createError.value = t('team.nameRequired')
         return
     }
     try {
         const team = await teamStore.createTeam(name)
-        layout.showToast(t('team.created', {name: team.name}))
+        layout.showSuccessToast(t('team.created', {name: team.name}))
         createName.value = ''
     } catch (error) {
-        const message = error instanceof Error ? error.message : t('team.createFailed')
-        layout.showToast(message)
+        createError.value = error instanceof Error ? error.message : t('team.createFailed')
     }
 }
 
 async function submitJoin() {
     const code = joinCode.value.trim()
+    joinError.value = ''
     if (!code) {
-        layout.showToast(t('team.codeRequired'))
+        joinError.value = t('team.codeRequired')
         return
     }
     try {
         const result = await teamStore.joinTeam(code)
         if (result.status === 'joined' && result.team) {
-            layout.showToast(t('team.joined', {name: result.team.name}))
+            layout.showSuccessToast(t('team.joined', {name: result.team.name}))
         } else if (result.status === 'pending') {
             layout.showToast(result.message || t('team.joinPending'))
             await loadMyJoinRequests()
         } else if (result.status === 'already_member' && result.team) {
-            layout.showToast(result.message || t('team.alreadyMember', {name: result.team.name}))
+            layout.showSuccessToast(result.message || t('team.alreadyMember', {name: result.team.name}))
             teamStore.activeTeamId = result.team.id
         } else {
-            layout.showToast(result.message || t('team.joinFailed'))
+            joinError.value = result.message || t('team.joinFailed')
+            return
         }
         joinCode.value = ''
     } catch (error) {
-        const message = error instanceof Error ? error.message : t('team.joinFailed')
-        layout.showToast(message)
+        joinError.value = error instanceof Error ? error.message : t('team.joinFailed')
     }
 }
 
@@ -274,7 +277,7 @@ function selectTeam(teamId: string) {
 async function saveSharedConnections() {
     const team = activeTeam.value
     if (!team) {
-        layout.showToast(t('team.selectTeamFirst'))
+        layout.showErrorToast(t('team.selectTeamFirst'))
         return
     }
     savingSharedConnections.value = true
@@ -292,10 +295,10 @@ async function saveSharedConnections() {
             toStoredConnectionAccess(connectionAccess),
         )
         await shortcutPanel.load()
-        layout.showToast(t('team.sharedConnectionsSaved'))
+        layout.showSuccessToast(t('team.sharedConnectionsSaved'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedConnectionsSaveFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         savingSharedConnections.value = false
     }
@@ -315,7 +318,7 @@ function toggleOnCallConnection(connectionId: string) {
 async function saveOnCallConnections() {
     const team = activeTeam.value
     if (!team) {
-        layout.showToast(t('team.selectTeamFirst'))
+        layout.showErrorToast(t('team.selectTeamFirst'))
         return
     }
     savingOnCallConnections.value = true
@@ -324,10 +327,10 @@ async function saveOnCallConnections() {
         const payload = pruneOnCallConnectionIds(onCallConnectionIds.value, sharedIds)
         onCallConnectionIds.value = payload
         await teamStore.updateOnCallConnections(team.id, payload)
-        layout.showToast(t('team.onCallConnectionsSaved'))
+        layout.showSuccessToast(t('team.onCallConnectionsSaved'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.onCallConnectionsSaveFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         savingOnCallConnections.value = false
     }
@@ -336,17 +339,17 @@ async function saveOnCallConnections() {
 async function saveSharedConsoles() {
     const team = activeTeam.value
     if (!team) {
-        layout.showToast(t('team.selectTeamFirst'))
+        layout.showErrorToast(t('team.selectTeamFirst'))
         return
     }
     savingSharedConsoles.value = true
     try {
         await teamStore.updateSharedConsoles(team.id, parseDelimitedIds(sharedConsolesInput.value))
         await shortcutPanel.load()
-        layout.showToast(t('team.sharedConsolesSaved'))
+        layout.showSuccessToast(t('team.sharedConsolesSaved'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedConsolesSaveFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         savingSharedConsoles.value = false
     }
@@ -355,17 +358,17 @@ async function saveSharedConsoles() {
 async function saveShareSqlHistory() {
     const team = activeTeam.value
     if (!team) {
-        layout.showToast(t('team.selectTeamFirst'))
+        layout.showErrorToast(t('team.selectTeamFirst'))
         return
     }
     savingShareSqlHistory.value = true
     try {
         await teamStore.updateShareSqlHistory(team.id, shareSqlHistory.value)
         await shortcutPanel.load()
-        layout.showToast(t('team.shareSqlHistorySaved'))
+        layout.showSuccessToast(t('team.shareSqlHistorySaved'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.shareSqlHistorySaveFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         savingShareSqlHistory.value = false
     }
@@ -374,16 +377,16 @@ async function saveShareSqlHistory() {
 async function saveTeamSettings() {
     const team = activeTeam.value
     if (!team) {
-        layout.showToast(t('team.selectTeamFirst'))
+        layout.showErrorToast(t('team.selectTeamFirst'))
         return
     }
     savingSettings.value = true
     try {
         await teamStore.updateSettings(team.id, requireInviteApproval.value)
-        layout.showToast(t('team.settingsSaved'))
+        layout.showSuccessToast(t('team.settingsSaved'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.settingsSaveFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         savingSettings.value = false
     }
@@ -396,10 +399,10 @@ async function updateMemberRole(member: TeamMember, role: TeamRole) {
     try {
         await teamStore.updateMemberRole(team.id, member.userId, role)
         await loadMembers(team.id)
-        layout.showToast(t('team.roleUpdated'))
+        layout.showSuccessToast(t('team.roleUpdated'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.roleUpdateFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         roleUpdatingUserId.value = null
     }
@@ -412,10 +415,10 @@ async function approveInvite(invite: TeamInvite) {
     try {
         await teamStore.approveInvite(team.id, invite.id)
         await Promise.all([loadInvites(team.id), loadMembers(team.id)])
-        layout.showToast(t('team.inviteApproved'))
+        layout.showSuccessToast(t('team.inviteApproved'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.inviteActionFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         inviteActionId.value = null
     }
@@ -428,10 +431,10 @@ async function rejectInvite(invite: TeamInvite) {
     try {
         await teamStore.rejectInvite(team.id, invite.id)
         await Promise.all([loadInvites(team.id), teamStore.load()])
-        layout.showToast(t('team.inviteRejected'))
+        layout.showSuccessToast(t('team.inviteRejected'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.inviteActionFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         inviteActionId.value = null
     }
@@ -441,7 +444,7 @@ function copyInviteCode() {
     const code = activeTeam.value?.inviteCode
     if (!code) return
     void navigator.clipboard.writeText(code).then(() => {
-        layout.showToast(t('team.inviteCodeCopied'))
+        layout.showSuccessToast(t('team.inviteCodeCopied'))
     })
 }
 
@@ -491,6 +494,7 @@ onMounted(() => {
             {{ t('team.createAction') }}
           </DwButton>
         </div>
+        <DwInlineAlert :message="createError"/>
       </section>
 
       <section class="mp-card team-onboarding__card">
@@ -507,6 +511,7 @@ onMounted(() => {
             {{ t('team.joinAction') }}
           </DwButton>
         </div>
+        <DwInlineAlert :message="joinError"/>
         <ul v-if="myJoinRequests.length" class="join-request-list">
           <li v-for="request in myJoinRequests" :key="`${request.teamId}-${request.requestedAt}`">
             {{ t('team.myJoinRequestPending', {name: request.teamName, time: formatDate(request.requestedAt)}) }}

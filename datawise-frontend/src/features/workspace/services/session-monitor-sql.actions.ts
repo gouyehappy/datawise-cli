@@ -47,7 +47,7 @@ export async function openMonitorSessionSql(options: OpenMonitorSessionSqlOption
 
     const connectionId = options.connectionId?.trim()
     if (!connectionId) {
-        layout.showToast(t('shortcut.sessionSql.connectionRequired'))
+        layout.showErrorToast(t('shortcut.sessionSql.connectionRequired'))
         return
     }
 
@@ -55,7 +55,7 @@ export async function openMonitorSessionSql(options: OpenMonitorSessionSqlOption
     await catalogStore.ensureLoaded().catch(() => undefined)
     const caps = buildConnectionCapabilities(options.dbType, catalogStore.items)
     if (!caps.sqlExplain) {
-        layout.showToast(t('capabilities.unsupported.sqlExplain'))
+        layout.showErrorToast(t('capabilities.unsupported.sqlExplain'))
         return
     }
 
@@ -84,6 +84,6 @@ export async function openMonitorSessionSql(options: OpenMonitorSessionSqlOption
         )
         workspace.setConsoleQueryResults(tabId, [item])
         appConfig.setShowConsoleResultPanel(true)
-        layout.showToast(message)
+        layout.showErrorToast(message)
     }
 }

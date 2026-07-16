@@ -15,7 +15,7 @@ import type {
 } from '@/features/ai/types/analysis'
 import type {AiDatabaseTarget} from '@/features/ai/shared/utils/database-targets'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {formatAiAnalysisStreamError, formatAiErrorMessage} from '@/features/ai/shared/utils/ai-error'
 import type {AiAnalysisErrorPayload} from '@/features/ai/shared/utils/ai-error'
 import {t} from '@/i18n'
@@ -37,7 +37,7 @@ interface UseAnalysisStreamOptions {
 }
 
 export function useAnalysisStream(options: UseAnalysisStreamOptions) {
-    const toast = useToastStore()
+    const toast = useAppToast()
     const aiChat = useAiChatStore()
     const appConfig = useAppConfigStore()
 
@@ -184,7 +184,7 @@ export function useAnalysisStream(options: UseAnalysisStreamOptions) {
         } catch (error) {
             logAiChatError(error, 0)
             appendFailureReply(formatAiErrorMessage(error), sessionId)
-            toast.show(formatAiErrorMessage(error))
+            toast.error(formatAiErrorMessage(error))
         } finally {
             sqlConfirmPending.value = null
             analysisSteps.value = []

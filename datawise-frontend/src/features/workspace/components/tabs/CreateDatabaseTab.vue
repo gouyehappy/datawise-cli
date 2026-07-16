@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {DwButton} from '@/core/components'
+import {DwButton, DwInlineAlert} from '@/core/components'
 import type {WorkspaceTab} from '@/core/types'
 import {explorerApi} from '@/api/modules/explorer'
 import {
@@ -31,6 +31,7 @@ const charset = ref('')
 const collation = ref('')
 const catalog = ref(props.tab.createNamespaceCatalog ?? '')
 const saving = ref(false)
+const formError = ref('')
 const loadingOptions = ref(false)
 const charsets = ref<Array<{ name: string; description: string; defaultCollation: string }>>([])
 const collations = ref<Array<{ name: string; charset: string; isDefault: boolean }>>([])
@@ -87,7 +88,7 @@ async function copySql() {
     if (!sql) return
     try {
         await navigator.clipboard.writeText(sql)
-        layout.showToast(t('explorer.createNamespace.sqlCopied'))
+        layout.showSuccessToast(t('explorer.createNamespace.sqlCopied'))
     } catch {
         layout.showErrorToast(t('explorer.createNamespace.copyFailed'))
     }
@@ -98,6 +99,7 @@ async function save() {
     const trimmed = name.value.trim()
     if (!connectionId || !trimmed || saving.value) return
     saving.value = true
+    formError.value = ''
     try {
         if (mode.value === 'schema') {
             await explorerApi.createSchema(connectionId, {
@@ -112,10 +114,10 @@ async function save() {
             })
         }
         await explorer.reloadConnectionCatalog(connectionId)
-        layout.showToast(t('explorer.createNamespace.success', {name: trimmed}))
+        layout.showSuccessToast(t('explorer.createNamespace.success', {name: trimmed}))
         workspace.closeTab(props.tab.id)
     } catch (error) {
-        layout.showErrorToast(resolveCreateNamespaceErrorMessage(error, t))
+        formError.value = resolveCreateNamespaceErrorMessage(error, t)
     } finally {
         saving.value = false
     }
@@ -175,6 +177,7 @@ async function save() {
           </option>
         </select>
       </label>
+      <DwInlineAlert density="banner" :message="formError"/>
     </section>
 
     <section v-else class="create-db__sql">
@@ -184,6 +187,7 @@ async function save() {
         </button>
       </div>
       <pre class="create-db__sql-code">{{ previewSql || '--' }}</pre>
+      <DwInlineAlert class="create-db__error--sql" density="banner" :message="formError"/>
     </section>
   </div>
 </template>
@@ -284,5 +288,10 @@ async function save() {
   font-size: var(--dw-text-md);
   line-height: var(--dw-leading-relaxed);
   white-space: pre-wrap;
+}
+
+
+.create-db__error--sql {
+  flex-shrink: 0;
 }
 </style>

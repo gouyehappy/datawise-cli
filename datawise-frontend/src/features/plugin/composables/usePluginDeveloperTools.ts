@@ -24,8 +24,7 @@ import type {PluginHookName} from '@/features/plugin/types/plugin-hook.types'
 import {isKnownPluginId, type PluginId} from '@/features/plugin/services/plugin-registry.service'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource-catalog'
-import {useToastStore} from '@/features/layout/stores/toast-store'
-
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 const HOOK_TEMPLATE_IDS: PluginHookTemplateId[] = ['full', 'beforeExecute', 'afterResult', 'renderGrid']
 
 /** 插件开发者工具页：矩阵 / 统计 / JAR / 审计 / Hook 数据与操作 */
@@ -33,7 +32,7 @@ export function usePluginDeveloperTools() {
     const {t, te} = useI18n()
     const pluginStore = usePluginStore()
     const catalogStore = useDatasourceCatalogStore()
-    const toast = useToastStore()
+    const toast = useAppToast()
     const usageRevision = ref(0)
     const registeredHooks = ref(listRegisteredPluginHooks())
 
@@ -103,28 +102,30 @@ export function usePluginDeveloperTools() {
 
     async function copyCrossRefDoc(path: string) {
         const ok = await copyConnectorCapabilityDocPath(path)
-        toast.show(ok ? t('plugin.crossref.copySuccess') : t('plugin.crossref.copyFailed'))
+        if (ok) toast.success(t('plugin.crossref.copySuccess'))
+        else toast.error(t('plugin.crossref.copyFailed'))
     }
 
     async function copyHookTemplate(id: PluginHookTemplateId = 'full') {
         const ok = await copyPluginHookTemplate(id)
-        toast.show(ok ? t('plugin.hooks.copySuccess') : t('plugin.hooks.copyFailed'))
+        if (ok) toast.success(t('plugin.hooks.copySuccess'))
+        else toast.error(t('plugin.hooks.copyFailed'))
     }
 
     function exportPluginMatrixCsv() {
         downloadPluginMatrixCsv(matrixRows.value)
-        toast.show(t('plugin.matrix.exportSuccess'))
+        toast.success(t('plugin.matrix.exportSuccess'))
     }
 
     function exportCatalogRegistryDiffCsv() {
         downloadPluginCatalogRegistryDiffCsv(catalogRegistryDiffRows.value)
-        toast.show(t('plugin.catalogAudit.exportDiffSuccess'))
+        toast.success(t('plugin.catalogAudit.exportDiffSuccess'))
     }
 
     function clearUsageStats() {
         clearPluginUsageStats()
         usageRevision.value += 1
-        toast.show(t('plugin.usage.clearSuccess'))
+        toast.success(t('plugin.usage.clearSuccess'))
     }
 
     onMounted(() => {

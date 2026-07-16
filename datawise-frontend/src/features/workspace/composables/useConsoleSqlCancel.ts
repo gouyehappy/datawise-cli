@@ -1,6 +1,6 @@
 import {computed, ref, type Ref} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {sqlApi} from '@/api'
 import type {CancelConsoleSqlResult, SessionKillMode} from '@/shared/api/types'
 
@@ -10,40 +10,46 @@ export function useConsoleSqlCancel(options: {
     canKill: Ref<boolean>
 }) {
     const {t} = useI18n()
-    const toast = useToastStore()
+    const toast = useAppToast()
     const confirmOpen = ref(false)
     const pendingMode = ref<SessionKillMode>('connection')
     const cancelling = ref(false)
+    /** 对话框内/连点失败时的就地错误；请求成功仍用 toast */
+    const errorMessage = ref('')
 
     const canCancel = computed(() => options.running.value && options.canKill.value)
 
     async function executeCancel(mode: SessionKillMode): Promise<CancelConsoleSqlResult | null> {
         if (!options.running.value) {
+            errorMessage.value = t('console.cancelExecution.notRunning')
             return null
         }
         if (!options.canKill.value) {
-            toast.show(t('console.cancelExecution.readOnly'))
+            errorMessage.value = t('console.cancelExecution.readOnly')
             return null
         }
 
         cancelling.value = true
+        errorMessage.value = ''
         try {
             const result = await sqlApi.cancelExecution({
                 sessionKey: options.sessionKey.value,
                 mode,
             })
             if (!result.cancelled) {
-                toast.show(result.message || t('console.cancelExecution.failed'))
+                errorMessage.value = result.message || t('console.cancelExecution.failed')
                 return result
             }
             if (mode === 'connection') {
-                toast.show(t('console.cancelExecution.connectionRequested'))
+                toast.success(t('console.cancelExecution.connectionRequested'))
             } else {
-                toast.show(t('console.cancelExecution.queryRequested'))
+                toast.success(t('console.cancelExecution.queryRequested'))
             }
             confirmOpen.value = false
             return result
-        } catch {
+        } catch (error) {
+            errorMessage.value =
+                error instanceof Error ? error.message : t('console.cancelExecution.failed')
             return null
         } finally {
             cancelling.value = false
@@ -52,19 +58,20 @@ export function useConsoleSqlCancel(options: {
 
     function cancelQueryNow() {
         if (!options.running.value) {
-            toast.show(t('console.cancelExecution.notRunning'))
+            errorMessage.value = t('console.cancelExecution.notRunning')
             return
         }
         void executeCancel('query')
     }
 
     function requestCancelConnection() {
+        errorMessage.value = ''
         if (!options.canKill.value) {
-            toast.show(t('console.cancelExecution.readOnly'))
+            errorMessage.value = t('console.cancelExecution.readOnly')
             return
         }
         if (!options.running.value) {
-            toast.show(t('console.cancelExecution.notRunning'))
+            errorMessage.value = t('console.cancelExecution.notRunning')
             return
         }
         pendingMode.value = 'connection'
@@ -74,6 +81,7 @@ export function useConsoleSqlCancel(options: {
     function closeConfirm() {
         if (cancelling.value) return
         confirmOpen.value = false
+        errorMessage.value = ''
     }
 
     async function confirmCancel(): Promise<CancelConsoleSqlResult | null> {
@@ -85,6 +93,7 @@ export function useConsoleSqlCancel(options: {
         pendingMode,
         cancelling,
         canCancel,
+        errorMessage,
         cancelQueryNow,
         requestCancelConnection,
         closeConfirm,

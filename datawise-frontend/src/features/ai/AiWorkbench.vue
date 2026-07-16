@@ -139,13 +139,13 @@ function applyAnalysisTemplate(template: AiAnalysisTemplate) {
   if (template.analysisMode) {
     appConfig.setAnalysisMode(template.analysisMode)
   }
-  layout.showToast(t('ai.templates.applied', {name: template.name}))
+  layout.showSuccessToast(t('ai.templates.applied', {name: template.name}))
 }
 
 async function shareSessionToTeam(sessionId: string) {
   const teamId = teamStore.activeTeamId
   if (!teamId) {
-    layout.showToast(t('team.selectTeamFirst'))
+    layout.showErrorToast(t('team.selectTeamFirst'))
     return
   }
   const session = aiChat.sessions.find((item) => item.id === sessionId)
@@ -157,10 +157,10 @@ async function shareSessionToTeam(sessionId: string) {
         session.title,
         serializeTeamAiSessionSharePayload(payload),
     )
-    layout.showToast(t('ai.history.shareSuccess'))
+    layout.showSuccessToast(t('ai.history.shareSuccess'))
   } catch (error) {
     const message = error instanceof Error ? error.message : t('ai.history.shareFailed')
-    layout.showToast(message)
+    layout.showErrorToast(message)
   }
 }
 </script>

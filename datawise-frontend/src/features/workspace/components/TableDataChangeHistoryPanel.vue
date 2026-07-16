@@ -3,6 +3,7 @@ import {ref, watch} from 'vue'
 import type {TableDataChangeAuditEntry, TableDataChangeOperation} from '@/shared/api/types'
 import {tableDataApi} from '@/api'
 import {useI18n} from 'vue-i18n'
+import {DwInlineAlert} from '@/core/components'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {summarizeAuditEntryChanges} from '@/features/workspace/services/table-data-audit.service'
 
@@ -76,7 +77,7 @@ async function restoreEntry(entry: TableDataChangeAuditEntry) {
         await loadAudit()
     } catch (error) {
         const message = error instanceof Error ? error.message : t('dataGrid.audit.restoreFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         restoringId.value = null
     }
@@ -117,7 +118,7 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
 
     <div v-show="expanded" class="table-data-audit__body">
       <p v-if="loading" class="table-data-audit__hint">{{ t('dataGrid.audit.loading') }}</p>
-      <p v-else-if="loadError" class="table-data-audit__error">{{ loadError }}</p>
+      <DwInlineAlert v-else-if="loadError" :message="loadError"/>
       <p v-else-if="entries.length === 0" class="table-data-audit__hint">{{ t('dataGrid.audit.empty') }}</p>
       <ul v-else class="table-data-audit__list">
         <li v-for="entry in entries" :key="entry.id" class="table-data-audit__item">
@@ -198,15 +199,10 @@ function canRestoreEntry(entry: TableDataChangeAuditEntry): boolean {
 }
 
 .table-data-audit__hint,
-.table-data-audit__error,
 .table-data-audit__footnote {
   margin: 0;
   font-size: var(--dw-text-xs);
   opacity: 0.8;
-}
-
-.table-data-audit__error {
-  color: var(--dw-danger);
 }
 
 .table-data-audit__list {

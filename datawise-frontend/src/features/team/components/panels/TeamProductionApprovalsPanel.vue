@@ -3,7 +3,7 @@ import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {TeamProductionApprovalDetail, TeamProductionApprovalSummary} from '@/core/types'
 import StatusPill from '@/core/components/ui/StatusPill.vue'
-import {AppModal, DwButton, FormField, ModalActions} from '@/core/components'
+import {AppModal, DwButton, DwInlineAlert, FormField, ModalActions} from '@/core/components'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useTeamStore} from '@/features/team/stores/team-store'
 import {
@@ -38,7 +38,7 @@ async function reload() {
         items.value = await teamStore.fetchProductionApprovals(props.teamId)
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.productionApprovals.loadFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
         items.value = []
     } finally {
         loading.value = false
@@ -53,7 +53,7 @@ async function openDetail(summary: TeamProductionApprovalSummary) {
         detail.value = await teamStore.getProductionApproval(props.teamId, summary.id)
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.productionApprovals.detailFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
         detailOpen.value = false
     } finally {
         detailLoading.value = false
@@ -70,16 +70,18 @@ async function approve(approvalId: string) {
     actionId.value = approvalId
     try {
         const result = await teamStore.approveProductionApproval(props.teamId, approvalId)
-        layout.showToast(
-            result.status === 'executed'
-                ? t('team.productionApprovals.approveSuccess')
-                : t('team.productionApprovals.approveFailed', {error: result.executionError ?? ''}),
-        )
+        if (result.status === 'executed') {
+            layout.showSuccessToast(t('team.productionApprovals.approveSuccess'))
+        } else {
+            layout.showErrorToast(
+                t('team.productionApprovals.approveFailed', {error: result.executionError ?? ''}),
+            )
+        }
         closeDetail()
         await reload()
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.productionApprovals.approveError')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         actionId.value = null
     }
@@ -101,13 +103,13 @@ async function confirmReject() {
     if (!approvalId) return
     try {
         await teamStore.rejectProductionApproval(props.teamId, approvalId, rejectComment.value.trim() || undefined)
-        layout.showToast(t('team.productionApprovals.rejectSuccess'))
+        layout.showSuccessToast(t('team.productionApprovals.rejectSuccess'))
         closeReject()
         closeDetail()
         await reload()
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.productionApprovals.rejectError')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         actionId.value = null
     }
@@ -201,9 +203,7 @@ watch(
         <p v-if="detail.reviewComment" class="modal-body-hint">
           {{ t('team.productionApprovals.reviewComment', {comment: detail.reviewComment}) }}
         </p>
-        <p v-if="detail.executionError" class="modal-error-text">
-          {{ detail.executionError }}
-        </p>
+        <DwInlineAlert :message="detail.executionError"/>
       </div>
 
       <template v-if="detail && canManage && detail.status === 'pending'" #footer>

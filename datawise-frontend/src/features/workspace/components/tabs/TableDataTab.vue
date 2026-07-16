@@ -59,12 +59,12 @@ const {
 
 async function onAuditRestored() {
   await refresh()
-  layout.showToast(t('dataGrid.audit.restoreSuccess'))
+  layout.showSuccessToast(t('dataGrid.audit.restoreSuccess'))
 }
 
 async function onSubmitChanges(batch: GridPendingBatch) {
   const ok = await submitChanges(batch)
-  if (ok) layout.showToast(t('dataGrid.submitSuccess'))
+  if (ok) layout.showSuccessToast(t('dataGrid.submitSuccess'))
   return ok
 }
 

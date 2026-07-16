@@ -80,9 +80,9 @@ export function useTerminalConnectionHint() {
         if (!snippet.value) return
         try {
             await navigator.clipboard.writeText(snippet.value.command)
-            layout.showToast(t('terminal.contextCopied'))
+            layout.showSuccessToast(t('terminal.contextCopied'))
         } catch {
-            layout.showToast(t('terminal.contextCopyFailed'))
+            layout.showErrorToast(t('terminal.contextCopyFailed'))
         }
     }
 

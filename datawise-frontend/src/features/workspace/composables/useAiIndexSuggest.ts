@@ -3,7 +3,7 @@ import type {DbType} from '@/core/types'
 import type {ExplainPlanNode} from '@/features/workspace/types/explain-plan'
 import {formatAiIndexSuggestPrompt} from '@/features/ai/work-context/ai-work-context.service'
 import {formatAiErrorMessage} from '@/features/ai/shared/utils/ai-error'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import type {AiPreferences} from '@/shared/config/app-config.types'
 import {sqlApi} from '@/api'
 import {
@@ -35,7 +35,7 @@ export interface UseAiIndexSuggestOptions {
 
 /** EXPLAIN 计划 / 选区 SQL → AI 索引建议 → diff 预览 → 新开 Console Tab（A-06） */
 export function useAiIndexSuggest(options: UseAiIndexSuggestOptions) {
-    const toast = useToastStore()
+    const toast = useAppToast()
     const dialogOpen = ref(false)
     const originalSql = ref('')
     const suggestedSql = ref('')
@@ -77,12 +77,12 @@ export function useAiIndexSuggest(options: UseAiIndexSuggestOptions) {
             originalSql.value = sql
             suggestedSql.value = suggested.trim()
             if (!suggestedSql.value || suggestedSql.value === '-- No index suggestions\n') {
-                toast.show(formatAiErrorMessage(new Error('No index suggestions')))
+                toast.error(formatAiErrorMessage(new Error('No index suggestions')))
                 return
             }
             dialogOpen.value = true
         } catch (error) {
-            toast.show(formatAiErrorMessage(error))
+            toast.error(formatAiErrorMessage(error))
         } finally {
             loading.value = false
         }

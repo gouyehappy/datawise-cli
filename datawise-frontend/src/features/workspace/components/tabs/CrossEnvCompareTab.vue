@@ -2,7 +2,7 @@
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {WorkspaceTab} from '@/core/types'
-import {DwButton, EmptyState, StatusPill} from '@/core/components'
+import {DwButton, DwInlineAlert, EmptyState, StatusPill} from '@/core/components'
 import DwSelect from '@/core/components/DwSelect.vue'
 import type {SelectOption} from '@/core/components/select.types'
 import {
@@ -242,7 +242,7 @@ async function runCompare() {
         })
         diffView.value = result.diff
         wizardStep.value = 'diff'
-        layout.showToast(t('crossEnvCompare.compareDone'))
+        layout.showSuccessToast(t('crossEnvCompare.compareDone'))
     } catch (error) {
         if (error instanceof CrossEnvCompareSideError) {
             formError.value = resolveErrorMessage(
@@ -254,7 +254,6 @@ async function runCompare() {
         } else {
             formError.value = t('crossEnvCompare.compareFailed')
         }
-        layout.showToast(formError.value)
     } finally {
         comparing.value = false
     }
@@ -328,8 +327,8 @@ watch(
             :is-step-completed="(id) => isStepCompleted(id as CrossEnvCompareStep)"
             @step-click="(id) => goToStep(id as CrossEnvCompareStep)"
         />
-        <p v-if="formError" class="cross-env-compare__error">{{ formError }}</p>
-        <p v-else-if="sameScope && wizardStep !== 'baseline'" class="cross-env-compare__hint">
+        <DwInlineAlert :message="formError"/>
+        <p v-if="!formError && sameScope && wizardStep !== 'baseline'" class="cross-env-compare__hint">
           {{ t('crossEnvCompare.sameScopeHint') }}
         </p>
       </div>
@@ -488,12 +487,6 @@ watch(
 .cross-env-compare__head p {
   margin: 0;
   color: var(--dw-text-muted);
-  font-size: var(--dw-text-sm);
-}
-
-.cross-env-compare__error {
-  margin: var(--dw-space-5) 0 0;
-  color: var(--dw-danger);
   font-size: var(--dw-text-sm);
 }
 

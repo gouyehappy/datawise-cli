@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {DwButton, EmptyState} from '@/core/components'
+import {DwButton, DwInlineAlert, EmptyState} from '@/core/components'
 import {explorerApi} from '@/api'
 import type {YarnQueueSummary} from '@/features/explorer/services/yarn-applications.service'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
@@ -124,8 +124,8 @@ watch(connectionId, loadQueues)
     </header>
 
     <p v-if="loading" class="yarn-queues-tab__status">{{ t('explorer.yarnQueues.loading') }}</p>
-    <p v-else-if="error" class="yarn-queues-tab__status is-error">{{ error }}</p>
-    <p v-else-if="success" class="yarn-queues-tab__status is-success">{{ success }}</p>
+    <DwInlineAlert v-else-if="error" class="yarn-queues-tab__status" :message="error"/>
+    <DwInlineAlert v-else-if="success" class="yarn-queues-tab__status" variant="success" :message="success"/>
 
     <div v-if="queues.length" class="yarn-queues-tab__body">
       <div class="yarn-queues-tab__table-wrap">
@@ -311,13 +311,5 @@ watch(connectionId, loadQueues)
   padding: var(--dw-space-6) var(--dw-space-8);
   font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
-}
-
-.yarn-queues-tab__status.is-error {
-  color: var(--dw-danger);
-}
-
-.yarn-queues-tab__status.is-success {
-  color: var(--dw-success);
 }
 </style>

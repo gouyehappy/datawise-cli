@@ -43,10 +43,7 @@ watch(
 
 function saveCurrent() {
     const prompt = props.prompt.trim()
-    if (!prompt) {
-        layout.showToast(t('ai.templates.promptRequired'))
-        return
-    }
+    if (!prompt) return
     const template = createAnalysisTemplate({
         prompt,
         targetIds: props.selectedTargetIds,
@@ -54,10 +51,10 @@ function saveCurrent() {
     })
     templates.value = upsertAnalysisTemplate(templates.value, template)
     if (!writeAnalysisTemplates(templates.value)) {
-        layout.showToast(t('ai.templates.saveFailed'))
+        layout.showErrorToast(t('ai.templates.saveFailed'))
         return
     }
-    layout.showToast(t('ai.templates.saved', {name: template.name}))
+    layout.showSuccessToast(t('ai.templates.saved', {name: template.name}))
 }
 
 function applyTemplate(template: AiAnalysisTemplate) {
@@ -69,7 +66,7 @@ function deleteTemplate(template: AiAnalysisTemplate, event: MouseEvent) {
     event.stopPropagation()
     templates.value = removeAnalysisTemplate(templates.value, template.id)
     writeAnalysisTemplates(templates.value)
-    layout.showToast(t('ai.templates.deleted'))
+    layout.showSuccessToast(t('ai.templates.deleted'))
 }
 </script>
 

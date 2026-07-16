@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, reactive, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {AppModal, FormField, ModalActions} from '@/core/components'
+import {AppModal, DwInlineAlert, FormField, ModalActions} from '@/core/components'
 import DwSelect from '@/core/components/DwSelect.vue'
 import MigrationWizardSteps from '@/features/workspace/components/migration/MigrationWizardSteps.vue'
 import type {WorkspaceTab} from '@/core/types'
@@ -234,7 +234,7 @@ async function generateSql() {
             sources,
         })
         form.sql = result.sql
-        layout.showToast(t('platform.federated.generateDone'))
+        layout.showSuccessToast(t('platform.federated.generateDone'))
     } catch (err) {
         error.value = err instanceof Error ? err.message : String(err)
     } finally {
@@ -427,9 +427,8 @@ async function save() {
       </div>
     </section>
 
-    <p v-if="error || footerHint" class="federated-wizard__error" :class="{'is-hint': !error}">
-      {{ error || footerHint }}
-    </p>
+    <DwInlineAlert v-if="error" :message="error"/>
+    <DwInlineAlert v-else-if="footerHint" variant="info" :message="footerHint"/>
 
     <template #footer>
       <div class="federated-wizard__footer">
@@ -575,16 +574,6 @@ async function save() {
   word-break: break-word;
   max-height: 180px;
   overflow: auto;
-}
-
-.federated-wizard__error {
-  margin: var(--dw-space-6) 0 0;
-  font-size: var(--dw-text-md);
-  color: var(--dw-danger);
-}
-
-.federated-wizard__error.is-hint {
-  color: var(--dw-text-muted);
 }
 
 .federated-wizard__footer {

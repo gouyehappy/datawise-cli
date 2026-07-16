@@ -29,7 +29,7 @@ async function handleCheckUpdate() {
     layout.showToast(t('settings.about.updateAvailable', {version: result.latestVersion}))
     return
   }
-  layout.showToast(t('settings.about.upToDate'))
+  layout.showSuccessToast(t('settings.about.upToDate'))
 }
 
 function patchUpdatePrefs(patch: Partial<typeof updateSettings.preferences>) {

@@ -72,7 +72,7 @@ function close() {
 
 async function copySql() {
   await navigator.clipboard.writeText(generatedSql.value)
-  layout.showToast(t('console.generateDml.copied'))
+  layout.showSuccessToast(t('console.generateDml.copied'))
 }
 </script>
 

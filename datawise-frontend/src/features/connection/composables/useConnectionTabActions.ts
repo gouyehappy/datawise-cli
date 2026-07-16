@@ -25,14 +25,19 @@ export function useConnectionTabActions(options: {
     const workspace = useWorkspaceStore()
     const auth = useAuthStore()
     const saving = ref(false)
+    /** Footer 就地反馈（失败 / 无法保存）；成功关 Tab 仍用 toast */
+    const actionMessage = ref<string | null>(null)
+    const actionOk = ref<boolean | null>(null)
     const canSave = computed(() => canMutateConnectionCatalog(auth.isGuest))
+
+    function setActionFeedback(message: string, ok: boolean) {
+        actionMessage.value = message
+        actionOk.value = ok
+    }
 
     async function saveConnection() {
         if (saving.value) return
-        if (!canSave.value) {
-            layout.showErrorToast(t('auth.permissionDenied'))
-            return
-        }
+        if (!canSave.value) return
 
         const payload = options.getPayload()
         if (!payload.name?.trim()) {
@@ -45,21 +50,23 @@ export function useConnectionTabActions(options: {
             rawEditId && !isUnsavedConnectionId(rawEditId) ? rawEditId : undefined
 
         saving.value = true
+        actionMessage.value = null
+        actionOk.value = null
         try {
             if (persistedEditId) {
                 payload.id = persistedEditId
                 await explorer.updateConnection(persistedEditId, payload)
-                layout.showToast(t('connection.updateSuccess'))
+                layout.showSuccessToast(t('connection.updateSuccess'))
                 explorer.selectNode(persistedEditId)
                 explorer.expandToNode(persistedEditId)
             } else {
                 const groupId = options.targetGroupId?.()
                 const id = await explorer.addConnection(payload, groupId)
                 if (!id) {
-                    layout.showToast(t('connection.saveFailed'))
+                    setActionFeedback(t('connection.saveFailed'), false)
                     return
                 }
-                layout.showToast(t('connection.saveSuccess'))
+                layout.showSuccessToast(t('connection.saveSuccess'))
                 explorer.expandToNode(id)
                 explorer.selectNode(id)
             }
@@ -67,7 +74,7 @@ export function useConnectionTabActions(options: {
             layout.setModule('database')
             workspace.closeTab(options.tabId)
         } catch (error) {
-            layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'save'))
+            setActionFeedback(resolveConnectionCatalogErrorMessage(error, t, 'save'), false)
         } finally {
             saving.value = false
         }
@@ -77,5 +84,5 @@ export function useConnectionTabActions(options: {
         workspace.closeTab(options.tabId)
     }
 
-    return {saveConnection, cancel, saving, canSave}
+    return {saveConnection, cancel, saving, canSave, actionMessage, actionOk}
 }

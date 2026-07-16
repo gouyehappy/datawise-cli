@@ -25,7 +25,7 @@ import SettingsSectionCard from '@/features/settings/components/SettingsSectionC
 import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
 import LayoutToggleChip from '@/features/settings/components/LayoutToggleChip.vue'
 import DwSelect from '@/core/components/DwSelect.vue'
-import {StatusPill} from '@/core/components'
+import {StatusPill, DwInlineAlert} from '@/core/components'
 import type {SelectOption} from '@/core/components/select.types'
 
 const props = withDefaults(defineProps<{
@@ -41,6 +41,8 @@ const {readOnly, hint, denyIfReadOnly} = useResourceWriteGuard(UserResource.AiPr
 
 const pythonRuntime = ref<AiPythonRuntime | null>(null)
 const pythonRuntimeLoading = ref(false)
+const pythonRuntimeError = ref('')
+const analysisStepError = ref('')
 
 const ANALYSIS_MODES: AiAnalysisMode[] = ['quick', 'smart', 'custom']
 
@@ -97,7 +99,8 @@ function applyAnalysisMode(mode: AiAnalysisMode) {
   } else if (mode === 'smart') {
     appConfig.setDisabledAnalysisSteps([])
   }
-  layout.showToast(t(`settings.dataAgent.analysisModeApplied.${mode}`))
+  analysisStepError.value = ''
+  layout.showSuccessToast(t(`settings.dataAgent.analysisModeApplied.${mode}`))
 }
 
 function isAnalysisStepEnabled(step: AiAnalysisConfigurableStepId): boolean {
@@ -119,11 +122,12 @@ function setAnalysisStepEnabled(step: AiAnalysisConfigurableStepId, enabled: boo
     const summaryOff = disabled.has('summary')
     const reportOff = disabled.has('report')
     if (summaryOff && reportOff) {
-      layout.showToast(t('settings.dataAgent.analysisStepsKeepOne'))
+      analysisStepError.value = t('settings.dataAgent.analysisStepsKeepOne')
       disabled.delete(step)
       return
     }
   }
+  analysisStepError.value = ''
   appConfig.setDisabledAnalysisSteps([...disabled])
 }
 
@@ -197,10 +201,11 @@ const runtimeSpecs = computed(() => {
 
 async function loadPythonRuntime() {
   pythonRuntimeLoading.value = true
+  pythonRuntimeError.value = ''
   try {
     pythonRuntime.value = await fetchAiPythonRuntime()
   } catch {
-    layout.showToast(t('settings.dataAgent.pythonRuntimeLoadFailed'))
+    pythonRuntimeError.value = t('settings.dataAgent.pythonRuntimeLoadFailed')
   } finally {
     pythonRuntimeLoading.value = false
   }
@@ -288,6 +293,7 @@ onMounted(() => {
                 @toggle="toggleAnalysisStep(step)"
             />
           </div>
+          <DwInlineAlert :message="analysisStepError"/>
         </div>
       </SettingsSectionCard>
 
@@ -334,6 +340,8 @@ onMounted(() => {
           <span class="runtime-loading__dot" aria-hidden="true"/>
           {{ t('settings.dataAgent.pythonRuntimeLoading') }}
         </p>
+
+        <DwInlineAlert v-else-if="pythonRuntimeError" :message="pythonRuntimeError"/>
 
         <div v-else-if="pythonRuntime" class="runtime-spec-grid">
           <div

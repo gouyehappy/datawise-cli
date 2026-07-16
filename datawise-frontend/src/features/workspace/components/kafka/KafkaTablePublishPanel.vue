@@ -2,7 +2,7 @@
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {explorerApi} from '@/api'
-import {DwButton} from '@/core/components'
+import {DwButton, DwInlineAlert} from '@/core/components'
 import ConfirmDialog from '@/core/components/ConfirmDialog.vue'
 import DwSelect from '@/core/components/DwSelect.vue'
 import type {SelectOption} from '@/core/components/select.types'
@@ -500,7 +500,7 @@ defineExpose({resetFormState})
             />
           </div>
           <p class="kafka-table-publish-panel__field-note">
-            <span v-if="sourceConnectionError" class="is-error">{{ sourceConnectionError }}</span>
+            <DwInlineAlert :message="sourceConnectionError"/>
           </p>
         </label>
 
@@ -518,7 +518,7 @@ defineExpose({resetFormState})
             />
           </div>
           <p class="kafka-table-publish-panel__field-note">
-            <span v-if="sourceDatabaseError" class="is-error">{{ sourceDatabaseError }}</span>
+            <DwInlineAlert :message="sourceDatabaseError"/>
           </p>
         </label>
 
@@ -547,8 +547,9 @@ defineExpose({resetFormState})
             >
           </div>
           <p class="kafka-table-publish-panel__field-note">
-            <span v-if="tablesLoadError" class="is-error">{{ t('explorer.kafkaTablePublish.loadTablesFailed') }}</span>
-            <span v-else-if="sourceTableError" class="is-error">{{ sourceTableError }}</span>
+            <DwInlineAlert
+                :message="tablesLoadError ? t('explorer.kafkaTablePublish.loadTablesFailed') : sourceTableError"
+            />
           </p>
         </label>
       </template>
@@ -568,7 +569,7 @@ defineExpose({resetFormState})
             />
           </div>
           <p class="kafka-table-publish-panel__field-note">
-            <span v-if="kafkaConnectionError" class="is-error">{{ kafkaConnectionError }}</span>
+            <DwInlineAlert :message="kafkaConnectionError"/>
           </p>
         </label>
 
@@ -583,7 +584,7 @@ defineExpose({resetFormState})
               @input="onTopicInput"
           >
           <p class="kafka-table-publish-panel__field-note">
-            <span v-if="topicError" class="is-error">{{ topicError }}</span>
+            <DwInlineAlert :message="topicError"/>
           </p>
         </label>
       </div>
@@ -696,15 +697,15 @@ defineExpose({resetFormState})
     </div>
 
     <footer class="kafka-table-publish-panel__footer">
-      <p
+      <DwInlineAlert
           class="kafka-table-publish-panel__feedback"
-          :class="{
-            'is-error': footerMessage.tone === 'error',
-            'is-success': footerMessage.tone === 'success',
-          }"
-      >
-        {{ footerMessage.text }}
-      </p>
+          :variant="footerMessage.tone === 'error'
+              ? 'error'
+              : footerMessage.tone === 'success'
+                  ? 'success'
+                  : 'info'"
+          :message="footerMessage.text"
+      />
       <DwButton
           v-if="successMessage && !isContinuousRunning && !publishing"
           variant="secondary"
@@ -869,10 +870,6 @@ defineExpose({resetFormState})
   line-height: var(--dw-tab-title-line);
 }
 
-.kafka-table-publish-panel__field-note .is-error {
-  color: var(--dw-danger);
-}
-
 .kafka-table-publish-panel__field-note .is-muted {
   color: var(--dw-text-muted);
 }
@@ -960,18 +957,7 @@ defineExpose({resetFormState})
 .kafka-table-publish-panel__feedback {
   flex: 1;
   min-width: 0;
-  margin: 0;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-xs);
   line-height: var(--dw-leading);
-}
-
-.kafka-table-publish-panel__feedback.is-error {
-  color: var(--dw-danger);
-}
-
-.kafka-table-publish-panel__feedback.is-success {
-  color: var(--dw-success);
 }
 
 .kafka-table-publish-panel__send {

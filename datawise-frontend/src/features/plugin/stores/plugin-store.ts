@@ -4,7 +4,7 @@ import type {NavModule, PluginItem, SettingsSection, ShortcutPanel} from '@/core
 import {pluginsApi} from '@/api'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {i18n} from '@/i18n'
 import {
     mergePluginCatalog,
@@ -60,7 +60,7 @@ export const usePluginStore = defineStore('plugin', () => {
     const devToolsRequestedTab = ref<PluginDevTab | null>(null)
     const devToolsTabRevision = ref(0)
     const appConfig = useAppConfigStore()
-    const toast = useToastStore()
+    const toast = useAppToast()
 
     const pluginOverrides = computed(() => appConfig.config.plugins?.enabled ?? {})
 
@@ -88,7 +88,7 @@ export const usePluginStore = defineStore('plugin', () => {
         const key = normalizePluginId(id)
         const nameKey = `plugin.items.${key}.name`
         const name = i18n.global.te(nameKey) ? i18n.global.t(nameKey) : key
-        toast.show(
+        toast.success(
             enabled
                 ? i18n.global.t('plugin.toggleEnabled', {name})
                 : i18n.global.t('plugin.toggleDisabled', {name}),
@@ -118,12 +118,12 @@ export const usePluginStore = defineStore('plugin', () => {
             layout.setModule('database')
         }
 
-        toast.show(i18n.global.t(`plugin.presets.${presetId}.applied`))
+        toast.success(i18n.global.t(`plugin.presets.${presetId}.applied`))
     }
 
     function setReferencePresetId(presetId: PluginPresetId) {
         appConfig.patchPlugins({referencePresetId: presetId})
-        toast.show(i18n.global.t('plugin.presets.referenceSet', {
+        toast.success(i18n.global.t('plugin.presets.referenceSet', {
             preset: i18n.global.t(`plugin.presets.${presetId}.label`),
         }))
     }
@@ -153,7 +153,7 @@ export const usePluginStore = defineStore('plugin', () => {
             layout.setModule('database')
         }
 
-        toast.show(i18n.global.t('plugin.presets.alignReferenceApplied', {
+        toast.success(i18n.global.t('plugin.presets.alignReferenceApplied', {
             preset: i18n.global.t(`plugin.presets.${presetId}.label`),
             count: impact.totalChanges,
         }))
@@ -324,7 +324,7 @@ export const usePluginStore = defineStore('plugin', () => {
         if (!resolvePluginEnabled('p-ai-workbench', catalog.value, {}) && layout.activeModule === 'ai') {
             layout.setModule('database')
         }
-        toast.show(i18n.global.t('plugin.config.resetSuccess'))
+        toast.success(i18n.global.t('plugin.config.resetSuccess'))
     }
 
     const catalogItems = computed(() => catalog.value)

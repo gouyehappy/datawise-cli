@@ -3,7 +3,7 @@ import {useI18n} from 'vue-i18n'
 import type {DbType} from '@/core/types'
 import {useTeamStore} from '@/features/team/stores/team-store'
 import {canDmlConnection} from '@/features/team/services/connection-access.service'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {sqlApi} from '@/api'
 import type {SessionKillMode} from '@/shared/api/types'
 import type {PendingSessionKill} from '@/features/workspace/composables/session-kill-context'
@@ -16,7 +16,7 @@ export function useSessionKill(
 ) {
     const {t} = useI18n()
     const teamStore = useTeamStore()
-    const toast = useToastStore()
+    const toast = useAppToast()
     const {caps, hint} = useConnectionCapabilities(dbType)
     const killingSessionId = ref<string | null>(null)
     const confirmOpen = ref(false)
@@ -40,12 +40,12 @@ export function useSessionKill(
         if (!id || !connId) return
 
         if (!sessionKillSupported.value) {
-            toast.show(hint('sessionKill'))
+            toast.show(hint('sessionKill'), {variant: 'info'})
             return
         }
 
         if (!canDmlConnection(connId, teamStore.teams)) {
-            toast.show(t('shortcut.sessionKill.readOnly'))
+            toast.error(t('shortcut.sessionKill.readOnly'))
             return
         }
 
@@ -76,10 +76,12 @@ export function useSessionKill(
                 mode: pending.mode,
             })
             if (!result.killed) {
+                const stale = result.message?.includes('already ended')
                 toast.show(
-                    result.message?.includes('already ended')
+                    stale
                         ? t('shortcut.sessionKill.staleSession', {id: pending.sessionId})
                         : (result.message || t('shortcut.sessionKill.failed')),
+                    {variant: stale ? 'info' : 'error'},
                 )
                 if (result.message?.includes('already ended')) {
                     confirmOpen.value = false
@@ -88,7 +90,7 @@ export function useSessionKill(
                 }
                 return false
             }
-            toast.show(t('shortcut.sessionKill.success', {id: pending.sessionId}))
+            toast.success(t('shortcut.sessionKill.success', {id: pending.sessionId}))
             confirmOpen.value = false
             pendingKill.value = null
             await pending.onSuccess?.()

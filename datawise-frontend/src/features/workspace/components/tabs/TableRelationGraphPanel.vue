@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onUnmounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {EmptyState} from '@/core/components'
+import {DwPanelState} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import type {WorkspaceTab} from '@/core/types'
 import {useTableRelations} from '@/features/workspace/composables/useTableRelations'
@@ -188,16 +188,25 @@ async function openNode(node: TableRelationGraphNode) {
       </button>
     </header>
 
-    <div v-if="loading || loadingColumns" class="relation-graph__state">
-      <span class="relation-graph__spinner" aria-hidden="true"/>
-      {{ t('workspace.tableDetail.loading') }}
-    </div>
-    <div v-else-if="error" class="relation-graph__state relation-graph__state--error">
-      {{ error }}
-    </div>
-    <div v-else-if="!hasNeighborhood" class="relation-graph__state">
-      <EmptyState embedded compact :title="t('workspace.tableDetail.relationGraphEmpty')"/>
-    </div>
+    <DwPanelState
+        v-if="loading || loadingColumns"
+        status="loading"
+        :message="t('workspace.tableDetail.loading')"
+        fill
+    />
+    <DwPanelState
+        v-else-if="error"
+        status="error"
+        :message="error"
+        fill
+    />
+    <DwPanelState
+        v-else-if="!hasNeighborhood"
+        status="empty"
+        :message="t('workspace.tableDetail.relationGraphEmpty')"
+        compact
+        fill
+    />
     <div v-else class="relation-graph__canvas-wrap">
       <svg
           class="relation-graph__canvas"
@@ -657,33 +666,4 @@ async function openNode(node: TableRelationGraphNode) {
   filter: drop-shadow(0 3px 8px rgb(0 0 0 / 10%));
 }
 
-.relation-graph__state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--dw-gap-md);
-  min-height: 220px;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-md);
-}
-
-.relation-graph__state--error {
-  color: var(--dw-danger);
-}
-
-.relation-graph__spinner {
-  width: 22px;
-  height: var(--dw-control-h-xs);
-  border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
-  border-top-color: var(--dw-primary);
-  border-radius: 50%;
-  animation: relation-graph-spin 0.75s linear infinite;
-}
-
-@keyframes relation-graph-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

@@ -66,7 +66,7 @@ async function loadDetail() {
         detail.value = await teamStore.getSharedQuery(props.teamId, summary.id)
     } catch {
         detail.value = null
-        layout.showToast(t('team.sharedQueries.loadFailed'))
+        layout.showErrorToast(t('team.sharedQueries.loadFailed'))
         closeDrawer()
     } finally {
         loading.value = false
@@ -89,7 +89,7 @@ async function toggleFavorite() {
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.favoriteFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         favoriteSaving.value = false
     }
@@ -108,7 +108,7 @@ async function openInConsole() {
         closeDrawer()
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.openFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         openingConsole.value = false
     }
@@ -134,7 +134,7 @@ async function submitComment() {
         commentDraft.value = ''
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.commentFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         commentSaving.value = false
     }
@@ -163,7 +163,7 @@ async function confirmRemoveComment() {
         pendingCommentId.value = null
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.commentDeleteFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     }
 }
 

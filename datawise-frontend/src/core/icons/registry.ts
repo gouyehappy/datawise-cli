@@ -111,6 +111,8 @@ export type DwIconName =
     | 'visibility-off'
     | 'alert-circle'
     | 'alert-triangle'
+    | 'check'
+    | 'info'
     | 'send'
     | 'history'
     | 'monitor'
@@ -236,6 +238,8 @@ export const DW_ICON_REGISTRY: Record<DwIconName, Component> = {
     'visibility-off': EyeOff,
     'alert-circle': CircleAlert,
     'alert-triangle': TriangleAlert,
+    check: Check,
+    info: Info,
     send: Send,
     history: History,
     monitor: Activity,

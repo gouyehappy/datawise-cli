@@ -32,6 +32,7 @@ const activeTag = ref<string | null>(null)
 const starredOnly = ref(false)
 const dialogOpen = ref(false)
 const dialogSaving = ref(false)
+const dialogError = ref('')
 const editing = ref<TeamSharedQuerySummary | null>(null)
 const editingSql = ref('')
 const drawerOpen = ref(false)
@@ -58,7 +59,7 @@ async function reloadQueries() {
         queries.value = await teamStore.fetchSharedQueries(props.teamId)
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.loadFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
         queries.value = []
     } finally {
         loading.value = false
@@ -92,7 +93,7 @@ async function toggleFavorite(summary: TeamSharedQuerySummary, event: Event) {
         onDrawerSummaryUpdated(updated)
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.favoriteFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         favoriteTogglingId.value = null
     }
@@ -101,6 +102,7 @@ async function toggleFavorite(summary: TeamSharedQuerySummary, event: Event) {
 function openCreateDialog() {
     editing.value = null
     editingSql.value = ''
+    dialogError.value = ''
     dialogOpen.value = true
 }
 
@@ -109,28 +111,29 @@ async function openEditDialog(summary: TeamSharedQuerySummary) {
         const detail = await teamStore.getSharedQuery(props.teamId, summary.id)
         editing.value = summary
         editingSql.value = detail.sql
+        dialogError.value = ''
         dialogOpen.value = true
     } catch {
-        layout.showToast(t('team.sharedQueries.loadFailed'))
+        layout.showErrorToast(t('team.sharedQueries.loadFailed'))
     }
 }
 
 async function onSave(payload: ShareTeamSharedQueryPayload) {
     dialogSaving.value = true
+    dialogError.value = ''
     try {
         if (editing.value) {
             await teamStore.updateSharedQuery(props.teamId, editing.value.id, payload)
-            layout.showToast(t('team.sharedQueries.updated'))
+            layout.showSuccessToast(t('team.sharedQueries.updated'))
         } else {
             await teamStore.shareQuery(props.teamId, payload)
-            layout.showToast(t('team.sharedQueries.created'))
+            layout.showSuccessToast(t('team.sharedQueries.created'))
         }
         dialogOpen.value = false
         editing.value = null
         await reloadQueries()
     } catch (error) {
-        const message = error instanceof Error ? error.message : t('team.sharedQueries.saveFailed')
-        layout.showToast(message)
+        dialogError.value = error instanceof Error ? error.message : t('team.sharedQueries.saveFailed')
     } finally {
         dialogSaving.value = false
     }
@@ -147,13 +150,13 @@ async function confirmDelete() {
     deleting.value = true
     try {
         await teamStore.deleteSharedQuery(props.teamId, summary.id)
-        layout.showToast(t('team.sharedQueries.deleted'))
+        layout.showSuccessToast(t('team.sharedQueries.deleted'))
         deleteConfirmOpen.value = false
         pendingDeleteSummary.value = null
         await reloadQueries()
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.deleteFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         deleting.value = false
     }
@@ -276,6 +279,7 @@ watch(
     <ShareTeamQueryDialog
         v-model:open="dialogOpen"
         :saving="dialogSaving"
+        :error="dialogError"
         :editing="editing"
         :default-sql="editingSql"
         @save="onSave"

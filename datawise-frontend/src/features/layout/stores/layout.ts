@@ -117,8 +117,20 @@ export const useLayoutStore = defineStore('layout', () => {
         terminalHeight.value = Math.min(520, Math.max(160, height))
     }
 
-    function showToast(message: string) {
+    function showToast(message: string, options?: {variant?: 'info' | 'success' | 'warning' | 'error'; durationMs?: number}) {
+        if (options) {
+            toast.show(message, options)
+            return
+        }
         toast.show(message)
+    }
+
+    function showSuccessToast(message: string) {
+        toast.showSuccess(message)
+    }
+
+    function showWarningToast(message: string) {
+        toast.showWarning(message)
     }
 
     function showErrorToast(message: string) {
@@ -131,7 +143,7 @@ export const useLayoutStore = defineStore('layout', () => {
 
     function startExport(fileName: string) {
         shortcutPanel.addExportTask(fileName, () => {
-            toast.show(t('toast.exportComplete', {name: fileName}))
+            toast.showSuccess(t('toast.exportComplete', {name: fileName}))
         })
         activeShortcutPanel.value = 'export'
     }
@@ -159,7 +171,7 @@ export const useLayoutStore = defineStore('layout', () => {
     function updateProfile(name: string, email: string) {
         profileName.value = name
         profileEmail.value = email
-        toast.show(t('toast.profileUpdated'))
+        toast.showSuccess(t('toast.profileUpdated'))
     }
 
     return {
@@ -190,6 +202,8 @@ export const useLayoutStore = defineStore('layout', () => {
         closeTerminalPanel,
         setTerminalHeight,
         showToast,
+        showSuccessToast,
+        showWarningToast,
         showErrorToast,
         globalRefresh,
         startExport,

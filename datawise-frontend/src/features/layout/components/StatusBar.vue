@@ -115,14 +115,14 @@ async function onOpenRuntimeLog() {
   const result = await openRuntimeLog()
   if (result.ok) return
   if (result.error === 'missing') {
-    layout.showToast(t('shortcut.runtimeLog.missing', {path: result.path ?? ''}))
+    layout.showErrorToast(t('shortcut.runtimeLog.missing', {path: result.path ?? ''}))
     return
   }
   if (result.error === 'open_failed') {
-    layout.showToast(t('shortcut.runtimeLog.openFailed'))
+    layout.showErrorToast(t('shortcut.runtimeLog.openFailed'))
     return
   }
-  layout.showToast(t('shortcut.runtimeLog.unsupported'))
+  layout.showErrorToast(t('shortcut.runtimeLog.unsupported'))
 }
 </script>
 

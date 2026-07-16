@@ -468,12 +468,6 @@
     font-family: var(--dw-mono);
 }
 
-.dw-form-error {
-    margin: 0;
-    color: var(--dw-danger);
-    font-size: var(--dw-text-sm);
-}
-
 .dw-search {
     display: flex;
     align-items: center;

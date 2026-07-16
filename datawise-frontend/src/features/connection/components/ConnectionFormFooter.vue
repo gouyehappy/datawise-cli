@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useI18n} from 'vue-i18n'
-import {DwButton} from '@/core/components'
+import {DwButton, DwActionFeedback} from '@/core/components'
 
 defineProps<{
   testing: boolean
@@ -8,6 +8,9 @@ defineProps<{
   saveDisabled?: boolean
   testMessage: string | null
   testOk: boolean | null
+  /** 保存失败等就地提示；优先展示于测试结果左侧同一区域 */
+  actionMessage?: string | null
+  actionOk?: boolean | null
 }>()
 
 const emit = defineEmits<{
@@ -31,13 +34,16 @@ const {t} = useI18n()
       >
         {{ testing ? t('connection.testing') : t('connection.test') }}
       </DwButton>
-      <p
-          v-if="testMessage"
-          class="test-result"
-          :class="{ ok: testOk, fail: testOk === false }"
-      >
-        {{ testMessage }}
-      </p>
+      <DwActionFeedback
+          v-if="actionMessage"
+          :message="actionMessage"
+          :ok="actionOk ?? null"
+      />
+      <DwActionFeedback
+          v-else
+          :message="testMessage"
+          :ok="testOk"
+      />
     </div>
     <div class="conn-footer__right">
       <DwButton variant="secondary" :disabled="saving" @click="emit('cancel')">
@@ -80,26 +86,5 @@ const {t} = useI18n()
   display: flex;
   gap: var(--dw-gap);
   flex-shrink: 0;
-}
-
-.test-result {
-  margin: 0;
-  padding: var(--dw-space-2) var(--dw-space-4);
-  border-radius: var(--dw-control-radius-sm);
-  font-size: var(--dw-text-xs);
-  line-height: var(--dw-leading-snug);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.test-result.ok {
-  background: color-mix(in srgb, var(--dw-success) 12%, var(--dw-bg));
-  color: var(--dw-success);
-}
-
-.test-result.fail {
-  background: color-mix(in srgb, var(--dw-danger) 12%, var(--dw-bg));
-  color: var(--dw-danger);
 }
 </style>

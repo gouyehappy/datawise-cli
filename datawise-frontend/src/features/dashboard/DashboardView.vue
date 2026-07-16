@@ -181,7 +181,7 @@ async function refreshConnectionHealth() {
   const alerts = collectConnectionHealthAlerts(before, rows, appConfig.connectionHealthPreferences)
   for (const row of alerts) {
     void dispatchConnectionHealthAlert(row, appConfig.connectionHealthPreferences, {
-      showToast: (message) => layout.showToast(message),
+      showToast: (message) => layout.showErrorToast(message),
       toastMessage: t('dashboard.connectionHealthFailed', {name: row.name}),
       pushNotification: (input) => notifications.push(input),
     })
@@ -283,7 +283,7 @@ async function openOnCallConnection(connectionId: string) {
   openModule('database')
   const located = await explorer.locateNode(connectionId)
   if (!located) {
-    layout.showToast(t('explorer.teamSharedMissing', {id: connectionId}))
+    layout.showErrorToast(t('explorer.teamSharedMissing', {id: connectionId}))
   }
 }
 
@@ -301,7 +301,7 @@ function runReleaseAction(action: ReleaseHighlightAction) {
     const scoped = connections.find((item) => item.databases.length > 0)
     if (!scoped) {
       openDatabase()
-      layout.showToast(t('platform.release.needScope'))
+      layout.showErrorToast(t('platform.release.needScope'))
       return
     }
     openDatabase()
@@ -321,7 +321,7 @@ function openAiWidgetDialog() {
 function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; column: DashboardWidgetColumn }) {
   const next = applySuggestedDashboardWidget(appConfig.dashboardPreferences, payload.widgetId, payload.column)
   appConfig.patchDashboardPreferences(next)
-  layout.showToast(t('dashboard.aiWidget.applied', {widget: t(`dashboard.widgets.${payload.widgetId}`)}))
+  layout.showSuccessToast(t('dashboard.aiWidget.applied', {widget: t(`dashboard.widgets.${payload.widgetId}`)}))
 }
 </script>
 

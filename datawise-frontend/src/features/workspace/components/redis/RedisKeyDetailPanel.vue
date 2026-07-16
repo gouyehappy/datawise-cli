@@ -4,7 +4,7 @@ import {computed, ref, watch} from 'vue'
 
 import {useI18n} from 'vue-i18n'
 
-import {ConfirmDialog, DwButton, EmptyState} from '@/core/components'
+import {ConfirmDialog, DwButton, DwInlineAlert, EmptyState} from '@/core/components'
 
 import {useLayoutStore} from '@/features/layout/stores/layout'
 
@@ -168,7 +168,7 @@ async function copyText(text: string) {
 
         await navigator.clipboard.writeText(text)
 
-        layout.showToast(t('explorer.redisConsole.copied'))
+        layout.showSuccessToast(t('explorer.redisConsole.copied'))
 
     } catch {
 
@@ -200,7 +200,7 @@ async function confirmDeleteKey() {
 
         if (!result.success) {
 
-            layout.showToast(result.error ?? result.output)
+            layout.showErrorToast(result.error ?? result.output)
 
             return
 
@@ -212,7 +212,7 @@ async function confirmDeleteKey() {
 
     } catch (err) {
 
-        layout.showToast(err instanceof Error ? err.message : String(err))
+        layout.showErrorToast(err instanceof Error ? err.message : String(err))
 
     }
 
@@ -318,7 +318,7 @@ watch(
 
 
 
-    <p v-if="error" class="redis-key-detail-panel__error">{{ error }}</p>
+    <DwInlineAlert v-if="error" :message="error"/>
 
     <EmptyState v-else-if="loading && !detail" embedded bordered :title="t('explorer.redisKey.loading')"/>
 
@@ -509,18 +509,6 @@ watch(
   justify-content: flex-end;
 
   gap: var(--dw-gap-sm);
-
-}
-
-
-
-.redis-key-detail-panel__error {
-
-  margin: var(--dw-space-4) 0 0;
-
-  color: var(--dw-danger);
-
-  font-size: var(--dw-text-sm);
 
 }
 

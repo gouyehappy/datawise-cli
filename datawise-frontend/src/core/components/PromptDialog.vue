@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {nextTick, ref, watch} from 'vue'
-import {AppModal, FormField, ModalActions} from '@/core/components'
+import {AppModal, FormField, ModalActions, DwInlineAlert} from '@/core/components'
 
 const props = defineProps<{
   open: boolean
@@ -10,6 +10,8 @@ const props = defineProps<{
   defaultValue?: string
   placeholder?: string
   requiredMessage?: string
+  /** 返回错误文案则留在对话框内；返回空则确认关闭 */
+  validate?: (value: string) => string | null | undefined
   confirmLabel?: string
   cancelLabel?: string
 }>()
@@ -45,6 +47,12 @@ function submit() {
     error.value = props.requiredMessage ?? ''
     return
   }
+  const invalid = props.validate?.(text)?.trim()
+  if (invalid) {
+    error.value = invalid
+    return
+  }
+  error.value = ''
   emit('confirm', text)
   close()
 }
@@ -73,7 +81,7 @@ function onKeydown(e: KeyboardEvent) {
           />
         </template>
       </FormField>
-      <p v-if="error" class="dw-form-error" role="alert">{{ error }}</p>
+      <DwInlineAlert :message="error"/>
     </form>
 
     <template #footer>

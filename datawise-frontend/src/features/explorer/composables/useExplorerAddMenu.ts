@@ -51,7 +51,7 @@ export function useExplorerAddMenu(options?: {
                 const parsed = JSON.parse(await file.text()) as ConnectionConfig | ConnectionConfig[]
                 const list = Array.isArray(parsed) ? parsed : [parsed]
                 const count = await explorer.importConnections(list)
-                layout.showToast(t('explorer.importSuccess', {count}))
+                layout.showSuccessToast(t('explorer.importSuccess', {count}))
             } catch (error) {
                 layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'save'))
             }

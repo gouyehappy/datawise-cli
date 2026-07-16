@@ -273,10 +273,10 @@ async function runCompare() {
     selectedTable.value = result.value.tableDiffs.find((item) => item.status !== 'unchanged')?.tableName
         ?? result.value.tableDiffs[0]?.tableName
         ?? null
-    layout.showToast(t('schemaCompare.compareDone'))
+    layout.showSuccessToast(t('schemaCompare.compareDone'))
   } catch (error) {
     const message = error instanceof Error ? error.message : t('schemaCompare.compareFailed')
-    layout.showToast(message)
+    layout.showErrorToast(message)
   } finally {
     comparing.value = false
   }
@@ -286,28 +286,25 @@ async function copyDdl() {
   if (!effectiveDdl.value) return
   try {
     await navigator.clipboard.writeText(effectiveDdl.value)
-    layout.showToast(t('schemaCompare.ddlCopied'))
+    layout.showSuccessToast(t('schemaCompare.ddlCopied'))
   } catch {
-    layout.showToast(t('schemaCompare.ddlCopyFailed'))
+    layout.showErrorToast(t('schemaCompare.ddlCopyFailed'))
   }
 }
 
 function openExportDialog() {
-  if (auth.isGuest) {
-    layout.showToast(t('auth.guestReadOnlyHint'))
-    return
-  }
-  if (!canExportMigration.value) return
+  if (auth.isGuest || !canExportMigration.value) return
   exportDialogOpen.value = true
+}
+
+function validateExportFileName(fileName: string) {
+  return normalizeMigrationFileName(fileName) ? null : t('schemaCompare.exportInvalidName')
 }
 
 async function confirmExportMigration(fileName: string) {
   if (!result.value || !rightScope.value) return
   const normalized = normalizeMigrationFileName(fileName)
-  if (!normalized) {
-    layout.showToast(t('schemaCompare.exportInvalidName'))
-    return
-  }
+  if (!normalized) return
   exporting.value = true
   try {
     const relativePath = await exportSchemaCompareMigration({
@@ -315,10 +312,10 @@ async function confirmExportMigration(fileName: string) {
       fileName: normalized,
       ddl: effectiveDdl.value,
     })
-    layout.showToast(t('schemaCompare.exportDone', {path: relativePath}))
+    layout.showSuccessToast(t('schemaCompare.exportDone', {path: relativePath}))
   } catch (error) {
     const message = error instanceof Error ? error.message : t('schemaCompare.exportFailed')
-    layout.showToast(message)
+    layout.showErrorToast(message)
   } finally {
     exporting.value = false
   }
@@ -520,6 +517,8 @@ function statusLabel(status: string) {
         :subtitle="t('schemaCompare.exportHint')"
         :label="t('schemaCompare.exportFileName')"
         :default-value="exportDialogDefault"
+        :required-message="t('schemaCompare.exportInvalidName')"
+        :validate="validateExportFileName"
         :confirm-label="t('schemaCompare.exportAction')"
         :cancel-label="t('common.cancel')"
         @confirm="confirmExportMigration"

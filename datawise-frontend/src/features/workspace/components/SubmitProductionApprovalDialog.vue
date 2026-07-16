@@ -2,11 +2,12 @@
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {ProductionApprovalTeamOption} from '@/features/team/services/production-approval-policy.service'
-import {AppModal, FormField, ModalActions} from '@/core/components'
+import {AppModal, FormField, ModalActions, DwInlineAlert} from '@/core/components'
 
 const props = defineProps<{
     open: boolean
     saving?: boolean
+    error?: string
     sql: string
     connectionName?: string
     database?: string
@@ -78,6 +79,7 @@ function submit() {
           <textarea :id="id" class="modal-textarea" readonly rows="8" :value="sql" />
         </template>
       </FormField>
+      <DwInlineAlert density="banner" :message="error"/>
     </form>
 
     <template #footer>
@@ -90,3 +92,4 @@ function submit() {
     </template>
   </AppModal>
 </template>
+

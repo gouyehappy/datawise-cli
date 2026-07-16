@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {AppModal, ModalActions} from '@/core/components'
+import {AppModal, DwInlineAlert, ModalActions} from '@/core/components'
 import {
     MAX_RESULT_ROWS_MAX,
     MAX_RESULT_ROWS_MIN,
@@ -133,7 +133,7 @@ function submit() {
         </label>
       </fieldset>
 
-      <p v-if="validationError" class="dw-form-error" role="alert">{{ validationError }}</p>
+      <DwInlineAlert :message="validationError"/>
     </form>
 
     <template #footer>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
+import {DwPanelState} from '@/core/components'
 import type {WorkspaceTab} from '@/core/types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 
@@ -25,9 +26,9 @@ async function copyMarkdown() {
   if (!markdown.value.trim()) return
   try {
     await navigator.clipboard.writeText(markdown.value)
-    layout.showToast(t('workspace.metadoc.copySuccess'))
+    layout.showSuccessToast(t('workspace.metadoc.copySuccess'))
   } catch {
-    layout.showToast(t('workspace.metadoc.copyFailed'))
+    layout.showErrorToast(t('workspace.metadoc.copyFailed'))
   }
 }
 
@@ -85,15 +86,20 @@ function downloadCurrent() {
       {{ t('workspace.metadoc.loadingDetails') }}
     </div>
 
-    <div v-if="loading" class="metadoc-tab__state">
-      <span class="metadoc-tab__spinner" aria-hidden="true"/>
-      {{ t('workspace.metadoc.loading') }}
-    </div>
+    <DwPanelState
+        v-if="loading"
+        status="loading"
+        :message="t('workspace.metadoc.loading')"
+        fill
+    />
 
-    <div v-else-if="loadError" class="metadoc-tab__state metadoc-tab__state--error">
-      <div class="metadoc-tab__state-title">{{ t('workspace.metadoc.loadFailed') }}</div>
-      <div class="metadoc-tab__state-detail">{{ loadError }}</div>
-    </div>
+    <DwPanelState
+        v-else-if="loadError"
+        status="error"
+        :title="t('workspace.metadoc.loadFailed')"
+        :message="loadError"
+        fill
+    />
 
     <div v-else-if="activeView === 'preview'" class="metadoc-tab__preview-wrap">
       <iframe
@@ -177,43 +183,6 @@ function downloadCurrent() {
 .metadoc-tab__markdown {
   flex: 1;
   min-height: 0;
-}
-
-.metadoc-tab__state {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: var(--dw-gap-md);
-  padding: var(--dw-space-10);
-  color: var(--dw-text);
-}
-
-.metadoc-tab__state--error {
-  color: var(--dw-danger-fg);
-}
-
-.metadoc-tab__state-title {
-  font-weight: 600;
-}
-
-.metadoc-tab__state-detail {
-  max-width: 760px;
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-sm);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.metadoc-tab__spinner {
-  width: var(--dw-icon-size-lg);
-  height: var(--dw-icon-size-lg);
-  border-radius: var(--dw-radius-pill);
-  border: 2px solid var(--dw-border);
-  border-top-color: var(--dw-link);
-  animation: metadoc-spin 1s linear infinite;
 }
 
 @keyframes metadoc-spin {

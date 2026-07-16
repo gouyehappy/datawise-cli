@@ -33,7 +33,7 @@ export function useConnectionHealthMonitor() {
         )
         for (const row of alerts) {
             void dispatchConnectionHealthAlert(row, prefs, {
-                showToast: (message) => layout.showToast(message),
+                showToast: (message) => layout.showErrorToast(message),
                 toastMessage: t('dashboard.connectionHealthFailed', {name: row.name}),
                 pushNotification: (input) => notifications.push(input),
             })

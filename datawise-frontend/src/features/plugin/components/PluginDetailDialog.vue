@@ -11,7 +11,7 @@ import {
     type PluginId,
 } from '@/features/plugin/services/plugin-registry.service'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {
     getPluginUsage,
     pluginUsageTotal,
@@ -42,7 +42,7 @@ const emit = defineEmits<{
 
 const {t, te} = useI18n()
 const pluginStore = usePluginStore()
-const toast = useToastStore()
+const toast = useAppToast()
 
 const meta = computed(() =>
     props.plugin ? PLUGIN_REGISTRY[props.plugin.id as PluginId] : undefined,
@@ -144,7 +144,7 @@ function enableSuggestedRequires() {
   if (!props.plugin) return
   const touched = pluginStore.satisfyPluginRequires(props.plugin.id as PluginId)
   if (touched.length) {
-    toast.show(t('plugin.enableRequiresSuccess', {count: touched.length}))
+    toast.success(t('plugin.enableRequiresSuccess', {count: touched.length}))
     const updated = pluginStore.items.find((item) => item.id === props.plugin!.id) ?? null
     emit('pluginUpdated', updated)
   }
@@ -157,7 +157,7 @@ function alignToReferencePreset() {
       props.referencePresetId,
   )
   if (aligned) {
-    toast.show(t('plugin.detail.presetAlignSuccess', {preset: presetLabel.value}))
+    toast.success(t('plugin.detail.presetAlignSuccess', {preset: presetLabel.value}))
     const updated = pluginStore.items.find((item) => item.id === props.plugin!.id) ?? null
     emit('pluginUpdated', updated)
   }

@@ -2,6 +2,7 @@
 import {computed, onMounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DbTypeIcon from '@/core/components/DbTypeIcon.vue'
+import {DwPanelState} from '@/core/components'
 import SearchInput from '@/core/components/SearchInput.vue'
 import {DB_TYPE_ICON_SIZE} from '@/features/connection/constants/db-type-icon-sizes'
 import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource-catalog'
@@ -76,8 +77,18 @@ function onSelect(dbType: DbType) {
     </div>
 
     <div class="panel-body">
-      <div v-if="catalogStore.loading" class="panel-empty">{{ t('explorer.dbTypeLoading') }}</div>
-      <div v-else-if="catalogStore.error" class="panel-empty">{{ t('explorer.dbTypeLoadFailed') }}</div>
+      <DwPanelState
+          v-if="catalogStore.loading"
+          status="loading"
+          :message="t('explorer.dbTypeLoading')"
+          compact
+      />
+      <DwPanelState
+          v-else-if="catalogStore.error"
+          status="error"
+          :message="t('explorer.dbTypeLoadFailed')"
+          compact
+      />
       <template v-else-if="hasDbResults">
         <section v-if="filteredPrimary.length" class="panel-section">
           <div class="section-label">{{ t('explorer.dbTypeCommon') }}</div>
@@ -108,7 +119,12 @@ function onSelect(dbType: DbType) {
         </section>
       </template>
 
-      <div v-else class="panel-empty">{{ t('explorer.dbTypeNotFound') }}</div>
+      <DwPanelState
+          v-else
+          status="empty"
+          :message="t('explorer.dbTypeNotFound')"
+          compact
+      />
     </div>
   </div>
 </template>
@@ -210,12 +226,5 @@ function onSelect(dbType: DbType) {
   min-width: 0;
   font-size: var(--dw-text-sm);
   line-height: var(--dw-leading-tight);
-}
-
-.panel-empty {
-  padding: var(--dw-space-6) var(--dw-space-5);
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-xs);
-  text-align: center;
 }
 </style>

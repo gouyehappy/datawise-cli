@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useI18n} from 'vue-i18n'
-import {DwButton, DwCheckbox, DwInput} from '@/core/components'
+import {DwButton, DwCheckbox, DwInlineAlert, DwInput} from '@/core/components'
 import DwSelect from '@/core/components/DwSelect.vue'
 import {
     MIGRATION_BATCH_SIZE_MAX,
@@ -117,9 +117,11 @@ const migrationModes: Array<{value: TableMigrationWizardForm['mode']; labelKey: 
           <p v-if="w.tablesLoading" class="tables-panel__state">
             {{ t('explorer.tableMigrationWizard.loadingTables') }}
           </p>
-          <p v-else-if="w.tablesLoadError" class="tables-panel__state is-error">
-            {{ t('explorer.tableMigrationWizard.loadTablesFailed') }}
-          </p>
+          <DwInlineAlert
+              v-else-if="w.tablesLoadError"
+              class="tables-panel__state"
+              :message="t('explorer.tableMigrationWizard.loadTablesFailed')"
+          />
           <template v-else-if="w.filteredTables.length">
             <label
                 v-for="name in w.filteredTables"

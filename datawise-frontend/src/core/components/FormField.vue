@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {computed, useId} from 'vue'
+import DwInlineAlert from '@/core/components/DwInlineAlert.vue'
 
 const props = withDefaults(defineProps<{
   label: string
@@ -33,6 +34,6 @@ const controlId = computed(() => props.inputId ?? (props.group ? undefined : aut
       {{ label }}
     </component>
     <slot :id="controlId" :label-id="labelId"/>
-    <p v-if="error" class="dw-form-error" role="alert">{{ error }}</p>
+    <DwInlineAlert :message="error"/>
   </div>
 </template>

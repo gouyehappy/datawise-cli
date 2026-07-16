@@ -203,7 +203,7 @@ watch(
         } catch (error) {
             migrationTasks.abortRun()
             const message = error instanceof Error ? error.message : String(error)
-            layout.showToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
+            layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
         } finally {
             reconnectingRunId.value = null
         }
@@ -296,14 +296,14 @@ function buildRunRecordFromActive(
 
 function notifyMigrationOutcome(results: TableMigrationRunRecord['results'], paused: boolean) {
     if (paused) {
-        layout.showToast(t('explorer.tableMigrationWizard.migrationPaused'))
+        layout.showSuccessToast(t('explorer.tableMigrationWizard.migrationPaused'))
         return
     }
     const summary = summarizeMigrationResults(results)
     if (summary.failed > 0) {
-        layout.showToast(t('explorer.tableMigrationPartial', summary))
+        layout.showWarningToast(t('explorer.tableMigrationPartial', summary))
     } else {
-        layout.showToast(t('explorer.tableMigrationSuccess', summary))
+        layout.showSuccessToast(t('explorer.tableMigrationSuccess', summary))
     }
 }
 
@@ -318,7 +318,7 @@ async function pauseTask(record: TableMigrationRunRecord) {
         await pauseMigrationJob(record.id)
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        layout.showToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
+        layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
     } finally {
         pausing.value = false
     }
@@ -357,7 +357,7 @@ async function resumeTask(record: TableMigrationRunRecord) {
     } catch (error) {
         migrationTasks.abortRun()
         const message = error instanceof Error ? error.message : String(error)
-        layout.showToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
+        layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
     } finally {
         resuming.value = false
     }
@@ -397,7 +397,7 @@ async function restartFreshTask(record: TableMigrationRunRecord) {
     } catch (error) {
         migrationTasks.abortRun()
         const message = error instanceof Error ? error.message : String(error)
-        layout.showToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
+        layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
     } finally {
         restartingFresh.value = false
     }
@@ -412,15 +412,15 @@ function formatCheckpointStatus(status: string): string {
 async function copyLog(record: TableMigrationRunRecord) {
     try {
         await navigator.clipboard.writeText(formatMigrationRunLogText(record))
-        layout.showToast(t('explorer.tableMigrationWizard.logCopied'))
+        layout.showSuccessToast(t('explorer.tableMigrationWizard.logCopied'))
     } catch {
-        layout.showToast(t('explorer.tableMigrationWizard.ddlCopyFailed'))
+        layout.showErrorToast(t('explorer.tableMigrationWizard.ddlCopyFailed'))
     }
 }
 
 function downloadReport(record: TableMigrationRunRecord) {
     downloadMigrationRunReport(record)
-    layout.showToast(t('explorer.tableMigrationWizard.reportDownloaded'))
+    layout.showSuccessToast(t('explorer.tableMigrationWizard.reportDownloaded'))
 }
 
 function formatRowCount(value: number | null | undefined): string {

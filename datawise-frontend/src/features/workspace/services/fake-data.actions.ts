@@ -46,6 +46,11 @@ export async function previewFakeDataForTab(options: {
     })
 }
 
+export type FakeDataExecuteResult =
+    | {ok: true; message: string}
+    | {ok: false; message?: string; silent?: boolean}
+
+/** 执行假数据写入。访客/权限不足不 toast（对话框 disabled + hint / 就地错误）。 */
 export async function executeFakeDataForTab(options: {
     tab: WorkspaceTab
     tree: TreeNode[]
@@ -54,26 +59,21 @@ export async function executeFakeDataForTab(options: {
     seed?: number
     teams: TeamSummary[]
     isGuest: boolean
-    showToast: (message: string) => void
     t: ComposerTranslation
-}): Promise<boolean> {
-    const {tab, tree, properties, rowCount, teams, isGuest, showToast, t} = options
+}): Promise<FakeDataExecuteResult> {
+    const {tab, tree, properties, rowCount, teams, isGuest, t} = options
     if (isGuest) {
-        showToast(t('auth.guestReadOnlyHint'))
-        return false
+        return {ok: false, silent: true}
     }
     if (!tab.connectionId || !canDmlConnection(tab.connectionId, teams)) {
-        showToast(t('workspace.fakeData.writeDenied'))
-        return false
+        return {ok: false, message: t('workspace.fakeData.writeDenied')}
     }
     const insertable = properties.columns.filter((column) => !(column.autoIncrement && column.keyType === 'PRI'))
     if (!insertable.length) {
-        showToast(t('workspace.fakeData.noColumns'))
-        return false
+        return {ok: false, message: t('workspace.fakeData.noColumns')}
     }
     if (!tab.tableName?.trim()) {
-        showToast(t('workspace.fakeData.failed'))
-        return false
+        return {ok: false, message: t('workspace.fakeData.failed')}
     }
 
     await datagenApi.executeTableDatagen({
@@ -83,8 +83,10 @@ export async function executeFakeDataForTab(options: {
         rowCount: clampFakeDataRowCount(rowCount),
         seed: options.seed,
     })
-    showToast(t('workspace.fakeData.executed', {count: clampFakeDataRowCount(rowCount)}))
-    return true
+    return {
+        ok: true,
+        message: t('workspace.fakeData.executed', {count: clampFakeDataRowCount(rowCount)}),
+    }
 }
 
 export async function exportFakeDataForTab(options: {
@@ -93,14 +95,13 @@ export async function exportFakeDataForTab(options: {
     properties: Awaited<ReturnType<typeof fetchFakeDataProperties>>
     rowCount: number
     seed?: number
-    showToast: (message: string) => void
     t: ComposerTranslation
-}) {
-    const {tab, tree, properties, rowCount, showToast, t} = options
+}): Promise<string> {
+    const {tab, tree, properties, rowCount, t} = options
     const preview = await previewFakeDataForTab({tab, tree, rowCount, seed: options.seed})
     const sql = preview.insertSql
     const tableName = properties.tableName || tab.tableName || 'table'
     const stamp = new Date().toISOString().replace(/[:.]/g, '-')
     downloadTextFile(sql, `${tableName}-fake-data-${stamp}.sql`, 'text/plain;charset=utf-8')
-    showToast(t('workspace.fakeData.exported'))
+    return t('workspace.fakeData.exported')
 }

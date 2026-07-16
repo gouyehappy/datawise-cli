@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import {reactive, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {AppModal, DwInput, DwSecretInput, FormField, ModalActions} from '@/core/components'
+import {AppModal, DwInput, DwSecretInput, FormField, ModalActions, DwInlineAlert} from '@/core/components'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ 'update:open': [value: boolean]; success: [] }>()
 
 const {t} = useI18n()
 const auth = useAuthStore()
-const toast = useToastStore()
+const toast = useAppToast()
 
 const loading = ref(false)
 const isDev = import.meta.env.DEV
@@ -78,7 +78,7 @@ async function handleSubmit() {
   clearErrors()
   try {
     await auth.login(form.userName.trim(), form.userPassword)
-    toast.show(t('auth.success'))
+    toast.success(t('auth.success'))
     emit('success')
     close()
   } catch (err) {
@@ -122,7 +122,7 @@ async function handleSubmit() {
         </template>
       </FormField>
 
-      <p v-if="errors.form" class="dw-form-error" role="alert">{{ errors.form }}</p>
+      <DwInlineAlert :message="errors.form"/>
       <p v-if="isDev" class="modal-body-hint">{{ t('auth.defaultHint') }}</p>
     </form>
 

@@ -302,31 +302,6 @@
     color: var(--dw-text-secondary);
 }
 
-/* 确认类弹窗警示条 */
-
-.modal-alert-banner {
-    display: flex;
-    gap: var(--dw-space-6);
-    padding: var(--dw-space-6);
-    border: 1px solid color-mix(in srgb, var(--dw-warning) 24%, var(--dw-border-light));
-    border-radius: var(--dw-panel-radius);
-    background: color-mix(in srgb, var(--dw-warning) 6%, var(--dw-bg));
-}
-
-.modal-alert-banner--danger {
-    border-color: color-mix(in srgb, var(--dw-danger) 24%, var(--dw-border-light));
-    background: color-mix(in srgb, var(--dw-danger) 6%, var(--dw-bg));
-}
-
-.modal-alert-banner__icon {
-    flex-shrink: 0;
-    color: var(--dw-warning-fg);
-}
-
-.modal-alert-banner--danger .modal-alert-banner__icon {
-    color: var(--dw-danger-fg);
-}
-
 /* 密码等输入框附加控件 */
 
 .modal-input-affix {
@@ -902,12 +877,6 @@
     margin: 0 0 var(--dw-space-6);
     font-size: var(--mp-caption);
     color: var(--dw-text-muted);
-}
-
-.modal-error-text {
-    margin: var(--dw-gap) 0 0;
-    font-size: var(--mp-caption);
-    color: var(--dw-danger);
 }
 
 .modal-code-block--compact {

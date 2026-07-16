@@ -77,10 +77,10 @@ async function pullTeamSharedQuery() {
         collabBaseSql.value = detail.sql ?? ''
         collabRemoteChanged.value = false
         collabRemoteSqlPreview.value = null
-        layout.showToast(t('team.sharedQueries.collabPulled'))
+        layout.showSuccessToast(t('team.sharedQueries.collabPulled'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         collabPulling.value = false
     }
@@ -98,7 +98,7 @@ async function prefetchCollabRemoteSql() {
         }
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         collabConflictLoading.value = false
     }
@@ -128,10 +128,10 @@ async function acceptCollabRemote() {
         collabRemoteChanged.value = false
         collabRemoteSqlPreview.value = null
         collabConflictDialogOpen.value = false
-        layout.showToast(t('team.sharedQueries.collabPulled'))
+        layout.showSuccessToast(t('team.sharedQueries.collabPulled'))
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.sharedQueries.collabPullFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         collabPulling.value = false
     }
@@ -160,15 +160,15 @@ async function pushTeamSharedQuery() {
         collabLastRemoteUpdatedAt.value = updated.updatedAt || null
         collabBaseSql.value = sql.value
         collabRemoteChanged.value = false
-        layout.showToast(t('team.sharedQueries.collabPushed'))
+        layout.showSuccessToast(t('team.sharedQueries.collabPushed'))
     } catch (error) {
         const fallback = t('team.sharedQueries.collabPushFailed')
         const message = error instanceof Error ? error.message : fallback
         if (message.includes('pull latest')) {
             collabRemoteChanged.value = true
-            layout.showToast(t('team.sharedQueries.collabConflictSave'))
+            layout.showSuccessToast(t('team.sharedQueries.collabConflictSave'))
         } else {
-            layout.showToast(message)
+            layout.showErrorToast(message)
         }
     } finally {
         collabPushing.value = false

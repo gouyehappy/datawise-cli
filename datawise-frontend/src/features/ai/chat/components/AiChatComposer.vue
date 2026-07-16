@@ -10,7 +10,7 @@ import {TagChip} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import {createId} from '@/core/utils/id'
 import AiModelSelect from '@/features/ai/shared/components/AiModelSelect.vue'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {currentLocale} from '@/i18n'
 import type {AiDatabaseTarget} from '@/features/ai/shared/utils/database-targets'
 
@@ -41,7 +41,7 @@ const emit = defineEmits<{
 }>()
 
 const {t} = useI18n()
-const toast = useToastStore()
+const toast = useAppToast()
 const textareaRef = ref<HTMLTextAreaElement>()
 const fileInputRef = ref<HTMLInputElement>()
 const attachments = ref<ChatAttachment[]>([])
@@ -61,7 +61,7 @@ function onInput(event: Event) {
 
 function notifySkippedAttachments(skipped: string[]) {
   if (!skipped.length) return
-  toast.show(t('ai.composer.attachmentSkipped', {names: skipped.join(', ')}))
+  toast.warning(t('ai.composer.attachmentSkipped', {names: skipped.join(', ')}))
 }
 
 async function buildSendPayload(prompt: string) {
@@ -110,7 +110,7 @@ function startVoiceInput() {
   const SpeechRecognitionCtor = win.SpeechRecognition ?? win.webkitSpeechRecognition
 
   if (!SpeechRecognitionCtor) {
-    toast.show(t('ai.composer.voiceUnsupported'))
+    toast.warning(t('ai.composer.voiceUnsupported'))
     return
   }
 
@@ -132,7 +132,7 @@ function startVoiceInput() {
   }
 
   recognition.onerror = () => {
-    toast.show(t('ai.composer.voiceFailed'))
+    toast.error(t('ai.composer.voiceFailed'))
   }
 
   recognition.onend = () => {

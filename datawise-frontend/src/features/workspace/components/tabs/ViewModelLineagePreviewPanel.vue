@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {EmptyState} from '@/core/components'
+import {DwPanelState, EmptyState} from '@/core/components'
 import LineageColumnMapView from '@/features/lineage/components/LineageColumnMapView.vue'
 import type {LineageGraph} from '@/features/lineage/types/lineage.types'
 import {buildColumnLineageMap, hasColumnLineage} from '@/features/lineage/services/lineage-column-map.service'
@@ -47,7 +47,12 @@ const warnings = computed(() => props.graph?.meta?.warnings ?? [])
       </p>
     </div>
 
-    <div v-if="loading" class="vm-lineage-preview__state">{{ t('lineage.loading') }}</div>
+    <DwPanelState
+        v-if="loading"
+        status="loading"
+        :message="t('lineage.loading')"
+        fill
+    />
     <EmptyState
         v-else-if="error"
         :title="t('lineage.loadFailed')"
@@ -109,11 +114,5 @@ const warnings = computed(() => props.graph?.meta?.warnings ?? [])
   background: color-mix(in srgb, var(--dw-warning) 12%, transparent);
   color: var(--dw-text-secondary);
   font-size: var(--dw-text-xs);
-}
-
-.vm-lineage-preview__state {
-  padding: var(--dw-space-6);
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-sm);
 }
 </style>

@@ -266,7 +266,7 @@ export const useExplorerStore = defineStore('explorer', () => {
 
     function reportConnectionFailure(connectionId: string, error: unknown, options?: {notify?: boolean}) {
         if (options?.notify !== true) return
-        useLayoutStore().showToast(resolveConnectionErrorMessage(error))
+        useLayoutStore().showErrorToast(resolveConnectionErrorMessage(error))
     }
 
     function collectConnectionIdsFromTree(): string[] {
@@ -1209,7 +1209,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         resetConnectionTreeState(connectionId)
         markConnectionNeedsReconnect(connectionId)
         if (options?.notify && hadLoadedTree) {
-            useLayoutStore().showToast(
+            useLayoutStore().showWarningToast(
                 i18n.global.t('explorer.connectionIdleDisconnected', {name: node.label}),
             )
         }
@@ -1278,7 +1278,7 @@ export const useExplorerStore = defineStore('explorer', () => {
                 markConnectionAttempted(connectionId)
                 setConnectionHealth(connectionId, 'error')
                 if (options?.notify === true) {
-                    useLayoutStore().showToast(result.message || resolveConnectionErrorMessage(result))
+                    useLayoutStore().showErrorToast(result.message || resolveConnectionErrorMessage(result))
                 }
                 return false
             }
@@ -1323,7 +1323,7 @@ export const useExplorerStore = defineStore('explorer', () => {
                 setConnectionHealth(connectionId, 'error')
                 markConnectionNeedsReconnect(connectionId)
                 if (options?.notify === true) {
-                    useLayoutStore().showToast(result.message || resolveConnectionErrorMessage(result))
+                    useLayoutStore().showErrorToast(result.message || resolveConnectionErrorMessage(result))
                 }
                 return false
             }

@@ -91,11 +91,11 @@ function openQueryLibraryHistory(item: QueryBookmarkItem, event: Event) {
 function exportForGitCi(item: QueryBookmarkItem, event: Event) {
     event.stopPropagation()
     if (item.source !== 'console' || !item.sql.trim()) {
-        layout.showToast(t('platform.queryLibrary.exportFailed'))
+        layout.showErrorToast(t('platform.queryLibrary.exportFailed'))
         return
     }
     exportQueryBookmarkForGitCi(item)
-    layout.showToast(t('platform.queryLibrary.exportSuccess'))
+    layout.showSuccessToast(t('platform.queryLibrary.exportSuccess'))
 }
 </script>
 

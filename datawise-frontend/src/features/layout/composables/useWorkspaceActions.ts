@@ -106,11 +106,11 @@ export function useWorkspaceActions() {
         try {
             const ok = await action()
             if (!ok) {
-                layout.showToast(t('app.titleBar.workspaceSwitcher.switchFailed'))
+                layout.showErrorToast(t('app.titleBar.workspaceSwitcher.switchFailed'))
                 switching.value = false
             }
         } catch {
-            layout.showToast(t('app.titleBar.workspaceSwitcher.switchFailed'))
+            layout.showErrorToast(t('app.titleBar.workspaceSwitcher.switchFailed'))
             switching.value = false
         }
     }
@@ -188,11 +188,11 @@ export function useWorkspaceActions() {
             action: async (name) => {
                 const result = await prepareNewWorkspace(name)
                 if (!result) {
-                    layout.showToast(t('app.titleBar.workspaceSwitcher.switchFailed'))
+                    layout.showErrorToast(t('app.titleBar.workspaceSwitcher.switchFailed'))
                     return
                 }
                 if (!result.ok) {
-                    layout.showToast(t(`app.titleBar.workspaceSwitcher.newErrors.${result.error}`))
+                    layout.showErrorToast(t(`app.titleBar.workspaceSwitcher.newErrors.${result.error}`))
                     return
                 }
                 confirmDialog.value = {

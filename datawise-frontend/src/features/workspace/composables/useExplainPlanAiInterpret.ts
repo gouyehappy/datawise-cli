@@ -3,7 +3,7 @@ import type {DbType} from '@/core/types'
 import {buildAiWorkContext} from '@/features/ai/work-context/ai-work-context.service'
 import type {AiDatabaseTarget} from '@/features/ai/shared/utils/database-targets'
 import {formatAiErrorMessage} from '@/features/ai/shared/utils/ai-error'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import type {ExplainPlanNode} from '@/features/workspace/types/explain-plan'
 import {
     formatExplainPlanInterpretPrompt,
@@ -44,7 +44,7 @@ function buildAiTargets(context: ReturnType<typeof buildAiWorkContext>): AiDatab
 
 /** EXPLAIN 计划 → AI 自然语言解读 */
 export function useExplainPlanAiInterpret(options: UseExplainPlanAiInterpretOptions) {
-    const toast = useToastStore()
+    const toast = useAppToast()
     const interpretOpen = ref(false)
     const interpretText = ref('')
     const loading = ref(false)
@@ -82,11 +82,11 @@ export function useExplainPlanAiInterpret(options: UseExplainPlanAiInterpretOpti
             })
             interpretText.value = reply.reply?.trim() || ''
             if (!interpretText.value) {
-                toast.show(formatAiErrorMessage(new Error('Empty AI response')))
+                toast.error(formatAiErrorMessage(new Error('Empty AI response')))
                 interpretOpen.value = false
             }
         } catch (error) {
-            toast.show(formatAiErrorMessage(error))
+            toast.error(formatAiErrorMessage(error))
             interpretOpen.value = false
         } finally {
             loading.value = false

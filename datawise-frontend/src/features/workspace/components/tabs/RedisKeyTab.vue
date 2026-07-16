@@ -2,7 +2,7 @@
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {WorkspaceTab} from '@/core/types'
-import {DwButton, EmptyState} from '@/core/components'
+import {DwButton, DwInlineAlert, EmptyState} from '@/core/components'
 import {explorerApi} from '@/api'
 import {
     formatRedisSize,
@@ -65,7 +65,7 @@ onMounted(loadDetail)
       </DwButton>
     </header>
 
-    <p v-if="error" class="redis-key-tab__error">{{ error }}</p>
+    <DwInlineAlert v-if="error" :message="error"/>
     <EmptyState v-else-if="loading && !detail" embedded bordered :title="t('explorer.redisKey.loading')"/>
 
     <section v-else-if="detail" class="redis-key-tab__meta">
@@ -123,12 +123,6 @@ onMounted(loadDetail)
   font-size: var(--dw-text-md);
   color: var(--dw-text-secondary);
   word-break: break-all;
-}
-
-.redis-key-tab__error {
-  margin: 0;
-  color: var(--dw-danger);
-  font-size: var(--dw-text-md);
 }
 
 .redis-key-tab__meta {

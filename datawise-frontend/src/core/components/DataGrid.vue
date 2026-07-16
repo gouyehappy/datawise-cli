@@ -763,7 +763,7 @@ async function copyGridContextText(
 ) {
   if (!text.trim()) return
   await navigator.clipboard.writeText(text)
-  layout.showToast(t(`dataGrid.contextMenu.${toastKey}`))
+  layout.showSuccessToast(t(`dataGrid.contextMenu.${toastKey}`))
 }
 
 async function onCellMenuSelect(id: string) {

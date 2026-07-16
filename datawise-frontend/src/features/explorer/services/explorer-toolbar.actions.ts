@@ -17,7 +17,7 @@ export async function runExplorerLocateActiveTab(): Promise<boolean> {
 
     const node = await explorer.locateActiveTabNode(tab)
     if (!node) {
-        layout.showToast(t('explorer.locateActiveTabFailed'))
+        layout.showErrorToast(t('explorer.locateActiveTabFailed'))
         return false
     }
 
@@ -25,7 +25,7 @@ export async function runExplorerLocateActiveTab(): Promise<boolean> {
         workspace.updateTabContext(tab.id, {explorerNodeId: node.id})
     }
 
-    layout.showToast(t('explorer.locateDone', {name: node.label}))
+    layout.showSuccessToast(t('explorer.locateDone', {name: node.label}))
     return true
 }
 
@@ -35,11 +35,11 @@ export async function runExplorerLocateSelected(): Promise<boolean> {
 
     const node = await explorer.locateSelectedNode()
     if (!node) {
-        layout.showToast(t('explorer.locateSelectedFailed'))
+        layout.showErrorToast(t('explorer.locateSelectedFailed'))
         return false
     }
 
-    layout.showToast(t('explorer.locateDone', {name: node.label}))
+    layout.showSuccessToast(t('explorer.locateDone', {name: node.label}))
     return true
 }
 

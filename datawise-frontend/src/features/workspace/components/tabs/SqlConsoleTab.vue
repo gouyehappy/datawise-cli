@@ -211,11 +211,11 @@ function openSaveViewModelDialog() {
   const connId = connectionId.value || props.tab.connectionId
   const instance = databaseName.value
   if (!connId || !instance) {
-    layout.showToast(t('viewModel.saveFailed'))
+    workspace.setStatus(t('viewModel.saveFailed'))
     return
   }
   if (!isViewModelSelectSql(sql.value)) {
-    layout.showToast(t('viewModel.selectOnly'))
+    workspace.setStatus(t('viewModel.selectOnly'))
     return
   }
   layout.setModule('database')
@@ -330,6 +330,7 @@ const showToolbarAiGroup = computed(() =>
 const teamStore = useTeamStore()
 const productionApprovalDialogOpen = ref(false)
 const productionApprovalSubmitting = ref(false)
+const productionApprovalError = ref('')
 const sqlReviewFindings = ref<SqlReviewFinding[]>([])
 const sqlReviewBlocked = ref(false)
 const sqlReviewSuggestedSql = ref<string | null>(null)
@@ -368,6 +369,7 @@ const {
   confirmOpen: cancelConfirmOpen,
   pendingMode: cancelPendingMode,
   cancelling: cancelInProgress,
+  errorMessage: cancelError,
   cancelQueryNow,
   requestCancelConnection,
   closeConfirm: closeCancelConfirm,
@@ -438,7 +440,7 @@ function applySqlReviewSuggestion() {
   if (!suggested) return
   sql.value = suggested
   editorRef.value?.layout()
-  layout.showToast(t('platform.sqlReview.appliedRewrite'))
+  workspace.setStatus(t('platform.sqlReview.appliedRewrite'))
   void loadSqlReviewFindings(suggested)
 }
 
@@ -485,7 +487,7 @@ function runExplainPlanFromToolbar(event?: MouseEvent) {
   if (!trimmed) return
   if (!explainPlanEnabled.value) return
   if (!connectionCaps.value.sqlExplain) {
-    layout.showToast(capabilityHint('sqlExplain'))
+    workspace.setStatus(capabilityHint('sqlExplain'))
     return
   }
 
@@ -496,20 +498,21 @@ function runExplainPlanFromToolbar(event?: MouseEvent) {
 
 async function saveStatementAsFileFromToolbar() {
   if (guestReadOnly.value) {
-    layout.showToast(guestReadOnlyHint.value)
+    workspace.setStatus(guestReadOnlyHint.value)
     return
   }
   const statementSql = resolveToolbarStatementSql()
   if (!statementSql) return
   const ok = await workspace.saveConsoleStatementAsFile(props.tab.id, statementSql)
   if (!ok) {
-    layout.showToast(t('console.saveFailed'))
+    workspace.setStatus(t('console.saveFailed'))
   }
 }
 
 function submitDangerousSql() {
   if (!dangerousSqlPending.value || !dangerousSqlPendingSql.value) return
   if (needsProductionApproval.value) {
+    productionApprovalError.value = ''
     productionApprovalDialogOpen.value = true
     return
   }
@@ -524,6 +527,7 @@ async function onSubmitProductionApproval(teamId: string) {
   if (!pendingSql || !connId) return
 
   productionApprovalSubmitting.value = true
+  productionApprovalError.value = ''
   try {
     await teamStore.submitProductionApproval(teamId, {
       connectionId: connId,
@@ -533,10 +537,10 @@ async function onSubmitProductionApproval(teamId: string) {
     })
     productionApprovalDialogOpen.value = false
     disarmDangerousSqlPending()
-    layout.showToast(t('console.productionApproval.submitted'))
+    layout.showSuccessToast(t('console.productionApproval.submitted'))
   } catch (error) {
-    const message = error instanceof Error ? error.message : t('console.productionApproval.submitFailed')
-    layout.showToast(message)
+    productionApprovalError.value =
+        error instanceof Error ? error.message : t('console.productionApproval.submitFailed')
   } finally {
     productionApprovalSubmitting.value = false
   }
@@ -551,7 +555,7 @@ function requestExplainPlan(targetSql: string) {
   if (!trimmed) return
   if (!explainPlanEnabled.value) return
   if (!connectionCaps.value.sqlExplain) {
-    layout.showToast(capabilityHint('sqlExplain'))
+    workspace.setStatus(capabilityHint('sqlExplain'))
     return
   }
   const wrapped = wrapExplainSql(trimmed, dbDialect.value, false)
@@ -566,7 +570,7 @@ function openCrossEnvCompareFromResult(index: number) {
 
   const sqlError = validateCrossEnvCompareSql(result.sql)
   if (sqlError) {
-    layout.showToast(t(`crossEnvCompare.errors.${sqlError}`))
+    workspace.setStatus(t(`crossEnvCompare.errors.${sqlError}`))
     return
   }
 
@@ -1087,6 +1091,7 @@ onMounted(async () => {
     <SubmitProductionApprovalDialog
         v-model:open="productionApprovalDialogOpen"
         :saving="productionApprovalSubmitting"
+        :error="productionApprovalError"
         :sql="dangerousSqlPendingSql ?? ''"
         :connection-name="source?.label ?? ''"
         :database="databaseName"
@@ -1098,6 +1103,7 @@ onMounted(async () => {
         :open="cancelConfirmOpen"
         :mode="cancelPendingMode"
         :loading="cancelInProgress"
+        :error="cancelError"
         @confirm="confirmCancel()"
         @cancel="closeCancelConfirm()"
     />

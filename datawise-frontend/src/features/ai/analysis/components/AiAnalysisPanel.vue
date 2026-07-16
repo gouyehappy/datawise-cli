@@ -65,12 +65,12 @@ const chartTypeLabel = computed(() => {
 
 function exportMarkdown() {
   exportAnalysisMarkdown(props.analysis)
-  layout.showToast(t('ai.analysis.exportMarkdownDone'))
+  layout.showSuccessToast(t('ai.analysis.exportMarkdownDone'))
 }
 
 function exportHtml() {
   exportAnalysisHtml(props.analysis)
-  layout.showToast(t('ai.analysis.exportHtmlDone'))
+  layout.showSuccessToast(t('ai.analysis.exportHtmlDone'))
 }
 
 async function saveAsCanvas() {
@@ -96,9 +96,9 @@ async function saveAsCanvas() {
       targetsJson: props.targetsJson,
       parameters,
     })
-    layout.showToast(t('ai.analysis.saveAsCanvasDone'))
+    layout.showSuccessToast(t('ai.analysis.saveAsCanvasDone'))
   } catch (error) {
-    layout.showToast(error instanceof Error ? error.message : String(error))
+    layout.showErrorToast(error instanceof Error ? error.message : String(error))
   } finally {
     savingCanvas.value = false
   }

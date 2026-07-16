@@ -145,14 +145,15 @@ function resolveExecutablePayload(): string {
 async function copyRecordText() {
   const payload = resolveExecutablePayload()
   if (!payload.trim()) {
-    layout.showToast(t('ssh.scriptRecord.sendEmpty'))
+    loadError.value = t('ssh.scriptRecord.sendEmpty')
     return
   }
   try {
     await navigator.clipboard.writeText(payload)
-    layout.showToast(t('ssh.scriptRecord.copied'))
+    loadError.value = ''
+    layout.showSuccessToast(t('ssh.scriptRecord.copied'))
   } catch {
-    layout.showToast(t('ssh.scriptRecord.copyFailed'))
+    layout.showErrorToast(t('ssh.scriptRecord.copyFailed'))
   }
 }
 
@@ -169,9 +170,10 @@ async function sendToTerminal() {
   if (!connectionId) return
   const payload = resolveExecutablePayload()
   if (!payload.trim()) {
-    layout.showToast(t('ssh.scriptRecord.sendEmpty'))
+    loadError.value = t('ssh.scriptRecord.sendEmpty')
     return
   }
+  loadError.value = ''
   if (!listSshTerminalHandles(connectionId).length) {
     workspace.openSshTerminal({
       connectionId,
@@ -180,16 +182,16 @@ async function sendToTerminal() {
     })
     const terminalReady = await waitForTerminalHandle(connectionId)
     if (!terminalReady) {
-      layout.showToast(t('ssh.scriptRecord.sendFailed'))
+      loadError.value = t('ssh.scriptRecord.sendFailed')
       return
     }
   }
   const ok = await sendToSshTerminal(connectionId, payload, {appendNewline: false})
   if (ok) {
-    layout.showToast(t('ssh.scriptRecord.sentToTerminal'))
+    layout.showSuccessToast(t('ssh.scriptRecord.sentToTerminal'))
     return
   }
-  layout.showToast(t('ssh.scriptRecord.sendFailed'))
+  loadError.value = t('ssh.scriptRecord.sendFailed')
 }
 
 async function saveRecord(options?: {silent?: boolean}) {
@@ -225,10 +227,7 @@ async function saveRecord(options?: {silent?: boolean}) {
     }
     return true
   } catch (error) {
-    loadError.value = resolveApiErrorMessage(error)
-    if (!options?.silent) {
-      layout.showToast(t('ssh.scriptRecord.saveFailed'))
-    }
+    loadError.value = resolveApiErrorMessage(error) || t('ssh.scriptRecord.saveFailed')
     return false
   } finally {
     saving.value = false

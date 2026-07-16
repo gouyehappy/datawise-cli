@@ -3,6 +3,7 @@ import {useI18n} from 'vue-i18n'
 import {sqlApi} from '@/api'
 import type {SqlSessionStatus} from '@/shared/api/types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {
     canBeginTransaction,
     canCommitOrRollback,
@@ -19,6 +20,7 @@ export function useConsoleTransaction(options: {
 }) {
     const {t} = useI18n()
     const layout = useLayoutStore()
+    const workspace = useWorkspaceStore()
     const status = ref<SqlSessionStatus>({...DEFAULT_SQL_SESSION_STATUS})
     const loading = ref(false)
     let scopeKey = ''
@@ -49,7 +51,7 @@ export function useConsoleTransaction(options: {
     async function runAction(action: () => Promise<SqlSessionStatus>, successKey: string) {
         const payload = sessionOptions()
         if (!payload) {
-            layout.showErrorToast(t('console.transaction.connectionRequired'))
+            workspace.setStatus(t('console.transaction.connectionRequired'))
             return
         }
         loading.value = true
@@ -59,7 +61,7 @@ export function useConsoleTransaction(options: {
             if (connectionId) {
                 registerConnectionHealthCheck(connectionId, 'ok')
             }
-            layout.showToast(t(successKey))
+            layout.showSuccessToast(t(successKey))
         } catch (error) {
             layout.showErrorToast(resolveTransactionErrorMessage(error, t))
             await refreshStatus()

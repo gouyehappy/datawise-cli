@@ -61,7 +61,7 @@ async function loadDrawerData() {
     } catch {
         currentSql.value = ''
         entries.value = []
-        layout.showToast(t('explorer.scriptHistory.loadFailed'))
+        layout.showErrorToast(t('explorer.scriptHistory.loadFailed'))
     } finally {
         loading.value = false
     }
@@ -84,7 +84,7 @@ async function loadSelectedVersion() {
         selectedSql.value = result.sql
     } catch {
         selectedSql.value = ''
-        layout.showToast(t('explorer.scriptHistory.versionLoadFailed'))
+        layout.showErrorToast(t('explorer.scriptHistory.versionLoadFailed'))
     }
 }
 
@@ -101,11 +101,11 @@ async function restoreSelected() {
     restoring.value = true
     try {
         await restoreScriptHistoryVersion(ctx, versionId)
-        layout.showToast(t('explorer.scriptHistory.restoreSuccess'))
+        layout.showSuccessToast(t('explorer.scriptHistory.restoreSuccess'))
         drawer.closeDrawer()
     } catch (error) {
         const message = error instanceof Error ? error.message : t('explorer.scriptHistory.restoreFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
     } finally {
         restoring.value = false
     }

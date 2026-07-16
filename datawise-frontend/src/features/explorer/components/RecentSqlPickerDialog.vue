@@ -104,7 +104,7 @@ async function createNewScript() {
   const ctx = props.context
   layout.setModule('database')
   void createNewSqlEditor(explorer.tree, ctx.databaseNode, ctx.connectionName)
-      .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
+      .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
   emit('opened')
   close()
 }

@@ -5,12 +5,12 @@ import PluginDeveloperToolsSection from '@/features/plugin/components/PluginDeve
 import {usePluginDeveloperTools} from '@/features/plugin/composables/usePluginDeveloperTools'
 import {usePluginPresetSummary} from '@/features/plugin/composables/usePluginPresetSummary'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import '@/features/plugin/styles/plugin-dev-tools.css'
 
 const {t, te} = useI18n()
 const pluginStore = usePluginStore()
-const toast = useToastStore()
+const toast = useAppToast()
 const initialTab = pluginStore.consumeDevToolsTab() ?? undefined
 const {referencePresetId, referencePresetConflictCount} = usePluginPresetSummary()
 

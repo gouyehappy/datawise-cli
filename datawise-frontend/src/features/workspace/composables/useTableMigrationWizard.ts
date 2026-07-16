@@ -486,9 +486,9 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         if (!ddl) return
         try {
             await navigator.clipboard.writeText(ddl)
-            layout.showToast(t('explorer.tableMigrationWizard.ddlCopied'))
+            layout.showSuccessToast(t('explorer.tableMigrationWizard.ddlCopied'))
         } catch {
-            layout.showToast(t('explorer.tableMigrationWizard.ddlCopyFailed'))
+            layout.showErrorToast(t('explorer.tableMigrationWizard.ddlCopyFailed'))
         }
     }
 
@@ -582,7 +582,6 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
             const message = resolveErrorMessage(error, 'explorer.tableMigrationFailed')
             preflightError.value = message
             formError.value = message
-            layout.showToast(message)
         } finally {
             preflightLoading.value = false
         }
@@ -612,9 +611,9 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         if (!record) return
         try {
             await navigator.clipboard.writeText(formatMigrationRunLogText(record))
-            layout.showToast(t('explorer.tableMigrationWizard.logCopied'))
+            layout.showSuccessToast(t('explorer.tableMigrationWizard.logCopied'))
         } catch {
-            layout.showToast(t('explorer.tableMigrationWizard.ddlCopyFailed'))
+            layout.showErrorToast(t('explorer.tableMigrationWizard.ddlCopyFailed'))
         }
     }
 
@@ -622,7 +621,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         const record = migrationRunRecord.value ?? migrationTasks.selectedRecord
         if (!record || record.status === 'running') return
         downloadMigrationRunReport(record)
-        layout.showToast(t('explorer.tableMigrationWizard.reportDownloaded'))
+        layout.showSuccessToast(t('explorer.tableMigrationWizard.reportDownloaded'))
     }
 
     async function pauseActiveMigration() {
@@ -632,7 +631,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
             await pauseMigrationJob(activeJobId.value)
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
-            layout.showToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
+            layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
         } finally {
             pausing.value = false
         }
@@ -761,19 +760,19 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
             migrationTasks.completeRun(record)
 
             if (outcome.paused) {
-                layout.showToast(t('explorer.tableMigrationWizard.migrationPaused'))
+                layout.showSuccessToast(t('explorer.tableMigrationWizard.migrationPaused'))
             } else {
                 const summary = summarizeMigrationResults(outcome.results)
                 if (summary.failed > 0) {
-                    layout.showToast(t('explorer.tableMigrationPartial', summary))
+                    layout.showWarningToast(t('explorer.tableMigrationPartial', summary))
                 } else if (summary.validationMismatch > 0) {
-                    layout.showToast(t('explorer.tableMigrationValidationWarn', {
+                    layout.showWarningToast(t('explorer.tableMigrationValidationWarn', {
                         tables: summary.tables,
                         rows: summary.rows,
                         mismatch: summary.validationMismatch,
                     }))
                 } else {
-                    layout.showToast(t('explorer.tableMigrationSuccess', summary))
+                    layout.showSuccessToast(t('explorer.tableMigrationSuccess', summary))
                 }
             }
         } catch (error) {
@@ -794,7 +793,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
                 })
                 migrationTasks.completeRun(record)
             }
-            layout.showToast(resolveErrorMessage(error, 'explorer.tableMigrationFailed'))
+            layout.showErrorToast(resolveErrorMessage(error, 'explorer.tableMigrationFailed'))
             if (!migrationRunLogsFull.value.length) {
                 migrationTasks.abortRun()
             }

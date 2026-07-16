@@ -53,7 +53,7 @@ async function reloadLogs() {
         logs.value = await teamStore.fetchAuditLogs(props.teamId, buildQuery())
     } catch (error) {
         const message = error instanceof Error ? error.message : t('team.auditLoadFailed')
-        layout.showToast(message)
+        layout.showErrorToast(message)
         logs.value = []
     } finally {
         loading.value = false
@@ -62,7 +62,7 @@ async function reloadLogs() {
 
 function exportLogs(format: 'csv' | 'json') {
     if (!logs.value.length) {
-        layout.showToast(t('team.audit.exportEmpty'))
+        layout.showErrorToast(t('team.audit.exportEmpty'))
         return
     }
     const options = {includeFullSql: includeFullSql.value}
@@ -80,7 +80,7 @@ function exportLogs(format: 'csv' | 'json') {
             'application/json;charset=utf-8',
         )
     }
-    layout.showToast(t('team.audit.exportDone', {fileName}))
+    layout.showSuccessToast(t('team.audit.exportDone', {fileName}))
 }
 
 function formatDate(value: string) {

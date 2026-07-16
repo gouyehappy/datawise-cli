@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
+import {DwInlineAlert} from '@/core/components'
 import type {AiDatabaseTarget} from '@/features/ai/shared/utils/database-targets'
 import {fetchAiSchemaTables} from '@/features/ai/datasource/services/ai-schema.service'
 
@@ -100,9 +101,10 @@ watch(
           </span>
         </div>
         <p v-if="entry.loading" class="schema-preview__status">{{ t('ai.databasePanel.schemaPreviewLoading') }}</p>
-        <p v-else-if="entry.error" class="schema-preview__status is-error">
-          {{ t('ai.databasePanel.schemaPreviewFailed') }}
-        </p>
+        <DwInlineAlert
+            v-else-if="entry.error"
+            :message="t('ai.databasePanel.schemaPreviewFailed')"
+        />
         <p v-else-if="!entry.tables.length" class="schema-preview__status">
           {{ t('ai.databasePanel.schemaPreviewEmpty') }}
         </p>
@@ -180,10 +182,6 @@ watch(
   font-size: var(--dw-text-xs);
   line-height: var(--dw-leading);
   color: var(--dw-text-muted);
-}
-
-.schema-preview__status.is-error {
-  color: var(--dw-danger);
 }
 
 .schema-preview__tables {

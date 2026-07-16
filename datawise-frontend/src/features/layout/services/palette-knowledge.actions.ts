@@ -20,5 +20,5 @@ export async function activatePaletteKnowledgeEntry(entry: AiKnowledgeEntry): Pr
     }
 
     await navigator.clipboard.writeText(entry.definition)
-    layout.showToast(t('globalObjectSearch.knowledgeCopied'))
+    layout.showSuccessToast(t('globalObjectSearch.knowledgeCopied'))
 }

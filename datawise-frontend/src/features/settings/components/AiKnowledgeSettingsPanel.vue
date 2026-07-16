@@ -28,6 +28,7 @@ import type {AiRagPreferences, AiVectorStorePreference} from '@/shared/config/ap
 import {DEFAULT_AI_RAG_PREFERENCES} from '@/shared/config/app-config.defaults'
 import {
     DwButton,
+    DwInlineAlert,
     DwInput,
     DwSelect,
     DwSecretInput,
@@ -65,6 +66,8 @@ const {readOnly, hint, denyIfReadOnly} = useResourceWriteGuard(UserResource.AiKn
 const rows = ref<EditableRow[]>([])
 const loading = ref(false)
 const saving = ref(false)
+const panelError = ref('')
+const ragError = ref('')
 const ragSaving = ref(false)
 const ragStatus = ref<AiRagStatus | null>(null)
 const ragLoading = ref(false)
@@ -391,11 +394,12 @@ function selectEntry(id: string) {
 
 async function loadRagStatus() {
     ragLoading.value = true
+    ragError.value = ''
     try {
         const scope = ragScopeParams()
         ragStatus.value = await fetchAiRagStatus(scope.connectionId, scope.database)
     } catch {
-        layout.showErrorToast(t('settings.knowledge.ragLoadFailed'))
+        ragError.value = t('settings.knowledge.ragLoadFailed')
     } finally {
         ragLoading.value = false
     }
@@ -404,15 +408,16 @@ async function loadRagStatus() {
 async function saveRagSettings() {
     if (denyIfReadOnly()) return
     ragSaving.value = true
+    ragError.value = ''
     try {
         appConfig.patchRagPreferences(cloneRagPreferences(ragDraft.value))
         await appConfig.persistConfigNowAsync()
         ragDraft.value = cloneRagPreferences(appConfig.aiPreferences.rag)
-        layout.showToast(t('settings.knowledge.ragSaveSuccess'))
+        layout.showSuccessToast(t('settings.knowledge.ragSaveSuccess'))
         void loadRagStatus()
     } catch (error) {
         console.warn('[rag] save settings failed', error)
-        layout.showErrorToast(t('settings.knowledge.ragSaveFailed'))
+        ragError.value = t('settings.knowledge.ragSaveFailed')
     } finally {
         ragSaving.value = false
     }
@@ -425,13 +430,14 @@ function cancelRagDraft() {
 async function rebuildRag() {
     if (denyIfReadOnly()) return
     ragRebuilding.value = true
+    ragError.value = ''
     try {
         const scope = ragScopeParams()
         const result = await rebuildAiRagIndex(scope.connectionId, scope.database)
         await loadRagStatus()
-        layout.showToast(result.message || t('settings.knowledge.ragRebuildSuccess'))
+        layout.showSuccessToast(result.message || t('settings.knowledge.ragRebuildSuccess'))
     } catch {
-        layout.showErrorToast(t('settings.knowledge.ragRebuildFailed'))
+        ragError.value = t('settings.knowledge.ragRebuildFailed')
     } finally {
         ragRebuilding.value = false
     }
@@ -439,13 +445,14 @@ async function rebuildRag() {
 
 async function loadEntries() {
     loading.value = true
+    panelError.value = ''
     try {
         const entries = await fetchAiKnowledgeEntries()
         rows.value = entries.map(toEditableRow)
         selectedEntryId.value = rows.value[0]?.id ?? null
         syncSavedSnapshot()
     } catch {
-        layout.showErrorToast(t('settings.knowledge.loadFailed'))
+        panelError.value = t('settings.knowledge.loadFailed')
     } finally {
         loading.value = false
     }
@@ -471,8 +478,9 @@ function removeSelectedRow() {
 async function saveEntries() {
     if (denyIfReadOnly()) return
     const incomplete = incompleteEntryCount.value
+    panelError.value = ''
     if (incomplete > 0) {
-        layout.showErrorToast(t('settings.knowledge.incompleteSaveBlocked', {count: incomplete}))
+        panelError.value = t('settings.knowledge.incompleteSaveBlocked', {count: incomplete})
         return
     }
     saving.value = true
@@ -483,12 +491,12 @@ async function saveEntries() {
             selectedEntryId.value = rows.value[0]?.id ?? null
         }
         syncSavedSnapshot()
-        layout.showToast(t('settings.knowledge.saveSuccess'))
+        layout.showSuccessToast(t('settings.knowledge.saveSuccess'))
         if (showRagSection.value) {
             await loadRagStatus()
         }
     } catch {
-        layout.showErrorToast(t('settings.knowledge.saveFailed'))
+        panelError.value = t('settings.knowledge.saveFailed')
     } finally {
         saving.value = false
     }
@@ -531,6 +539,9 @@ watch([ragScopeConnectionId, ragScopeDatabase], () => {
           icon="settings-knowledge"
       />
     </template>
+
+    <DwInlineAlert :message="panelError"/>
+    <DwInlineAlert :message="ragError"/>
 
     <section v-if="showRagSection" class="kb-rag-panel kb-rag-panel--v2">
       <div class="kb-rag-status" :class="{'is-ready': ragReady, 'is-pending': !ragReady && !ragLoading, 'is-loading': ragLoading}">

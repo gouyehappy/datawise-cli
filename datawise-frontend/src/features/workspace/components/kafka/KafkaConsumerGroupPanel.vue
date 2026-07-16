@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {DwButton, EmptyState} from '@/core/components'
+import {DwButton, DwInlineAlert, EmptyState} from '@/core/components'
 import {explorerApi} from '@/api'
 import type {
   KafkaConsumerGroupMetrics,
@@ -196,7 +196,7 @@ defineExpose({refresh: loadMetrics})
       </button>
     </div>
 
-    <p v-if="error" class="kafka-consumer-group-panel__error">{{ error }}</p>
+    <DwInlineAlert v-if="error" :message="error"/>
 
     <EmptyState
         v-else-if="!metrics && !loadingMetrics"
@@ -323,12 +323,6 @@ defineExpose({refresh: loadMetrics})
 .kafka-consumer-group-panel__chip-state {
   color: var(--dw-text-muted);
   font-size: var(--dw-text-xs);
-}
-
-.kafka-consumer-group-panel__error {
-  margin: 0;
-  color: var(--dw-danger);
-  font-size: var(--dw-text-sm);
 }
 
 .kafka-consumer-group-panel__summary {

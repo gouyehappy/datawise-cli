@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {AppModal, FormField, ModalActions} from '@/core/components'
+import {AppModal, FormField, ModalActions, DwInlineAlert} from '@/core/components'
 
 const props = defineProps<{
   open: boolean
@@ -93,7 +93,7 @@ function submit() {
         </template>
       </FormField>
 
-      <p v-if="error" class="dw-form-error" role="alert">{{ error }}</p>
+      <DwInlineAlert :message="error"/>
     </form>
 
     <template #footer>

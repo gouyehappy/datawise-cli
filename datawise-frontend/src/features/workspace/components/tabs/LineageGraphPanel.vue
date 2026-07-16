@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {EmptyState} from '@/core/components'
+import {EmptyState, DwPanelState} from '@/core/components'
 import type {WorkspaceTab} from '@/core/types'
 import {lineageApi} from '@/api/modules/lineage'
 import LineageColumnMapView from '@/features/lineage/components/LineageColumnMapView.vue'
@@ -128,7 +128,12 @@ watch(
       </ul>
     </section>
 
-    <div v-if="loading" class="lineage-panel__state">{{ t('lineage.loading') }}</div>
+    <DwPanelState
+        v-if="loading"
+        status="loading"
+        :message="t('lineage.loading')"
+        fill
+    />
     <EmptyState
         v-else-if="error"
         :title="t('lineage.loadFailed')"
@@ -229,8 +234,4 @@ watch(
   font-size: var(--dw-text-xs);
 }
 
-.lineage-panel__state {
-  padding: var(--dw-space-10);
-  color: var(--dw-text-muted);
-}
 </style>

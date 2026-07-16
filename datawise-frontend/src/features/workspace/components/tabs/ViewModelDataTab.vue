@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {onMounted, watch} from 'vue'
+import {DwInlineAlert} from '@/core/components'
 import {QueryResultPane} from '@/features/workspace/components'
 import type {WorkspaceTab} from '@/core/types'
 import {useViewModelDataView} from '@/features/workspace/composables/useViewModelDataView'
@@ -44,7 +45,7 @@ watch(
 
 <template>
   <div class="view-model-data">
-    <p v-if="errorMessage" class="view-model-data__error">{{ errorMessage }}</p>
+    <DwInlineAlert :message="errorMessage"/>
     <QueryResultPane
         :columns="columns"
         :rows="rows"
@@ -68,12 +69,5 @@ watch(
   flex-direction: column;
   min-height: 0;
   height: 100%;
-}
-
-.view-model-data__error {
-  margin: 0;
-  padding: var(--dw-space-4) var(--dw-space-6);
-  color: var(--dw-danger);
-  font-size: var(--dw-text-sm);
 }
 </style>

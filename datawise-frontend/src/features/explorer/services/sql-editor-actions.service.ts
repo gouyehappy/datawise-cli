@@ -174,7 +174,7 @@ export async function openSqlScriptFile(
                     connectionHost: ctx.connectionHost,
                 })
             } catch {
-                useLayoutStore().showToast(t('console.loadSqlFileFailed'))
+                useLayoutStore().showErrorToast(t('console.loadSqlFileFailed'))
             }
         })()
     })
@@ -229,7 +229,7 @@ export async function createNewSqlEditor(
                     ctx.databaseNode.id,
                 )
             } catch {
-                layout.showToast(t('console.loadSqlFileFailed'))
+                layout.showErrorToast(t('console.loadSqlFileFailed'))
             }
         })()
     })

@@ -156,7 +156,7 @@ async function syncToAiDataset() {
         props.tab.connectionId,
         scopeDatabase.value,
     )
-    layout.showToast(result.message || t('workspace.schemaTables.syncToAiSuccess'))
+    layout.showSuccessToast(result.message || t('workspace.schemaTables.syncToAiSuccess'))
   } catch {
     layout.showErrorToast(t('workspace.schemaTables.syncToAiFailed'))
   } finally {
@@ -177,7 +177,7 @@ async function updateSelectedTags(tagged: boolean) {
         tagged,
     )
     notifyAiTableTagsChanged()
-    layout.showToast(t('workspace.schemaTables.tagForAiSuccess'))
+    layout.showSuccessToast(t('workspace.schemaTables.tagForAiSuccess'))
   } catch (err) {
     layout.showErrorToast(err instanceof Error ? err.message : t('workspace.schemaTables.tagForAiFailed'))
   } finally {

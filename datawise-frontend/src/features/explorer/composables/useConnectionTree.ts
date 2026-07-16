@@ -308,7 +308,7 @@ export function useConnectionTree() {
                 explorerNodeId: node.id,
             })
         } catch {
-            layout.showToast(t('viewModel.loadFailed'))
+            layout.showErrorToast(t('viewModel.loadFailed'))
         }
     }
 
@@ -333,7 +333,7 @@ export function useConnectionTree() {
             })
             layout.setModule('database')
         } catch {
-            layout.showToast(t('viewModel.loadFailed'))
+            layout.showErrorToast(t('viewModel.loadFailed'))
         }
     }
 
@@ -342,7 +342,7 @@ export function useConnectionTree() {
         try {
             await openSqlFileFromTree(explorer.tree, node)
         } catch {
-            layout.showToast(t('console.loadSqlFileFailed'))
+            layout.showErrorToast(t('console.loadSqlFileFailed'))
         }
     }
 
@@ -544,7 +544,7 @@ export function useConnectionTree() {
             if (!connectionId) return
             layout.setModule('database')
             void openLatestSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
-                .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
+                .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
         }
     }
 
@@ -578,7 +578,7 @@ export function useConnectionTree() {
                 explorerNodeId,
             })
         } catch {
-            layout.showToast(t('ssh.scriptRecord.loadFailed'))
+            layout.showErrorToast(t('ssh.scriptRecord.loadFailed'))
         }
     }
 
@@ -605,7 +605,7 @@ export function useConnectionTree() {
                 explorerNodeId: sshScriptRecordNodeId(connectionId, saved.id),
             })
         } catch {
-            layout.showToast(t('ssh.scriptRecord.createFailed'))
+            layout.showErrorToast(t('ssh.scriptRecord.createFailed'))
         }
     }
 
@@ -636,9 +636,9 @@ export function useConnectionTree() {
             if (folder) {
                 await refreshSshScriptRecordsFolder(folder)
             }
-            layout.showToast(t('ssh.scriptRecord.deleteSuccess'))
+            layout.showSuccessToast(t('ssh.scriptRecord.deleteSuccess'))
         } catch {
-            layout.showToast(t('ssh.scriptRecord.deleteFailed'))
+            layout.showErrorToast(t('ssh.scriptRecord.deleteFailed'))
         }
     }
 
@@ -652,7 +652,7 @@ export function useConnectionTree() {
             const records = await listSshScriptRecords(connectionId)
             const record = records.find((item) => item.id === recordId)
             if (!record) {
-                layout.showToast(t('ssh.scriptRecord.loadFailed'))
+                layout.showErrorToast(t('ssh.scriptRecord.loadFailed'))
                 return
             }
             const saved = await saveSshScriptRecord(connectionId, {
@@ -661,9 +661,9 @@ export function useConnectionTree() {
             })
             node.label = saved.title
             explorer.touchTree()
-            layout.showToast(t('ssh.scriptRecord.renameSuccess'))
+            layout.showSuccessToast(t('ssh.scriptRecord.renameSuccess'))
         } catch {
-            layout.showToast(t('ssh.scriptRecord.saveFailed'))
+            layout.showErrorToast(t('ssh.scriptRecord.saveFailed'))
         }
     }
 
@@ -800,7 +800,7 @@ export function useConnectionTree() {
         if (!canMoveConnectionToGroup(explorer.tree, connectionId, targetGroupId)) return
         try {
             await explorer.moveConnection(connectionId, targetGroupId)
-            layout.showToast(t('explorer.connectionMoved', {
+            layout.showSuccessToast(t('explorer.connectionMoved', {
                 name: connection.label,
                 folder: targetGroup?.label ?? targetGroupId,
             }))
@@ -922,7 +922,7 @@ export function useConnectionTree() {
     function openSqlExportWizard(node: TreeNode) {
         const ctx = resolveExplorerSqlExportContext(explorer.tree, node)
         if (!ctx) {
-            layout.showToast(t('explorer.exportSqlContextMissing'))
+            layout.showErrorToast(t('explorer.exportSqlContextMissing'))
             return
         }
         const connectionLabel = findConnectionLabel(ctx.connectionId)
@@ -951,18 +951,18 @@ export function useConnectionTree() {
             const result = await runSqlExportWizard(ctx, form, tableDetailApi)
             const outcome = await applySqlExportWizardOutput(result, form.output)
             if (outcome === 'empty') {
-                layout.showToast(t('explorer.exportSqlFailed'))
+                layout.showErrorToast(t('explorer.exportSqlFailed'))
                 return
             }
             if (outcome === 'downloaded') {
                 layout.startExport(result.fileName)
-                layout.showToast(t('explorer.exportSqlSuccess', {name: result.fileName}))
+                layout.showSuccessToast(t('explorer.exportSqlSuccess', {name: result.fileName}))
             } else {
-                layout.showToast(t('explorer.exportSqlCopied'))
+                layout.showSuccessToast(t('explorer.exportSqlCopied'))
             }
             showSqlExportWizard.value = false
         } catch {
-            layout.showToast(t('explorer.exportSqlFailed'))
+            layout.showErrorToast(t('explorer.exportSqlFailed'))
         } finally {
             sqlExportWizardExporting.value = false
         }
@@ -976,7 +976,7 @@ export function useConnectionTree() {
             connectionId ? findConnectionLabel(connectionId) : undefined,
         )
         if (!ctx) {
-            layout.showToast(t('explorer.kafkaTablePublish.contextMissing'))
+            layout.showErrorToast(t('explorer.kafkaTablePublish.contextMissing'))
             return
         }
         layout.setModule('database')
@@ -1003,7 +1003,7 @@ export function useConnectionTree() {
     function openTableMigrationFromNode(node: TreeNode) {
         const ctx = resolveTableMigrationContext(explorer.tree, node)
         if (!ctx) {
-            layout.showToast(t('explorer.tableMigrationContextMissing'))
+            layout.showErrorToast(t('explorer.tableMigrationContextMissing'))
             return
         }
         layout.setModule('database')
@@ -1016,7 +1016,7 @@ export function useConnectionTree() {
     async function handleSqlExportAction(node: TreeNode, action: ExplorerSqlExportAction) {
         const ctx = resolveExplorerSqlExportContext(explorer.tree, node)
         if (!ctx) {
-            layout.showToast(t('explorer.exportSqlContextMissing'))
+            layout.showErrorToast(t('explorer.exportSqlContextMissing'))
             return
         }
         try {
@@ -1034,24 +1034,24 @@ export function useConnectionTree() {
                 })
             if (shouldDownloadExportAction(action)) {
                 downloadSqlFile(result.sql, result.fileName)
-                layout.showToast(t('explorer.exportSqlSuccess', {name: result.fileName}))
+                layout.showSuccessToast(t('explorer.exportSqlSuccess', {name: result.fileName}))
                 return
             }
             const copied = await copySqlToClipboard(result.sql)
             if (copied) {
-                layout.showToast(t('explorer.exportSqlCopied'))
+                layout.showSuccessToast(t('explorer.exportSqlCopied'))
             } else {
-                layout.showToast(t('explorer.exportSqlFailed'))
+                layout.showErrorToast(t('explorer.exportSqlFailed'))
             }
         } catch {
-            layout.showToast(t('explorer.exportSqlFailed'))
+            layout.showErrorToast(t('explorer.exportSqlFailed'))
         }
     }
 
     async function openMetadataDocFromNode(node: TreeNode) {
         const ctx = resolveExplorerSqlExportContext(explorer.tree, node)
         if (!ctx || node.type !== 'database') {
-            layout.showToast(t('explorer.metadocContextMissing'))
+            layout.showErrorToast(t('explorer.metadocContextMissing'))
             return
         }
         layout.setModule('database')
@@ -1122,7 +1122,7 @@ export function useConnectionTree() {
                 detailsLoading: false,
                 loadError: message,
             })
-            layout.showToast(t('explorer.metadocFailed'))
+            layout.showErrorToast(t('explorer.metadocFailed'))
         }
     }
 
@@ -1130,20 +1130,20 @@ export function useConnectionTree() {
         const databaseNode = findAncestorByType(explorer.tree, node.id, 'database')
         const connectionId = findConnectionId(node)
         if (!databaseNode || !connectionId) {
-            layout.showToast(t('explorer.tableActionContextMissing'))
+            layout.showErrorToast(t('explorer.tableActionContextMissing'))
             return
         }
         try {
             await openBlankSqlConsole(explorer.tree, databaseNode, findConnectionLabel(connectionId))
         } catch {
-            layout.showToast(t('console.loadSqlFileFailed'))
+            layout.showErrorToast(t('console.loadSqlFileFailed'))
         }
     }
 
     async function handleExportTableData(node: TreeNode) {
         const ctx = resolveTableContext(explorer.tree, node)
         if (!ctx) {
-            layout.showToast(t('explorer.tableActionContextMissing'))
+            layout.showErrorToast(t('explorer.tableActionContextMissing'))
             return
         }
         try {
@@ -1153,21 +1153,21 @@ export function useConnectionTree() {
                 maxRows: resolveClientMaxResultRows(),
             })
             if (!data.rows.length) {
-                layout.showToast(t('explorer.exportDataEmpty'))
+                layout.showErrorToast(t('explorer.exportDataEmpty'))
                 return
             }
             const fileName = await exportTableDataCsv(ctx.tableName, data.columns, data.rows)
             layout.startExport(fileName)
-            layout.showToast(t('explorer.exportDataSuccess', {name: fileName}))
+            layout.showSuccessToast(t('explorer.exportDataSuccess', {name: fileName}))
         } catch {
-            layout.showToast(t('explorer.exportDataFailed'))
+            layout.showErrorToast(t('explorer.exportDataFailed'))
         }
     }
 
     async function handleImportTableData(node: TreeNode) {
         const ctx = resolveTableContext(explorer.tree, node)
         if (!ctx) {
-            layout.showToast(t('explorer.tableActionContextMissing'))
+            layout.showErrorToast(t('explorer.tableActionContextMissing'))
             return
         }
 
@@ -1180,13 +1180,13 @@ export function useConnectionTree() {
         try {
             const parsed = await parseSpreadsheetFile(file)
             if (!parsed.headers.length || !parsed.rows.length) {
-                layout.showToast(t('explorer.importDataEmpty'))
+                layout.showErrorToast(t('explorer.importDataEmpty'))
                 return
             }
 
             const statements = buildInsertStatementsFromCsv(ctx, parsed.headers, parsed.rows)
             if (!statements.length) {
-                layout.showToast(t('explorer.importDataEmpty'))
+                layout.showErrorToast(t('explorer.importDataEmpty'))
                 return
             }
 
@@ -1202,14 +1202,14 @@ export function useConnectionTree() {
                 return
             }
 
-            layout.showToast(
+            layout.showSuccessToast(
                 t('explorer.importDataSuccess', {
                     count: parsed.rows.length,
                     name: ctx.tableName,
                 }),
             )
         } catch {
-            layout.showToast(t('explorer.importDataFailed'))
+            layout.showErrorToast(t('explorer.importDataFailed'))
         }
     }
 
@@ -1219,7 +1219,7 @@ export function useConnectionTree() {
 
         const ctx = resolveTableContext(explorer.tree, pending.node)
         if (!ctx) {
-            layout.showToast(t('explorer.tableActionContextMissing'))
+            layout.showErrorToast(t('explorer.tableActionContextMissing'))
             return
         }
 
@@ -1252,7 +1252,7 @@ export function useConnectionTree() {
                 databaseNode?.id,
             )
 
-            layout.showToast(
+            layout.showSuccessToast(
                 t(
                     pending.type === 'truncate'
                         ? 'explorer.truncateTableSuccess'
@@ -1281,7 +1281,7 @@ export function useConnectionTree() {
         if (!node || node.type !== 'database') return
         const connectionId = findConnectionId(node)
         if (!connectionId) {
-            layout.showToast(t('explorer.tableActionContextMissing'))
+            layout.showErrorToast(t('explorer.tableActionContextMissing'))
             return
         }
         try {
@@ -1295,7 +1295,7 @@ export function useConnectionTree() {
                 explorer.selectNode(connectionId)
             }
             await explorer.reloadConnectionCatalog(connectionId)
-            layout.showToast(t('explorer.deleteDatabaseSuccess', {name: node.label}))
+            layout.showSuccessToast(t('explorer.deleteDatabaseSuccess', {name: node.label}))
         } catch (error) {
             layout.showErrorToast(resolveCreateNamespaceErrorMessage(error, t))
         } finally {
@@ -1377,7 +1377,7 @@ export function useConnectionTree() {
         if (id === 'connect' && node.type === 'connection') {
             void explorer.connectConnection(node.id, {notify: true})
                 .then((ok) => {
-                    if (ok) layout.showToast(t('explorer.connectionOpened', {name: node.label}))
+                    if (ok) layout.showSuccessToast(t('explorer.connectionOpened', {name: node.label}))
                 })
             closeMenu()
             return
@@ -1386,8 +1386,8 @@ export function useConnectionTree() {
         if (id === 'disconnect' && node.type === 'connection') {
             void explorer.disconnectConnection(node.id)
                 .then((ok) => {
-                    if (ok) layout.showToast(t('explorer.connectionDisconnected', {name: node.label}))
-                    else layout.showToast(t('explorer.connectionDisconnectFailed'))
+                    if (ok) layout.showSuccessToast(t('explorer.connectionDisconnected', {name: node.label}))
+                    else layout.showErrorToast(t('explorer.connectionDisconnectFailed'))
                 })
             closeMenu()
             return
@@ -1396,7 +1396,7 @@ export function useConnectionTree() {
         if (id === 'reconnect' && node.type === 'connection') {
             void explorer.reconnectConnection(node.id, {notify: true})
                 .then((ok) => {
-                    if (ok) layout.showToast(t('explorer.connectionReconnected', {name: node.label}))
+                    if (ok) layout.showSuccessToast(t('explorer.connectionReconnected', {name: node.label}))
                 })
             closeMenu()
             return
@@ -1617,7 +1617,7 @@ export function useConnectionTree() {
         if (id === 'schema-er' && node.type === 'folder' && node.label === 'tables') {
             const ctx = resolveExplorerSchemaErContext(explorer.tree, node)
             if (!ctx) {
-                layout.showToast(t('explorer.schemaErContextMissing'))
+                layout.showErrorToast(t('explorer.schemaErContextMissing'))
                 closeMenu()
                 return
             }
@@ -1630,7 +1630,7 @@ export function useConnectionTree() {
         if (id === 'schema-tables' && node.type === 'folder' && node.label === 'tables') {
             const ctx = resolveExplorerSchemaErContext(explorer.tree, node)
             if (!ctx) {
-                layout.showToast(t('explorer.schemaTablesContextMissing'))
+                layout.showErrorToast(t('explorer.schemaTablesContextMissing'))
                 closeMenu()
                 return
             }
@@ -1647,7 +1647,7 @@ export function useConnectionTree() {
                 : node.type === 'connection'
                     ? (pinned ? 'explorer.connectionPinned' : 'explorer.connectionUnpinned')
                     : (pinned ? 'explorer.databasePinned' : 'explorer.databaseUnpinned')
-            layout.showToast(t(messageKey, {name: node.label}))
+            layout.showSuccessToast(t(messageKey, {name: node.label}))
             closeMenu()
             return
         }
@@ -1745,7 +1745,7 @@ export function useConnectionTree() {
             const connectionId = findConnectionId(node)
             const scope = resolveViewModelScope(explorer.tree, node.id)
             if (!connectionId || !scope) {
-                layout.showToast(t('lineage.missingContext'))
+                layout.showErrorToast(t('lineage.missingContext'))
                 closeMenu()
                 return
             }
@@ -1782,7 +1782,7 @@ export function useConnectionTree() {
             if (connectionId) {
                 layout.setModule('database')
                 void openLatestSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
-                    .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
+                    .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
             }
             closeMenu()
             return
@@ -1807,7 +1807,7 @@ export function useConnectionTree() {
             if (connectionId) {
                 layout.setModule('database')
                 void createNewSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
-                    .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
+                    .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
             }
             closeMenu()
             return
@@ -1818,7 +1818,7 @@ export function useConnectionTree() {
             if (connectionId) {
                 layout.setModule('database')
                 void openBlankSqlConsole(explorer.tree, node, findConnectionLabel(connectionId))
-                    .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
+                    .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
             }
             closeMenu()
             return
@@ -1829,7 +1829,7 @@ export function useConnectionTree() {
                 const connectionId = findConnectionId(node)
                 if (connectionId) {
                     void openLatestSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
-                        .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
+                        .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
                 }
             } else if (node.type === 'table') {
                 void openConsoleForTableNode(node)
@@ -1893,7 +1893,7 @@ export function useConnectionTree() {
                 try {
                     await explorer.connectConnection(node.id, {notify: false}).catch(() => undefined)
                     await explorer.reloadConnectionCatalog(node.id)
-                    layout.showToast(t('explorer.refreshDone'))
+                    layout.showSuccessToast(t('explorer.refreshDone'))
                 } catch (error) {
                     const message = error instanceof Error ? error.message : undefined
                     layout.showErrorToast(message ?? t('explorer.refreshFailed'))
@@ -1936,7 +1936,7 @@ export function useConnectionTree() {
             void explorer.deleteNode(node.id)
                 .then(() => {
                     if (node.type === 'group') {
-                        layout.showToast(t('explorer.groupDeleted', {name: label}))
+                        layout.showSuccessToast(t('explorer.groupDeleted', {name: label}))
                     }
                 })
                 .catch((error) => {
@@ -1958,7 +1958,7 @@ export function useConnectionTree() {
         }
         try {
             await explorer.renameGroup(node.id, name)
-            layout.showToast(t('explorer.groupRenamed', {name}))
+            layout.showSuccessToast(t('explorer.groupRenamed', {name}))
         } catch (error) {
             layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'save'))
         }
@@ -1970,14 +1970,14 @@ export function useConnectionTree() {
 
         const newBaseName = sqlFileNameFromTabLabel(name)
         if (!newBaseName) {
-            layout.showToast(t('explorer.invalidSqlFileName'))
+            layout.showErrorToast(t('explorer.invalidSqlFileName'))
             return
         }
 
         const connectionId = findConnectionId(node)
         const scope = resolveExplorerSqlFileScope(explorer.tree, node.id)
         if (!connectionId || !scope) {
-            layout.showToast(t('explorer.renameSqlFileFailed'))
+            layout.showErrorToast(t('explorer.renameSqlFileFailed'))
             return
         }
 
@@ -2004,9 +2004,9 @@ export function useConnectionTree() {
                 newFileName: result.fileName,
                 connectionName: findConnectionLabel(connectionId),
             })
-            layout.showToast(t('explorer.sqlFileRenamed', {name: result.fileName}))
+            layout.showSuccessToast(t('explorer.sqlFileRenamed', {name: result.fileName}))
         } catch {
-            layout.showToast(t('explorer.renameSqlFileFailed'))
+            layout.showErrorToast(t('explorer.renameSqlFileFailed'))
         }
     }
 
@@ -2017,7 +2017,7 @@ export function useConnectionTree() {
         const connectionId = findConnectionId(node)
         const scope = resolveExplorerSqlFileScope(explorer.tree, node.id)
         if (!connectionId || !scope) {
-            layout.showToast(t('explorer.deleteSqlFileFailed'))
+            layout.showErrorToast(t('explorer.deleteSqlFileFailed'))
             return
         }
 
@@ -2040,9 +2040,9 @@ export function useConnectionTree() {
             if (explorer.selectedNodeId === node.id) {
                 explorer.selectNode(scope.scopeNode.id)
             }
-            layout.showToast(t('explorer.sqlFileDeleted', {name: node.label}))
+            layout.showSuccessToast(t('explorer.sqlFileDeleted', {name: node.label}))
         } catch {
-            layout.showToast(t('explorer.deleteSqlFileFailed'))
+            layout.showErrorToast(t('explorer.deleteSqlFileFailed'))
         }
     }
 
@@ -2050,7 +2050,7 @@ export function useConnectionTree() {
         const connectionId = findConnectionId(node)
         const scope = resolveViewModelScope(explorer.tree, node.id)
         if (!connectionId || !scope) {
-            layout.showToast(t('explorer.tableMigrationContextMissing'))
+            layout.showErrorToast(t('explorer.tableMigrationContextMissing'))
             return
         }
         try {
@@ -2061,7 +2061,7 @@ export function useConnectionTree() {
             })
             const migrationCtx = resolveTableMigrationContext(explorer.tree, scope.scopeNode)
             if (!migrationCtx) {
-                layout.showToast(t('explorer.tableMigrationContextMissing'))
+                layout.showErrorToast(t('explorer.tableMigrationContextMissing'))
                 return
             }
             pendingViewModelNode.value = node
@@ -2069,7 +2069,7 @@ export function useConnectionTree() {
             migrateViewModelTargetTable.value = ''
             showMigrateViewModelDialog.value = true
         } catch {
-            layout.showToast(t('viewModel.loadFailed'))
+            layout.showErrorToast(t('viewModel.loadFailed'))
         }
     }
 
@@ -2100,14 +2100,14 @@ export function useConnectionTree() {
         const trimmed = stripViewModelDisplayName(name)
         if (!trimmed || trimmed === node.label) return
         if (!isValidViewModelBaseName(trimmed)) {
-            layout.showToast(t('viewModel.invalidName'))
+            layout.showErrorToast(t('viewModel.invalidName'))
             return
         }
 
         const connectionId = findConnectionId(node)
         const scope = resolveViewModelScope(explorer.tree, node.id)
         if (!connectionId || !scope) {
-            layout.showToast(t('viewModel.renameFailed'))
+            layout.showErrorToast(t('viewModel.renameFailed'))
             return
         }
 
@@ -2119,9 +2119,9 @@ export function useConnectionTree() {
                 newName: trimmed,
             })
             await explorer.reloadViewsFolder(connectionId, scope.instanceLabel, scope.scopeNode.id)
-            layout.showToast(t('viewModel.renamed', {name: result.name}))
+            layout.showSuccessToast(t('viewModel.renamed', {name: result.name}))
         } catch {
-            layout.showToast(t('viewModel.renameFailed'))
+            layout.showErrorToast(t('viewModel.renameFailed'))
         }
     }
 
@@ -2132,7 +2132,7 @@ export function useConnectionTree() {
         const connectionId = findConnectionId(node)
         const scope = resolveViewModelScope(explorer.tree, node.id)
         if (!connectionId || !scope) {
-            layout.showToast(t('viewModel.deleteFailed'))
+            layout.showErrorToast(t('viewModel.deleteFailed'))
             return
         }
 
@@ -2146,9 +2146,9 @@ export function useConnectionTree() {
             if (explorer.selectedNodeId === node.id) {
                 explorer.selectNode(scope.scopeNode.id)
             }
-            layout.showToast(t('viewModel.deleted', {name: node.label}))
+            layout.showSuccessToast(t('viewModel.deleted', {name: node.label}))
         } catch {
-            layout.showToast(t('viewModel.deleteFailed'))
+            layout.showErrorToast(t('viewModel.deleteFailed'))
         }
     }
 
@@ -2161,7 +2161,7 @@ export function useConnectionTree() {
         }
         try {
             await explorer.addGroup(name, node.id)
-            layout.showToast(t('explorer.subgroupCreated', {name}))
+            layout.showSuccessToast(t('explorer.subgroupCreated', {name}))
         } catch (error) {
             layout.showErrorToast(resolveConnectionCatalogErrorMessage(error, t, 'save'))
         }
@@ -2274,7 +2274,7 @@ export function useConnectionTree() {
             void explorer.deleteNode(node.id)
                 .then(() => {
                     if (node.type === 'group') {
-                        layout.showToast(t('explorer.groupDeleted', {name: label}))
+                        layout.showSuccessToast(t('explorer.groupDeleted', {name: label}))
                     }
                 })
                 .catch((error) => {
@@ -2293,7 +2293,7 @@ export function useConnectionTree() {
             if (connectionId) {
                 layout.setModule('database')
                 void openLatestSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
-                    .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
+                    .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
             }
             return
         }
@@ -2316,7 +2316,7 @@ export function useConnectionTree() {
             if (connectionId) {
                 layout.setModule('database')
                 void createNewSqlEditor(explorer.tree, node, findConnectionLabel(connectionId))
-                    .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
+                    .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
             }
             return
         }
@@ -2326,7 +2326,7 @@ export function useConnectionTree() {
             if (connectionId) {
                 layout.setModule('database')
                 void openBlankSqlConsole(explorer.tree, node, findConnectionLabel(connectionId))
-                    .catch(() => layout.showToast(t('console.loadSqlFileFailed')))
+                    .catch(() => layout.showErrorToast(t('console.loadSqlFileFailed')))
             }
         }
     }

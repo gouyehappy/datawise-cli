@@ -83,9 +83,9 @@ async function confirmCreateFolder(name: string) {
   }
   try {
     await explorer.addRootFolder(name)
-    layout.showToast(t('explorer.folderCreated', {name}))
+    layout.showSuccessToast(t('explorer.folderCreated', {name}))
   } catch {
-    layout.showToast(t('explorer.createFailed'))
+    layout.showErrorToast(t('explorer.createFailed'))
   }
 }
 

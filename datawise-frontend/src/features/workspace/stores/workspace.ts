@@ -1366,7 +1366,6 @@ export const useWorkspaceStore = defineStore('workspace', () => {
                 markConsoleTabSaved(tab.id)
             }
             setStatus(t('console.savedToWorkspace', {path: result.relativePath}))
-            useLayoutStore().showToast(t('console.savedToWorkspace', {path: result.relativePath}))
             try {
                 const explorer = useExplorerStore()
                 await explorer.reloadWorkspacesFolder(

@@ -1,6 +1,6 @@
 import {nextTick, ref} from 'vue'
 import {formatAiErrorMessage} from '@/features/ai/shared/utils/ai-error'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import type {AiPreferences} from '@/shared/config/app-config.types'
 import {sqlApi} from '@/api'
 
@@ -20,7 +20,7 @@ export function useAiPromptPanel(
         } | undefined>
     },
 ) {
-    const toast = useToastStore()
+    const toast = useAppToast()
     const visible = ref(false)
     const prompt = ref('')
     const generating = ref(false)
@@ -62,7 +62,7 @@ export function useAiPromptPanel(
             prompt.value = ''
             visible.value = false
         } catch (error) {
-            toast.show(formatAiErrorMessage(error))
+            toast.error(formatAiErrorMessage(error))
         } finally {
             generating.value = false
         }

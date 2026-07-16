@@ -15,7 +15,7 @@ import ThemeSkinCard from '@/features/settings/components/ThemeSkinCard.vue'
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import SettingsSectionCard from '@/features/settings/components/SettingsSectionCard.vue'
 import {useThemeStore} from '@/features/settings/stores/theme-store'
-import {DwButton, DwInput, FormField, ConfirmDialog} from '@/core/components'
+import {DwButton, DwInput, FormField, ConfirmDialog, DwInlineAlert} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import IconButton from '@/core/components/IconButton.vue'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -64,6 +64,7 @@ const resolvedPath = ref('')
 const defaultPath = ref('')
 const canChangeConfigDir = ref(false)
 const configDirSaving = ref(false)
+const configDirError = ref('')
 const restartConfirmOpen = ref(false)
 const dataDirLayout = ref<ResolvedDataDirectoryLayout | null>(null)
 
@@ -108,14 +109,15 @@ async function saveConfigDir() {
 async function confirmSaveConfigDir() {
     restartConfirmOpen.value = false
     configDirSaving.value = true
+    configDirError.value = ''
     try {
         const ok = await applyConfigDirectoryAndRestart(configDirInput.value.trim() || null)
         if (!ok) {
-            layout.showToast(t('settings.basic.workspaceRoot.saveFailed'))
+            configDirError.value = t('settings.basic.workspaceRoot.saveFailed')
             configDirSaving.value = false
         }
     } catch {
-        layout.showToast(t('settings.basic.workspaceRoot.saveFailed'))
+        configDirError.value = t('settings.basic.workspaceRoot.saveFailed')
         configDirSaving.value = false
     }
 }
@@ -124,13 +126,13 @@ async function copyDeepLinkExample() {
   try {
     await navigator.clipboard.writeText(deepLinkExample)
     deepLinkCopied.value = true
-    layout.showToast(t('settings.basic.deepLink.copySuccess'))
+    layout.showSuccessToast(t('settings.basic.deepLink.copySuccess'))
     if (deepLinkCopiedTimer) clearTimeout(deepLinkCopiedTimer)
     deepLinkCopiedTimer = setTimeout(() => {
       deepLinkCopied.value = false
     }, 2000)
   } catch {
-    layout.showToast(t('settings.basic.deepLink.copyFailed'))
+    layout.showErrorToast(t('settings.basic.deepLink.copyFailed'))
   }
 }
 </script>
@@ -289,6 +291,7 @@ async function copyDeepLinkExample() {
             {{ t('settings.basic.workspaceRoot.save') }}
           </DwButton>
         </div>
+        <DwInlineAlert :message="configDirError"/>
       </SettingsSectionCard>
 
       <section v-if="desktopApp" class="setting-block deep-link-block">

@@ -2,12 +2,13 @@
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {ShareTeamSharedQueryPayload, TeamSharedQuerySummary} from '@/core/types'
-import {AppModal, FormField, ModalActions} from '@/core/components'
+import {AppModal, FormField, ModalActions, DwInlineAlert} from '@/core/components'
 import {formatBookmarkTags, parseBookmarkTags} from '@/features/workspace/services/query-bookmark.service'
 
 const props = defineProps<{
     open: boolean
     saving?: boolean
+    error?: string
     editing?: TeamSharedQuerySummary | null
     defaultTitle?: string
     defaultDescription?: string
@@ -110,6 +111,7 @@ function submit() {
           <textarea :id="id" v-model="sql" class="modal-textarea" rows="8" spellcheck="false" />
         </template>
       </FormField>
+      <DwInlineAlert :message="error"/>
     </form>
 
     <template #footer>

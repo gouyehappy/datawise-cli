@@ -59,12 +59,12 @@ async function copyInstallGuide(event: Event) {
     try {
         await navigator.clipboard.writeText(buildConnectorInstallGuide(props.entry))
         copied.value = true
-        layout.showToast(t('plugin.connectorMarket.copyInstallSuccess'))
+        layout.showSuccessToast(t('plugin.connectorMarket.copyInstallSuccess'))
         window.setTimeout(() => {
             copied.value = false
         }, 2000)
     } catch {
-        layout.showToast(t('plugin.connectorMarket.copyInstallFailed'))
+        layout.showErrorToast(t('plugin.connectorMarket.copyInstallFailed'))
     }
 }
 
@@ -72,9 +72,9 @@ async function copyPluginDir(event: Event) {
     event.stopPropagation()
     try {
         await navigator.clipboard.writeText(CONNECTOR_PLUGIN_DIR)
-        layout.showToast(t('plugin.connectorMarket.copyPathSuccess'))
+        layout.showSuccessToast(t('plugin.connectorMarket.copyPathSuccess'))
     } catch {
-        layout.showToast(t('plugin.connectorMarket.copyInstallFailed'))
+        layout.showErrorToast(t('plugin.connectorMarket.copyInstallFailed'))
     }
 }
 

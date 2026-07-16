@@ -5,6 +5,7 @@ import DbTypeIcon from '@/core/components/DbTypeIcon.vue'
 import {DB_TYPE_ICON_SIZE} from '@/features/connection/constants/db-type-icon-sizes'
 import ConnectionFormFields from '@/features/connection/components/ConnectionFormFields.vue'
 import ConnectionFormFooter from '@/features/connection/components/ConnectionFormFooter.vue'
+import {DwInlineAlert} from '@/core/components'
 import ConnectionPreviewPanel from '@/features/connection/components/ConnectionPreviewPanel.vue'
 import {useConnectionForm} from '@/features/connection/composables/useConnectionForm'
 import {useConnectionTabActions} from '@/features/connection/composables/useConnectionTabActions'
@@ -15,20 +16,19 @@ import IconButton from '@/core/components/IconButton.vue'
 import {DwIcon} from '@/core/icons'
 import type {WorkspaceTab} from '@/core/types'
 import {fetchConnectionFromCatalog} from '@/shared/config/connections-catalog.service'
-import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 
 const workspace = useWorkspaceStore()
 
 const {t} = useI18n()
 const props = defineProps<{ tab: WorkspaceTab }>()
-const layout = useLayoutStore()
 
 const dbType = computed(() => props.tab.dbType!)
 const isEdit = computed(() =>
     !!props.tab.connectionId && !isUnsavedConnectionId(props.tab.connectionId),
 )
 const loading = ref(false)
+const loadError = ref('')
 
 const {form, label, getPayload, applyConfig} = useConnectionForm(dbType.value)
 
@@ -36,7 +36,7 @@ const {testing, testMessage, testOk, testConnection} = useConnectionTest(
     getPayload,
     () => props.tab.connectionId,
 )
-const {saveConnection, cancel, saving, canSave} = useConnectionTabActions({
+const {saveConnection, cancel, saving, canSave, actionMessage, actionOk} = useConnectionTabActions({
   tabId: props.tab.id,
   form,
   getPayload,
@@ -57,16 +57,17 @@ const busyHint = computed(() =>
 onMounted(() => {
   if (!props.tab.connectionId || isUnsavedConnectionId(props.tab.connectionId)) return
   loading.value = true
+  loadError.value = ''
   void fetchConnectionFromCatalog(props.tab.connectionId)
       .then((config) => {
         if (!config) {
-          layout.showToast(t('connection.loadFailed'))
+          loadError.value = t('connection.loadFailed')
           return
         }
         applyConfig(config)
       })
       .catch(() => {
-        layout.showToast(t('connection.loadFailed'))
+        loadError.value = t('connection.loadFailed')
       })
       .finally(() => {
         loading.value = false
@@ -112,7 +113,12 @@ function openJdbcTunnelSshTerminal() {
       <div v-if="loading" class="conn-loading">{{ t('connection.loading') }}</div>
 
       <div v-else class="conn-body-wrap">
-        <p v-if="readOnly" class="conn-readonly-hint" role="status">{{ t('connection.formReadOnlyHint') }}</p>
+        <div v-if="loadError" class="conn-readonly-hint">
+          <DwInlineAlert :message="loadError"/>
+        </div>
+        <div v-else-if="readOnly" class="conn-readonly-hint">
+          <DwInlineAlert variant="info" :message="t('connection.formReadOnlyHint')"/>
+        </div>
         <div class="conn-body" :class="{'conn-body--busy': busy, 'conn-body--readonly': readOnly}">
           <ConnectionFormFields
               v-model:form="form"
@@ -132,6 +138,8 @@ function openJdbcTunnelSshTerminal() {
           :save-disabled="!canSave"
           :test-message="testMessage"
           :test-ok="testOk"
+          :action-message="actionMessage"
+          :action-ok="actionOk"
           @test="testConnection"
           @cancel="cancel"
           @save="saveConnection"
@@ -233,6 +241,7 @@ function openJdbcTunnelSshTerminal() {
   font-size: var(--dw-text-sm);
   line-height: var(--dw-leading);
 }
+
 
 .conn-body--readonly:not(.conn-body--busy) {
   opacity: 0.92;

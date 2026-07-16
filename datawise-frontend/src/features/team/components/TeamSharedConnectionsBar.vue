@@ -10,11 +10,11 @@ const {hasSharedConnections, sharedConnections, activeTeamName, locateSharedConn
 
 function onLocate(connectionId: string, found: boolean) {
   if (!found) {
-    layout.showToast(t('explorer.teamSharedMissing', {id: connectionId}))
+    layout.showErrorToast(t('explorer.teamSharedMissing', {id: connectionId}))
     return
   }
   if (!locateSharedConnection(connectionId)) {
-    layout.showToast(t('explorer.teamSharedMissing', {id: connectionId}))
+    layout.showErrorToast(t('explorer.teamSharedMissing', {id: connectionId}))
   }
 }
 </script>

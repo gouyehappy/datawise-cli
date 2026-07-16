@@ -71,7 +71,7 @@ export const useShortcutPanelStore = defineStore('shortcut-panel', () => {
             thresholdMs,
             prefs,
             {
-                showToast: (message) => layout.showToast(message),
+                showToast: (message) => layout.showErrorToast(message),
                 toastMessage: t('dashboard.slowQueryAlert', {
                     duration: saved.duration,
                     threshold: thresholdMs,

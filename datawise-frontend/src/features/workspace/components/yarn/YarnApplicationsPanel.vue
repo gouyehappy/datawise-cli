@@ -173,7 +173,7 @@ async function openSshForSelectedApp() {
     const host = selectedAmHost.value || catalog.connections.find((entry) => entry.id === props.connectionId)?.config.host
     const ssh = findSshConnectionForHost(host ?? '', catalog)
     if (!ssh) {
-      layout.showToast(t('ssh.yarnBridge.noSshConnection'))
+      layout.showErrorToast(t('ssh.yarnBridge.noSshConnection'))
       return
     }
     workspace.openSshTerminal({
@@ -181,7 +181,7 @@ async function openSshForSelectedApp() {
       connectionName: ssh.label,
     })
   } catch (error) {
-    layout.showToast(error instanceof Error ? error.message : t('ssh.yarnBridge.openSshFailed'))
+    layout.showErrorToast(error instanceof Error ? error.message : t('ssh.yarnBridge.openSshFailed'))
   }
 }
 
@@ -192,7 +192,7 @@ async function pasteYarnLogsForSelectedApp() {
     const host = selectedAmHost.value || catalog.connections.find((entry) => entry.id === props.connectionId)?.config.host
     const ssh = findSshConnectionForHost(host ?? '', catalog)
     if (!ssh) {
-      layout.showToast(t('ssh.yarnBridge.noSshConnection'))
+      layout.showErrorToast(t('ssh.yarnBridge.noSshConnection'))
       return
     }
     workspace.openSshTerminal({
@@ -202,10 +202,10 @@ async function pasteYarnLogsForSelectedApp() {
     const command = buildYarnLogsCommand(selectedApp.value.id)
     const ok = await sendToSshTerminal(ssh.connectionId, command, {focus: true})
     if (!ok) {
-      layout.showToast(t('ssh.quickOps.pasteFailed'))
+      layout.showErrorToast(t('ssh.quickOps.pasteFailed'))
     }
   } catch (error) {
-    layout.showToast(error instanceof Error ? error.message : t('ssh.yarnBridge.pasteLogsFailed'))
+    layout.showErrorToast(error instanceof Error ? error.message : t('ssh.yarnBridge.pasteLogsFailed'))
   }
 }
 

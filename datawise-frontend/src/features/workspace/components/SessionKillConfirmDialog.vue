@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {AppModal, ModalActions} from '@/core/components'
-import {DwIcon} from '@/core/icons'
+import {AppModal, DwConfirmAlert, ModalActions} from '@/core/components'
 import type {SessionKillMode} from '@/features/workspace/services/session-kill.service'
 
 const props = defineProps<{
@@ -41,17 +40,11 @@ const message = computed(() =>
       width="480px"
       @close="emit('cancel')"
   >
-    <div class="modal-alert-banner" :class="{ 'modal-alert-banner--danger': isConnectionKill }">
-      <div class="modal-alert-banner__icon" aria-hidden="true">
-        <DwIcon name="alert-triangle" :size="20" danger :stroke-width="1.6"/>
-      </div>
-      <div>
-        <p class="modal-message">{{ message }}</p>
-        <p v-if="isConnectionKill" class="modal-body-hint">
-          {{ t('shortcut.sessionKill.dialogHintConnection') }}
-        </p>
-      </div>
-    </div>
+    <DwConfirmAlert
+        :variant="isConnectionKill ? 'danger' : 'warning'"
+        :message="message"
+        :hint="isConnectionKill ? t('shortcut.sessionKill.dialogHintConnection') : null"
+    />
 
     <template #footer>
       <ModalActions

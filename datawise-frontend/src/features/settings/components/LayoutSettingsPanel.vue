@@ -6,13 +6,13 @@ import LayoutToggleChip from '@/features/settings/components/LayoutToggleChip.vu
 import LayoutWorkbenchPreview from '@/features/settings/components/LayoutWorkbenchPreview.vue'
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 
 const {t} = useI18n()
 const appConfig = useAppConfigStore()
-const toast = useToastStore()
+const toast = useAppToast()
 const {readOnly: guestReadOnly, hint: guestReadOnlyHint, denyIfReadOnly} = useResourceWriteGuard(UserResource.LayoutMenu)
 const fileInputRef = ref<HTMLInputElement>()
 
@@ -36,7 +36,7 @@ const rightVisibleCount = computed(
 function onExport() {
   if (denyIfReadOnly()) return
   appConfig.exportConfig()
-  toast.show(t('settings.layout.exportSuccess'))
+  toast.success(t('settings.layout.exportSuccess'))
 }
 
 function onImportClick() {
@@ -53,9 +53,10 @@ async function onFileChange(event: Event) {
   try {
     const text = await file.text()
     const ok = appConfig.importConfigText(text)
-    toast.show(ok ? t('settings.layout.importSuccess') : t('settings.layout.importFailed'))
+    if (ok) toast.success(t('settings.layout.importSuccess'))
+    else toast.error(t('settings.layout.importFailed'))
   } catch {
-    toast.show(t('settings.layout.importFailed'))
+    toast.error(t('settings.layout.importFailed'))
   }
 }
 </script>

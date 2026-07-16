@@ -170,13 +170,13 @@ function saveConnectionProfile(profile: SshConnectionProfile) {
   const connectionId = props.tab.connectionId
   if (!connectionId) return
   connectionProfile.value = writeSshConnectionProfile(connectionId, profile)
-  layout.showToast(t('ssh.profile.saved'))
+  layout.showSuccessToast(t('ssh.profile.saved'))
 }
 
 function saveTerminalOutput() {
   const text = terminalRef.value?.getBufferText?.() ?? ''
   if (!text.trim()) {
-    layout.showToast(t('terminal.sshSaveOutputEmpty'))
+    layout.showErrorToast(t('terminal.sshSaveOutputEmpty'))
     return
   }
   const connectionId = props.tab.connectionId ?? 'ssh'
@@ -188,7 +188,7 @@ function saveTerminalOutput() {
   anchor.download = `ssh-${connectionId}-${stamp}.log`
   anchor.click()
   URL.revokeObjectURL(url)
-  layout.showToast(t('terminal.sshSaveOutputSuccess'))
+  layout.showSuccessToast(t('terminal.sshSaveOutputSuccess'))
 }
 
 function clearTerminal() {
@@ -202,14 +202,14 @@ async function reconnectTerminal() {
 async function copySelection() {
   const ok = await terminalRef.value?.copySelection()
   if (ok) {
-    layout.showToast(t('terminal.sshCopied'))
+    layout.showSuccessToast(t('terminal.sshCopied'))
   }
 }
 
 async function pasteClipboard() {
   const ok = await terminalRef.value?.pasteFromClipboard()
   if (!ok) {
-    layout.showToast(t('terminal.sshPasteFailed'))
+    layout.showErrorToast(t('terminal.sshPasteFailed'))
   }
 }
 
@@ -237,7 +237,7 @@ function openScriptRecordTab(connectionId: string, saved: SshScriptRecord) {
 function beginSaveNewRecord(selection: string) {
   const trimmed = selection.trim()
   if (!trimmed) {
-    layout.showToast(t('terminal.sshSaveSelectionEmpty'))
+    layout.showErrorToast(t('terminal.sshSaveSelectionEmpty'))
     return
   }
   pendingSelection.value = trimmed
@@ -254,7 +254,7 @@ async function confirmSaveNewRecord(title: string) {
     const saved = await createScriptRecordFromTerminalSelection(connectionId, selection, nextTitle)
     await refreshScriptRecordsFolder(connectionId)
     openScriptRecordTab(connectionId, saved)
-    layout.showToast(t('terminal.sshSaveSelectionSuccess'))
+    layout.showSuccessToast(t('terminal.sshSaveSelectionSuccess'))
   } catch (error) {
     layout.showErrorToast(resolveApiErrorMessage(error) || t('terminal.sshSaveSelectionFailed'))
   }
@@ -265,14 +265,14 @@ async function appendSelectionToRecord(recordId: string, selection: string) {
   if (!connectionId) return
   const trimmed = selection.trim()
   if (!trimmed) {
-    layout.showToast(t('terminal.sshSaveSelectionEmpty'))
+    layout.showErrorToast(t('terminal.sshSaveSelectionEmpty'))
     return
   }
   try {
     const saved = await appendTerminalSelectionToScriptRecord(connectionId, recordId, trimmed)
     await refreshScriptRecordsFolder(connectionId)
     openScriptRecordTab(connectionId, saved)
-    layout.showToast(t('terminal.sshAppendSelectionSuccess'))
+    layout.showSuccessToast(t('terminal.sshAppendSelectionSuccess'))
   } catch (error) {
     layout.showErrorToast(resolveApiErrorMessage(error) || t('terminal.sshAppendSelectionFailed'))
   }
@@ -288,7 +288,7 @@ async function runQuickCommand(command: string) {
   if (!connectionId) return
   const ok = await sendToSshTerminal(connectionId, command, {preferTabId: props.tab.id})
   if (!ok) {
-    layout.showToast(t('ssh.quickOps.runFailed'))
+    layout.showErrorToast(t('ssh.quickOps.runFailed'))
   }
 }
 
@@ -301,7 +301,7 @@ async function pasteQuickCommand(command: string) {
     focus: true,
   })
   if (!ok) {
-    layout.showToast(t('ssh.quickOps.pasteFailed'))
+    layout.showErrorToast(t('ssh.quickOps.pasteFailed'))
   }
 }
 
@@ -372,10 +372,10 @@ function toggleAutoReconnect() {
 async function copyTerminalBuffer() {
   const ok = await terminalRef.value?.copyBuffer?.()
   if (ok) {
-    layout.showToast(t('terminal.sshBufferCopied'))
+    layout.showSuccessToast(t('terminal.sshBufferCopied'))
     return
   }
-  layout.showToast(t('terminal.sshBufferCopyFailed'))
+  layout.showErrorToast(t('terminal.sshBufferCopyFailed'))
 }
 
 function openRelatedConnection(item: RelatedConnectionItem) {
@@ -432,7 +432,7 @@ async function onTerminalContextMenu(event: MouseEvent) {
 function openYarnAppFromSelection(appId: string) {
   const yarn = yarnAppsConnection.value
   if (!yarn) {
-    layout.showToast(t('ssh.yarnBridge.noYarnConnection'))
+    layout.showErrorToast(t('ssh.yarnBridge.noYarnConnection'))
     return
   }
   workspace.openYarnApplications({
@@ -451,7 +451,7 @@ async function pasteYarnLogsFromSelection(appId: string) {
     focus: true,
   })
   if (!ok) {
-    layout.showToast(t('ssh.quickOps.pasteFailed'))
+    layout.showErrorToast(t('ssh.quickOps.pasteFailed'))
   }
 }
 

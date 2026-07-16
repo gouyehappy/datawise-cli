@@ -2,7 +2,7 @@ import {defineStore} from 'pinia'
 import {computed, nextTick, ref} from 'vue'
 import {authApi, type AuthUser} from '@/api'
 import {useLayoutStore} from '@/features/layout/stores/layout'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {
     clearSession,
     isLoggedIn,
@@ -156,7 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
         if (!wasGuest) {
             openLoginDialog()
-            useToastStore().show(t('auth.sessionExpired'))
+            useAppToast().show(t('auth.sessionExpired'))
         }
     }
 
@@ -252,7 +252,7 @@ export const useAuthStore = defineStore('auth', () => {
         sessionId.value = null
         user.value = null
         openLoginDialog()
-        useToastStore().show(t('auth.sessionExpired'))
+        useAppToast().show(t('auth.sessionExpired'))
         try {
             await loginAsGuest()
         } catch {
@@ -274,7 +274,7 @@ export const useAuthStore = defineStore('auth', () => {
             bootstrapGuestSession()
         }
         await resetUserScopedState()
-        useToastStore().show(t('auth.backToGuest'))
+        useAppToast().show(t('auth.backToGuest'))
     }
 
     return {

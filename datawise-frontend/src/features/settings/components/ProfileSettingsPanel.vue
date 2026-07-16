@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import {DwInlineAlert} from '@/core/components'
 import {onMounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {authApi} from '@/api'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import ProfileEditDialog from '@/features/settings/components/ProfileEditDialog.vue'
 import ChangePasswordDialog from '@/features/settings/components/ChangePasswordDialog.vue'
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
@@ -12,7 +13,7 @@ import SettingsPageShell from '@/features/settings/components/SettingsPageShell.
 const {t} = useI18n()
 const layout = useLayoutStore()
 const auth = useAuthStore()
-const toast = useToastStore()
+const toast = useAppToast()
 const showEditDialog = ref(false)
 const showPasswordDialog = ref(false)
 const sessionTtlMinutes = ref(60)
@@ -43,12 +44,15 @@ function changePassword() {
 }
 
 function onPasswordChanged() {
-  layout.showToast(t('profile.changePasswordSuccess'))
+  layout.showSuccessToast(t('profile.changePasswordSuccess'))
 }
+
+const sessionPolicyError = ref('')
 
 async function saveSessionPolicy() {
   if (auth.isGuest || savingSessionPolicy.value) return
   savingSessionPolicy.value = true
+  sessionPolicyError.value = ''
   try {
     const policy = await authApi.updateSessionPolicy({
       ttlMinutes: sessionTtlMinutes.value,
@@ -56,10 +60,10 @@ async function saveSessionPolicy() {
     })
     sessionTtlMinutes.value = policy.ttlMinutes
     sessionSlidingRenewal.value = policy.slidingRenewal
-    toast.show(t('settings.profile.sessionPolicySaved'))
+    toast.success(t('settings.profile.sessionPolicySaved'))
   } catch (err) {
-    const message = err instanceof Error ? err.message : t('settings.profile.sessionPolicySaveFailed')
-    toast.show(message)
+    sessionPolicyError.value =
+        err instanceof Error ? err.message : t('settings.profile.sessionPolicySaveFailed')
   } finally {
     savingSessionPolicy.value = false
   }
@@ -111,6 +115,7 @@ async function saveSessionPolicy() {
         >
           {{ savingSessionPolicy ? '…' : t('settings.profile.sessionPolicySave') }}
         </button>
+        <DwInlineAlert :message="sessionPolicyError"/>
       </section>
     </div>
 

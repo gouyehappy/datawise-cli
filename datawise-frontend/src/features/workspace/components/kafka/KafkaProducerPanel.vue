@@ -2,6 +2,7 @@
 import {onMounted, onUnmounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {explorerApi} from '@/api'
+import {DwInlineAlert} from '@/core/components'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 
 const props = defineProps<{
@@ -46,7 +47,7 @@ async function onSubmit() {
       partition: result.partition,
       offset: result.offset,
     })
-    layout.showToast(t('explorer.kafkaProducer.sent'))
+    layout.showSuccessToast(t('explorer.kafkaProducer.sent'))
     value.value = ''
     emit('produced')
   } catch (err) {
@@ -120,9 +121,9 @@ defineExpose({applySeed})
     </div>
 
     <footer class="kafka-producer-panel__footer">
-      <p v-if="error" class="kafka-producer-panel__feedback is-error">{{ error }}</p>
-      <p v-else-if="lastResult" class="kafka-producer-panel__feedback is-success">{{ lastResult }}</p>
-      <p v-else class="kafka-producer-panel__feedback">{{ t('explorer.kafkaProducer.shortcut') }}</p>
+      <DwInlineAlert v-if="error" class="kafka-producer-panel__feedback" :message="error"/>
+      <DwInlineAlert v-else-if="lastResult" class="kafka-producer-panel__feedback" variant="success" :message="lastResult"/>
+      <DwInlineAlert v-else class="kafka-producer-panel__feedback" variant="info" :message="t('explorer.kafkaProducer.shortcut')"/>
       <button
           class="kafka-producer-panel__send"
           type="submit"
@@ -203,17 +204,6 @@ defineExpose({applySeed})
 .kafka-producer-panel__feedback {
   flex: 1;
   min-width: 0;
-  margin: 0;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-xs);
-}
-
-.kafka-producer-panel__feedback.is-error {
-  color: var(--dw-danger);
-}
-
-.kafka-producer-panel__feedback.is-success {
-  color: var(--dw-success);
 }
 
 .kafka-producer-panel__send {

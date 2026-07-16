@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {DwButton, EmptyState} from '@/core/components'
+import {DwButton, DwInlineAlert, EmptyState} from '@/core/components'
 import {explorerApi} from '@/api'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import type {KafkaMessage, KafkaTopicDetail} from '@/features/explorer/services/kafka-topic.service'
@@ -120,7 +120,7 @@ async function copyText(text: string, toastKey: 'copyValue' | 'copyKey' = 'copyV
   if (!text) return
   try {
     await navigator.clipboard.writeText(text)
-    layout.showToast(t(`explorer.kafkaMessages.${toastKey}Done`))
+    layout.showSuccessToast(t(`explorer.kafkaMessages.${toastKey}Done`))
   } catch {
     // ignore clipboard failures
   }
@@ -228,7 +228,7 @@ defineExpose({refresh: loadData})
     </div>
 
     <div class="kafka-topic-detail-panel__body">
-      <p v-if="error" class="kafka-topic-detail-panel__error">{{ error }}</p>
+      <DwInlineAlert v-if="error" :message="error"/>
 
       <EmptyState
           v-else-if="isBusy && !messages.length"
@@ -467,12 +467,6 @@ defineExpose({refresh: loadData})
   margin-top: var(--dw-space-4);
   gap: var(--dw-gap);
   overflow: auto;
-}
-
-.kafka-topic-detail-panel__error {
-  margin: var(--dw-space-4) 0 0;
-  color: var(--dw-danger);
-  font-size: var(--dw-text-sm);
 }
 
 .kafka-topic-detail-panel__meta {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {EmptyState} from '@/core/components'
+import {EmptyState, DwInlineAlert} from '@/core/components'
 import {explorerApi} from '@/api'
 import type {YarnNodeSummary} from '@/features/explorer/services/yarn-applications.service'
 import {formatYarnMemory} from '@/features/explorer/services/yarn-applications.service'
@@ -52,7 +52,7 @@ watch(connectionId, loadNodes)
       <button type="button" @click="loadNodes">{{ t('explorer.yarnNodes.refresh') }}</button>
     </header>
     <p v-if="loading" class="yarn-nodes-tab__status">{{ t('explorer.yarnNodes.loading') }}</p>
-    <p v-else-if="error" class="yarn-nodes-tab__status is-error">{{ error }}</p>
+    <DwInlineAlert v-else-if="error" class="yarn-nodes-tab__status" :message="error"/>
     <div v-else-if="nodes.length" class="yarn-nodes-tab__table-wrap">
       <table>
         <thead>
@@ -135,9 +135,5 @@ watch(connectionId, loadNodes)
   padding: var(--dw-space-6) var(--dw-space-8);
   font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
-}
-
-.yarn-nodes-tab__status.is-error {
-  color: var(--dw-danger);
 }
 </style>

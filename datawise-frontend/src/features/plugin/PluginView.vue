@@ -35,7 +35,7 @@ import {
     resolveFirstVisitAutoPreset,
 } from '@/features/plugin/services/plugin-preset-auto.service'
 import {useReferenceConflictBannerDismiss} from '@/features/plugin/composables/useReferenceConflictBannerDismiss'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {useTeamStore} from '@/features/team/stores/team-store'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -49,7 +49,7 @@ const CATEGORY_ORDER = ['ai', 'export', 'tool', 'datasource'] as const
 
 const {t, te} = useI18n()
 const pluginStore = usePluginStore()
-const toast = useToastStore()
+const toast = useAppToast()
 const teamStore = useTeamStore()
 const appConfigStore = useAppConfigStore()
 const layoutStore = useLayoutStore()
@@ -163,7 +163,7 @@ function tryAutoApplyRolePreset() {
   pluginStore.applyPreset(autoPreset)
   markPresetAutoApplied(autoPreset)
   viewerHintDismissed.value = true
-  toast.show(t(`plugin.presets.${autoPreset}.autoApplied`))
+  toast.success(t(`plugin.presets.${autoPreset}.autoApplied`))
 }
 
 function bumpUsageRevision() {
@@ -384,13 +384,13 @@ function enablePluginRequires(plugin: PluginItem) {
   const touched = pluginStore.satisfyPluginRequires(plugin.id as PluginId)
   if (touched.length) {
     bumpUsageRevision()
-    toast.show(t('plugin.enableRequiresSuccess', {count: touched.length}))
+    toast.success(t('plugin.enableRequiresSuccess', {count: touched.length}))
   }
 }
 
 function exportPluginConfig() {
   pluginStore.exportPluginConfig()
-  toast.show(t('plugin.config.exportSuccess'))
+  toast.success(t('plugin.config.exportSuccess'))
 }
 
 function triggerImportPluginConfig() {
@@ -405,10 +405,14 @@ async function onImportPluginConfig(event: Event) {
   try {
     const text = await file.text()
     const ok = pluginStore.importPluginConfig(text)
-    if (ok) bumpUsageRevision()
-    toast.show(ok ? t('plugin.config.importSuccess') : t('plugin.config.importFailed'))
+    if (ok) {
+      bumpUsageRevision()
+      toast.success(t('plugin.config.importSuccess'))
+    } else {
+      toast.error(t('plugin.config.importFailed'))
+    }
   } catch {
-    toast.show(t('plugin.config.importFailed'))
+    toast.error(t('plugin.config.importFailed'))
   }
 }
 

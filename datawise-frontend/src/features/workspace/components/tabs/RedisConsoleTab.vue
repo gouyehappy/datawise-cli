@@ -89,7 +89,7 @@ function onKeyDeleted(key: string) {
         keyDetail.value = null
     }
     refreshKeys()
-    layout.showToast(t('explorer.redisConsole.keyDeleted'))
+    layout.showSuccessToast(t('explorer.redisConsole.keyDeleted'))
 }
 
 async function ensureDefaultDb() {

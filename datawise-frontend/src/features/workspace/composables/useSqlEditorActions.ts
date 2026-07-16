@@ -10,7 +10,6 @@ import type {DbType} from '@/core/types'
 import {ApiError, sqlApi} from '@/api'
 import {t} from '@/i18n'
 import {isCatalogSchemaDbType} from '@/features/explorer/services/explorer-lazy-load'
-import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useShortcutPanelStore} from '@/features/layout/stores/shortcut-panel-store'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
@@ -123,7 +122,6 @@ export function useSqlEditorActions(options: SqlEditorActionsOptions) {
     const shortcutPanel = useShortcutPanelStore()
     const workspace = useWorkspaceStore()
     const auth = useAuthStore()
-    const layout = useLayoutStore()
     const appConfig = useAppConfigStore()
     const teamStore = useTeamStore()
     const running = ref(false)
@@ -160,12 +158,10 @@ export function useSqlEditorActions(options: SqlEditorActionsOptions) {
 
     function notifySuccess(message: string) {
         workspace.setStatus(message)
-        layout.showToast(message)
     }
 
     function notifyActionIssue(message: string) {
         workspace.setStatus(message)
-        layout.showErrorToast(message)
     }
 
     function resolveExecutableSql(executableOverride?: unknown) {

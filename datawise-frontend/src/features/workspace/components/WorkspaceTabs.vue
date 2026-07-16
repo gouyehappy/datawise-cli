@@ -115,7 +115,7 @@ async function requestCloseTabs(tabIds: string[]) {
       for (const id of dirtyIds) {
         const ok = await workspace.saveConsoleTab(id)
         if (!ok) {
-          layout.showToast(t('console.saveFailed'))
+          workspace.setStatus(t('console.saveFailed'))
           return
         }
       }
@@ -132,9 +132,9 @@ async function copyTabTitle(tabId: string) {
   if (!title) return
   try {
     await navigator.clipboard.writeText(title)
-    layout.showToast(t('workspace.tabTitleCopied', {name: title}))
+    layout.showSuccessToast(t('workspace.tabTitleCopied', {name: title}))
   } catch {
-    layout.showToast(t('workspace.tabCopyFailed'))
+    layout.showErrorToast(t('workspace.tabCopyFailed'))
   }
 }
 
@@ -167,27 +167,21 @@ function canSaveConsoleTab(tab: WorkspaceTab): boolean {
 }
 
 async function saveConsoleTabFromMenu(tabId: string) {
-  if (auth.isGuest) {
-    layout.showToast(t('auth.guestReadOnlyHint'))
-    return
-  }
+  if (auth.isGuest) return
   const tab = workspace.tabs.find((item) => item.id === tabId)
   if (!tab || !canSaveConsoleTab(tab)) {
-    layout.showToast(t('console.saveFailed'))
+    workspace.setStatus(t('console.saveFailed'))
     return
   }
   const ok = await workspace.saveConsoleTab(tabId)
-  if (!ok) layout.showToast(t('console.saveFailed'))
+  if (!ok) workspace.setStatus(t('console.saveFailed'))
 }
 
 function openMigrationDialog(tabId: string) {
-  if (auth.isGuest) {
-    layout.showToast(t('auth.guestReadOnlyHint'))
-    return
-  }
+  if (auth.isGuest) return
   const tab = workspace.tabs.find((item) => item.id === tabId)
   if (!tab || !canSaveConsoleTab(tab)) {
-    layout.showToast(t('console.saveFailed'))
+    workspace.setStatus(t('console.saveFailed'))
     return
   }
   migrationTabId.value = tabId
@@ -195,17 +189,18 @@ function openMigrationDialog(tabId: string) {
   migrationDialogOpen.value = true
 }
 
+function validateMigrationFileName(fileName: string) {
+  return normalizeMigrationFileName(fileName) ? null : t('workspace.tabSaveMigrationInvalid')
+}
+
 async function confirmMigrationFileName(fileName: string) {
   const tabId = migrationTabId.value
   if (!tabId) return
   const normalized = normalizeMigrationFileName(fileName)
-  if (!normalized) {
-    layout.showToast(t('workspace.tabSaveMigrationInvalid'))
-    return
-  }
+  if (!normalized) return
   const ok = await workspace.saveConsoleTabAsMigration(tabId, normalized)
   if (!ok) {
-    layout.showToast(t('console.saveFailed'))
+    workspace.setStatus(t('console.saveFailed'))
     return
   }
   migrationTabId.value = null
@@ -219,7 +214,7 @@ function runTableCodegen(tabId: string, template: TableCodeTemplate) {
     template,
     tree: explorer.tree,
     openConsole: (options) => workspace.openConsole(options),
-    showToast: (message) => layout.showToast(message),
+    showToast: (message) => layout.showErrorToast(message),
     t,
   })
 }
@@ -325,13 +320,13 @@ async function onTabRename(tabId: string, name: string) {
   if (tab.type === 'view_model_editor') {
     const trimmed = stripViewModelDisplayName(name)
     if (!trimmed || !isValidViewModelBaseName(trimmed)) {
-      layout.showToast(t('viewModel.invalidName'))
+      workspace.setStatus(t('viewModel.invalidName'))
       renameTabId.value = null
       return
     }
     const ok = await workspace.renameViewModelTab(tabId, trimmed)
     if (!ok) {
-      layout.showToast(t('viewModel.renameFailed'))
+      workspace.setStatus(t('viewModel.renameFailed'))
     }
     renameTabId.value = null
     return
@@ -345,7 +340,7 @@ async function onTabRename(tabId: string, name: string) {
   const parsed = parseConsoleTabTitle(name)
   const label = (parsed.hasHostPrefix ? parsed.editableLabel : name).trim()
   if (!sqlFileNameFromTabLabel(label)) {
-    layout.showToast(t('explorer.invalidSqlFileName'))
+    workspace.setStatus(t('explorer.invalidSqlFileName'))
     renameTabId.value = null
     return
   }
@@ -354,7 +349,7 @@ async function onTabRename(tabId: string, name: string) {
   const database = tab.database
   const ok = await workspace.renameConsoleTab(tabId, name)
   if (!ok) {
-    layout.showToast(t('explorer.renameSqlFileFailed'))
+    workspace.setStatus(t('explorer.renameSqlFileFailed'))
   } else if (connectionId && database) {
     try {
       await explorer.reloadWorkspacesFolder(connectionId, database)
@@ -452,6 +447,7 @@ function isTabProduction(tab: WorkspaceTab) {
       :default-value="migrationDialogDefault"
       :placeholder="t('workspace.tabSaveMigrationPlaceholder')"
       :required-message="t('workspace.tabSaveMigrationRequired')"
+      :validate="validateMigrationFileName"
       :confirm-label="t('common.save')"
       @confirm="confirmMigrationFileName"
   />

@@ -2,7 +2,7 @@
 import {provide} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {WorkspaceTab} from '@/core/types'
-import {EmptyState} from '@/core/components'
+import {DwInlineAlert, EmptyState} from '@/core/components'
 import MigrationWizardSteps from '@/features/workspace/components/migration/MigrationWizardSteps.vue'
 import MigrationConfigureStep from '@/features/workspace/components/migration/MigrationConfigureStep.vue'
 import MigrationPreflightStep from '@/features/workspace/components/migration/MigrationPreflightStep.vue'
@@ -36,7 +36,7 @@ provide(MIGRATION_WIZARD_KEY, wizard)
             :is-step-completed="(id) => wizard.isFlowStepCompleted(id as MigrationFlowStep)"
             @step-click="wizard.goToFlowStep"
         />
-        <p v-if="wizard.formError && !wizard.running" class="table-migration__error">{{ wizard.formError }}</p>
+        <DwInlineAlert :message="wizard.running ? null : wizard.formError"/>
       </div>
     </header>
 

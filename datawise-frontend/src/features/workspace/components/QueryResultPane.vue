@@ -288,7 +288,7 @@ const activeDiffView = computed(() => {
 
 function compareWithPrevious(index: number) {
     if (!canCompareWithPrevious(index)) {
-        layout.showToast(t('queryResult.diffUnavailable'))
+        layout.showErrorToast(t('queryResult.diffUnavailable'))
         return
     }
     diffMode.value = {baselineIndex: index - 1, currentIndex: index}

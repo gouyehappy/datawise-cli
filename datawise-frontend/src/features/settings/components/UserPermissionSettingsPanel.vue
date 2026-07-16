@@ -2,10 +2,10 @@
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {userAdminApi} from '@/api'
-import {DwCheckbox, DwInput, ConfirmDialog} from '@/core/components'
+import {DwCheckbox, DwInput, ConfirmDialog, DwInlineAlert} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {
     createPreset,
@@ -24,7 +24,7 @@ const QUICK_PRESETS: PermissionPresetId[] = ['full', 'workbench']
 const DEFAULT_EXPANDED_GROUPS = new Set(['nav', 'workbenchConsole', 'workbenchExplorerContext'])
 
 const {t} = useI18n()
-const toast = useToastStore()
+const toast = useAppToast()
 const auth = useAuthStore()
 
 const users = ref<UserPermissionSummary[]>([])
@@ -34,6 +34,7 @@ const draftPreset = ref<PermissionPresetId>('full')
 const savedPermissionsJson = ref('')
 const loading = ref(false)
 const saving = ref(false)
+const panelError = ref('')
 const permissionQuery = ref('')
 const expandedGroups = ref<Set<string>>(new Set(DEFAULT_EXPANDED_GROUPS))
 const switchConfirmOpen = ref(false)
@@ -115,6 +116,7 @@ function syncDraftFromUser(user: UserPermissionSummary) {
 
 async function loadUsers() {
     loading.value = true
+    panelError.value = ''
     try {
         users.value = await userAdminApi.listUsers()
         if (!selectedUserId.value && users.value.length > 0) {
@@ -122,8 +124,7 @@ async function loadUsers() {
             selectedUserId.value = firstEditable.id
         }
     } catch (error) {
-        const message = error instanceof Error ? error.message : t('settings.userPermissions.loadFailed')
-        toast.show(message)
+        panelError.value = error instanceof Error ? error.message : t('settings.userPermissions.loadFailed')
     } finally {
         loading.value = false
     }
@@ -207,6 +208,7 @@ function accountMeta(user: UserPermissionSummary): string {
 async function savePermissions() {
     if (!selectedUser.value || !isEditable.value || saving.value || !isDirty.value) return
     saving.value = true
+    panelError.value = ''
     const sent = normalizeFeaturePermissionMap(draftPermissions.value)
     try {
         const updated = await userAdminApi.updateUserPermissions(
@@ -225,15 +227,14 @@ async function savePermissions() {
             (auth.user?.userId != null && auth.user.userId === updated.id)
         if (affectsCurrentSession) {
             await auth.refreshSessionPermissions()
-            toast.show(t('settings.userPermissions.saved'))
+            toast.success(t('settings.userPermissions.saved'))
         } else if (updated.guest) {
-            toast.show(t('settings.userPermissions.guestReLoginHint'))
+            toast.show(t('settings.userPermissions.guestReLoginHint'), {variant: 'info'})
         } else {
-            toast.show(t('settings.userPermissions.saved'))
+            toast.success(t('settings.userPermissions.saved'))
         }
     } catch (error) {
-        const message = error instanceof Error ? error.message : t('settings.userPermissions.saveFailed')
-        toast.show(message)
+        panelError.value = error instanceof Error ? error.message : t('settings.userPermissions.saveFailed')
     } finally {
         saving.value = false
     }
@@ -260,6 +261,8 @@ async function savePermissions() {
         {{ saving ? '…' : t('settings.userPermissions.save') }}
       </button>
     </template>
+
+    <DwInlineAlert :message="panelError"/>
 
     <div class="perm-workbench">
       <aside class="perm-sidebar">

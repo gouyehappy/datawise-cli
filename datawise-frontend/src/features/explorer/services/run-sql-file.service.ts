@@ -126,11 +126,8 @@ export async function runSqlFileForDatabase(
 
     if (result.lastErrorMessage) {
         workspace.setStatus(result.lastErrorMessage)
-        layout.showErrorToast(result.lastErrorMessage)
         return
     }
 
-    const message = t('explorer.runSqlFileDone', {name: file.name, count: batch.length})
-    workspace.setStatus(message)
-    layout.showToast(message)
+    workspace.setStatus(t('explorer.runSqlFileDone', {name: file.name, count: batch.length}))
 }

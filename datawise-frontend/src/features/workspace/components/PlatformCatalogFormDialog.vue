@@ -4,6 +4,7 @@ import {useI18n} from 'vue-i18n'
 import {
     AppModal,
     CollapsibleSection,
+    DwInlineAlert,
     FormField,
     ModalActions,
     SettingsSwitch,
@@ -532,7 +533,7 @@ async function submit() {
         </CollapsibleSection>
       </template>
 
-      <p v-if="error" class="modal-error-text" role="alert">{{ error }}</p>
+      <DwInlineAlert :message="error"/>
     </form>
 
     <template #footer>

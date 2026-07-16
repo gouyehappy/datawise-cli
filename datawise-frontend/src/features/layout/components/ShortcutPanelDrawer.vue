@@ -241,17 +241,17 @@ async function archiveSqlLogToPersonalKnowledge(log: SqlLogEntry) {
   if (denyKnowledgeWrite()) return
   try {
     await appendSqlLogToPersonalKnowledge(log, resolveSqlLogContext(log))
-    layout.showToast(t('shortcut.sqlLogMenu.savedPersonal'))
+    layout.showSuccessToast(t('shortcut.sqlLogMenu.savedPersonal'))
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    layout.showToast(t('shortcut.sqlLogMenu.saveFailed', {message}))
+    layout.showErrorToast(t('shortcut.sqlLogMenu.saveFailed', {message}))
   }
 }
 
 function openTeamShareDialog(log: SqlLogEntry) {
   const teamId = teamStore.activeTeamId
   if (!teamId) {
-    layout.showToast(t('shortcut.sqlLogMenu.noTeam'))
+    layout.showErrorToast(t('shortcut.sqlLogMenu.noTeam'))
     return
   }
   pendingTeamShareLog.value = log
@@ -270,10 +270,10 @@ async function onTeamShareSave(payload: ShareTeamSharedQueryPayload) {
     })
     teamShareDialogOpen.value = false
     pendingTeamShareLog.value = null
-    layout.showToast(t('shortcut.sqlLogMenu.savedTeam'))
+    layout.showSuccessToast(t('shortcut.sqlLogMenu.savedTeam'))
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    layout.showToast(t('shortcut.sqlLogMenu.saveFailed', {message}))
+    layout.showErrorToast(t('shortcut.sqlLogMenu.saveFailed', {message}))
   } finally {
     teamShareSaving.value = false
   }

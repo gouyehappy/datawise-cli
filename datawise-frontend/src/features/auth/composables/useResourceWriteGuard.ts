@@ -1,23 +1,19 @@
 import {computed} from 'vue'
 import type {UserResourceType} from '@/features/auth/types/user-resource.types'
 import {useUserResourcePolicy} from '@/features/auth/composables/useUserResourcePolicy'
-import {useToastStore} from '@/features/layout/stores/toast-store'
 
-/** 设置页 / 工作区写操作守卫：按资源裁决访客只读并统一 Toast。 */
+/** 设置页 / 工作区写操作守卫：只读时依赖页面 guest-notice + 控件 disabled，不再弹 Toast。 */
 export function useResourceWriteGuard(resource: UserResourceType) {
     const policy = useUserResourcePolicy()
-    const toast = useToastStore()
     const readOnly = computed(() => !policy.canWrite(resource))
     const hint = policy.readOnlyHint
 
     function denyIfReadOnly(): boolean {
-        if (!readOnly.value) return false
-        toast.show(hint.value)
-        return true
+        return readOnly.value
     }
 
     function guardWrite(action: () => void): boolean {
-        return policy.guardWrite(resource, action, () => toast.show(hint.value))
+        return policy.guardWrite(resource, action)
     }
 
     return {readOnly, hint, denyIfReadOnly, guardWrite}

@@ -16,6 +16,6 @@ export async function applyDeepLinkOpen(payload: DeepLinkOpenPayload): Promise<v
             sql: payload.sql,
         })
     } catch {
-        layout.showToast(t('settings.basic.deepLink.openFailed'))
+        layout.showErrorToast(t('settings.basic.deepLink.openFailed'))
     }
 }

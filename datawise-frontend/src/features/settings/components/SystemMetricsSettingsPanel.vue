@@ -9,7 +9,7 @@ import {
     formatPercent,
 } from '@/features/settings/services/system-metrics-format.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
-import {DwButton} from '@/core/components'
+import {DwButton, DwInlineAlert} from '@/core/components'
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 
 const REFRESH_INTERVAL_MS = 15_000
@@ -100,11 +100,9 @@ onUnmounted(() => {
 })
 
 function showRefreshToast() {
-    if (lastError.value) {
-        layout.showToast(lastError.value)
-        return
-    }
-    layout.showToast(t('settings.systemMetrics.refreshed'))
+    // 失败已在面板 DwInlineAlert 就地展示，避免双通道
+    if (lastError.value) return
+    layout.showSuccessToast(t('settings.systemMetrics.refreshed'))
 }
 </script>
 
@@ -134,7 +132,7 @@ function showRefreshToast() {
       </div>
     </template>
 
-    <p v-if="lastError" class="metrics-error">{{ lastError }}</p>
+    <DwInlineAlert :message="lastError"/>
 
     <div class="settings-groups">
       <section class="setting-block setting-block--compact">

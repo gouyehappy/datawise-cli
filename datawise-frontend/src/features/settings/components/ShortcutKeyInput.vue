@@ -5,6 +5,7 @@ import {SHORTCUT_DEFINITIONS} from '@/core/shortcuts/definitions'
 import type {ShortcutActionId} from '@/core/shortcuts/types'
 import {eventToBinding, formatBinding, formatBindingParts} from '@/core/shortcuts/shortcut.service'
 import {DwIcon} from '@/core/icons'
+import {DwInlineAlert} from '@/core/components'
 import {useShortcutSettingsStore} from '@/features/settings/stores/shortcut-settings-store'
 
 const props = defineProps<{
@@ -123,9 +124,11 @@ function reset() {
       <DwIcon name="refresh" size="sm" :stroke-width="1.5"/>
     </button>
 
-    <p v-if="conflictId" class="shortcut-key-input__error">
-      {{ t('shortcuts.conflict', {action: conflictLabel}) }}
-    </p>
+    <DwInlineAlert
+        v-if="conflictId"
+        class="shortcut-key-input__error"
+        :message="t('shortcuts.conflict', {action: conflictLabel})"
+    />
   </div>
 </template>
 
@@ -270,9 +273,6 @@ function reset() {
 
 .shortcut-key-input__error {
   flex: 1 1 100%;
-  margin: 0;
   text-align: right;
-  color: var(--dw-danger);
-  font-size: var(--dw-text-xs);
 }
 </style>

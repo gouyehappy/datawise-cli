@@ -3,7 +3,7 @@ import type {DbType} from '@/core/types'
 import {buildAiWorkContext} from '@/features/ai/work-context/ai-work-context.service'
 import type {AiDatabaseTarget} from '@/features/ai/shared/utils/database-targets'
 import {formatAiErrorMessage} from '@/features/ai/shared/utils/ai-error'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import type {QueryResultItem} from '@/features/workspace/types'
 import {
     buildQueryResultSummaryPayload,
@@ -39,7 +39,7 @@ function buildAiTargets(context: ReturnType<typeof buildAiWorkContext>): AiDatab
 
 /** Epic D-03：结果集 AI 摘要 */
 export function useQueryResultAiSummary(options: UseQueryResultAiSummaryOptions) {
-    const toast = useToastStore()
+    const toast = useAppToast()
     const summaryOpen = ref(false)
     const summaryText = ref('')
     const loading = ref(false)
@@ -70,11 +70,11 @@ export function useQueryResultAiSummary(options: UseQueryResultAiSummaryOptions)
             })
             summaryText.value = reply.reply?.trim() || ''
             if (!summaryText.value) {
-                toast.show(formatAiErrorMessage(new Error('Empty AI response')))
+                toast.error(formatAiErrorMessage(new Error('Empty AI response')))
                 summaryOpen.value = false
             }
         } catch (error) {
-            toast.show(formatAiErrorMessage(error))
+            toast.error(formatAiErrorMessage(error))
             summaryOpen.value = false
         } finally {
             loading.value = false

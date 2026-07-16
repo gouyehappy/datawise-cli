@@ -62,7 +62,7 @@ export async function openSqlFileFromTree(tree: TreeNode[], node: TreeNode) {
                     explorerNodeId: node.id,
                 })
             } catch {
-                useLayoutStore().showToast(t('console.loadSqlFileFailed'))
+                useLayoutStore().showErrorToast(t('console.loadSqlFileFailed'))
             }
         })()
 

@@ -20,7 +20,7 @@ async function onReconnect() {
   try {
     const ok = await explorer.connectConnection(props.connectionId, {notify: true})
     if (ok) {
-      layout.showToast(
+      layout.showSuccessToast(
           t('explorer.connectionReconnected', {
             name: props.connectionName || props.connectionId,
           }),

@@ -12,7 +12,7 @@ import {formatAiErrorMessage} from '@/features/ai/shared/utils/ai-error'
 import type {AiDatabaseTarget} from '@/features/ai/shared/utils/database-targets'
 import type {AiAnalysisContextPayload} from '@/features/ai/types/analysis'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {aiApi, logAiChatError} from '@/api'
 import {t} from '@/i18n'
 
@@ -34,7 +34,7 @@ export function useAiChatSend(options: {
     getAttachments?: () => Array<{ id: string; name: string; file: File }>
     buildPrompt?: (prompt: string) => Promise<string>
 }) {
-    const toast = useToastStore()
+    const toast = useAppToast()
     const aiChat = useAiChatStore()
     const appConfig = useAppConfigStore()
 
@@ -101,7 +101,7 @@ export function useAiChatSend(options: {
             }
         } catch (error) {
             logAiChatError(error, 0)
-            toast.show(formatAiErrorMessage(error))
+            toast.error(formatAiErrorMessage(error))
             options.restoreInput(text)
         } finally {
             pipeline.finishStreaming(sessionId)

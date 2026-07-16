@@ -14,7 +14,7 @@ export function useAiConsoleBridge(selectedTargets: Ref<AiDatabaseTarget[]>) {
     function openInConsole(content: string) {
         const sql = extractSqlFromContent(content)
         if (!sql) {
-            layout.showToast(t('ai.noSqlInReply'))
+            layout.showErrorToast(t('ai.noSqlInReply'))
             return
         }
 

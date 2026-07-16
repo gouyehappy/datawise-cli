@@ -3,15 +3,14 @@ import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {AiAnalysisReport} from '@/features/ai/types/analysis'
 import {parseAnalysisReport} from '@/features/ai/analysis/services/analysis-report-markdown.service'
-import {useToastStore} from '@/features/layout/stores/toast-store'
-
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 const props = defineProps<{
   report: AiAnalysisReport
   defaultExpanded?: boolean
 }>()
 
 const {t} = useI18n()
-const toast = useToastStore()
+const toast = useAppToast()
 
 const expanded = ref(props.defaultExpanded ?? false)
 
@@ -23,9 +22,9 @@ async function copyMarkdown(event: MouseEvent) {
   event.stopPropagation()
   try {
     await navigator.clipboard.writeText(props.report.markdown)
-    toast.show(t('ai.analysis.reportCopied'))
+    toast.success(t('ai.analysis.reportCopied'))
   } catch {
-    toast.showError(t('ai.analysis.reportCopyFailed'))
+    toast.error(t('ai.analysis.reportCopyFailed'))
   }
 }
 

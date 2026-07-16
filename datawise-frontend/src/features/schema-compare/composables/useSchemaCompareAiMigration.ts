@@ -9,7 +9,7 @@ import {
     type SchemaCompareAiMigrationSuggestion,
 } from '@/features/schema-compare/services/schema-compare-ai-migration.service'
 import type {SchemaCompareResult, SchemaScope} from '@/features/schema-compare/types/schema-compare.types'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import type {AiPreferences} from '@/shared/config/app-config.types'
 import {currentLocale} from '@/i18n'
 
@@ -37,7 +37,7 @@ function buildTarget(target: SchemaScope): AiDatabaseTarget {
 }
 
 export function useSchemaCompareAiMigration(options: UseSchemaCompareAiMigrationOptions) {
-    const toast = useToastStore()
+    const toast = useAppToast()
     const dialogOpen = ref(false)
     const loading = ref(false)
     const baselineDdl = ref('')
@@ -76,13 +76,13 @@ export function useSchemaCompareAiMigration(options: UseSchemaCompareAiMigration
             })
             const parsed = parseSchemaCompareAiMigrationReply(reply.reply?.trim() ?? '')
             if (!parsed?.up.trim()) {
-                toast.show(formatAiErrorMessage(new Error('Empty AI migration response')))
+                toast.error(formatAiErrorMessage(new Error('Empty AI migration response')))
                 dialogOpen.value = false
                 return
             }
             suggestion.value = parsed
         } catch (error) {
-            toast.show(formatAiErrorMessage(error))
+            toast.error(formatAiErrorMessage(error))
             dialogOpen.value = false
         } finally {
             loading.value = false

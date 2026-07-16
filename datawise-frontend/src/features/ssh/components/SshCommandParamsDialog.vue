@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {nextTick, ref, watch} from 'vue'
-import {AppModal, FormField, ModalActions} from '@/core/components'
+import {AppModal, DwInlineAlert, FormField, ModalActions} from '@/core/components'
 
 const props = defineProps<{
   open: boolean
@@ -80,7 +80,7 @@ function onKeydown(event: KeyboardEvent) {
           >
         </template>
       </FormField>
-      <p v-if="error" class="dw-form-error" role="alert">{{ error }}</p>
+      <DwInlineAlert :message="error"/>
     </form>
 
     <template #footer>

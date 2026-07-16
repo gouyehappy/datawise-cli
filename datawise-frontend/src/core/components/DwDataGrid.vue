@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="T extends object">
 import {computed, ref, toRef, useSlots, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
+import DwPanelState from '@/core/components/DwPanelState.vue'
 import {EmptyState} from '@/core/components/ui'
 import PillSelect from '@/core/components/PillSelect.vue'
 import DwSelect from '@/core/components/DwSelect.vue'
@@ -66,6 +67,7 @@ const {t} = useI18n()
 const hasToolbarActions = computed(() => Boolean(slots['toolbar-actions']))
 const hasToolbarEnd = computed(() => Boolean(slots['toolbar-end']))
 const hasBodySlot = computed(() => Boolean(slots.body))
+const hasEmptySlot = computed(() => Boolean(slots.empty))
 
 const resolveRowKey = (row: T) => {
   const key = props.rowKey ?? ('id' as keyof T & string)
@@ -388,18 +390,29 @@ watch(internalCurrentPage, () => {
       <div v-if="shellOnly && hasBodySlot" class="dw-data-grid__body dw-data-grid__body--custom">
         <slot name="body"/>
       </div>
-      <div v-else-if="loading" class="dw-data-grid__state">
-        <span class="dw-data-grid__spinner" aria-hidden="true"/>
-        {{ labels.loading }}
-      </div>
-      <div v-else-if="error" class="dw-data-grid__state dw-data-grid__state--error">
-        {{ error }}
-      </div>
-      <div v-else-if="!rows.length" class="dw-data-grid__state">
-        <slot name="empty">
-          <EmptyState embedded compact :title="labels.empty"/>
-        </slot>
-      </div>
+      <DwPanelState
+          v-else-if="loading"
+          status="loading"
+          :message="labels.loading"
+          fill
+      />
+      <DwPanelState
+          v-else-if="error"
+          status="error"
+          :message="error"
+          fill
+      />
+      <DwPanelState
+          v-else-if="!rows.length"
+          status="empty"
+          :message="labels.empty"
+          compact
+          fill
+      >
+        <template v-if="hasEmptySlot" #empty>
+          <slot name="empty"/>
+        </template>
+      </DwPanelState>
       <div v-else ref="gridBodyRef" class="dw-data-grid__body">
         <table class="dw-data-grid__table">
           <thead>
@@ -916,34 +929,4 @@ tr.dw-data-grid__virtual-spacer td {
   cursor: pointer;
 }
 
-.dw-data-grid__state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--dw-gap-md);
-  flex: 1;
-  min-height: 220px;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-md);
-}
-
-.dw-data-grid__state--error {
-  color: var(--dw-danger);
-}
-
-.dw-data-grid__spinner {
-  width: 22px;
-  height: var(--dw-control-h-xs);
-  border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
-  border-top-color: var(--dw-primary);
-  border-radius: 50%;
-  animation: dw-data-grid-spin 0.75s linear infinite;
-}
-
-@keyframes dw-data-grid-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onUnmounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {EmptyState} from '@/core/components'
+import {DwPanelState} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import type {WorkspaceTab} from '@/core/types'
 import {useSchemaErColumns} from '@/features/workspace/composables/useSchemaErColumns'
@@ -237,16 +237,25 @@ onUnmounted(() => {
 
 <template>
   <div class="schema-er-graph">
-    <div v-if="isLoading" class="schema-er-graph__state">
-      <span class="schema-er-graph__spinner" aria-hidden="true"/>
-      {{ t('workspace.tableDetail.loading') }}
-    </div>
-    <div v-else-if="error" class="schema-er-graph__state schema-er-graph__state--error">
-      {{ error }}
-    </div>
-    <div v-else-if="!hasContent" class="schema-er-graph__state">
-      <EmptyState embedded compact :title="t('workspace.tableDetail.schemaErEmpty')"/>
-    </div>
+    <DwPanelState
+        v-if="isLoading"
+        status="loading"
+        :message="t('workspace.tableDetail.loading')"
+        fill
+    />
+    <DwPanelState
+        v-else-if="error"
+        status="error"
+        :message="error"
+        fill
+    />
+    <DwPanelState
+        v-else-if="!hasContent"
+        status="empty"
+        :message="t('workspace.tableDetail.schemaErEmpty')"
+        compact
+        fill
+    />
     <div
         v-else
         ref="canvasWrapRef"
@@ -635,34 +644,4 @@ onUnmounted(() => {
   color: var(--dw-primary);
 }
 
-.schema-er-graph__state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--dw-gap-md);
-  flex: 1;
-  min-height: 220px;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-md);
-}
-
-.schema-er-graph__state--error {
-  color: var(--dw-danger);
-}
-
-.schema-er-graph__spinner {
-  width: 22px;
-  height: var(--dw-control-h-xs);
-  border: 2px solid color-mix(in srgb, var(--dw-primary) 20%, transparent);
-  border-top-color: var(--dw-primary);
-  border-radius: 50%;
-  animation: schema-er-spin 0.75s linear infinite;
-}
-
-@keyframes schema-er-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

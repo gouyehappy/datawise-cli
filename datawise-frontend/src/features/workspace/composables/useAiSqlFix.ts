@@ -2,7 +2,7 @@ import {nextTick, ref} from 'vue'
 import type {DbType} from '@/core/types'
 import {buildAiWorkContext, formatAiFixPrompt} from '@/features/ai/work-context/ai-work-context.service'
 import {formatAiErrorMessage} from '@/features/ai/shared/utils/ai-error'
-import {useToastStore} from '@/features/layout/stores/toast-store'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import type {AiPreferences} from '@/shared/config/app-config.types'
 import {sqlApi} from '@/api'
 import {replaceConsoleSqlStatement} from '@/features/workspace/services/console-sql-replace.service'
@@ -27,7 +27,7 @@ export interface UseAiSqlFixOptions {
 
 /** 执行失败 → AI 生成修复 SQL → diff 预览 → 应用（Epic D-02） */
 export function useAiSqlFix(options: UseAiSqlFixOptions) {
-    const toast = useToastStore()
+    const toast = useAppToast()
     const fixDialogOpen = ref(false)
     const fixOriginal = ref('')
     const fixSuggested = ref('')
@@ -58,12 +58,12 @@ export function useAiSqlFix(options: UseAiSqlFixOptions) {
             fixOriginal.value = payload.sql.trim()
             fixSuggested.value = suggested.trim()
             if (!fixSuggested.value) {
-                toast.show(formatAiErrorMessage(new Error('Empty AI response')))
+                toast.error(formatAiErrorMessage(new Error('Empty AI response')))
                 return
             }
             fixDialogOpen.value = true
         } catch (error) {
-            toast.show(formatAiErrorMessage(error))
+            toast.error(formatAiErrorMessage(error))
         } finally {
             fixing.value = false
         }
