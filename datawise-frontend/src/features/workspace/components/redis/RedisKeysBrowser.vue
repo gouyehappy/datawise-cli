@@ -528,6 +528,9 @@ defineExpose({refresh: () => scanKeys(true)})
 
 .redis-keys-browser__more:disabled,
 .redis-keys-browser__search-btn:disabled,
-.redis-keys-browser__preset:disabled,
+.redis-keys-browser__preset:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 </style>
 

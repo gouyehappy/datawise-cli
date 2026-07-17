@@ -61,7 +61,18 @@ async function toggle() {
 
 function run(action: 'toggle-layout-edit' | 'customize' | 'ai-widget') {
   close()
-  emit(action)
+  // Narrow before emit: Vue's typed emit uses per-event overloads, so a union is rejected.
+  switch (action) {
+    case 'customize':
+      emit('customize')
+      break
+    case 'toggle-layout-edit':
+      emit('toggle-layout-edit')
+      break
+    case 'ai-widget':
+      emit('ai-widget')
+      break
+  }
 }
 
 function onWindowChange() {

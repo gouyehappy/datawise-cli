@@ -350,5 +350,8 @@ defineExpose({runCommand})
 }
 
 .redis-command-panel__run:disabled,
-.redis-command-panel__input:disabled,
+.redis-command-panel__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 </style>

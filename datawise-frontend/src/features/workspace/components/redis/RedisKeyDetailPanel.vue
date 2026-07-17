@@ -56,34 +56,18 @@ const emit = defineEmits<{
 
 }>()
 
-
-
 const {t} = useI18n()
-
 const layout = useLayoutStore()
-
-
-
 const loading = defineModel<boolean>('loading', {default: false})
-
 const detail = defineModel<RedisKeyDetail | null>('detail', {default: null})
-
 const error = defineModel<string | null>('error', {default: null})
-
 const deleteConfirmOpen = ref(false)
 
-
-
 const ttlLabel = computed(() => {
-
     if (!detail.value) return '—'
-
     if (detail.value.ttlSeconds === -1) return t('explorer.redisKey.ttlPersistent')
-
     if (detail.value.ttlSeconds === -2) return t('explorer.redisKey.ttlMissing')
-
     return formatRedisTtl(detail.value.ttlSeconds)
-
 })
 
 

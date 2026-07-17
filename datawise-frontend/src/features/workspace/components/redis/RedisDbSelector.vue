@@ -341,7 +341,7 @@ function onInputKeydown(event: KeyboardEvent) {
   border: 1px solid var(--dw-border-light);
   border-radius: var(--dw-menu-radius);
   background: var(--dw-bg);
-  box-shadow: var(--dw-menu-shadow));
+  box-shadow: var(--dw-menu-shadow);
 }
 
 .redis-db-picker__field {
@@ -351,7 +351,7 @@ function onInputKeydown(event: KeyboardEvent) {
   margin-bottom: var(--dw-space-2);
   padding: var(--dw-space-2);
   border-radius: var(--dw-control-radius);
-  background: var(--dw-bg-muted) 3%, transparent));
+  background: var(--dw-bg-muted) 3%, transparent;
 }
 
 .redis-db-picker__field-prefix {
