@@ -84,6 +84,7 @@ usePopoverEscape(
     () => {
         closeMenu()
     },
+    {closeOnOutside: false}, // 已有 mousedown outside
 )
 
 function labelOf(item: TitleBarMenuItem): string {

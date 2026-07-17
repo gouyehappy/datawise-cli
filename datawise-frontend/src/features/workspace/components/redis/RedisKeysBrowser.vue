@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwButton, EmptyState} from '@/core/components'
@@ -199,7 +199,7 @@ defineExpose({refresh: () => scanKeys(true)})
           {{ t('explorer.redisBrowser.search') }}
         </DwButton>
         <button
-            class="redis-keys-browser__icon-btn"
+            class="dw-icon-btn dw-icon-btn--sm"
             type="button"
             :title="t('explorer.redisBrowser.refresh')"
             :disabled="loading || !connectionId"
@@ -395,17 +395,6 @@ defineExpose({refresh: () => scanKeys(true)})
   min-width: 56px;
 }
 
-.redis-keys-browser__icon-btn {
-  flex-shrink: 0;
-  width: 30px;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius-sm);
-  background: var(--dw-bg-editor);
-  color: var(--dw-text);
-  font-size: var(--dw-text-xl);
-  cursor: pointer;
-}
-
 .redis-keys-browser__status {
   margin: 0;
   color: var(--dw-text-muted);
@@ -540,9 +529,5 @@ defineExpose({refresh: () => scanKeys(true)})
 .redis-keys-browser__more:disabled,
 .redis-keys-browser__search-btn:disabled,
 .redis-keys-browser__preset:disabled,
-.redis-keys-browser__icon-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 </style>
 

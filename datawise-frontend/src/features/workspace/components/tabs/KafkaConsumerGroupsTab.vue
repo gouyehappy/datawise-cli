@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
@@ -32,7 +32,7 @@ function refreshMetrics() {
         <h2>{{ t('explorer.kafkaConsumerGroups.title') }}</h2>
         <p>{{ connectionLabel }}</p>
       </div>
-      <button class="kafka-consumer-groups-tab__refresh" type="button" @click="refreshMetrics">
+      <button class="dw-text-btn" type="button" @click="refreshMetrics">
         {{ t('explorer.kafkaConsumerGroup.reloadGroups') }}
       </button>
     </header>
@@ -85,17 +85,6 @@ function refreshMetrics() {
   font-size: var(--dw-text-sm);
 }
 
-.kafka-consumer-groups-tab__refresh {
-  flex-shrink: 0;
-  height: var(--dw-control-h);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-panel-radius);
-  padding: 0 var(--dw-space-6);
-  background: var(--dw-bg);
-  color: var(--dw-text);
-  font-size: var(--dw-text-sm);
-  cursor: pointer;
-}
 
 .kafka-consumer-groups-tab__body {
   flex: 1;

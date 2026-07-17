@@ -11,5 +11,7 @@ export type ConsoleToolbarIconName =
     | 'bookmark'
     | 'viewModel'
     | 'format'
+    | 'visualQuery'
+    | 'terminal'
     | 'fullscreen'
     | 'ai'

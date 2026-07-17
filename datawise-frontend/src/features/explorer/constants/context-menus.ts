@@ -30,6 +30,11 @@ export function getContextMenuForNodeType(type: string, t: ComposerTranslation):
             icon: 'export',
         },
         {
+            id: 'backup-wizard',
+            label: c('backupWizard'),
+            icon: 'export',
+        },
+        {
             id: 'export-sql',
             label: c('exportSql'),
             icon: 'export',
@@ -59,9 +64,15 @@ export function getContextMenuForNodeType(type: string, t: ComposerTranslation):
             ],
         },
         {id: 'run-sql-file', label: c('runSqlFile'), icon: 'file'},
+        {id: 'restore-wizard', label: c('restoreWizard'), icon: 'import'},
         {
             id: 'export-wizard',
             label: c('exportWizard'),
+            icon: 'export',
+        },
+        {
+            id: 'backup-wizard',
+            label: c('backupWizard'),
             icon: 'export',
         },
         {
@@ -115,10 +126,11 @@ export function getContextMenuForNodeType(type: string, t: ComposerTranslation):
             return tableMenu
         case 'database':
             return databaseMenu
-        case 'sql_file':
+            case 'sql_file':
             return [
                 {id: 'open', label: c('openSqlFile'), icon: 'open'},
                 {id: 'script-history', label: c('scriptHistory'), icon: 'ddl'},
+                {id: 'schedule-sql-file', label: c('scheduleSqlFile'), icon: 'console'},
                 {id: 'divider-1', label: '', divider: true},
                 {id: 'rename', label: c('renameSqlFile'), icon: 'edit'},
                 {id: 'copy-name', label: c('copyName'), icon: 'copy'},

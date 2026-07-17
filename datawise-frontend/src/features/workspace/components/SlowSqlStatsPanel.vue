@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, onMounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {EmptyState, StatusPill} from '@/core/components'
@@ -71,7 +71,7 @@ onMounted(() => {
           {{ t(`${i18nPrefix}.subtitle`, {days: props.days, threshold: props.slowThresholdMs}) }}
         </p>
       </div>
-      <button class="slow-sql-panel__refresh" type="button" :disabled="loading" @click="loadStats">
+      <button class="dw-text-btn" type="button" :disabled="loading" @click="loadStats">
         {{ loading ? t(`${i18nPrefix}.loading`) : t(`${i18nPrefix}.refresh`) }}
       </button>
     </header>
@@ -193,20 +193,7 @@ onMounted(() => {
   line-height: var(--dw-leading);
 }
 
-.slow-sql-panel__refresh {
-  padding: var(--dw-space-3) var(--dw-space-5);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-bg-panel);
-  color: var(--dw-text);
-  font-size: var(--dw-text-sm);
-  cursor: pointer;
-}
 
-.slow-sql-panel--embedded .slow-sql-panel__refresh {
-  padding: var(--dw-space-2) var(--dw-space-4);
-  font-size: var(--dw-text-xs);
-}
 
 .slow-sql-panel__summary {
   display: grid;

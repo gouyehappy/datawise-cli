@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, reactive, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {platformApi} from '@/api'
@@ -142,10 +142,10 @@ function openInConsole() {
         <pre v-if="lastResult.sql" class="canvas-rerun__sql">{{ lastResult.sql }}</pre>
         <p v-if="lastResult.prompt && !lastResult.sql" class="canvas-rerun__prompt">{{ lastResult.prompt }}</p>
         <div class="canvas-rerun__actions">
-          <button v-if="lastResult.sql" type="button" class="dw-btn dw-btn--ghost" @click="copySql">
+          <button v-if="lastResult.sql" type="button" class="btn-ghost" @click="copySql">
             {{ t('platform.canvas.copySql') }}
           </button>
-          <button v-if="lastResult.sql" type="button" class="dw-btn" @click="openInConsole">
+          <button v-if="lastResult.sql" type="button" class="btn-secondary" @click="openInConsole">
             {{ t('platform.canvas.openInConsole') }}
           </button>
         </div>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {platformApi} from '@/api'
@@ -76,7 +76,7 @@ function formatTime(value?: string | null): string {
     </ul>
 
     <template #footer>
-      <button type="button" class="dw-btn dw-btn--ghost" @click="close">{{ t('common.close') }}</button>
+      <button type="button" class="btn-ghost" @click="close">{{ t('common.close') }}</button>
     </template>
   </AppModal>
 </template>

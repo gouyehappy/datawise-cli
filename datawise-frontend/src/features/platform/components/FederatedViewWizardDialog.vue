@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, reactive, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {AppModal, DwInlineAlert, FormField, ModalActions} from '@/core/components'
@@ -325,7 +325,7 @@ async function save() {
           <span>{{ t('platform.federated.wizard.alias') }}</span>
           <input v-model="picker.alias" class="dw-input" type="text" spellcheck="false">
         </label>
-        <button type="button" class="dw-btn" :disabled="!canAddSource" @click="addSource">
+        <button type="button" class="btn-secondary" :disabled="!canAddSource" @click="addSource">
           {{ t('platform.federated.wizard.addSource') }}
         </button>
       </div>
@@ -359,7 +359,7 @@ async function save() {
           </div>
           <button
               type="button"
-              class="dw-btn dw-btn--ghost"
+              class="btn-ghost"
               @click="removeSource(source.id)"
           >
             {{ t('platform.common.delete') }}
@@ -385,7 +385,7 @@ async function save() {
       <div class="federated-wizard__actions-row">
         <button
             type="button"
-            class="dw-btn"
+            class="btn-secondary"
             :disabled="generating || !form.prompt.trim()"
             @click="generateSql"
         >
@@ -442,19 +442,19 @@ async function save() {
         <button
             v-if="wizardStep !== 'sources'"
             type="button"
-            class="dw-btn dw-btn--ghost"
+            class="btn-ghost"
             @click="goBack"
         >
           {{ t('platform.federated.wizard.back') }}
         </button>
         <div class="federated-wizard__footer-spacer"/>
-        <button type="button" class="dw-btn dw-btn--ghost" @click="close">
+        <button type="button" class="btn-ghost" @click="close">
           {{ t('common.cancel') }}
         </button>
         <button
             v-if="wizardStep !== 'save'"
             type="button"
-            class="dw-btn"
+            class="btn-secondary"
             :disabled="!canGoNext"
             @click="goNext"
         >
@@ -463,7 +463,7 @@ async function save() {
         <button
             v-else
             type="button"
-            class="dw-btn"
+            class="btn-secondary"
             :disabled="!canSave"
             @click="save"
         >

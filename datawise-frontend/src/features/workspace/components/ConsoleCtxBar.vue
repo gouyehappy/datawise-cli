@@ -51,6 +51,8 @@ const panelOpen = computed(() => menuOpen.value)
 
 usePopoverEscape(panelOpen, () => {
   menuOpen.value = false
+}, {
+  containRefs: () => [rootRef.value],
 })
 
 const activeSource = computed(() =>

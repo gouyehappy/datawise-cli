@@ -31,6 +31,15 @@ const w = useMigrationWizard()
         <h3>{{ t('explorer.tableMigrationWizard.migrationRunTitle') }}</h3>
         <div class="migration-run__actions">
           <DwButton
+              v-if="w.canResumeFromWizard"
+              variant="primary"
+              size="sm"
+              :loading="w.resuming"
+              @click="w.resumeFromCheckpoint()"
+          >
+            {{ t('explorer.tableMigrationWizard.resumeFromCheckpoint') }}
+          </DwButton>
+          <DwButton
               variant="secondary"
               size="sm"
               @click="w.openMigrationTasksPanel(w.migrationRunRecord?.id)"
@@ -73,13 +82,13 @@ const w = useMigrationWizard()
 
       <p class="migration-run__panel-hint">{{ t('explorer.tableMigrationWizard.taskPanelHint') }}</p>
       <p v-if="w.migrationRunRecord?.status === 'paused'" class="migration-run__panel-hint">
-        {{ t('explorer.tableMigrationWizard.pausedResumeHint') }}
+        {{ t('explorer.tableMigrationWizard.pausedResumeHintWizard') }}
       </p>
       <p
           v-else-if="w.migrationRunRecord?.status === 'failed' || w.migrationRunRecord?.status === 'partial'"
           class="migration-run__panel-hint"
       >
-        {{ t('explorer.tableMigrationWizard.failedCheckpointHint') }}
+        {{ t('explorer.tableMigrationWizard.failedCheckpointHintWizard') }}
       </p>
     </section>
 

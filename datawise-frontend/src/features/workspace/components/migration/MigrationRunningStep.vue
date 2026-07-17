@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import {computed, nextTick, ref, watch} from 'vue'
+import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwButton, ProgressBar, StatusPill} from '@/core/components'
 import {resolveLogLevelVariant, statusVariantClass} from '@/core/utils/status-variant'
 import {useMigrationWizard} from '@/features/workspace/composables/useMigrationWizardInject'
+import {
+  computeMigrationRunLiveMetrics,
+  formatMigrationDuration,
+  formatMigrationThroughput,
+} from '@/features/explorer/services/table-migration.pure'
 
 const {t} = useI18n()
 const w = useMigrationWizard()
 const logListRef = ref<HTMLElement | null>(null)
+const nowMs = ref(Date.now())
+let tickTimer: ReturnType<typeof setInterval> | null = null
 
 const progressCaption = computed(() => {
     if (!w.progress) return ''
@@ -16,6 +23,58 @@ const progressCaption = computed(() => {
         completed: w.progress.completed,
         total: w.progress.total,
     })
+})
+
+const liveMetrics = computed(() =>
+    computeMigrationRunLiveMetrics(
+        w.progress,
+        w.runStartedAt,
+        nowMs.value,
+    ),
+)
+
+const metricsLine = computed(() => {
+    const metrics = liveMetrics.value
+    const parts = [
+        t('explorer.tableMigrationWizard.metricsElapsed', {
+            duration: formatMigrationDuration(metrics.elapsedMs),
+        }),
+        t('explorer.tableMigrationWizard.metricsThroughput', {
+            rate: formatMigrationThroughput(metrics.rowsPerSecond),
+        }),
+        t('explorer.tableMigrationWizard.metricsRows', {
+            rows: metrics.rowsMigrated,
+        }),
+    ]
+    if (metrics.etaMs != null) {
+        parts.push(t('explorer.tableMigrationWizard.metricsEta', {
+            duration: formatMigrationDuration(metrics.etaMs),
+        }))
+    }
+    return parts.join(' · ')
+})
+
+const tableProgressRows = computed(() => {
+    const progress = w.progress
+    if (!progress) return []
+    const rows: Array<{name: string; status: string; rows: number; total: number | null}> = []
+    for (const result of progress.results) {
+        rows.push({
+            name: result.tableName,
+            status: result.status,
+            rows: result.rowsMigrated ?? 0,
+            total: progress.tableRowTotals?.[result.tableName] ?? null,
+        })
+    }
+    if (progress.currentTable && !rows.some((row) => row.name === progress.currentTable)) {
+        rows.push({
+            name: progress.currentTable,
+            status: 'running',
+            rows: progress.batchRowsMigrated ?? 0,
+            total: progress.tableRowTotals?.[progress.currentTable] ?? null,
+        })
+    }
+    return rows
 })
 
 watch(
@@ -27,6 +86,16 @@ watch(
         list.scrollTop = list.scrollHeight
     },
 )
+
+onMounted(() => {
+    tickTimer = setInterval(() => {
+        nowMs.value = Date.now()
+    }, 1000)
+})
+
+onUnmounted(() => {
+    if (tickTimer) clearInterval(tickTimer)
+})
 </script>
 
 <template>
@@ -53,7 +122,44 @@ watch(
         <p v-if="w.progressDetailLabel" class="table-migration__running-text migration-progress-card__detail">
           {{ w.progressDetailLabel }}
         </p>
+        <p class="table-migration__running-text migration-progress-card__metrics">
+          {{ metricsLine }}
+        </p>
       </div>
+
+      <table v-if="tableProgressRows.length" class="detail-table migration-progress-card__tables">
+        <thead>
+          <tr>
+            <th>{{ t('explorer.tableMigrationWizard.preflightTable') }}</th>
+            <th>{{ t('explorer.tableMigrationWizard.validationMigratedRows') }}</th>
+            <th>{{ t('explorer.tableMigrationWizard.preflightStatus') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in tableProgressRows" :key="row.name">
+            <td>{{ row.name }}</td>
+            <td>
+              {{
+                row.total != null
+                  ? `${w.formatRowCount(row.rows)} / ${w.formatRowCount(row.total)}`
+                  : w.formatRowCount(row.rows)
+              }}
+            </td>
+            <td>
+              <StatusPill
+                  :status="row.status === 'success' ? 'ready' : row.status === 'running' ? 'running' : 'blocked'"
+                  domain="preflight"
+              >
+                {{
+                  row.status === 'running'
+                    ? t('explorer.tableMigrationWizard.checkpointStatus.running')
+                    : row.status
+                }}
+              </StatusPill>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <section v-if="w.migrationRunLogs.length" class="migration-run">

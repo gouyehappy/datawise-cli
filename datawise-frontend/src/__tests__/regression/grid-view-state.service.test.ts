@@ -12,6 +12,7 @@ import {
     resolveDisplayColumns,
     setGridColumnFilter,
     setGridColumnWidth,
+    suggestGridColumnWidth,
     toggleGridSort,
 } from '@/features/workspace/services/grid-view-state.service'
 import type {TableColumn, TableRow} from '@/core/types'
@@ -86,6 +87,20 @@ describe('grid-view-state.service', () => {
         assert.equal(state.columnFilters.c1, undefined)
         assert.equal(state.columnWidths.c1, 180)
         assert.deepEqual(state.columnOrder, ['c2', 'c1'])
+    })
+
+    it('suggests column width from type and declared length', () => {
+        assert.ok(suggestGridColumnWidth({name: 'id', type: 'bigint'}) < suggestGridColumnWidth({name: 'username', type: 'varchar(255)'}))
+        assert.equal(suggestGridColumnWidth({name: 'id', type: 'bigint'}), 108)
+        assert.equal(suggestGridColumnWidth({name: 'ok', type: 'boolean'}), 72)
+        assert.equal(suggestGridColumnWidth({name: 'created', type: 'datetime(6)'}), 188)
+        assert.equal(suggestGridColumnWidth({name: 'note', type: 'text'}), 200)
+        assert.equal(suggestGridColumnWidth({name: 'c', type: 'varchar(8)'}), 88)
+        assert.equal(suggestGridColumnWidth({name: 'username', type: 'varchar(255)'}), 260)
+        assert.ok(
+            suggestGridColumnWidth({name: 'very_long_column_name_here', type: 'int'})
+            > suggestGridColumnWidth({name: 'id', type: 'int'}),
+        )
     })
 
     it('detects active filters or sort', () => {

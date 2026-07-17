@@ -24,6 +24,7 @@ const props = withDefaults(
 const model = defineModel<string>({required: true})
 
 const rootRef = ref<HTMLElement>()
+const menuRef = ref<HTMLElement>()
 const open = ref(false)
 
 const MENU_GAP = 6
@@ -95,11 +96,16 @@ function updateMenuPosition() {
 function bindPositionListeners() {
   removePositionListeners?.()
   const onReposition = () => updateMenuPosition()
+  const onScroll = (event: Event) => {
+    const target = event.target
+    if (target instanceof Node && menuRef.value?.contains(target)) return
+    open.value = false
+  }
   window.addEventListener('resize', onReposition)
-  window.addEventListener('scroll', onReposition, true)
+  window.addEventListener('scroll', onScroll, true)
   removePositionListeners = () => {
     window.removeEventListener('resize', onReposition)
-    window.removeEventListener('scroll', onReposition, true)
+    window.removeEventListener('scroll', onScroll, true)
   }
 }
 
@@ -120,6 +126,8 @@ onUnmounted(() => {
 
 usePopoverEscape(open, () => {
   open.value = false
+}, {
+  containRefs: () => [rootRef.value, menuRef.value],
 })
 
 function toggle() {
@@ -168,6 +176,7 @@ function select(value: string) {
       <Transition name="dw-select-menu">
         <ul
             v-if="open"
+            ref="menuRef"
             class="dw-select__menu dw-select__menu--portal"
             role="listbox"
             :style="menuStyle"

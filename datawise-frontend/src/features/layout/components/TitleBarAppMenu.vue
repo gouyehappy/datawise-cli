@@ -16,7 +16,10 @@ const btnRef = ref<HTMLElement | null>(null)
 const menuPanelRef = ref<InstanceType<typeof TitleBarMainMenu> | null>(null)
 const menuStyle = ref<{top: string; left: string} | undefined>()
 
-usePopoverEscape(showProfileMenu, () => layout.closeProfileMenu())
+usePopoverEscape(showProfileMenu, () => layout.closeProfileMenu(), {
+  // TitleBarMainMenu 已 Teleport，并自带 document click；此处仅保留 Esc
+  closeOnOutside: false,
+})
 
 function updatePlacement() {
     const btn = btnRef.value

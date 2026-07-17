@@ -1,4 +1,4 @@
-/* Connector marketplace — standalone page */
+﻿/* Connector marketplace — standalone page */
 
 .connector-market-page {
     --cm-accent: color-mix(in srgb, var(--dw-primary) 72%, var(--mp-tone-indigo));
@@ -74,29 +74,8 @@
     transform: translateX(-2px);
 }
 
-.connector-market-hero__refresh {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--dw-gap-sm);
-    padding: var(--dw-space-3) var(--dw-space-6);
-    border: 1px solid var(--dw-border-light);
-    border-radius: var(--dw-radius-pill);
-    background: transparent;
-    color: var(--dw-text-secondary);
-    font-size: var(--dw-text-sm);
-    cursor: pointer;
-    transition: border-color 0.2s ease, color 0.2s ease;
-}
 
-.connector-market-hero__refresh:hover:not(:disabled) {
-    color: var(--dw-primary);
-    border-color: color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border));
-}
 
-.connector-market-hero__refresh:disabled {
-    opacity: 0.55;
-    cursor: wait;
-}
 
 .connector-market-hero__copy {
     min-width: 0;

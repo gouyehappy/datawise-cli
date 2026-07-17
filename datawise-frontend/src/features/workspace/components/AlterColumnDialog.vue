@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {AppModal, DwButton, DwConfirmAlert, DwInlineAlert, FormField} from '@/core/components'
@@ -183,12 +183,12 @@ function onExecuteClick() {
       @close="close"
   >
     <div class="modal-form">
-      <div class="modal-segment" role="tablist">
+      <div class="dw-segment" role="tablist">
         <button
             v-for="option in operations"
             :key="option"
             type="button"
-            class="modal-segment__btn"
+            class="dw-segment__btn"
             :class="{ 'is-active': operation === option }"
             role="tab"
             :aria-selected="operation === option"

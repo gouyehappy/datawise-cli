@@ -2,7 +2,7 @@
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import IconButton from '@/core/components/IconButton.vue'
-import {DwButton, DwPanelState, EmptyState, StatusPill} from '@/core/components'
+import {DwPanelState, EmptyState, StatusPill} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import type {StatusVariant} from '@/core/utils/status-variant'
 import type {WorkspaceTab} from '@/core/types'
@@ -300,15 +300,14 @@ async function copyDdl() {
             <header class="table-detail__panel-head">
               <h3>{{ t(`workspace.tableDetail.${activeSection}`) }}</h3>
               <div class="table-detail__panel-actions">
-                <DwButton
+                <button
                     v-if="activeSection === 'columns' && canAlterColumn"
-                    variant="ghost"
-                    size="sm"
                     type="button"
+                    class="dw-text-btn"
                     @click="openAlterColumn"
                 >
                   {{ t('workspace.tableDetail.alterColumn.action') }}
-                </DwButton>
+                </button>
                 <span class="table-detail__panel-count">
                   {{ t('workspace.tableDetail.itemCount', {count: activeSectionCount}) }}
                 </span>
@@ -453,7 +452,7 @@ async function copyDdl() {
               @click="copyDdl"
           >
             <DwIcon v-if="ddlCopied" name="submit" fit :stroke-width="1.5"/>
-            <DwIcon v-else name="copy" fit :stroke-width="1.2"/>
+            <DwIcon v-else name="copy" fit :stroke-width="1.5"/>
           </IconButton>
         </header>
         <div class="table-detail__ddl-body">

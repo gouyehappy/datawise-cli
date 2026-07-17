@@ -39,6 +39,7 @@ const showDefaultAction = computed(() => active.value && !active.value.isDefault
 usePopoverEscape(
     () => open.value,
     () => close(),
+    {closeOnOutside: false}, // 已有 mousedown outside
 )
 
 function close() {

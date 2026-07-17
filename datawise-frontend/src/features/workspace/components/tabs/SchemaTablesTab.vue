@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DwDataGrid from '@/core/components/DwDataGrid.vue'
@@ -199,42 +199,42 @@ async function updateSelectedTags(tagged: boolean) {
     >
       <template #toolbar-actions>
         <button
-            type="button"
+            class="dw-text-btn" type="button"
             :disabled="loading"
             @click="loadSchemaTables"
         >
-          <DwIcon name="refresh" size="sm" :stroke-width="1.35"/>
+          <DwIcon name="refresh" size="sm" :stroke-width="1.5"/>
           {{ t('workspace.schemaTables.refresh') }}
         </button>
         <button
-            type="button"
+            class="dw-text-btn dw-text-btn--accent" type="button"
             :disabled="loading || tagging || !canTag"
             @click="updateSelectedTags(true)"
         >
-          <DwIcon name="ai" size="sm" :stroke-width="1.35"/>
+          <DwIcon name="ai" size="sm" :stroke-width="1.5"/>
           {{ t('workspace.schemaTables.tagForAi') }}
         </button>
         <button
-            type="button"
+            class="dw-text-btn" type="button"
             :disabled="loading || tagging || !canUntag"
             @click="updateSelectedTags(false)"
         >
-          <DwIcon name="minus" size="sm" :stroke-width="1.35"/>
+          <DwIcon name="minus" size="sm" :stroke-width="1.5"/>
           {{ t('workspace.schemaTables.untagForAi') }}
         </button>
         <button
-            type="button"
+            class="dw-text-btn dw-text-btn--accent" type="button"
             :disabled="loading || syncingToAi"
             @click="syncToAiDataset"
         >
-          <DwIcon name="refresh" size="sm" :stroke-width="1.35"/>
+          <DwIcon name="refresh" size="sm" :stroke-width="1.5"/>
           {{ syncingToAi ? t('workspace.schemaTables.syncingToAi') : t('workspace.schemaTables.syncToAi') }}
         </button>
         <button
-            type="button"
+            class="dw-text-btn" type="button"
             @click="openErDiagram"
         >
-          <DwIcon name="tab-schema-er" size="sm" :stroke-width="1.35"/>
+          <DwIcon name="tab-schema-er" size="sm" :stroke-width="1.5"/>
           {{ t('workspace.schemaTables.openEr') }}
         </button>
       </template>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {usePopoverEscape} from '@/core/composables/usePopoverEscape'
@@ -84,7 +84,9 @@ defineExpose({
   refreshStatus: transaction.refreshStatus,
 })
 
-usePopoverEscape(open, closeMenu)
+usePopoverEscape(open, closeMenu, {
+  containRefs: () => [rootRef.value],
+})
 </script>
 
 <template>
@@ -107,7 +109,7 @@ usePopoverEscape(open, closeMenu)
 
     <div v-if="isPending" class="txn-quick">
       <button
-          class="txn-quick-btn txn-quick-btn--commit"
+          class="dw-text-btn txn-quick-btn--commit"
           type="button"
           :disabled="!transaction.canCommit() || transaction.loading.value || canManage === false"
           @click="transaction.commit()"
@@ -115,7 +117,7 @@ usePopoverEscape(open, closeMenu)
         {{ t('console.transaction.commit') }}
       </button>
       <button
-          class="txn-quick-btn txn-quick-btn--rollback"
+          class="dw-text-btn txn-quick-btn--rollback"
           type="button"
           :disabled="!transaction.canRollback() || transaction.loading.value || canManage === false"
           @click="transaction.rollback()"
@@ -291,26 +293,14 @@ usePopoverEscape(open, closeMenu)
   gap: var(--dw-space-1);
 }
 
-.txn-quick-btn {
-  padding: var(--dw-space-1) var(--dw-space-3);
-  border-radius: var(--dw-radius-sm);
-  font-size: var(--dw-text-xs);
-  font-weight: 600;
-  line-height: var(--dw-tab-title-line);
-  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
-}
-
-.txn-quick-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .txn-quick-btn--commit {
   color: var(--dw-success-fg);
 }
 
 .txn-quick-btn--commit:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--dw-success-fg) 12%, transparent);
+  color: var(--dw-success-fg);
+  border-color: color-mix(in srgb, var(--dw-success-fg) 28%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-success-fg) 10%, var(--dw-bg));
 }
 
 .txn-quick-btn--rollback {
@@ -318,7 +308,9 @@ usePopoverEscape(open, closeMenu)
 }
 
 .txn-quick-btn--rollback:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--dw-warning-fg) 12%, transparent);
+  color: var(--dw-warning-fg);
+  border-color: color-mix(in srgb, var(--dw-warning-fg) 28%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-warning-fg) 10%, var(--dw-bg));
 }
 
 .txn-menu {

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
@@ -181,11 +181,11 @@ async function onFileChange(event: Event) {
           <h3>{{ t('settings.layout.configFile') }}</h3>
           <p class="hint">{{ t('settings.layout.configFileHint') }}</p>
           <div class="config-actions">
-            <button class="config-btn config-btn--primary" type="button" @click="onExport">
+            <button class="btn-primary" type="button" @click="onExport">
               <DwIcon name="export" size="sm" :stroke-width="1.5"/>
               {{ t('settings.layout.export') }}
             </button>
-            <button class="config-btn" type="button" @click="onImportClick">
+            <button class="btn-secondary" type="button" @click="onImportClick">
               <DwIcon name="import" size="sm" :stroke-width="1.5"/>
               {{ t('settings.layout.import') }}
             </button>

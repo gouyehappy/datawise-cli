@@ -12,6 +12,8 @@ import ExplainPlanTree from '@/features/workspace/components/ExplainPlanTree.vue
 import GenerateDmlDialog from '@/features/workspace/components/GenerateDmlDialog.vue'
 import QueryResultDiffPanel from '@/features/workspace/components/QueryResultDiffPanel.vue'
 import QueryResultAiSummaryPanel from '@/features/workspace/components/QueryResultAiSummaryPanel.vue'
+import QueryResultChartPanel from '@/features/workspace/components/QueryResultChartPanel.vue'
+import QueryResultViewToggle from '@/features/workspace/components/QueryResultViewToggle.vue'
 import {useClosableTabMenu} from '@/core/composables/useClosableTabMenu'
 import type {DbType, TableColumn, TableRow} from '@/core/types'
 import type {TableColumnDetail} from '@/shared/api/types'
@@ -30,6 +32,7 @@ import {
     buildQueryResultDiff,
     canCompareQueryResults,
 } from '@/features/workspace/services/query-result-diff.service'
+import {canVisualizeQueryResult} from '@/features/workspace/services/query-result-chart.service'
 
 const MESSAGES_WIDTH_DEFAULT = 280
 const MESSAGES_WIDTH_MIN = 180
@@ -130,7 +133,8 @@ const emit = defineEmits<{
   'request-ai-fix': [payload: { sql: string; errorMessage: string; errorLine?: number }]
   'request-ai-summary': []
   'close-ai-summary': []
-  'request-index-suggest': [payload: { sql: string; explainPlan?: ExplainPlanNode[] }]
+  'request-index-suggest': [payload: { sql: string; explainPlan?: ExplainPlanNode[]; table?: string }]
+  'request-ai-index-suggest': [payload: { sql: string; explainPlan?: ExplainPlanNode[] }]
   'request-ai-explain': []
   'close-ai-explain': []
   'open-cross-env-compare': [index: number]
@@ -185,8 +189,8 @@ const {
     (index) => getResultTabMenu(t, {
       canCompareWithPrevious: canCompareWithPrevious(index),
       canCrossEnvCompare: canCrossEnvCompare(index),
-      canSuggestIndex: props.enableAiIndexSuggest
-          && Boolean(normalizedResults.value[index]?.explainPlan?.length),
+      canSuggestIndex: Boolean(normalizedResults.value[index]?.explainPlan?.length
+          && normalizedResults.value[index]?.sql?.trim()),
     }),
     () => ({
       close: (index) => emit('close-result', index),
@@ -194,7 +198,7 @@ const {
       closeAll: () => emit('close-all-results'),
       compareWithPrevious: (index) => compareWithPrevious(index),
       'cross-env-compare': (index) => emit('open-cross-env-compare', index),
-      'suggest-index': (index) => requestIndexSuggest(index),
+      'suggest-index': (index) => requestIndexDraft(index),
     }),
 )
 
@@ -261,6 +265,7 @@ const messageLogEntries = computed<MessageLogEntry[]>(() => {
 const generateDmlOpen = ref(false)
 const generateDmlRows = ref<TableRow[]>([])
 const diffMode = ref<{ baselineIndex: number; currentIndex: number } | null>(null)
+const resultView = ref<'grid' | 'chart'>('grid')
 
 function canCompareWithPrevious(index: number): boolean {
     if (!pluginStore.isEnabled('p-result-diff')) return false
@@ -302,16 +307,31 @@ function exitDiffMode() {
     diffMode.value = null
 }
 
-function requestIndexSuggest(index?: number) {
+function requestIndexDraft(index?: number, table?: string) {
     const targetIndex = index ?? (typeof currentView.value === 'number' ? currentView.value : -1)
     const result = normalizedResults.value[targetIndex]
     if (!result?.sql?.trim() || !result.explainPlan?.length) return
-    emit('request-index-suggest', {sql: result.sql, explainPlan: result.explainPlan})
+    emit('request-index-suggest', {
+      sql: result.sql,
+      explainPlan: result.explainPlan,
+      ...(table ? {table} : {}),
+    })
 }
+
+function requestAiIndexSuggest(index?: number) {
+    const targetIndex = index ?? (typeof currentView.value === 'number' ? currentView.value : -1)
+    const result = normalizedResults.value[targetIndex]
+    if (!result?.sql?.trim() || !result.explainPlan?.length) return
+    emit('request-ai-index-suggest', {sql: result.sql, explainPlan: result.explainPlan})
+}
+
+const canRequestIndexDraft = computed(() =>
+    Boolean(activeResult.value?.explainPlan?.length && activeResult.value.sql?.trim()),
+)
 
 const canRequestIndexSuggest = computed(() =>
     props.enableAiIndexSuggest
-    && Boolean(activeResult.value?.explainPlan?.length && activeResult.value.sql?.trim()),
+    && canRequestIndexDraft.value,
 )
 
 const canGenerateDml = computed(() => {
@@ -327,6 +347,14 @@ const canShowFakeData = computed(() => {
   if (!pluginStore.isEnabled('p-fake-data')) return false
   const columns = props.columnDetails?.length ? props.columnDetails : activeResult.value?.columns
   return Boolean(columns?.length)
+})
+
+const canShowResultChart = computed(() => {
+  if (diffMode.value) return false
+  const result = activeResult.value
+  if (!result || result.status !== 'success') return false
+  if (result.explainPlan?.length || result.batchEntries?.length) return false
+  return canVisualizeQueryResult(result.columns, result.rows)
 })
 
 function onGenerateDml(rows: TableRow[]) {
@@ -371,9 +399,11 @@ function isSlowQueryDuration(durationMs: number) {
 
 watch(tabsSignature, () => {
   diffMode.value = null
+  resultView.value = 'grid'
 })
 
 watch(currentView, (view) => {
+  resultView.value = 'grid'
   if (diffMode.value && view !== diffMode.value.currentIndex) {
     diffMode.value = null
   }
@@ -791,7 +821,11 @@ watch(
           :explain-mode="activeResult.explainMode"
           :enable-ai-explain="canRequestAiExplain"
           :ai-explain-loading="aiExplainLoading"
-          @suggest-indexes="requestIndexSuggest()"
+          :enable-index-draft="canRequestIndexDraft"
+          :enable-ai-index-suggest="canRequestIndexSuggest"
+          :ai-index-suggest-loading="aiIndexSuggestLoading"
+          @open-index-draft="(payload) => requestIndexDraft(undefined, payload?.table)"
+          @request-ai-index-suggest="requestAiIndexSuggest()"
           @request-ai-explain="onRequestAiExplain"
       />
     </div>
@@ -809,7 +843,15 @@ watch(
           :text="aiSummaryText ?? ''"
           @close="emit('close-ai-summary')"
       />
+      <QueryResultChartPanel
+          v-if="resultView === 'chart' && canShowResultChart"
+          v-model:view-mode="resultView"
+          :columns="activeResult.columns"
+          :rows="activeResult.rows"
+          :title="activeResult.label"
+      />
       <DataGrid
+          v-else
           v-model:view-state="viewState"
           :columns="activeResult.columns"
           :rows="activeResult.rows"
@@ -841,11 +883,12 @@ watch(
           @load-more="onLoadMoreRows"
           @generate-dml="onGenerateDml"
       >
-        <template v-if="canShowFakeData || canRequestAiSummary" #toolbar-extra>
+        <template v-if="canShowFakeData || canRequestAiSummary || canShowResultChart" #toolbar-extra>
+          <QueryResultViewToggle v-if="canShowResultChart" v-model="resultView"/>
           <button
               v-if="canShowFakeData"
               type="button"
-              class="result-toolbar-btn"
+              class="dw-text-btn"
               @click="emit('generate-fake-data')"
           >
             {{ t('workspace.fakeData.toolbar') }}
@@ -853,7 +896,7 @@ watch(
           <button
               v-if="canRequestAiSummary"
               type="button"
-              class="result-toolbar-btn result-toolbar-btn--ai"
+              class="dw-text-btn dw-text-btn--accent"
               :disabled="aiSummaryLoading"
               @click="onRequestAiSummary"
           >
@@ -1157,41 +1200,6 @@ watch(
 
 .explain-plan-pane :deep(.result-ai-summary) {
   margin: var(--dw-space-4) var(--dw-space-6) 0;
-}
-
-.result-toolbar-btn {
-  display: inline-flex;
-  align-items: center;
-  height: var(--dw-btn-height);
-  padding: 0 var(--dw-space-5);
-  flex-shrink: 0;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius-sm);
-  background: var(--dw-bg-subtle);
-  color: var(--dw-text);
-  font-size: var(--dw-text-sm);
-  white-space: nowrap;
-}
-
-.result-toolbar-btn:hover:not(:disabled) {
-  background: var(--dw-bg-hover);
-  border-color: var(--dw-border-strong);
-}
-
-.result-toolbar-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.result-toolbar-btn--ai {
-  border-color: color-mix(in srgb, var(--dw-primary) 14%, var(--dw-border));
-  background: var(--dw-primary-softer);
-}
-
-.result-toolbar-btn--ai:hover:not(:disabled) {
-  background: var(--dw-primary-soft);
-  border-color: var(--dw-primary-ring);
-  color: var(--dw-primary);
 }
 
 .result-grid-pane :deep(.data-grid),

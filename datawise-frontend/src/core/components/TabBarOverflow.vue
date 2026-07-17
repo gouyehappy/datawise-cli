@@ -37,7 +37,9 @@ const filteredItems = computed(() => {
   return props.items.filter((item) => item.label.toLowerCase().includes(q))
 })
 
-usePopoverEscape(() => props.open, () => emit('update:open', false))
+usePopoverEscape(() => props.open, () => emit('update:open', false), {
+  containRefs: () => [rootRef.value],
+})
 
 function toggle() {
   emit('update:open', !props.open)

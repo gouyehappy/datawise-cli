@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 工作区 / 结果区共享 Tab 栏（IDEA 风格：默认平铺无色差，仅 hover / 激活有背景）
  */
 .dw-tab-bar {
@@ -278,9 +278,7 @@
 .migration-panel__tab,
 .sql-monitor__tab,
 .plugin-dev-tab,
-.modal-segment__btn,
-.mp-segment__btn,
-.mode-segment__btn {
+.mp-segment__btn {
     border: 1px solid transparent;
     background: transparent;
     color: var(--dw-tab-inactive-text);
@@ -292,9 +290,7 @@
 .migration-panel__tab:hover:not(.is-active),
 .sql-monitor__tab:hover:not(:disabled):not(.sql-monitor__tab--active),
 .plugin-dev-tab:hover:not(.is-active),
-.modal-segment__btn:hover:not(.is-active),
-.mp-segment__btn:hover:not(.is-active):not(:disabled),
-.mode-segment__btn:hover:not(.is-active):not(:disabled) {
+.mp-segment__btn:hover:not(.is-active):not(:disabled) {
     background: var(--dw-tab-hover-bg);
     color: var(--dw-tab-inactive-text);
 }
@@ -305,9 +301,7 @@
 .migration-panel__tab.is-active,
 .sql-monitor__tab--active,
 .plugin-dev-tab.is-active,
-.modal-segment__btn.is-active,
-.mp-segment__btn.is-active,
-.mode-segment__btn.is-active {
+.mp-segment__btn.is-active {
     background: var(--dw-tab-active-bg);
     border-color: var(--dw-tab-active-border);
     color: var(--dw-tab-active-text);

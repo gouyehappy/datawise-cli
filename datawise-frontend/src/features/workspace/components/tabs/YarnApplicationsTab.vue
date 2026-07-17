@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
@@ -29,7 +29,7 @@ function refresh() {
         <h2>{{ t('explorer.yarnApps.title') }}</h2>
         <p>{{ connectionLabel }}</p>
       </div>
-      <button class="yarn-apps-tab__refresh" type="button" @click="refresh">
+      <button class="dw-text-btn" type="button" @click="refresh">
         {{ t('explorer.yarnApps.refresh') }}
       </button>
     </header>
@@ -78,13 +78,6 @@ function refresh() {
   color: var(--dw-text-muted);
 }
 
-.yarn-apps-tab__refresh {
-  padding: var(--dw-space-3) var(--dw-space-6);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius-sm);
-  background: var(--dw-bg-input);
-  cursor: pointer;
-}
 
 .yarn-apps-tab__panel {
   flex: 1;

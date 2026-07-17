@@ -53,19 +53,19 @@
     }
 
     var LIGHT_UI = {
-        border: '#e5e7eb',
-        borderLight: '#eef0f3',
+        border: '#e2e8f0',
+        borderLight: '#eef2f7',
         panelBorder: 'rgba(15, 23, 42, 0.08)',
         panelShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
         text: '#111827',
         textSecondary: '#6b7280',
         textMuted: '#9ca3af',
         textDim: '#808080',
-        chrome: '#e3e6eb',
-        tabBarBg: '#dee1e6',
-        tabBarBorder: '#c8ccd4',
+        chrome: '#dce4ee',
+        tabBarBg: '#dce3ea',
+        tabBarBorder: '#c5cdd8',
         tabActiveBg: '#ffffff',
-        tabActiveBorder: '#007acc',
+        tabActiveBorder: '#2563eb',
         tabActiveText: '#1f2937',
         tabInactiveText: '#6b7280',
         tabHoverBg: 'rgba(0, 0, 0, 0.08)',
@@ -110,8 +110,8 @@
                 var parsed = JSON.parse(raw)
                 return {
                     appearance: readAppearance(parsed),
-                    background: parsed.background || 'default',
-                    primary: parsed.primary || 'violet',
+                    background: parsed.background || 'cool',
+                    primary: parsed.primary || 'blue',
                     uiSkin: readUiSkin(parsed.uiSkin),
                 }
             }
@@ -121,8 +121,8 @@
                 if (config.theme) {
                     return {
                         appearance: readAppearance(config.theme),
-                        background: config.theme.background || 'default',
-                        primary: config.theme.primary || 'violet',
+                        background: config.theme.background || 'cool',
+                        primary: config.theme.primary || 'blue',
                         uiSkin: readUiSkin(config.theme.uiSkin),
                     }
                 }
@@ -130,7 +130,7 @@
         } catch (e) {
             /* fall through */
         }
-        return {appearance: 'light', background: 'default', primary: 'violet', uiSkin: 'classic'}
+        return {appearance: 'light', background: 'cool', primary: 'blue', uiSkin: 'classic'}
     }
 
     function resolveMode(appearance) {
@@ -142,11 +142,11 @@
 
     function apply(mode, prefs) {
         var root = document.documentElement
-        var primary = PRIMARY[prefs.primary] || PRIMARY.violet
+        var primary = PRIMARY[prefs.primary] || PRIMARY.blue
         var surfaces =
             mode === 'dark'
-                ? BG_DARK[prefs.background] || BG_DARK.default
-                : BG_LIGHT[prefs.background] || BG_LIGHT.default
+                ? BG_DARK[prefs.background] || BG_DARK.cool
+                : BG_LIGHT[prefs.background] || BG_LIGHT.cool
         var ui = mode === 'dark' ? DARK_UI : LIGHT_UI
 
         var skin = prefs.uiSkin || 'classic'

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {AppModal, DwButton, DwInlineAlert, DwPanelState, FormField} from '@/core/components'
@@ -168,16 +168,16 @@ function downloadSql() {
         <DwButton
             variant="secondary"
             type="button"
-            class="fake-data-toolbar__refresh"
+            class="dw-text-btn"
             :disabled="loading || previewLoading || executing || !insertColumns.length"
             @click="onRefreshPreview"
         >
           {{ t('common.refresh') }}
         </DwButton>
-        <div class="fake-data-view-switch">
+        <div class="dw-segment">
           <button
               type="button"
-              class="fake-data-view-switch__btn"
+              class="dw-segment__btn"
               :class="{'is-active': activeView === 'split'}"
               @click="activeView = 'split'"
               title="Split view"
@@ -186,7 +186,7 @@ function downloadSql() {
           </button>
           <button
               type="button"
-              class="fake-data-view-switch__btn"
+              class="dw-segment__btn"
               :class="{'is-active': activeView === 'preview'}"
               @click="activeView = 'preview'"
               :title="t('workspace.fakeData.previewTitle')"
@@ -195,7 +195,7 @@ function downloadSql() {
           </button>
           <button
               type="button"
-              class="fake-data-view-switch__btn"
+              class="dw-segment__btn"
               :class="{'is-active': activeView === 'sql'}"
               @click="activeView = 'sql'"
               title="SQL view"
@@ -359,45 +359,11 @@ function downloadSql() {
   flex: 0 0 260px;
 }
 
-.fake-data-toolbar__refresh {
-  height: 36px;
-}
 
-.fake-data-view-switch {
-  margin-left: auto;
-  display: inline-flex;
-  border: 1px solid var(--dw-tab-bar-border);
-  border-radius: var(--dw-tab-pill-radius);
-  overflow: hidden;
-  background: var(--dw-tab-bar-bg);
-}
 
-.fake-data-view-switch__btn {
-  height: 36px;
-  width: 38px;
-  border: 0;
-  background: transparent;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-xs);
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: background var(--dw-duration-fast) var(--dw-ease), color var(--dw-duration-fast) var(--dw-ease);
-}
 
-.fake-data-view-switch__btn + .fake-data-view-switch__btn {
-  border-left: 1px solid var(--dw-border-light);
-}
 
-.fake-data-view-switch__btn:hover {
-  background: var(--dw-bg-hover);
-  color: var(--dw-text-secondary);
-}
 
-.fake-data-view-switch__btn.is-active {
-  background: color-mix(in srgb, var(--dw-primary) 14%, var(--dw-bg-panel));
-  color: var(--dw-primary);
-}
 
 .fake-data-hints {
   display: grid;
@@ -601,10 +567,6 @@ function downloadSql() {
 
   .fake-data-toolbar {
     flex-wrap: wrap;
-  }
-
-  .fake-data-view-switch {
-    margin-left: 0;
   }
 }
 </style>

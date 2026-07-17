@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {useI18n} from 'vue-i18n'
 import {StatusPill} from '@/core/components'
 import {DwIcon} from '@/core/icons'
@@ -68,7 +68,7 @@ function openSnippetLayerPlugin(pluginId: string) {
           {{ t('settings.sqlSnippets.personalCount', {count: store.personalSnippetCount}) }}
         </span>
       </div>
-      <button class="config-btn" type="button" @click="openPluginCenter">
+      <button class="btn-secondary" type="button" @click="openPluginCenter">
         <DwIcon name="plugins" size="sm" :stroke-width="1.5"/>
         {{ t('settings.sqlEditor.openPluginCenter') }}
       </button>

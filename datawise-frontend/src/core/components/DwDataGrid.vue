@@ -620,26 +620,13 @@ watch(internalCurrentPage, () => {
   display: inline-flex;
   align-items: center;
   gap: var(--dw-gap-xs);
-  height: var(--dw-btn-height);
-  padding: 0 var(--dw-space-4);
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-sm);
+  flex-shrink: 0;
   cursor: pointer;
   white-space: nowrap;
 }
 
-.dw-data-grid__toolbar-left :slotted(button:hover:not(:disabled)),
-.dw-data-grid__toolbar-right :slotted(button:hover:not(:disabled)) {
-  color: var(--dw-text-primary);
-  background: color-mix(in srgb, var(--dw-bg-muted) 38%, transparent);
-}
-
 .dw-data-grid__toolbar-left :slotted(button:disabled),
 .dw-data-grid__toolbar-right :slotted(button:disabled) {
-  opacity: 0.45;
   cursor: not-allowed;
 }
 

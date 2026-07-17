@@ -37,11 +37,11 @@ import {
     disposeSshTerminalHandle,
     disposeSshTerminalsForConnection as suspendSshTerminalsForConnection,
 } from '@/features/terminal/services/ssh-terminal-session.service'
+import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {
     replaceConsoleQueryResultAtIndex,
     sumConsoleQueryTotals,
 } from '@/features/workspace/services/query-result-refresh.service'
-import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {
     resolveConsoleWorkspaceInstance,
     resolveWorkspaceInstanceNodeId,
@@ -51,7 +51,7 @@ import {isCatalogSchemaDbType} from '@/features/explorer/services/explorer-lazy-
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {canOpenConnectionCatalogForm} from '@/features/auth/services/feature-permission.service'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
-import {instanceSqlApi} from '@/api'
+import {explorerApi, instanceSqlApi} from '@/api'
 import {viewModelApi} from '@/api/modules/view-model'
 import {
     isValidViewModelBaseName,
@@ -89,6 +89,13 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     function activateTab(tabId: string) {
         activeTabId.value = tabId
+        const tab = tabs.value.find((item) => item.id === tabId)
+        const connectionId = tab?.connectionId
+        if (!connectionId) return
+        const explorer = useExplorerStore()
+        if (!explorer.isConnectionPooled(connectionId)) return
+        // 已连接源：切换 Tab 时轻量刷新活跃时间，不建新连接
+        void explorerApi.touchConnection(connectionId).catch(() => undefined)
     }
 
     function resolveConnectionLabel(connectionId: string) {
@@ -970,6 +977,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         database: string
         instanceId?: string
         explorerNodeId?: string
+        scheduleDraft?: import('@/features/platform/services/scheduled-sql-payload.service').PlatformScheduleDraft
+        openCreateForm?: boolean
     }) {
         const existing = tabs.value.find(
             (tab) =>
@@ -981,6 +990,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (existing) {
             if (options.instanceId) existing.instanceId = options.instanceId
             if (options.explorerNodeId) existing.explorerNodeId = options.explorerNodeId
+            if (options.scheduleDraft) existing.platformScheduleDraft = options.scheduleDraft
+            if (options.openCreateForm) existing.platformOpenCreateForm = true
             activeTabId.value = existing.id
             return existing.id
         }
@@ -995,6 +1006,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             instanceId: options.instanceId,
             explorerNodeId: options.explorerNodeId,
             platformFeature: options.feature,
+            platformScheduleDraft: options.scheduleDraft,
+            platformOpenCreateForm: options.openCreateForm,
         })
         activeTabId.value = id
         return id
@@ -1030,6 +1043,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     function openTableMigration(options: {
         source: NonNullable<WorkspaceTab['migrationSource']>
         preselectedTables?: string[]
+        initialTarget?: NonNullable<WorkspaceTab['migrationInitialTarget']>
     }) {
         const existing = tabs.value.find(
             (tab) =>
@@ -1045,6 +1059,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
                         ...options.preselectedTables,
                     ]),
                 ]
+            }
+            if (options.initialTarget) {
+                existing.migrationInitialTarget = options.initialTarget
             }
             activeTabId.value = existing.id
             return existing.id
@@ -1064,6 +1081,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
             closable: true,
             migrationSource: options.source,
             migrationPreselectedTables: preselected.length ? preselected : undefined,
+            migrationInitialTarget: options.initialTarget,
             connectionId: options.source.connectionId,
             database: options.source.database,
         })

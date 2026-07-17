@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {userAdminApi} from '@/api'
@@ -253,7 +253,7 @@ async function savePermissions() {
       </span>
       <button
           v-if="selectedUser && isEditable"
-          class="settings-head-btn"
+          class="dw-text-btn"
           type="button"
           :disabled="saving || !isDirty"
           @click="savePermissions"
@@ -460,7 +460,7 @@ async function savePermissions() {
     >
       <p class="hint perm-save-bar__hint">{{ t('settings.userPermissions.customHint') }}</p>
       <button
-          class="action-btn"
+          class="btn-secondary"
           type="button"
           :disabled="saving"
           @click="savePermissions"

@@ -46,6 +46,8 @@ function isSqlExpanded(id: string) {
 
 usePopoverEscape(menuOpen, () => {
   menuOpen.value = false
+}, {
+  containRefs: () => [menuRef.value],
 })
 
 const hasRead = computed(() => notifications.items.some((item) => item.read))

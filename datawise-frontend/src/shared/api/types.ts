@@ -902,6 +902,9 @@ export interface ExplorerApi {
 
     pingConnection(connectionId: string): Promise<ConnectionTestResult>
 
+    /** 仅刷新已建池连接活跃时间；未连接返回 false，不自动 connect */
+    touchConnection(connectionId: string): Promise<boolean>
+
     disconnectConnection(connectionId: string): Promise<void>
 
     listPooledConnections(): Promise<string[]>
@@ -1419,6 +1422,8 @@ export interface MigrationApi {
     preflight(request: TableMigrationPreflightRequest): Promise<TableMigrationPreflightResult>
 
     getJob(jobId: string): Promise<MigrationJobView>
+
+    listJobs(): Promise<MigrationJobView[]>
 
     startJob(request: TableMigrationBatchRequest): Promise<MigrationJobView>
 

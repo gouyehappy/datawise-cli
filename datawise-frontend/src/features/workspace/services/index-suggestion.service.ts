@@ -124,41 +124,57 @@ export function buildHeuristicIndexDrafts(
 
     for (const table of targetTables) {
         const columns = extractFilterColumnsForTable(sql, table)
-        if (!columns.length) continue
-        const key = `${table}:${columns.join(',')}`
+        const hint = hints.find((item) =>
+            item.table?.toLowerCase() === table.toLowerCase()
+            || item.message.toLowerCase().includes(table.toLowerCase()),
+        )
+        if (!columns.length && !hint) continue
+        const key = `${table}:${columns.join(',') || '_'}`
         if (seen.has(key)) continue
         seen.add(key)
         drafts.push({
             table,
-            indexName: sanitizeIndexName(table, columns),
+            indexName: sanitizeIndexName(table, columns.length ? columns : ['todo']),
             columns,
-            reason: hints.find((hint) => hint.message.includes(table))?.suggestion
+            reason: hint?.suggestion
+                ?? hint?.message
                 ?? `Improve access path for ${table}`,
         })
     }
 
     if (!drafts.length && hints.length) {
-        const fallbackTable = tablesFromSql[0] ?? 'target_table'
+        const fallbackTable = hints.find((hint) => hint.table)?.table
+            ?? tablesFromSql[0]
+            ?? 'target_table'
         const columns = extractFilterColumnsForTable(sql, fallbackTable)
-        if (columns.length) {
-            drafts.push({
-                table: fallbackTable,
-                indexName: sanitizeIndexName(fallbackTable, columns),
-                columns,
-                reason: hints[0]?.suggestion ?? hints[0]?.message ?? 'Index suggestion from plan',
-            })
-        }
+        drafts.push({
+            table: fallbackTable,
+            indexName: sanitizeIndexName(fallbackTable, columns.length ? columns : ['todo']),
+            columns,
+            reason: hints[0]?.suggestion ?? hints[0]?.message ?? 'Index suggestion from plan',
+        })
     }
 
     return drafts
+}
+
+/** 仅保留指定表的草稿（用于单条风险提示的一键生成） */
+export function filterIndexDraftsByTable(drafts: IndexDraft[], table?: string): IndexDraft[] {
+    const target = table?.trim()
+    if (!target) return drafts
+    const lower = target.toLowerCase()
+    return drafts.filter((draft) => draft.table.toLowerCase() === lower)
 }
 
 export function formatCreateIndexStatement(draft: IndexDraft, dbType?: DbType, database?: string): string {
     const table = database?.trim()
         ? buildQualifiedTableName(dbType, database, draft.table)
         : quoteSqlIdentifier(dbType, draft.table)
-    const columns = draft.columns.map((column) => quoteSqlIdentifier(dbType, column)).join(', ')
     const indexName = quoteSqlIdentifier(dbType, draft.indexName)
+    if (!draft.columns.length) {
+        return `CREATE INDEX ${indexName} ON ${table} (/* column */);`
+    }
+    const columns = draft.columns.map((column) => quoteSqlIdentifier(dbType, column)).join(', ')
     return `CREATE INDEX ${indexName} ON ${table} (${columns});`
 }
 
@@ -171,10 +187,37 @@ export function formatIndexDraftSql(
     return drafts
         .map((draft) => {
             const comment = `-- ${draft.reason}`
-            return `${comment}\n${formatCreateIndexStatement(draft, dbType, database)}`
+            const statement = formatCreateIndexStatement(draft, dbType, database)
+            if (!draft.columns.length) {
+                return `${comment}\n-- TODO: replace /* column */ with WHERE / JOIN / ORDER BY columns\n${statement}`
+            }
+            return `${comment}\n${statement}`
         })
         .join('\n\n')
         .concat('\n')
+}
+
+/** 从 EXPLAIN + SQL 直接生成可打开的 CREATE INDEX 草稿（不依赖 AI） */
+export function buildExplainIndexDraftSql(
+    nodes: ExplainPlanNode[],
+    sql: string,
+    dbType?: DbType,
+    database?: string,
+    tableFilter?: string,
+): string {
+    const allDrafts = buildHeuristicIndexDrafts(nodes, sql, dbType)
+    const filtered = filterIndexDraftsByTable(allDrafts, tableFilter)
+    const drafts = filtered.length
+        ? filtered
+        : tableFilter?.trim()
+            ? [{
+                table: tableFilter.trim(),
+                indexName: sanitizeIndexName(tableFilter.trim(), ['todo']),
+                columns: extractFilterColumnsForTable(sql, tableFilter.trim()),
+                reason: `Improve access path for ${tableFilter.trim()}`,
+            } satisfies IndexDraft]
+            : allDrafts
+    return formatIndexDraftSql(drafts, dbType, database)
 }
 
 export function mergeAiIndexDraftSql(aiResponse: string, fallback: string): string {

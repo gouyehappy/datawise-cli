@@ -24,7 +24,9 @@ const quickPicks = computed(() => redisDbQuickPicks(model.value))
 const canApply = computed(() => parseRedisDbInput(draft.value) != null)
 const draftDb = computed(() => parseRedisDbInput(draft.value))
 
-usePopoverEscape(open, cancelEdit)
+usePopoverEscape(open, cancelEdit, {
+  containRefs: () => [rootRef.value],
+})
 
 watch(
     () => model.value,

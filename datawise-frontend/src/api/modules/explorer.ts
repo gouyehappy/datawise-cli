@@ -88,6 +88,7 @@ export const explorerApi = {
         api.explorer.removeYarnQueue(connectionId, payload),
     fetchConnection: (connectionId: string) => api.explorer.fetchConnection(connectionId),
     connectConnection: (connectionId: string) => api.explorer.connectConnection(connectionId),
+    touchConnection: (connectionId: string) => api.explorer.touchConnection(connectionId),
     disconnectConnection: (connectionId: string) => api.explorer.disconnectConnection(connectionId),
     listPooledConnections: () => api.explorer.listPooledConnections(),
     reconnectConnection: (connectionId: string) => api.explorer.reconnectConnection(connectionId),

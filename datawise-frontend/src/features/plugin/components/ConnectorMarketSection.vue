@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, onMounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DbTypeIcon from '@/core/components/DbTypeIcon.vue'
@@ -126,7 +126,7 @@ function focusPending() {
             {{ t('plugin.connectorMarket.backToCenter') }}
           </button>
           <button
-              class="connector-market-hero__refresh"
+              class="dw-text-btn"
               type="button"
               :disabled="loading"
               @click="loadMarket()"
@@ -190,17 +190,17 @@ function focusPending() {
           <p>{{ t('plugin.connectorMarket.pendingBannerHint') }}</p>
         </div>
       </div>
-      <button class="connector-market-pending-banner__btn" type="button" @click="focusPending">
+      <button class="dw-text-btn dw-text-btn--accent" type="button" @click="focusPending">
         {{ t('plugin.connectorMarket.pendingBannerAction') }}
       </button>
     </div>
 
     <div class="connector-market-toolbar" :class="{'connector-market-toolbar--embed': !standalone}">
-      <div v-if="standalone" class="connector-market-filters" role="tablist">
+      <div v-if="standalone" class="dw-segment connector-market-filters" role="tablist">
         <button
             v-for="option in filterOptions"
             :key="option"
-            class="connector-market-filters__btn"
+            class="dw-segment__btn"
             :class="{'is-active': availability === option}"
             type="button"
             role="tab"

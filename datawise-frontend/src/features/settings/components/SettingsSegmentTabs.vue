@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 export interface SettingsSegmentTab {
   id: string
   label: string
@@ -30,9 +30,9 @@ function select(id: string) {
 
 <template>
   <nav
-      class="settings-segment-tabs"
+      class="dw-segment settings-segment-tabs"
       :class="{
-        'settings-segment-tabs--stretch': stretch,
+        'dw-segment--stretch settings-segment-tabs--stretch': stretch,
         'settings-segment-tabs--inline': variant === 'inline',
       }"
       role="tablist"
@@ -41,7 +41,7 @@ function select(id: string) {
     <button
         v-for="tab in tabs"
         :key="tab.id"
-        class="settings-segment-tabs__btn"
+        class="dw-segment__btn settings-segment-tabs__btn"
         :class="{'is-active': modelValue === tab.id}"
         type="button"
         role="tab"

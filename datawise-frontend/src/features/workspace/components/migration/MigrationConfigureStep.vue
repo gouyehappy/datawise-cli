@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {useI18n} from 'vue-i18n'
 import {DwButton, DwCheckbox, DwInlineAlert, DwInput} from '@/core/components'
 import DwSelect from '@/core/components/DwSelect.vue'
@@ -149,12 +149,12 @@ const migrationModes: Array<{value: TableMigrationWizardForm['mode']; labelKey: 
 
         <div class="options-field">
           <span>{{ t('explorer.tableMigrationWizard.migrationMode') }}</span>
-          <div class="mode-segment" role="radiogroup" :aria-label="t('explorer.tableMigrationWizard.migrationMode')">
+          <div class="dw-segment" role="radiogroup" :aria-label="t('explorer.tableMigrationWizard.migrationMode')">
             <button
                 v-for="mode in migrationModes"
                 :key="mode.value"
                 type="button"
-                class="mode-segment__btn"
+                class="dw-segment__btn"
                 role="radio"
                 :aria-checked="w.form.mode === mode.value"
                 :class="{ 'is-active': w.form.mode === mode.value }"

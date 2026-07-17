@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {explorerApi} from '@/api'
@@ -147,7 +147,7 @@ watch(
 
       <button
           v-if="!isCommandView"
-          class="redis-workbench__refresh"
+          class="dw-text-btn"
           type="button"
           @click="refreshKeys"
       >
@@ -278,26 +278,6 @@ watch(
   background: color-mix(in srgb, var(--dw-primary) 12%, transparent);
   color: var(--dw-primary);
   font-size: var(--dw-text-xs);
-}
-
-.redis-workbench__refresh {
-  flex-shrink: 0;
-  height: var(--dw-control-h);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-panel-radius);
-  padding: 0 var(--dw-space-6);
-  background: var(--dw-bg);
-  color: var(--dw-text);
-  font-size: var(--dw-text-sm);
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: var(--dw-shadow-xs);
-  transition: var(--dw-transition-colors);
-}
-
-.redis-workbench__refresh:hover {
-  border-color: color-mix(in srgb, var(--dw-primary) 18%, var(--dw-border));
-  background: var(--dw-bg-muted);
 }
 
 .redis-workbench__body {

@@ -21,6 +21,8 @@ export function createHttpMigrationApi(): MigrationApi {
             postJson<TableMigrationPreflightResult>(API_PATHS.migration.preflight, request),
         getJob: (jobId: string) =>
             getJson<MigrationJobView>(API_PATHS.migration.job(jobId)),
+        listJobs: () =>
+            getJson<MigrationJobView[]>(API_PATHS.migration.jobs),
         startJob: (request: TableMigrationBatchRequest) =>
             postJson<MigrationJobView>(API_PATHS.migration.jobs, request),
         pauseJob: (jobId: string) =>

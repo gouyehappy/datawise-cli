@@ -1,12 +1,87 @@
 import type {TableColumn, TableRow} from '@/core/types'
+import type {TableColumnDetail} from '@/shared/api/types'
+import {resolveGridColumnTypeLabel} from '@/core/components/data-grid-column-meta'
 import {formatCellFullValue} from '@/core/utils/cell-value-format'
 import {columnRowKey, readRowCell} from '@/core/utils/query-result-column'
 
 export type GridSortDirection = 'asc' | 'desc'
 
-export const GRID_COLUMN_WIDTH_DEFAULT = 120
+export const GRID_COLUMN_WIDTH_DEFAULT = 148
 export const GRID_COLUMN_WIDTH_MIN = 64
 export const GRID_COLUMN_WIDTH_MAX = 720
+
+/** 按字段类型 / 声明长度给出合理默认列宽（用户手动拖拽后以持久化宽度为准） */
+export function suggestGridColumnWidth(
+    column: TableColumn,
+    details: TableColumnDetail[] = [],
+): number {
+    const typeLabel = resolveGridColumnTypeLabel(column, details).toLowerCase()
+    const nameFloor = Math.min(
+        220,
+        Math.max(GRID_COLUMN_WIDTH_MIN, column.name.length * 8 + 44),
+    )
+    const declaredLen = parseDeclaredTypeLength(typeLabel)
+
+    let suggested = GRID_COLUMN_WIDTH_DEFAULT
+    if (/\b(bool|boolean|bit)\b/.test(typeLabel)) {
+        suggested = 72
+    } else if (/\btinyint\b/.test(typeLabel)) {
+        suggested = 76
+    } else if (/\b(smallint|year)\b/.test(typeLabel)) {
+        suggested = 84
+    } else if (/\b(bigint|bigserial)\b/.test(typeLabel)) {
+        suggested = 108
+    } else if (/\b(int|integer|serial|mediumint)\b/.test(typeLabel)) {
+        suggested = 92
+    } else if (/\b(float|double|real|money)\b/.test(typeLabel)) {
+        suggested = 112
+    } else if (/\b(decimal|numeric|number)\b/.test(typeLabel)) {
+        suggested = declaredLen != null
+            ? Math.min(168, Math.max(100, 90 + declaredLen * 7))
+            : 120
+    } else if (/\b(datetime|timestamp)/.test(typeLabel)) {
+        suggested = declaredLen != null && declaredLen >= 3 ? 188 : 172
+    } else if (/\bdate\b/.test(typeLabel) && !/\bdatetime\b/.test(typeLabel)) {
+        suggested = 112
+    } else if (/\btime\b/.test(typeLabel) && !/\bdatetime\b/.test(typeLabel) && !/\btimestamp\b/.test(typeLabel)) {
+        suggested = 108
+    } else if (/\b(uuid|uniqueidentifier|guid)\b/.test(typeLabel)) {
+        suggested = 280
+    } else if (/\b(json|jsonb|xml)\b/.test(typeLabel)) {
+        suggested = 220
+    } else if (/\b(longtext|mediumtext|tinytext|text|clob|nclob|blob|bytea)\b/.test(typeLabel)) {
+        suggested = 200
+    } else if (/\b(char|varchar|nvarchar|nchar|character varying|character)\b/.test(typeLabel)) {
+        if (declaredLen == null) {
+            suggested = 148
+        } else if (declaredLen <= 8) {
+            suggested = 88
+        } else if (declaredLen <= 16) {
+            suggested = 120
+        } else if (declaredLen <= 32) {
+            suggested = 148
+        } else if (declaredLen <= 64) {
+            suggested = 180
+        } else if (declaredLen <= 128) {
+            suggested = 220
+        } else if (declaredLen <= 255) {
+            suggested = 260
+        } else {
+            suggested = 280
+        }
+    } else if (/\benum\b/.test(typeLabel)) {
+        suggested = 128
+    }
+
+    return clampColumnWidth(Math.max(suggested, nameFloor))
+}
+
+function parseDeclaredTypeLength(typeLabel: string): number | null {
+    const match = typeLabel.match(/\(\s*(\d+)(?:\s*,\s*\d+)?\s*\)/)
+    if (!match) return null
+    const value = Number(match[1])
+    return Number.isFinite(value) ? value : null
+}
 
 export interface GridViewState {
     columnFilters: Record<string, string>

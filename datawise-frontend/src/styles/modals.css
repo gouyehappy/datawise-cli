@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 全局弹窗 — AppModal 及弹窗内通用内容块
  */
 
@@ -49,7 +49,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--mp-gap-lg);
-    padding: clamp(18px, 2.2vmin, 22px) clamp(20px, 2.4vmin, 24px) 0;
+    padding: var(--dw-space-9) var(--dw-space-9) 0;
     border-bottom: 1px solid transparent;
 }
 
@@ -70,7 +70,7 @@
 }
 
 .app-modal-body {
-    padding: var(--dw-space-8) clamp(20px, 2.4vmin, 24px) clamp(8px, 1vmin, 10px);
+    padding: var(--dw-space-8) var(--dw-space-9) var(--dw-space-4);
 }
 
 .app-modal-footer {
@@ -78,7 +78,7 @@
     align-items: center;
     justify-content: flex-end;
     gap: var(--dw-gap-md);
-    padding: var(--dw-space-8) clamp(20px, 2.4vmin, 24px) clamp(18px, 2.2vmin, 22px);
+    padding: var(--dw-space-7) var(--dw-space-9) var(--dw-space-9);
     border-top: 1px solid var(--dw-border-light);
     background: var(--dw-bg-muted);
 }
@@ -135,7 +135,7 @@
     display: flex;
     align-items: center;
     gap: var(--dw-space-7);
-    margin-bottom: clamp(16px, 1.8vmin, 20px);
+    margin-bottom: var(--dw-space-8);
     padding: var(--dw-space-6) var(--dw-space-8);
     border: 1px solid var(--dw-panel-border);
     border-radius: var(--dw-panel-radius);
@@ -754,24 +754,7 @@
     white-space: nowrap;
 }
 
-/* 分段切换（Generate DML 等） */
-
-.modal-segment {
-    display: inline-flex;
-    gap: var(--dw-tab-gap);
-    padding: 0 var(--dw-space-2);
-    border-radius: var(--dw-tab-pill-radius);
-    background: var(--dw-tab-bar-bg);
-    border: 1px solid var(--dw-tab-bar-border);
-}
-
-.modal-segment__btn {
-    font-size: var(--mp-caption);
-    font-weight: 500;
-    padding: var(--dw-space-2) clamp(12px, 1.4vmin, 14px);
-    border-radius: var(--dw-tab-pill-radius);
-    cursor: pointer;
-}
+/* modal-segment → 使用 .dw-segment / .dw-segment__btn */
 
 .modal-preview-section {
     display: flex;

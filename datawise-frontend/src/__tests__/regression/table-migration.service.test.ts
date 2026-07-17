@@ -6,6 +6,8 @@ import {
     clearActiveMigrationProgressSnapshot,
     clearActiveMigrationRunSnapshot,
     computeMigrationProgressPercent,
+    computeMigrationRunLiveMetrics,
+    formatMigrationThroughput,
     buildTableRowTotalsFromPreflight,
     createDefaultTableMigrationForm,
     formatMigrationRunLogText,
@@ -510,6 +512,26 @@ describe('table-migration.service (FB-092)', () => {
             completed: 1,
             results: [],
         }), 100)
+    })
+
+    it('computeMigrationRunLiveMetrics reports throughput and ETA', () => {
+        const metrics = computeMigrationRunLiveMetrics(
+            {
+                total: 1,
+                completed: 0,
+                currentTable: 'orders',
+                results: [],
+                tableRowTotals: {orders: 1000},
+                batchRowsMigrated: 250,
+            },
+            new Date(Date.now() - 10_000).toISOString(),
+            Date.now(),
+        )
+        assert.equal(metrics.rowsMigrated, 250)
+        assert.ok(metrics.rowsPerSecond != null && metrics.rowsPerSecond > 0)
+        assert.equal(metrics.remainingRows, 750)
+        assert.ok(metrics.etaMs != null && metrics.etaMs > 0)
+        assert.match(formatMigrationThroughput(metrics.rowsPerSecond), /\d/)
     })
 
     it('buildTableRowTotalsFromPreflight maps source row counts', () => {

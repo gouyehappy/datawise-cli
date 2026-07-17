@@ -20,8 +20,8 @@ export const UI_SKINS: UiSkin[] = [...UI_SKIN_IDS]
 
 export const DEFAULT_THEME_PREFERENCES: ThemePreferences = {
     appearance: 'light',
-    background: 'default',
-    primary: 'violet',
+    background: 'cool',
+    primary: 'blue',
     uiSkin: 'classic',
 }
 

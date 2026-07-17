@@ -218,7 +218,7 @@ export function useGridPendingEdit(options: {
     }
 
     function selectRow(item: GridDisplayRow) {
-        if (!options.editable()) return
+        // 允许只读模式下选中（表单视图翻行等）；写入类操作另有 editable 门禁
         selectedRowId.value = item.id
     }
 

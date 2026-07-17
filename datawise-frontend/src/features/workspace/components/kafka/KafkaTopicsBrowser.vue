@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwButton, EmptyState} from '@/core/components'
@@ -179,7 +179,7 @@ defineExpose({refresh: () => loadTopics(true)})
         >
         <DwButton
             variant="primary"
-            class="kafka-topics-browser__search-btn"
+            class="dw-icon-btn dw-icon-btn--sm"
             type="submit"
             :disabled="loading || !connectionId"
             :title="t('explorer.kafkaBrowser.searchHint')"
@@ -187,7 +187,7 @@ defineExpose({refresh: () => loadTopics(true)})
           {{ t('explorer.kafkaBrowser.search') }}
         </DwButton>
         <button
-            class="kafka-topics-browser__icon-btn"
+            class="dw-icon-btn dw-icon-btn--sm"
             type="button"
             :title="t('explorer.kafkaBrowser.refresh')"
             :disabled="loading || !connectionId"
@@ -370,20 +370,6 @@ defineExpose({refresh: () => loadTopics(true)})
   border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg);
   font-size: var(--dw-text-sm);
-}
-
-.kafka-topics-browser__search-btn {
-  flex-shrink: 0;
-  padding-inline: 10px;
-}
-
-.kafka-topics-browser__icon-btn {
-  flex-shrink: 0;
-  width: 32px;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius-sm);
-  background: var(--dw-bg);
-  cursor: pointer;
 }
 
 .kafka-topics-browser__status {

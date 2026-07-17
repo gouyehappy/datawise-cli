@@ -7,6 +7,8 @@ import IconButton from '@/core/components/IconButton.vue'
 import DwDataGrid from '@/core/components/DwDataGrid.vue'
 import {DwIcon} from '@/core/icons'
 import GridCellDetailDialog from '@/core/components/GridCellDetailDialog.vue'
+import GridRowFormView from '@/features/workspace/components/GridRowFormView.vue'
+import GridDateTimePicker from '@/features/workspace/components/GridDateTimePicker.vue'
 import type {SelectOption} from '@/core/components/select.types'
 import {
   useGridPendingEdit,
@@ -30,6 +32,7 @@ import {
   moveGridColumnOrder,
   resolveDisplayColumns,
   setGridColumnWidth,
+  suggestGridColumnWidth,
   toggleGridSort,
   type GridViewState,
 } from '@/features/workspace/services/grid-view-state.service'
@@ -61,13 +64,20 @@ import {CURSOR_LOADED_ROWS_WARN_THRESHOLD} from '@/features/workspace/constants/
 import {
   isGridColumnPrimaryKey,
   isGridNumericColumn,
+  isGridTemporalColumn,
   resolveGridColumnTypeLabel,
+  resolveGridTemporalKind,
+  type GridTemporalKind,
 } from '@/core/components/data-grid-column-meta'
 import {
   buildDocumentFromGridRow,
   formatMongoDocumentJson,
   resolveMongoDocumentRowLabel,
 } from '@/features/workspace/services/mongo-document-row.service'
+import {
+  resolveGridCellEditorKind,
+  shouldUseDedicatedCellEditor,
+} from '@/features/workspace/services/grid-cell-editor.service'
 
 const {t} = useI18n()
 const pluginStore = usePluginStore()
@@ -146,12 +156,16 @@ const pageSizeOptions = CONSOLE_GRID_PAGE_SIZE_OPTIONS
 const exportDialogOpen = ref(false)
 const exportSubmitting = ref(false)
 const wrapCells = ref(false)
+const layoutMode = ref<'grid' | 'form'>('grid')
 const cellDetailOpen = ref(false)
 const cellDetail = ref<{
   columnName: string
   rowLabel: string
   content: string
   title?: string
+  editable?: boolean
+  editorKind?: import('@/features/workspace/services/grid-cell-editor.service').GridCellEditorKind
+  rowItem?: GridDisplayRow
 } | null>(null)
 
 const emit = defineEmits<{
@@ -178,12 +192,28 @@ const displayColumns = computed(() =>
 
 function columnWidthPx(columnKey: string): number {
     const widths = viewState.value?.columnWidths ?? localColumnWidths.value
-    return widths[columnKey] ?? GRID_COLUMN_WIDTH_DEFAULT
+    const stored = widths[columnKey]
+    if (stored != null) return stored
+    const column = gridColumns.value.find((item) => columnRowKey(item) === columnKey)
+    if (column) return suggestGridColumnWidth(column, props.columnDetails)
+    return GRID_COLUMN_WIDTH_DEFAULT
 }
 
+/** 编号列固定像素宽 */
+const INDEX_COL_WIDTH_PX = 36
+
 const tableMinWidthPx = computed(() =>
-    44 + displayColumns.value.reduce((sum, column) => sum + columnWidthPx(columnRowKey(column)), 0),
+    INDEX_COL_WIDTH_PX
+    + displayColumns.value.reduce((sum, column) => sum + columnWidthPx(columnRowKey(column)), 0),
 )
+
+function columnColStyle(columnKey: string): Record<string, string> {
+    const px = columnWidthPx(columnKey)
+    return {
+      width: `${px}px`,
+      minWidth: `${px}px`,
+    }
+}
 
 function patchViewLayout(next: GridViewState | ((state: GridViewState) => GridViewState)) {
     const base: GridViewState = viewState.value ?? {
@@ -386,6 +416,56 @@ const pagedRows = computed(() => {
 const rowOffset = computed(
     () => (props.cursorTrimmedRows ?? 0) + (currentPage.value - 1) * pageSize.value,
 )
+
+const formViewRow = computed(() => {
+  if (selectedRowId.value) {
+    const selected = viewFilteredDisplayRows.value.find((row) => row.id === selectedRowId.value)
+    if (selected) return selected
+  }
+  return viewFilteredDisplayRows.value[0] ?? null
+})
+
+/** 在过滤后的全量行中的下标（跨页） */
+const formViewRowIndex = computed(() => {
+  if (!formViewRow.value) return -1
+  return viewFilteredDisplayRows.value.findIndex((row) => row.id === formViewRow.value!.id)
+})
+
+const formViewRowNumber = computed(() => {
+  const index = formViewRowIndex.value
+  if (index < 0) return (props.cursorTrimmedRows ?? 0) + 1
+  return (props.cursorTrimmedRows ?? 0) + index + 1
+})
+
+const formViewRowTotal = computed(
+    () => (props.cursorTrimmedRows ?? 0) + viewFilteredDisplayRows.value.length,
+)
+
+const formViewCanPrev = computed(() => formViewRowIndex.value > 0)
+const formViewCanNext = computed(() => {
+  const index = formViewRowIndex.value
+  return index >= 0 && index < viewFilteredDisplayRows.value.length - 1
+})
+
+function selectFormViewRowByOffset(delta: number) {
+  const rows = viewFilteredDisplayRows.value
+  if (!rows.length) return
+  const currentIndex = formViewRowIndex.value >= 0 ? formViewRowIndex.value : 0
+  const nextIndex = Math.max(0, Math.min(rows.length - 1, currentIndex + delta))
+  const next = rows[nextIndex]!
+  const page = Math.floor(nextIndex / pageSize.value) + 1
+  if (currentPage.value !== page) {
+    currentPage.value = page
+  }
+  selectRow(next)
+}
+
+function toggleLayoutMode() {
+  layoutMode.value = layoutMode.value === 'grid' ? 'form' : 'grid'
+  if (layoutMode.value === 'form' && formViewRow.value) {
+    selectRow(formViewRow.value)
+  }
+}
 
 const gridBodyRef = ref<HTMLElement | null>(null)
 const pagedRowsRef = toRef(pagedRows)
@@ -639,12 +719,40 @@ function canExpandCell(item: typeof displayRows.value[number], column: TableColu
 }
 
 function openCellDetail(item: typeof displayRows.value[number], column: TableColumn, rowIndex: number) {
+  const value = readRawDisplayRowCell(item, column)
+  const editorKind = resolveGridCellEditorKind(column, props.columnDetails, value)
+  const dedicated = shouldUseDedicatedCellEditor(column, props.columnDetails, value)
   cellDetail.value = {
     columnName: column.name,
     rowLabel: `#${rowOffset.value + rowIndex + 1}`,
-    content: formatCellFullValue(readRawDisplayRowCell(item, column)),
+    content: formatCellFullValue(value),
+    editable: dedicated
+        && inlineEnabled.value
+        && props.canUpdate
+        && !item.pendingDelete
+        && editorKind !== 'binary',
+    editorKind,
+    rowItem: item,
   }
   cellDetailOpen.value = true
+}
+
+function onFormViewOpenEditor(column: TableColumn) {
+  const item = formViewRow.value
+  if (!item) return
+  // openCellDetail 的 rowIndex 为当前页内下标（配合 rowOffset 拼行号）
+  const pageRelative = formViewRowNumber.value - rowOffset.value - 1
+  openCellDetail(item, column, Math.max(0, pageRelative))
+}
+
+function onCellDetailApply(value: string) {
+  const detail = cellDetail.value
+  if (!detail?.rowItem) {
+    closeCellDetail()
+    return
+  }
+  setCellValue(detail.rowItem, detail.columnName, value)
+  closeCellDetail()
 }
 
 function openRowDocument(item: typeof displayRows.value[number], rowIndex: number) {
@@ -689,7 +797,14 @@ function onCellDblClick(
     return
   }
   if (!inlineEnabled.value || !props.canUpdate || item.pendingDelete) {
-    if (expandable) openCellDetail(item, column, rowIndex)
+    if (expandable || shouldUseDedicatedCellEditor(column, props.columnDetails, readRawDisplayRowCell(item, column))) {
+      openCellDetail(item, column, rowIndex)
+    }
+    return
+  }
+  const editorKind = resolveGridCellEditorKind(column, props.columnDetails, readRawDisplayRowCell(item, column))
+  if (editorKind === 'longText' || editorKind === 'json') {
+    openCellDetail(item, column, rowIndex)
     return
   }
   void startEditCell(item, columnName)
@@ -717,10 +832,95 @@ function onCellInput(item: typeof displayRows.value[number], columnName: string,
 
 function onCellKeydownEnter(event: KeyboardEvent) {
   event.preventDefault()
+  closeDateTimePicker()
   stopEditCell()
 }
 
 const activeCell = ref<{ rowId: string; column: string } | null>(null)
+const datePickerTarget = ref<{rowId: string; column: string; kind: GridTemporalKind} | null>(null)
+const datePickerStyle = ref<{top: string; left: string} | undefined>()
+const datePickerKeepOpen = ref(false)
+
+const datePickerValue = computed(() => {
+  const target = datePickerTarget.value
+  if (!target) return ''
+  const item = displayRows.value.find((row) => row.id === target.rowId)
+  if (!item) return ''
+  return getCellDisplayText(item, target.column)
+})
+
+function updateDatePickerPlacement() {
+  const input = cellInputRef.value
+  if (!input) return
+  const rect = input.getBoundingClientRect()
+  const width = 268
+  const left = Math.min(rect.left, window.innerWidth - width - 8)
+  datePickerStyle.value = {
+    top: `${Math.min(rect.bottom + 4, window.innerHeight - 320)}px`,
+    left: `${Math.max(8, left)}px`,
+  }
+}
+
+function openDateTimePicker(item: typeof displayRows.value[number], columnName: string) {
+  const column = gridColumns.value.find((col) => col.name === columnName)
+  if (!column) {
+    datePickerTarget.value = null
+    return
+  }
+  const kind = resolveGridTemporalKind(column, props.columnDetails)
+  if (!kind) {
+    datePickerTarget.value = null
+    return
+  }
+  datePickerTarget.value = {rowId: item.id, column: columnName, kind}
+  void nextTick(updateDatePickerPlacement)
+}
+
+function closeDateTimePicker() {
+  datePickerTarget.value = null
+  datePickerKeepOpen.value = false
+}
+
+function onDatePickerChange(value: string) {
+  const target = datePickerTarget.value
+  if (!target) return
+  const item = displayRows.value.find((row) => row.id === target.rowId)
+  if (!item) return
+  setCellValue(item, target.column, value)
+}
+
+function onDatePickerPointerDown() {
+  datePickerKeepOpen.value = true
+}
+
+function isTemporalColumn(column: TableColumn): boolean {
+  return isGridTemporalColumn(column, props.columnDetails)
+}
+
+function showDateTimeIcon(item: typeof displayRows.value[number], column: TableColumn): boolean {
+  return inlineEnabled.value && props.canUpdate && !item.pendingDelete
+      && isTemporalColumn(column)
+      && (
+        item.kind === 'insert'
+        || isCellActive(item, column.name)
+        || isCellInputVisible(item, column.name)
+      )
+}
+
+async function onDateTimeIconClick(item: typeof displayRows.value[number], columnName: string) {
+  datePickerKeepOpen.value = true
+  const openSame = datePickerTarget.value?.rowId === item.id
+      && datePickerTarget.value?.column === columnName
+  if (openSame) {
+    closeDateTimePicker()
+    return
+  }
+  if (!editingCell.value || editingCell.value.rowId !== item.id || editingCell.value.column !== columnName) {
+    await startEditCell(item, columnName)
+  }
+  await nextTick()
+  openDateTimePicker(item, columnName)
+}
 
 watch(selectedRowId, (rowId) => {
   if (!rowId) activeCell.value = null
@@ -728,6 +928,10 @@ watch(selectedRowId, (rowId) => {
 
 watch(hasPendingChanges, (pending) => {
   if (!pending) activeCell.value = null
+})
+
+watch(editingCell, (cell) => {
+  if (!cell) closeDateTimePicker()
 })
 
 function onIndexColClick(item: typeof displayRows.value[number], rowIndex: number) {
@@ -746,20 +950,29 @@ function onCellClick(item: typeof displayRows.value[number], columnName: string)
   activeCell.value = {rowId: item.id, column: columnName}
 }
 
-function isCellActive(item: typeof displayRows.value[number], columnName: string) {
-  const cell = activeCell.value
-  return cell?.rowId === item.id && cell.column === columnName
+function onCellInputFocus(item: typeof displayRows.value[number], columnName: string) {
+  if (item.kind === 'insert') {
+    selectRow(item)
+    activeCell.value = {rowId: item.id, column: columnName}
+    editingCell.value = {rowId: item.id, column: columnName}
+  }
 }
 
 function onCellInputBlur(item: typeof displayRows.value[number]) {
-  if (item.kind !== 'insert') stopEditCell()
+  window.setTimeout(() => {
+    if (datePickerKeepOpen.value) {
+      datePickerKeepOpen.value = false
+      cellInputRef.value?.focus()
+      return
+    }
+    closeDateTimePicker()
+    if (item.kind !== 'insert') stopEditCell()
+  }, 0)
 }
 
-function onInsertCellFocus(item: typeof displayRows.value[number], columnName: string) {
-  if (item.kind !== 'insert') return
-  selectRow(item)
-  activeCell.value = {rowId: item.id, column: columnName}
-  editingCell.value = {rowId: item.id, column: columnName}
+function isCellActive(item: typeof displayRows.value[number], columnName: string) {
+  const cell = activeCell.value
+  return cell?.rowId === item.id && cell.column === columnName
 }
 
 const {
@@ -903,15 +1116,24 @@ function dismissColumnStats() {
             :title="wrapCells ? t('dataGrid.unwrapCells') : t('dataGrid.wrapCells')"
             @click="toggleWrapCells"
         >
-          <DwIcon class="grid-glyph" name="format" fit :stroke-width="1.35"/>
+          <DwIcon class="grid-glyph" name="format" fit :stroke-width="1.5"/>
+        </IconButton>
+        <IconButton
+            v-if="fullToolbar && viewFilteredDisplayRows.length"
+            class="grid-action-neutral"
+            :active="layoutMode === 'form'"
+            :title="layoutMode === 'form' ? t('dataGrid.formView.showGrid') : t('dataGrid.formView.showForm')"
+            @click="toggleLayoutMode"
+        >
+          <DwIcon class="grid-glyph" name="table" fit :stroke-width="1.5"/>
         </IconButton>
         <template v-if="fullToolbar">
           <IconButton class="grid-action-neutral" :title="t('dataGrid.refresh')" @click="emit('refresh')">
-            <DwIcon class="grid-glyph" name="refresh" fit :stroke-width="1.35"/>
+            <DwIcon class="grid-glyph" name="refresh" fit :stroke-width="1.5"/>
           </IconButton>
           <button
               v-if="columnFiltersEnabled && hasSortActive"
-              class="clear-filters-btn"
+              class="dw-text-btn"
               type="button"
               @click="clearViewState"
           >
@@ -932,7 +1154,7 @@ function dismissColumnStats() {
         </span>
         <button
             v-if="hasMore"
-            class="load-more-btn"
+            class="dw-text-btn dw-text-btn--accent"
             type="button"
             :disabled="cursorLoading"
             @click="emit('load-more')"
@@ -955,7 +1177,7 @@ function dismissColumnStats() {
               :disabled="!hasPendingChanges || submitting"
               @click="onDiscardClick"
           >
-            <DwIcon class="grid-glyph grid-glyph--cancel" name="rollback" fit :stroke-width="1.35"/>
+            <DwIcon class="grid-glyph grid-glyph--cancel" name="rollback" fit :stroke-width="1.5"/>
           </IconButton>
           <IconButton class="grid-action-neutral" :title="t('dataGrid.addRow')" @click="onAddRowClick">
             <DwIcon class="grid-glyph" name="plus" fit :stroke-width="1.5"/>
@@ -974,7 +1196,7 @@ function dismissColumnStats() {
               :title="t('dataGrid.editHint')"
               :aria-label="t('dataGrid.editHint')"
           >
-            <DwIcon class="grid-glyph" name="explain" fit :stroke-width="1.35"/>
+            <DwIcon class="grid-glyph" name="explain" fit :stroke-width="1.5"/>
           </span>
         </template>
         <span
@@ -983,7 +1205,7 @@ function dismissColumnStats() {
             :title="readOnlyHint"
             :aria-label="readOnlyHint"
         >
-          <DwIcon class="grid-glyph" name="explain" fit :stroke-width="1.35"/>
+          <DwIcon class="grid-glyph" name="explain" fit :stroke-width="1.5"/>
         </span>
         <span v-if="showDmlActions" class="action-divider"/>
         <IconButton
@@ -992,18 +1214,18 @@ function dismissColumnStats() {
             :title="t('dataGrid.generateDml')"
             @click="onGenerateDmlClick"
         >
-          <DwIcon class="grid-glyph" name="ddl" fit :stroke-width="1.35"/>
+          <DwIcon class="grid-glyph" name="ddl" fit :stroke-width="1.5"/>
         </IconButton>
         <span v-if="$slots['toolbar-extra']" class="action-divider"/>
         <slot name="toolbar-extra"/>
         <button
             v-if="exportEnabled && showExport"
-            class="export-btn"
+            class="dw-text-btn"
             type="button"
             :title="t('dataGrid.export')"
             @click="openExportDialog"
         >
-          <DwIcon name="export" size="sm" :stroke-width="1.6"/>
+          <DwIcon name="export" size="sm" :stroke-width="1.5"/>
           <span>{{ t('dataGrid.export') }}</span>
         </button>
       </template>
@@ -1064,22 +1286,46 @@ function dismissColumnStats() {
           </div>
         </div>
 
-        <div ref="gridBodyRef" class="grid-body">
+        <div ref="gridBodyRef" class="grid-body" :class="{ 'grid-body--form': layoutMode === 'form' }">
+      <GridRowFormView
+          v-if="layoutMode === 'form'"
+          :columns="displayColumns"
+          :column-details="columnDetails"
+          :pk-columns="pkColumns"
+          :row="formViewRow"
+          :row-number="formViewRowNumber"
+          :row-total="formViewRowTotal"
+          :can-prev="formViewCanPrev"
+          :can-next="formViewCanNext"
+          :editable="inlineEnabled"
+          :can-update="canUpdate"
+          :get-cell-text="(columnName) => formViewRow ? getCellDisplayText(formViewRow, columnName) : ''"
+          :read-cell-value="(column) => formViewRow ? readRawDisplayRowCell(formViewRow, column) : null"
+          @select-prev="selectFormViewRowByOffset(-1)"
+          @select-next="selectFormViewRowByOffset(1)"
+          @field-change="(columnName, value) => formViewRow && setCellValue(formViewRow, columnName, value)"
+          @open-editor="onFormViewOpenEditor"
+      />
       <table
+          v-else
           class="grid-table"
           :class="{ 'is-resizing': resizingKey }"
-          :style="{ minWidth: `${tableMinWidthPx}px` }"
+          :style="{ width: `${tableMinWidthPx}px` }"
       >
         <colgroup>
-          <col class="col-index"/>
+          <col
+              class="col-index"
+              :style="{
+                width: `${INDEX_COL_WIDTH_PX}px`,
+                minWidth: `${INDEX_COL_WIDTH_PX}px`,
+                maxWidth: `${INDEX_COL_WIDTH_PX}px`,
+              }"
+          />
           <col
               v-for="col in displayColumns"
               :key="columnRowKey(col)"
               class="col-data"
-              :style="{
-                width: `${columnWidthPx(columnRowKey(col))}px`,
-                minWidth: `${columnWidthPx(columnRowKey(col))}px`,
-              }"
+              :style="columnColStyle(columnRowKey(col))"
           />
         </colgroup>
         <thead>
@@ -1113,6 +1359,13 @@ function dismissColumnStats() {
                   size="xs"
                   :stroke-width="1.75"
               />
+              <DwIcon
+                  v-else
+                  class="th-col-icon"
+                  name="table"
+                  size="xs"
+                  :stroke-width="1.6"
+              />
               <span class="th-label">{{ col.name }}</span>
               <DwIcon
                   v-if="sortDirection(columnRowKey(col))"
@@ -1142,6 +1395,7 @@ function dismissColumnStats() {
             v-for="{ item, index: rowIndex } in virtualPagedRows"
             :key="item.id"
             :class="{
+              'is-zebra': (rowOffset + rowIndex) % 2 === 1,
               'is-selected': isRowSelected(item),
               'is-modified': isRowModified(item),
               'is-insert-row': item.kind === 'insert',
@@ -1170,7 +1424,13 @@ function dismissColumnStats() {
               @dblclick="onCellDblClick(item, col.name, $event, rowIndex)"
               @contextmenu="onCellContextMenu($event, item, col)"
           >
-            <div class="cell-shell" :class="{ 'has-expand': canExpandCell(item, col) }">
+            <div
+                class="cell-shell"
+                :class="{
+                  'has-expand': canExpandCell(item, col),
+                  'has-datetime': showDateTimeIcon(item, col),
+                }"
+            >
               <button
                   v-if="canExpandCell(item, col) && !isCellInputVisible(item, col.name)"
                   class="cell-expand-btn"
@@ -1195,14 +1455,27 @@ function dismissColumnStats() {
                   v-show="isCellInputVisible(item, col.name)"
                   :ref="(el) => bindEditingInput(el, item, col.name)"
                   class="cell-input"
+                  :class="{ 'cell-input--datetime': showDateTimeIcon(item, col) }"
                   type="text"
                   :value="getCellDisplayText(item, col.name)"
                   @input="onCellInput(item, col.name, ($event.target as HTMLInputElement).value)"
                   @keydown.enter="onCellKeydownEnter"
                   @blur="onCellInputBlur(item)"
-                  @focus="onInsertCellFocus(item, col.name)"
+                  @focus="onCellInputFocus(item, col.name)"
                   @click.stop
               />
+              <button
+                  v-if="showDateTimeIcon(item, col)"
+                  class="cell-datetime-btn"
+                  type="button"
+                  :class="{ 'is-open': datePickerTarget?.rowId === item.id && datePickerTarget?.column === col.name }"
+                  :title="t('dataGrid.dateTimePicker.title')"
+                  :aria-label="t('dataGrid.dateTimePicker.title')"
+                  @mousedown.prevent="onDateTimeIconClick(item, col.name)"
+                  @click.stop
+              >
+                <DwIcon name="calendar" size="xs" :stroke-width="1.5"/>
+              </button>
             </div>
           </td>
         </tr>
@@ -1221,7 +1494,20 @@ function dismissColumnStats() {
         :row-label="cellDetail?.rowLabel ?? ''"
         :content="cellDetail?.content ?? ''"
         :title="cellDetail?.title"
+        :editable="cellDetail?.editable"
+        :editor-kind="cellDetail?.editorKind"
         @close="closeCellDetail"
+        @apply="onCellDetailApply"
+    />
+
+    <GridDateTimePicker
+        :open="datePickerTarget != null"
+        :kind="datePickerTarget?.kind ?? 'datetime'"
+        :value="datePickerValue"
+        :anchor-style="datePickerStyle"
+        @change="onDatePickerChange"
+        @close="closeDateTimePicker"
+        @interact="onDatePickerPointerDown"
     />
 
     <ContextMenuHost
@@ -1400,20 +1686,6 @@ th.is-stats-active .th-label {
   height: var(--dw-btn-height);
 }
 
-.export-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--dw-gap-sm);
-  height: var(--dw-btn-height);
-  padding: 0 var(--dw-space-5);
-  flex-shrink: 0;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius-sm);
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-sm);
-  white-space: nowrap;
-}
-
 .pager-total {
   color: var(--dw-text-muted);
   font-size: var(--dw-text-sm);
@@ -1589,6 +1861,20 @@ th.is-stats-active .th-label {
   overflow: auto;
   min-height: 0;
   background: var(--dw-bg-editor);
+  /* Navicat 风格：银灰 chrome + 亮蓝强调 */
+  --dw-grid-chrome-top: color-mix(in srgb, var(--dw-text) 3.5%, var(--dw-bg-panel));
+  --dw-grid-chrome: color-mix(in srgb, var(--dw-text) 6.5%, var(--dw-bg-muted));
+  --dw-grid-chrome-deep: color-mix(in srgb, var(--dw-text) 9%, var(--dw-bg-muted));
+  --dw-grid-rail: color-mix(in srgb, var(--dw-text) 7.5%, var(--dw-bg-muted));
+  --dw-grid-line: color-mix(in srgb, var(--dw-text) 9%, var(--dw-border-light));
+  --dw-grid-zebra: color-mix(in srgb, var(--dw-text) 3.2%, var(--dw-bg-editor));
+  --dw-grid-accent: color-mix(in srgb, var(--dw-info) 72%, var(--dw-info-fg));
+  --dw-grid-accent-soft: var(--dw-info-soft);
+}
+
+.grid-body--form {
+  display: flex;
+  flex-direction: column;
 }
 
 tr.grid-virtual-spacer td {
@@ -1599,18 +1885,16 @@ tr.grid-virtual-spacer td {
 }
 
 table.grid-table {
-  /* 固定列宽：编辑态叠加 input 时不因内容长短撑开列；minWidth 由脚本按列宽合计注入 */
+  /* 固定列宽：总宽由列宽合计决定，不拉满容器 */
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
 }
 
 col.col-index {
-  width: 44px;
-}
-
-col.col-data {
-  width: 120px;
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
 }
 
 .grid-table.is-resizing {
@@ -1632,8 +1916,8 @@ td {
   height: var(--dw-control-h-sm);
   max-height: var(--dw-control-h-sm);
   padding: 0;
-  border-bottom: 1px solid var(--dw-border-light);
-  border-right: 1px solid color-mix(in srgb, var(--dw-border-light) 88%, var(--dw-border));
+  border-bottom: 1px solid var(--dw-grid-line);
+  border-right: 1px solid var(--dw-grid-line);
   text-align: left;
   white-space: nowrap;
   font-size: var(--dw-text-sm);
@@ -1655,22 +1939,33 @@ td.is-numeric .cell-text,
 td.is-numeric .cell-input {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  font-family: var(--dw-mono);
 }
 
 .index-col {
-  width: 44px;
-  padding: 0 var(--dw-space-3);
-  color: var(--dw-text-muted);
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  box-sizing: border-box;
+  padding: 0 var(--dw-space-1);
+  color: color-mix(in srgb, var(--dw-text) 42%, var(--dw-text-muted));
   text-align: center;
   font-size: var(--dw-text-2xs);
   font-variant-numeric: tabular-nums;
-  background: color-mix(in srgb, var(--dw-bg-muted) 55%, var(--dw-bg-editor));
+  font-weight: 500;
+  background: var(--dw-grid-rail);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  box-shadow: 1px 0 0 var(--dw-grid-line);
 }
 
 th.index-col {
-  color: var(--dw-text-muted);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--dw-text) 48%, var(--dw-text-muted));
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  z-index: 3;
 }
 
 .index-col--selectable {
@@ -1683,20 +1978,26 @@ th {
   z-index: 1;
   height: auto;
   max-height: none;
-  background: color-mix(in srgb, var(--dw-bg-muted) 92%, var(--dw-bg-panel));
+  background: linear-gradient(180deg, var(--dw-grid-chrome-top) 0%, var(--dw-grid-chrome) 100%);
   color: var(--dw-text-secondary);
   font-weight: 500;
   font-size: var(--dw-text-sm);
-  padding: var(--dw-space-3) var(--dw-space-5) var(--dw-space-3) var(--dw-space-4);
-  border-bottom: 1px solid var(--dw-border);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--dw-border) 35%, transparent);
+  padding: var(--dw-space-2) var(--dw-space-4) var(--dw-space-2) var(--dw-space-3);
+  border-bottom: 1px solid color-mix(in srgb, var(--dw-text) 12%, var(--dw-border));
+  box-shadow:
+      var(--dw-surface-inset-highlight),
+      0 1px 0 color-mix(in srgb, var(--dw-text) 4%, transparent);
   vertical-align: top;
 }
 
 th.index-col {
   vertical-align: middle;
-  z-index: 2;
   padding: 0 var(--dw-space-3);
+  background: linear-gradient(180deg, var(--dw-grid-chrome-top) 0%, var(--dw-grid-chrome) 100%);
+  box-shadow:
+      var(--dw-surface-inset-highlight),
+      1px 0 0 var(--dw-grid-line),
+      0 1px 0 color-mix(in srgb, var(--dw-text) 4%, transparent);
 }
 
 th.is-sortable {
@@ -1709,31 +2010,32 @@ th.is-sortable:active {
 }
 
 th.is-sortable:hover {
-  background: color-mix(in srgb, var(--dw-primary) 5%, var(--dw-bg-muted));
+  background: linear-gradient(180deg, var(--dw-grid-chrome) 0%, var(--dw-grid-chrome-deep) 100%);
 }
 
-th.is-stats-active {
-  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-muted));
-}
-
+th.is-stats-active,
 th.is-sorted {
-  background: color-mix(in srgb, var(--dw-primary) 7%, var(--dw-bg-muted));
+  background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--dw-grid-accent) 8%, var(--dw-grid-chrome-top)),
+      color-mix(in srgb, var(--dw-grid-accent) 12%, var(--dw-grid-chrome))
+  );
 }
 
 th.is-dragging {
   opacity: 0.45;
-  background: color-mix(in srgb, var(--dw-primary) 10%, var(--dw-bg-muted));
+  background: var(--dw-grid-chrome-deep);
 }
 
 th.is-drag-over {
   box-shadow:
-      inset 2px 0 0 var(--dw-primary),
-      0 1px 0 color-mix(in srgb, var(--dw-border) 35%, transparent);
-  background: color-mix(in srgb, var(--dw-primary) 9%, var(--dw-bg-muted));
+      inset 2px 0 0 var(--dw-grid-accent),
+      var(--dw-surface-inset-highlight);
+  background: color-mix(in srgb, var(--dw-grid-accent) 10%, var(--dw-grid-chrome));
 }
 
 th.is-sorted .th-label {
-  color: var(--dw-primary);
+  color: var(--dw-grid-accent);
 }
 
 th.is-numeric .th-main {
@@ -1750,11 +2052,28 @@ th.is-numeric .th-type {
   gap: var(--dw-space-2);
   min-width: 0;
   padding-right: var(--dw-space-4);
+  line-height: 1;
+}
+
+.th-col-icon,
+.th-key {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dw-icon-size-xs);
+  height: var(--dw-icon-size-xs);
+  /* 光学居中：矢量图标视觉重心略偏上，下移 1px 对齐文字 */
+  transform: translateY(1px);
+}
+
+.th-col-icon {
+  color: var(--dw-grid-accent);
+  opacity: 0.88;
 }
 
 .th-key {
-  flex-shrink: 0;
-  color: color-mix(in srgb, var(--dw-warning) 72%, var(--dw-warning-fg));
+  color: color-mix(in srgb, var(--dw-warning) 78%, var(--dw-warning-fg));
 }
 
 .th-label {
@@ -1764,28 +2083,28 @@ th.is-numeric .th-type {
   color: var(--dw-text);
   font-size: var(--dw-text-sm);
   font-weight: 600;
-  line-height: var(--dw-leading-snug);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
 }
 
 .th-type {
-  margin-top: 2px;
+  margin-top: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--dw-text-muted);
   font-family: var(--dw-mono);
   font-size: var(--dw-text-2xs);
   font-weight: 400;
-  line-height: 1.25;
+  line-height: 1.2;
   letter-spacing: 0.01em;
   padding-right: var(--dw-space-4);
-  opacity: 0.92;
 }
 
 .th-sort {
   flex-shrink: 0;
   margin-left: auto;
-  color: var(--dw-primary);
-  opacity: 0.9;
+  color: var(--dw-grid-accent);
+  opacity: 0.95;
 }
 
 .th-sort--asc {
@@ -1812,7 +2131,7 @@ th.is-numeric .th-type {
   left: 50%;
   width: 2px;
   border-radius: 1px;
-  background: color-mix(in srgb, var(--dw-primary) 55%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-grid-accent) 60%, var(--dw-border));
   transform: translateX(-50%);
 }
 
@@ -1826,40 +2145,46 @@ th.is-sorted .th-resize,
 
 .th-resize:hover::after,
 .th-resize:active::after {
-  background: var(--dw-primary);
+  background: var(--dw-grid-accent);
 }
 
 th.th--meta {
   overflow: visible;
 }
 
+tbody tr.is-zebra td {
+  background: var(--dw-grid-zebra);
+}
+
+tbody tr.is-zebra .index-col {
+  background: color-mix(in srgb, var(--dw-text) 9.5%, var(--dw-bg-muted));
+}
+
 tbody tr:hover td {
-  background: color-mix(in srgb, var(--dw-primary) 3.5%, var(--dw-bg-editor));
+  background: color-mix(in srgb, var(--dw-grid-accent) 5.5%, var(--dw-bg-editor));
 }
 
 tbody tr:hover .index-col {
-  background: color-mix(in srgb, var(--dw-primary) 4%, var(--dw-bg-muted));
+  background: color-mix(in srgb, var(--dw-grid-accent) 8%, var(--dw-grid-rail));
+  color: var(--dw-grid-accent);
 }
 
 tbody tr.is-selected td {
-  background: color-mix(in srgb, var(--dw-primary) 9%, var(--dw-bg-editor));
+  background: color-mix(in srgb, var(--dw-grid-accent) 8%, var(--dw-bg-editor));
 }
 
 tbody tr.is-selected .index-col {
-  background: color-mix(in srgb, var(--dw-primary) 12%, var(--dw-bg-muted));
-  color: var(--dw-primary);
+  background: color-mix(in srgb, var(--dw-grid-accent) 14%, var(--dw-grid-rail));
+  color: var(--dw-grid-accent);
+  font-weight: 700;
 }
 
-.clear-filters-btn {
-  height: var(--dw-control-h-sm);
-  padding: 0 var(--dw-space-4);
-  border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-control-radius-sm);
-  background: var(--dw-bg-panel);
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-xs);
-  white-space: nowrap;
-  cursor: pointer;
+tbody tr.is-zebra.is-selected td {
+  background: color-mix(in srgb, var(--dw-grid-accent) 10%, var(--dw-bg-editor));
+}
+
+tbody tr.is-zebra.is-selected .index-col {
+  background: color-mix(in srgb, var(--dw-grid-accent) 16%, var(--dw-grid-rail));
 }
 
 .loaded-rows-hint {
@@ -1871,24 +2196,6 @@ tbody tr.is-selected .index-col {
   text-align: right;
 }
 
-.load-more-btn {
-  height: var(--dw-control-h-sm);
-  padding: 0 var(--dw-space-5);
-  border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border-light));
-  border-radius: var(--dw-control-radius-sm);
-  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-panel));
-  color: var(--dw-primary);
-  font-size: var(--dw-text-xs);
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.load-more-btn:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
-
 .data-cell {
   cursor: default;
   position: relative;
@@ -1897,11 +2204,13 @@ tbody tr.is-selected .index-col {
 }
 
 .data-cell.is-cell-active .cell-shell {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--dw-text) 80%, transparent);
+  box-shadow: inset 0 0 0 2px var(--dw-grid-accent);
+  background: var(--dw-grid-accent-soft);
 }
 
 .data-cell.is-cell-editing .cell-shell {
-  box-shadow: inset 0 0 0 2px var(--dw-primary);
+  box-shadow: inset 0 0 0 2px var(--dw-grid-accent);
+  background: var(--dw-bg-panel);
 }
 
 .cell-shell {
@@ -1910,7 +2219,7 @@ tbody tr.is-selected .index-col {
   height: var(--dw-control-h-sm);
   max-height: var(--dw-control-h-sm);
   min-width: 0;
-  padding: 0 var(--dw-space-4);
+  padding: 0 var(--dw-space-5);
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -1948,7 +2257,7 @@ tbody tr.is-selected .index-col {
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 0 var(--dw-space-4);
+  padding: 0 var(--dw-space-5);
   border: none;
   border-radius: 0;
   background: var(--dw-bg-panel);
@@ -2025,6 +2334,41 @@ tbody tr.is-insert-row .index-col {
 
 .cell-shell.has-expand {
   padding-right: var(--dw-space-10);
+}
+
+.cell-shell.has-datetime {
+  padding-right: var(--dw-space-10);
+}
+
+.cell-input--datetime {
+  padding-right: var(--dw-space-10);
+}
+
+.cell-datetime-btn {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  z-index: var(--dw-z-raised);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--dw-radius-sm);
+  background: transparent;
+  color: var(--dw-text-muted);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.cell-datetime-btn:hover,
+.cell-datetime-btn.is-open {
+  border-color: color-mix(in srgb, var(--dw-info) 35%, var(--dw-border));
+  background: color-mix(in srgb, var(--dw-info) 10%, var(--dw-bg-panel));
+  color: var(--dw-info-fg);
 }
 
 .cell-expand-btn {

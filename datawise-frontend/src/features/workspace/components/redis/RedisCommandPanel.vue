@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {explorerApi} from '@/api'
@@ -179,7 +179,7 @@ defineExpose({runCommand})
         <button
             v-for="command in contextQuickCommands"
             :key="command"
-            class="redis-command-panel__quick-btn"
+            class="dw-text-btn dw-text-btn--compact"
             type="button"
             :disabled="!connectionId || running"
             @click="runCommand(command)"
@@ -187,7 +187,7 @@ defineExpose({runCommand})
           {{ command }}
         </button>
       </div>
-      <button class="redis-command-panel__clear" type="button" @click="clearOutput">
+      <button class="dw-text-btn" type="button" @click="clearOutput">
         {{ t('explorer.redisConsole.clear') }}
       </button>
     </div>
@@ -254,22 +254,6 @@ defineExpose({runCommand})
 }
 
 .redis-command-panel__quick-btn,
-.redis-command-panel__clear {
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-pill);
-  padding: var(--dw-space-1) var(--dw-space-5);
-  background: var(--dw-bg-editor);
-  color: var(--dw-text);
-  font-family: var(--dw-font-mono);
-  font-size: var(--dw-text-xs);
-  cursor: pointer;
-}
-
-.redis-command-panel__clear {
-  flex-shrink: 0;
-  font-family: inherit;
-}
-
 .redis-command-panel__output {
   flex: 1;
   min-height: 0;
@@ -367,8 +351,4 @@ defineExpose({runCommand})
 
 .redis-command-panel__run:disabled,
 .redis-command-panel__input:disabled,
-.redis-command-panel__quick-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 </style>

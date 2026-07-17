@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DwDataGrid from '@/core/components/DwDataGrid.vue'
 import {ConfirmDialog} from '@/core/components'
@@ -87,6 +87,24 @@ function openAdd() {
   formOpen.value = true
 }
 
+function consumeOpenCreateDraft() {
+  if (!props.tab.platformOpenCreateForm && !props.tab.platformScheduleDraft) return
+  if (feature.value !== 'scheduled_tasks') return
+  formOpen.value = true
+  props.tab.platformOpenCreateForm = false
+}
+
+onMounted(() => {
+  consumeOpenCreateDraft()
+})
+
+watch(
+  () => [props.tab.platformOpenCreateForm, props.tab.platformScheduleDraft] as const,
+  () => {
+    consumeOpenCreateDraft()
+  },
+)
+
 function requestDelete() {
   if (!canDelete.value) return
   deleteConfirmOpen.value = true
@@ -110,6 +128,8 @@ async function confirmDelete() {
 
 async function onSaved() {
   layout.showSuccessToast(t('platform.common.saved'))
+  props.tab.platformScheduleDraft = undefined
+  props.tab.platformOpenCreateForm = false
   await reload()
 }
 

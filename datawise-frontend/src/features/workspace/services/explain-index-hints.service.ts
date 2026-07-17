@@ -6,6 +6,8 @@ export interface ExplainIndexHint {
     severity: 'warning' | 'info'
     message: string
     suggestion?: string
+    /** 计划节点关联的表名（若可解析），供一键生成该表索引草稿 */
+    table?: string
 }
 
 function walkNodes(nodes: ExplainPlanNode[], visit: (node: ExplainPlanNode) => void) {
@@ -41,14 +43,17 @@ export function buildExplainIndexHints(
         const extra = metricValue(metrics, ['Extra', 'extra']).toLowerCase()
         const table = metricValue(metrics, ['table', 'Relation Name', 'relation name'])
 
+        const tableName = table.trim() || undefined
+
         if (accessType === 'ALL' || label.toUpperCase().includes('SEQ SCAN')) {
             hints.push({
                 id: `hint-${hintIndex++}`,
                 severity: 'warning',
-                message: table ? `全表扫描：${table}` : '检测到全表扫描',
-                suggestion: table
-                    ? `考虑为 ${table} 的过滤列或 JOIN 列添加索引`
+                message: tableName ? `全表扫描：${tableName}` : '检测到全表扫描',
+                suggestion: tableName
+                    ? `考虑为 ${tableName} 的过滤列或 JOIN 列添加索引`
                     : '为 WHERE / JOIN 条件列添加索引',
+                table: tableName,
             })
         }
 
@@ -56,23 +61,25 @@ export function buildExplainIndexHints(
             hints.push({
                 id: `hint-${hintIndex++}`,
                 severity: 'info',
-                message: table ? `排序可能较慢：${table}` : '检测到 filesort / 排序节点',
+                message: tableName ? `排序可能较慢：${tableName}` : '检测到 filesort / 排序节点',
                 suggestion: '考虑为 ORDER BY 列建立索引，或与过滤列组成联合索引',
+                table: tableName,
             })
         }
 
         if (
             (dbType === 'postgresql' || dbType === 'kingbase' || dbType === 'greenplum' || dbType === 'opengauss')
             && label.toLowerCase().includes('seq scan')
-            && table
+            && tableName
         ) {
             const planRows = Number(metricValue(metrics, ['Plan Rows', 'plan rows']))
             if (planRows > 1000) {
                 hints.push({
                     id: `hint-${hintIndex++}`,
                     severity: 'warning',
-                    message: `大表顺序扫描：${table}（约 ${planRows} 行）`,
-                    suggestion: `检查是否可为 ${table} 添加 btree 索引`,
+                    message: `大表顺序扫描：${tableName}（约 ${planRows} 行）`,
+                    suggestion: `检查是否可为 ${tableName} 添加 btree 索引`,
+                    table: tableName,
                 })
             }
         }

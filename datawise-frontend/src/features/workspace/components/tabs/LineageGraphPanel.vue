@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {EmptyState, DwPanelState} from '@/core/components'
@@ -97,10 +97,10 @@ watch(
         </span>
       </div>
       <div class="lineage-panel__actions">
-        <button type="button" class="dw-btn dw-btn--sm" :disabled="loading || !hasContent" @click="fitView">
+        <button type="button" class="btn-secondary btn-sm" :disabled="loading || !hasContent" @click="fitView">
           {{ t('lineage.fitView') }}
         </button>
-        <button type="button" class="dw-btn dw-btn--sm" :disabled="loading" @click="load(true)">
+        <button type="button" class="btn-secondary btn-sm" :disabled="loading" @click="load(true)">
           {{ t('lineage.refresh') }}
         </button>
       </div>

@@ -17,10 +17,15 @@ import {
     savePlatformCatalogItem,
     type PlatformCatalogFormPayload,
 } from '@/features/platform/services/platform-catalog-mutations.service'
-import {platformApi} from '@/api'
+import {instanceSqlApi, platformApi} from '@/api'
 import type {AnalysisCanvasSummary} from '@/features/platform/types/platform.types'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useNotificationStore} from '@/features/layout/stores/notification-store'
+import {useTeamStore} from '@/features/team/stores/team-store'
+import {
+    buildScheduledSqlPayloadJson,
+    type ScheduledSqlSource,
+} from '@/features/platform/services/scheduled-sql-payload.service'
 
 const props = defineProps<{
     open: boolean
@@ -36,9 +41,14 @@ const emit = defineEmits<{
 const {t} = useI18n()
 const explorer = useExplorerStore()
 const notifications = useNotificationStore()
+const teamStore = useTeamStore()
 const saving = ref(false)
 const error = ref('')
 const firstFieldRef = ref<HTMLInputElement | HTMLTextAreaElement>()
+const sqlFileOptionsLoading = ref(false)
+const sqlFileOptions = ref<SelectOption[]>([])
+const sharedQueryOptionsLoading = ref(false)
+const sharedQueryOptions = ref<SelectOption[]>([])
 
 const semanticForm = reactive({
     id: '',
@@ -62,6 +72,11 @@ const taskForm = reactive({
     type: 'sql',
     cronExpression: '0 0 * * *',
     canvasId: '',
+    sqlSource: 'inline' as ScheduledSqlSource,
+    sql: '',
+    sqlFile: '',
+    teamId: '',
+    queryId: '',
     payloadJson: '{}',
     enabled: true,
 })
@@ -114,11 +129,113 @@ const showTaskPayloadEditor = computed(() =>
     props.feature === 'scheduled_tasks' && taskForm.type !== 'canvas',
 )
 
+const showSqlSourceFields = computed(() =>
+    props.feature === 'scheduled_tasks' && taskForm.type === 'sql',
+)
+
 const taskTypeOptions = computed<SelectOption[]>(() => [
     {value: 'sql', label: t('workspace.platformCatalog.form.taskType.sql')},
     {value: 'canvas', label: t('workspace.platformCatalog.form.taskType.canvas')},
     {value: 'schema_drift', label: t('workspace.platformCatalog.form.taskType.schema_drift')},
 ])
+
+const sqlSourceOptions = computed<SelectOption[]>(() => [
+    {value: 'inline', label: t('workspace.platformCatalog.form.sqlSource.inline')},
+    {value: 'workspace_file', label: t('workspace.platformCatalog.form.sqlSource.workspace_file')},
+    {value: 'query_library', label: t('workspace.platformCatalog.form.sqlSource.query_library')},
+])
+
+const teamSelectOptions = computed<SelectOption[]>(() =>
+    teamStore.teams.map((team) => ({
+        value: team.id,
+        label: team.name || team.id,
+    })),
+)
+
+const selectedSharedQueryHint = computed(() => {
+    const query = sharedQueryOptions.value.find((item) => item.value === taskForm.queryId)
+    return query?.label ?? ''
+})
+
+async function ensureTeamsLoaded() {
+    if (!teamStore.ready || !teamStore.teams.length) {
+        try {
+            await teamStore.load()
+        } catch {
+            // leave empty; UI shows empty hint
+        }
+    }
+}
+
+async function loadSqlFileOptions() {
+    const connectionId = props.tab.connectionId?.trim()
+    const database = props.tab.database?.trim()
+    sqlFileOptions.value = []
+    if (!connectionId || !database) return
+    sqlFileOptionsLoading.value = true
+    try {
+        const files = await instanceSqlApi.listScripts({
+            connectionId,
+            instanceName: database,
+        })
+        sqlFileOptions.value = files.map((file) => ({
+            value: file.fileName,
+            label: file.fileName,
+        }))
+        if (taskForm.sqlFile && !sqlFileOptions.value.some((item) => item.value === taskForm.sqlFile)) {
+            sqlFileOptions.value = [
+                {value: taskForm.sqlFile, label: taskForm.sqlFile},
+                ...sqlFileOptions.value,
+            ]
+        }
+    } catch {
+        sqlFileOptions.value = taskForm.sqlFile
+            ? [{value: taskForm.sqlFile, label: taskForm.sqlFile}]
+            : []
+    } finally {
+        sqlFileOptionsLoading.value = false
+    }
+}
+
+async function loadSharedQueryOptions(teamId: string) {
+    sharedQueryOptions.value = []
+    const id = teamId.trim()
+    if (!id) return
+    sharedQueryOptionsLoading.value = true
+    try {
+        const list = await teamStore.fetchSharedQueries(id)
+        sharedQueryOptions.value = list.map((item) => ({
+            value: item.id,
+            label: item.title?.trim() || item.id,
+        }))
+        if (taskForm.queryId && !sharedQueryOptions.value.some((item) => item.value === taskForm.queryId)) {
+            sharedQueryOptions.value = [
+                {value: taskForm.queryId, label: taskForm.queryId},
+                ...sharedQueryOptions.value,
+            ]
+        }
+    } catch {
+        sharedQueryOptions.value = taskForm.queryId
+            ? [{value: taskForm.queryId, label: taskForm.queryId}]
+            : []
+    } finally {
+        sharedQueryOptionsLoading.value = false
+    }
+}
+
+async function refreshSqlSourceOptions() {
+    if (taskForm.sqlSource === 'workspace_file') {
+        await loadSqlFileOptions()
+        return
+    }
+    if (taskForm.sqlSource === 'query_library') {
+        await ensureTeamsLoaded()
+        if (!taskForm.teamId && teamStore.teams[0]?.id) {
+            taskForm.teamId = teamStore.teams[0].id
+        }
+        await loadSharedQueryOptions(taskForm.teamId)
+    }
+}
 
 const canSave = computed(() => {
     switch (props.feature) {
@@ -137,6 +254,13 @@ const canSave = computed(() => {
         case 'scheduled_tasks':
             if (!taskForm.name.trim() || !taskForm.type.trim()) return false
             if (taskForm.type === 'canvas') return Boolean(taskForm.canvasId.trim())
+            if (taskForm.type === 'sql') {
+                if (taskForm.sqlSource === 'workspace_file') return Boolean(taskForm.sqlFile.trim())
+                if (taskForm.sqlSource === 'query_library') {
+                    return Boolean(taskForm.teamId.trim() && taskForm.queryId.trim())
+                }
+                return Boolean(taskForm.sql.trim() || taskForm.payloadJson.trim())
+            }
             return true
         default:
             return false
@@ -164,10 +288,44 @@ function resetForms() {
     taskForm.type = 'sql'
     taskForm.cronExpression = '0 0 * * *'
     taskForm.canvasId = ''
+    taskForm.sqlSource = 'inline'
+    taskForm.sql = ''
+    taskForm.sqlFile = ''
+    taskForm.teamId = ''
+    taskForm.queryId = ''
     taskForm.payloadJson = '{}'
     taskForm.enabled = true
     canvasOptions.value = []
+    sqlFileOptions.value = []
+    sharedQueryOptions.value = []
     error.value = ''
+}
+
+function applyScheduleDraft() {
+    const draft = props.tab.platformScheduleDraft
+    if (!draft || props.feature !== 'scheduled_tasks') return
+    if (draft.name?.trim()) taskForm.name = draft.name.trim()
+    if (draft.cronExpression?.trim()) taskForm.cronExpression = draft.cronExpression.trim()
+    if (draft.enabled != null) taskForm.enabled = draft.enabled
+    taskForm.type = 'sql'
+    taskForm.sqlSource = draft.source ?? 'workspace_file'
+    if (draft.sql?.trim()) taskForm.sql = draft.sql.trim()
+    if (draft.sqlFile?.trim()) taskForm.sqlFile = draft.sqlFile.trim()
+    if (draft.teamId?.trim()) taskForm.teamId = draft.teamId.trim()
+    if (draft.queryId?.trim()) taskForm.queryId = draft.queryId.trim()
+    try {
+        taskForm.payloadJson = buildScheduledSqlPayloadJson({
+            source: taskForm.sqlSource,
+            connectionId: props.tab.connectionId ?? '',
+            database: props.tab.database ?? '',
+            sql: taskForm.sql,
+            sqlFile: taskForm.sqlFile,
+            teamId: taskForm.teamId,
+            queryId: taskForm.queryId,
+        })
+    } catch {
+        // keep defaults until user fills required fields
+    }
 }
 
 watch(
@@ -176,6 +334,7 @@ watch(
         if (!isOpen) return
         resetForms()
         if (props.feature === 'scheduled_tasks') {
+            applyScheduleDraft()
             canvasOptionsLoading.value = true
             try {
                 canvasOptions.value = await platformApi.listAnalysisCanvas()
@@ -184,9 +343,31 @@ watch(
             } finally {
                 canvasOptionsLoading.value = false
             }
+            await refreshSqlSourceOptions()
         }
         await nextTick()
         firstFieldRef.value?.focus()
+    },
+)
+
+watch(
+    () => taskForm.sqlSource,
+    async (source, previous) => {
+        if (!props.open || props.feature !== 'scheduled_tasks') return
+        if (source === previous) return
+        error.value = ''
+        await refreshSqlSourceOptions()
+    },
+)
+
+watch(
+    () => taskForm.teamId,
+    async (teamId, previous) => {
+        if (!props.open || props.feature !== 'scheduled_tasks') return
+        if (taskForm.sqlSource !== 'query_library') return
+        if (teamId === previous) return
+        if (previous) taskForm.queryId = ''
+        await loadSharedQueryOptions(teamId)
     },
 )
 
@@ -203,10 +384,27 @@ function buildPayload(): PlatformCatalogFormPayload | null {
         case 'schema_drift':
             return {...driftForm, feature: 'schema_drift'}
         case 'scheduled_tasks': {
-            const payloadJson =
-                taskForm.type === 'canvas'
-                    ? JSON.stringify({canvasId: taskForm.canvasId.trim()})
-                    : taskForm.payloadJson.trim() || undefined
+            let payloadJson = taskForm.payloadJson.trim() || undefined
+            if (taskForm.type === 'canvas') {
+                payloadJson = JSON.stringify({canvasId: taskForm.canvasId.trim()})
+            } else if (taskForm.type === 'sql') {
+                try {
+                    payloadJson = buildScheduledSqlPayloadJson({
+                        source: taskForm.sqlSource,
+                        connectionId: props.tab.connectionId ?? '',
+                        database: props.tab.database ?? '',
+                        sql: taskForm.sql,
+                        sqlFile: taskForm.sqlFile,
+                        teamId: taskForm.teamId,
+                        queryId: taskForm.queryId,
+                    })
+                } catch (e) {
+                    error.value = e instanceof Error
+                        ? e.message
+                        : t('workspace.platformCatalog.form.validation.required')
+                    return null
+                }
+            }
             return {
                 ...taskForm,
                 feature: 'scheduled_tasks',
@@ -510,6 +708,85 @@ async function submit() {
           <p v-if="!canvasOptionsLoading && !taskCanvasSelectOptions.length" class="modal-hint">
             {{ t('platform.canvas.empty') }}
           </p>
+        </fieldset>
+
+        <fieldset v-if="showSqlSourceFields" class="modal-fieldset">
+          <legend>{{ t('workspace.platformCatalog.form.section.sqlSource') }}</legend>
+          <label class="modal-field">
+            <span>{{ t('workspace.platformCatalog.form.sqlSourceLabel') }}</span>
+            <DwSelect v-model="taskForm.sqlSource" size="sm" :options="sqlSourceOptions"/>
+          </label>
+          <p class="modal-hint">{{ t('workspace.platformCatalog.form.hint.sqlSource') }}</p>
+          <p class="modal-hint">{{ t('workspace.platformCatalog.form.hint.productionApproval') }}</p>
+
+          <FormField
+              v-if="taskForm.sqlSource === 'inline'"
+              :label="t('workspace.platformCatalog.form.sqlLabel')"
+          >
+            <template #default="{ id }">
+              <textarea
+                  :id="id"
+                  v-model="taskForm.sql"
+                  class="modal-textarea modal-textarea--mono"
+                  rows="5"
+                  spellcheck="false"
+                  :placeholder="t('workspace.platformCatalog.form.hint.sqlInline')"
+              />
+            </template>
+          </FormField>
+
+          <FormField
+              v-else-if="taskForm.sqlSource === 'workspace_file'"
+              :label="t('workspace.platformCatalog.form.sqlFileLabel')"
+          >
+            <DwSelect
+                v-model="taskForm.sqlFile"
+                size="sm"
+                :options="sqlFileOptions"
+                :disabled="sqlFileOptionsLoading || !sqlFileOptions.length"
+            />
+            <p class="modal-hint">
+              {{ sqlFileOptionsLoading
+                ? t('workspace.platformCatalog.form.hint.sqlFileLoading')
+                : sqlFileOptions.length
+                  ? t('workspace.platformCatalog.form.hint.sqlFile')
+                  : t('workspace.platformCatalog.form.hint.sqlFileEmpty') }}
+            </p>
+          </FormField>
+
+          <template v-else>
+            <div class="modal-form-grid">
+              <FormField :label="t('workspace.platformCatalog.form.teamLabel')">
+                <DwSelect
+                    v-model="taskForm.teamId"
+                    size="sm"
+                    :options="teamSelectOptions"
+                    :disabled="!teamSelectOptions.length"
+                />
+              </FormField>
+              <FormField :label="t('workspace.platformCatalog.form.queryLabel')">
+                <DwSelect
+                    v-model="taskForm.queryId"
+                    size="sm"
+                    :options="sharedQueryOptions"
+                    :disabled="sharedQueryOptionsLoading || !sharedQueryOptions.length"
+                />
+              </FormField>
+            </div>
+            <p class="modal-hint">
+              {{ sharedQueryOptionsLoading
+                ? t('workspace.platformCatalog.form.hint.queryLibraryLoading')
+                : !teamSelectOptions.length
+                  ? t('workspace.platformCatalog.form.hint.queryLibraryNoTeams')
+                  : !sharedQueryOptions.length
+                    ? t('workspace.platformCatalog.form.hint.queryLibraryEmpty')
+                    : selectedSharedQueryHint
+                      ? t('workspace.platformCatalog.form.hint.queryLibrarySelected', {
+                        title: selectedSharedQueryHint,
+                      })
+                      : t('workspace.platformCatalog.form.hint.queryLibrary') }}
+            </p>
+          </template>
         </fieldset>
 
         <CollapsibleSection

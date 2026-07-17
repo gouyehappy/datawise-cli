@@ -179,11 +179,11 @@ async function openNode(node: TableRelationGraphNode) {
       <p class="relation-graph__hint">{{ t('workspace.tableDetail.relationGraphHint') }}</p>
       <button
           type="button"
-          class="relation-graph__reset"
+          class="dw-text-btn"
           :disabled="!hasNeighborhood"
           @click="resetLayout"
       >
-        <DwIcon name="refresh" size="sm" :stroke-width="1.45"/>
+        <DwIcon name="refresh" size="sm" :stroke-width="1.5"/>
         {{ t('workspace.tableDetail.relationGraphReset') }}
       </button>
     </header>
@@ -442,29 +442,6 @@ async function openNode(node: TableRelationGraphNode) {
   margin: 0;
   color: var(--dw-text-muted);
   font-size: var(--dw-text-xs);
-}
-
-.relation-graph__reset {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--dw-gap-sm);
-  padding: var(--dw-space-2) var(--dw-space-5);
-  border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-bg-panel);
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-xs);
-  cursor: pointer;
-}
-
-.relation-graph__reset:hover:not(:disabled) {
-  color: var(--dw-primary);
-  border-color: color-mix(in srgb, var(--dw-primary) 30%, var(--dw-border-light));
-}
-
-.relation-graph__reset:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .relation-graph__canvas-wrap {

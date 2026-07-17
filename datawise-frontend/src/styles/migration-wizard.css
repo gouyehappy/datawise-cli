@@ -1,4 +1,4 @@
-/* Table migration wizard �� shared step layout */
+﻿/* Table migration wizard �� shared step layout */
 .table-migration {
   display: flex;
   flex-direction: column;
@@ -67,6 +67,15 @@
 .migration-progress-card__detail {
   font-family: var(--dw-mono);
   font-size: var(--dw-text-xs);
+}
+
+.migration-progress-card__metrics {
+  color: var(--dw-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.migration-progress-card__tables {
+  margin-top: var(--dw-space-3);
 }
 
 .migration-progress-card__head {
@@ -550,32 +559,7 @@
   cursor: pointer;
 }
 
-.mode-segment {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dw-gap-xs);
-  padding: 0 var(--dw-space-2);
-  border: none;
-  border-bottom: 1px solid var(--dw-tab-bar-border);
-  border-radius: 0;
-  background: var(--dw-tab-bar-bg);
-}
-
-.mode-segment__btn {
-  padding: var(--dw-space-3) var(--dw-space-5);
-  border: 1px solid transparent;
-  border-radius: var(--dw-tab-pill-radius);
-  font: inherit;
-  font-size: var(--dw-text-sm);
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-}
-
-.mode-segment__btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* mode-segment → .dw-segment */
 
 .options-panel__advanced-toggle {
   display: flex;

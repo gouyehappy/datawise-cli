@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, inject, onMounted, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import SessionKillActions from '@/features/workspace/components/SessionKillActions.vue'
@@ -121,7 +121,7 @@ watch(() => [props.connectionId, props.database], () => {
         </p>
       </div>
       <button
-          class="active-sessions__refresh"
+          class="dw-text-btn"
           type="button"
           :disabled="loading || !canLoad"
           @click="loadSessions"
@@ -221,21 +221,7 @@ watch(() => [props.connectionId, props.database], () => {
   line-height: var(--dw-leading);
 }
 
-.active-sessions__refresh {
-  flex-shrink: 0;
-  padding: var(--dw-space-2) var(--dw-space-5);
-  border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-bg);
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-xs);
-  cursor: pointer;
-}
 
-.active-sessions__refresh:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
 
 .active-sessions__toolbar {
   display: flex;

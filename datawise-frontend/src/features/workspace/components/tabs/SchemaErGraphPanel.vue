@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import {computed, onUnmounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {DwPanelState} from '@/core/components'
+import {DwButton, DwPanelState} from '@/core/components'
 import {DwIcon} from '@/core/icons'
-import type {WorkspaceTab} from '@/core/types'
+import type {DbType, WorkspaceTab} from '@/core/types'
+import {findNodeById} from '@/core/utils/tree'
 import {useSchemaErColumns} from '@/features/workspace/composables/useSchemaErColumns'
 import {useSchemaRelations} from '@/features/workspace/composables/useSchemaRelations'
 import {
@@ -23,11 +24,28 @@ import {
   RELATION_GRAPH_ROW_HEIGHT,
   type RelationGraphPoint,
   type TableRelationGraphColumn,
+  type TableRelationGraphEdge,
   type TableRelationGraphNode,
 } from '@/features/workspace/services/table-relation-graph.service'
+import {
+  exportSchemaErPng,
+  exportSchemaErSvg,
+} from '@/features/workspace/services/schema-er-export.service'
+import {
+  buildAddForeignKeySql,
+  buildDropForeignKeySql,
+  type SchemaErFkDraft,
+} from '@/features/workspace/services/schema-er-fk-ddl.service'
+import SchemaErFkDdlDialog from '@/features/workspace/components/SchemaErFkDdlDialog.vue'
+import {useExplorerStore} from '@/features/explorer/stores/explorer'
+import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 
 const props = defineProps<{ tab: WorkspaceTab }>()
 const {t} = useI18n()
+const layoutStore = useLayoutStore()
+const workspace = useWorkspaceStore()
+const explorer = useExplorerStore()
 
 const {schema, loading, error, databaseName} = useSchemaRelations(props.tab, {
   shouldLoad: () => true,
@@ -53,6 +71,21 @@ const locked = ref(false)
 const canvasRef = ref<SVGSVGElement | null>(null)
 const canvasWrapRef = ref<HTMLDivElement | null>(null)
 
+const linkMode = ref(false)
+const selectedEdgeId = ref<string | null>(null)
+const linkFrom = ref<{nodeId: string; table: string; column: string} | null>(null)
+const fkDialogOpen = ref(false)
+const fkDialogTitle = ref('')
+const fkDialogSql = ref('')
+const fkDialogSummary = ref<string[]>([])
+
+const dbType = computed<DbType | undefined>(() => {
+  if (props.tab.dbType) return props.tab.dbType
+  const connectionId = props.tab.connectionId
+  if (!connectionId) return undefined
+  return findNodeById(explorer.tree, connectionId)?.dbType
+})
+
 watch(
     layout,
     (next) => {
@@ -60,6 +93,10 @@ watch(
     },
     {immediate: true},
 )
+
+watch(linkMode, (enabled) => {
+  if (!enabled) linkFrom.value = null
+})
 
 type DragSession = {
   node: TableRelationGraphNode
@@ -84,6 +121,25 @@ const nodeById = computed(() => {
     map.set(node.id, node)
   }
   return map
+})
+
+const selectedEdge = computed(() =>
+    enrichedGraph.value.edges.find((edge) => edge.id === selectedEdgeId.value) ?? null,
+)
+
+const selectedEdgeDraft = computed<SchemaErFkDraft | null>(() => {
+  const edge = selectedEdge.value
+  if (!edge) return null
+  const fromNode = nodeById.value.get(edge.fromNodeId)
+  const toNode = nodeById.value.get(edge.toNodeId)
+  if (!fromNode || !toNode) return null
+  return {
+    sourceTable: fromNode.tableName,
+    sourceColumn: edge.sourceColumn,
+    targetTable: toNode.tableName,
+    targetColumn: edge.targetColumn,
+    constraintName: edge.constraintName,
+  }
 })
 
 function resolveSvgScale(svg: SVGSVGElement) {
@@ -115,6 +171,34 @@ function zoomIn() {
 
 function zoomOut() {
   zoom.value = Math.max(0.25, zoom.value - 0.12)
+}
+
+const exportBaseName = computed(() =>
+    `er_${databaseName.value || enrichedGraph.value.centerTableName || 'schema'}`,
+)
+
+function exportSvg() {
+  const svg = canvasRef.value
+  if (!svg) return
+  try {
+    exportSchemaErSvg(svg, exportBaseName.value)
+    layoutStore.showSuccessToast(t('workspace.schemaEr.exportSvgDone'))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('workspace.schemaEr.exportFailed')
+    layoutStore.showErrorToast(message)
+  }
+}
+
+async function exportPng() {
+  const svg = canvasRef.value
+  if (!svg) return
+  try {
+    await exportSchemaErPng(svg, exportBaseName.value)
+    layoutStore.showSuccessToast(t('workspace.schemaEr.exportPngDone'))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('workspace.schemaEr.exportFailed')
+    layoutStore.showErrorToast(message)
+  }
 }
 
 function onCanvasWheel(event: WheelEvent) {
@@ -152,13 +236,121 @@ function columnTypeLabel(column: TableRelationGraphColumn): string {
   return column.dataType
 }
 
+function selectEdge(edge: TableRelationGraphEdge, event?: Event) {
+  event?.stopPropagation()
+  selectedEdgeId.value = edge.id
+  linkMode.value = false
+  linkFrom.value = null
+}
+
+function clearSelection() {
+  selectedEdgeId.value = null
+}
+
+function toggleLinkMode() {
+  linkMode.value = !linkMode.value
+  selectedEdgeId.value = null
+  linkFrom.value = null
+}
+
+function isColumnLinkSelected(nodeId: string, column: string): boolean {
+  return linkFrom.value?.nodeId === nodeId && linkFrom.value.column === column
+}
+
+function onColumnClick(event: Event, node: TableRelationGraphNode, column: TableRelationGraphColumn) {
+  if (!linkMode.value) return
+  event.stopPropagation()
+  const pick = {nodeId: node.id, table: node.tableName, column: column.name}
+  if (!linkFrom.value) {
+    linkFrom.value = pick
+    return
+  }
+  if (linkFrom.value.nodeId === pick.nodeId && linkFrom.value.column === pick.column) {
+    linkFrom.value = null
+    return
+  }
+  if (linkFrom.value.table === pick.table) {
+    linkFrom.value = pick
+    return
+  }
+  const draft: SchemaErFkDraft = {
+    sourceTable: linkFrom.value.table,
+    sourceColumn: linkFrom.value.column,
+    targetTable: pick.table,
+    targetColumn: pick.column,
+  }
+  openAddFkDialog(draft)
+  linkFrom.value = null
+  linkMode.value = false
+}
+
+function openAddFkDialog(draft: SchemaErFkDraft) {
+  const sql = buildAddForeignKeySql(draft, {
+    dbType: dbType.value,
+    database: databaseName.value,
+  })
+  if (!sql.trim()) return
+  fkDialogTitle.value = t('workspace.schemaEr.fkAddTitle')
+  fkDialogSql.value = sql
+  fkDialogSummary.value = [
+    t('workspace.schemaEr.fkSummarySource', {
+      table: draft.sourceTable,
+      column: draft.sourceColumn,
+    }),
+    t('workspace.schemaEr.fkSummaryTarget', {
+      table: draft.targetTable,
+      column: draft.targetColumn,
+    }),
+  ]
+  fkDialogOpen.value = true
+}
+
+function openDropFkDialog() {
+  const draft = selectedEdgeDraft.value
+  if (!draft) return
+  const sql = buildDropForeignKeySql(draft, {
+    dbType: dbType.value,
+    database: databaseName.value,
+  })
+  if (!sql.trim()) return
+  fkDialogTitle.value = t('workspace.schemaEr.fkDropTitle')
+  fkDialogSql.value = sql
+  fkDialogSummary.value = [
+    t('workspace.schemaEr.fkSummaryConstraint', {name: draft.constraintName || '—'}),
+    t('workspace.schemaEr.fkSummarySource', {
+      table: draft.sourceTable,
+      column: draft.sourceColumn,
+    }),
+    t('workspace.schemaEr.fkSummaryTarget', {
+      table: draft.targetTable,
+      column: draft.targetColumn,
+    }),
+  ]
+  fkDialogOpen.value = true
+}
+
+async function applyFkDialog() {
+  const sql = fkDialogSql.value.trim()
+  if (!sql) return
+  await workspace.openConsole({
+    connectionId: props.tab.connectionId,
+    database: databaseName.value,
+    sql,
+    title: t('workspace.schemaEr.fkConsoleTitle'),
+  })
+  layoutStore.showSuccessToast(t('workspace.schemaEr.fkOpenedConsole'))
+}
+
 function onCanvasPointerDown(event: PointerEvent) {
   if (event.button !== 0) return
   const target = event.target
   if (target instanceof Element) {
     if (target.closest('.schema-er-graph__node')) return
     if (target.closest('.schema-er-graph__dock')) return
+    if (target.closest('.schema-er-graph__edge-hit')) return
+    if (target.closest('.schema-er-graph__inspector')) return
   }
+  clearSelection()
 
   panning.value = {
     pointerStartX: event.clientX,
@@ -192,7 +384,7 @@ function onPanPointerUp() {
 
 function onNodePointerDown(event: PointerEvent, node: TableRelationGraphNode) {
   event.stopPropagation()
-  if (locked.value) return
+  if (linkMode.value || locked.value) return
   const current = positions.value[node.id]
   if (!current) return
   dragging.value = {
@@ -260,10 +452,18 @@ onUnmounted(() => {
         v-else
         ref="canvasWrapRef"
         class="schema-er-graph__canvas-wrap"
-        :class="{ 'is-panning': panning }"
+        :class="{ 'is-panning': panning, 'is-link-mode': linkMode }"
         @wheel="onCanvasWheel"
         @pointerdown="onCanvasPointerDown"
     >
+      <div v-if="linkMode" class="schema-er-graph__banner">
+        <DwIcon name="info" size="xs" :stroke-width="1.5"/>
+        <span>{{ linkFrom ? t('workspace.schemaEr.linkPickTarget') : t('workspace.schemaEr.linkPickSource') }}</span>
+        <button type="button" class="schema-er-graph__banner-cancel" @click="toggleLinkMode">
+          {{ t('common.cancel') }}
+        </button>
+      </div>
+
       <svg
           ref="canvasRef"
           class="schema-er-graph__canvas"
@@ -293,15 +493,24 @@ onUnmounted(() => {
             <template v-for="entry in renderedEdges" :key="entry.edge.id">
               <path
                   v-if="entry.path"
+                  class="schema-er-graph__edge-hit"
+                  :d="entry.path"
+                  @pointerdown.stop="selectEdge(entry.edge, $event)"
+              />
+              <path
+                  v-if="entry.path"
                   class="schema-er-graph__edge"
+                  :class="{ 'is-selected': selectedEdgeId === entry.edge.id }"
                   :d="entry.path"
                   marker-end="url(#schema-er-arrow)"
+                  @pointerdown.stop="selectEdge(entry.edge, $event)"
               >
                 <title>{{ entry.edge.constraintName }} · {{ entry.edge.label }}</title>
               </path>
               <circle
                   v-if="entry.dots"
                   class="schema-er-graph__anchor schema-er-graph__anchor--start"
+                  :class="{ 'is-selected': selectedEdgeId === entry.edge.id }"
                   :cx="entry.dots.start.x"
                   :cy="entry.dots.start.y"
                   r="3.5"
@@ -309,6 +518,7 @@ onUnmounted(() => {
               <circle
                   v-if="entry.dots"
                   class="schema-er-graph__anchor schema-er-graph__anchor--end"
+                  :class="{ 'is-selected': selectedEdgeId === entry.edge.id }"
                   :cx="entry.dots.end.x"
                   :cy="entry.dots.end.y"
                   r="3.5"
@@ -365,7 +575,10 @@ onUnmounted(() => {
                   'is-highlight': column.highlighted,
                   'is-pk': column.keyType === 'PRI',
                   'is-fk': column.highlighted && column.keyType !== 'PRI',
+                  'is-link-pick': isColumnLinkSelected(node.id, column.name),
+                  'is-linkable': linkMode,
                 }"
+                @pointerdown="onColumnClick($event, node, column)"
             >
               <rect
                   :x="6"
@@ -411,31 +624,81 @@ onUnmounted(() => {
         </g>
       </svg>
 
+      <aside v-if="selectedEdge && selectedEdgeDraft" class="schema-er-graph__inspector">
+        <header class="schema-er-graph__inspector-head">
+          <div>
+            <p class="schema-er-graph__inspector-kicker">{{ t('workspace.schemaEr.fkInspector') }}</p>
+            <h3>{{ selectedEdge.constraintName || t('workspace.schemaEr.fkUntitled') }}</h3>
+          </div>
+          <button type="button" class="schema-er-graph__inspector-close" @click="clearSelection">
+            <DwIcon name="close" size="xs" :stroke-width="1.5"/>
+          </button>
+        </header>
+        <dl class="schema-er-graph__inspector-meta">
+          <div>
+            <dt>{{ t('workspace.schemaEr.fkFrom') }}</dt>
+            <dd>{{ selectedEdgeDraft.sourceTable }}.{{ selectedEdgeDraft.sourceColumn }}</dd>
+          </div>
+          <div>
+            <dt>{{ t('workspace.schemaEr.fkTo') }}</dt>
+            <dd>{{ selectedEdgeDraft.targetTable }}.{{ selectedEdgeDraft.targetColumn }}</dd>
+          </div>
+        </dl>
+        <div class="schema-er-graph__inspector-actions">
+          <DwButton variant="secondary" size="sm" type="button" @click="openDropFkDialog">
+            {{ t('workspace.schemaEr.fkDropAction') }}
+          </DwButton>
+        </div>
+      </aside>
+
       <div class="schema-er-graph__dock" role="toolbar" :aria-label="t('workspace.schemaEr.canvasControls')">
-        <button type="button" class="schema-er-graph__dock-btn" :title="t('workspace.schemaEr.zoomIn')" @click="zoomIn">
-          <DwIcon name="plus" fit :stroke-width="1.4"/>
+        <button
+            type="button"
+            class="dw-icon-btn dw-icon-btn--sm"
+            :class="{ 'is-active': linkMode }"
+            :title="t('workspace.schemaEr.linkMode')"
+            @click="toggleLinkMode"
+        >
+          <DwIcon name="link" fit :stroke-width="1.5"/>
         </button>
-        <button type="button" class="schema-er-graph__dock-btn" :title="t('workspace.schemaEr.zoomOut')" @click="zoomOut">
-          <DwIcon name="minus" fit :stroke-width="1.4"/>
+        <button type="button" class="dw-icon-btn dw-icon-btn--sm" :title="t('workspace.schemaEr.zoomIn')" @click="zoomIn">
+          <DwIcon name="plus" fit :stroke-width="1.5"/>
         </button>
-        <button type="button" class="schema-er-graph__dock-btn" :title="t('workspace.schemaEr.fitView')" @click="fitView">
-          <DwIcon name="locate" fit :stroke-width="1.2"/>
+        <button type="button" class="dw-icon-btn dw-icon-btn--sm" :title="t('workspace.schemaEr.zoomOut')" @click="zoomOut">
+          <DwIcon name="minus" fit :stroke-width="1.5"/>
+        </button>
+        <button type="button" class="dw-icon-btn dw-icon-btn--sm" :title="t('workspace.schemaEr.fitView')" @click="fitView">
+          <DwIcon name="locate" fit :stroke-width="1.5"/>
         </button>
         <button
             type="button"
-            class="schema-er-graph__dock-btn"
-            :class="{ active: locked }"
+            class="dw-icon-btn dw-icon-btn--sm"
+            :class="{ 'is-active': locked }"
             :title="locked ? t('workspace.schemaEr.unlock') : t('workspace.schemaEr.lock')"
             @click="locked = !locked"
         >
-          <DwIcon v-if="locked" name="lock" fit :stroke-width="1.2"/>
-          <DwIcon v-else name="unlock" fit :stroke-width="1.2"/>
+          <DwIcon v-if="locked" name="lock" fit :stroke-width="1.5"/>
+          <DwIcon v-else name="unlock" fit :stroke-width="1.5"/>
         </button>
-        <button type="button" class="schema-er-graph__dock-btn" :title="t('workspace.tableDetail.relationGraphReset')" @click="resetLayout">
-          <DwIcon name="refresh" fit :stroke-width="1.2"/>
+        <button type="button" class="dw-icon-btn dw-icon-btn--sm" :title="t('workspace.tableDetail.relationGraphReset')" @click="resetLayout">
+          <DwIcon name="refresh" fit :stroke-width="1.5"/>
+        </button>
+        <button type="button" class="dw-icon-btn dw-icon-btn--sm" :title="t('workspace.schemaEr.exportSvg')" @click="exportSvg">
+          <DwIcon name="export" fit :stroke-width="1.5"/>
+        </button>
+        <button type="button" class="dw-icon-btn dw-icon-btn--sm" :title="t('workspace.schemaEr.exportPng')" @click="exportPng">
+          <DwIcon name="save-as" fit :stroke-width="1.5"/>
         </button>
       </div>
     </div>
+
+    <SchemaErFkDdlDialog
+        v-model:open="fkDialogOpen"
+        :title="fkDialogTitle"
+        :sql="fkDialogSql"
+        :summary-bits="fkDialogSummary"
+        @apply="applyFkDialog"
+    />
   </div>
 </template>
 
@@ -490,6 +753,133 @@ onUnmounted(() => {
   cursor: grabbing;
 }
 
+.schema-er-graph__canvas-wrap.is-link-mode {
+  cursor: crosshair;
+}
+
+.schema-er-graph__banner {
+  position: absolute;
+  z-index: var(--dw-z-raised);
+  top: var(--dw-space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-gap);
+  max-width: min(520px, calc(100% - var(--dw-space-8)));
+  padding: var(--dw-space-2) var(--dw-space-4);
+  border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border-light));
+  border-radius: var(--dw-radius-pill);
+  background: color-mix(in srgb, var(--dw-bg-panel) 88%, transparent);
+  color: var(--dw-text);
+  font-size: var(--dw-text-xs);
+  font-weight: 600;
+  box-shadow: var(--dw-shadow-md);
+  backdrop-filter: blur(10px);
+}
+
+.schema-er-graph__banner-cancel {
+  margin-left: var(--dw-space-2);
+  border: none;
+  background: transparent;
+  color: var(--dw-primary);
+  font-size: var(--dw-text-xs);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.schema-er-graph__inspector {
+  position: absolute;
+  z-index: var(--dw-z-raised);
+  top: var(--dw-space-5);
+  right: var(--dw-space-5);
+  width: min(300px, calc(100% - var(--dw-space-10)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-4);
+  padding: var(--dw-space-5);
+  border: 1px solid var(--dw-border-light);
+  border-radius: var(--dw-control-radius);
+  background: color-mix(in srgb, var(--dw-bg-panel) 92%, transparent);
+  box-shadow: var(--dw-shadow-float);
+  backdrop-filter: blur(12px);
+}
+
+.schema-er-graph__inspector-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--dw-gap);
+}
+
+.schema-er-graph__inspector-kicker {
+  margin: 0 0 var(--dw-space-1);
+  font-size: var(--dw-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dw-text-muted);
+}
+
+.schema-er-graph__inspector-head h3 {
+  margin: 0;
+  font-size: var(--dw-text-sm);
+  font-weight: 700;
+  color: var(--dw-text);
+  word-break: break-word;
+}
+
+.schema-er-graph__inspector-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--dw-control-radius-sm);
+  background: transparent;
+  color: var(--dw-text-muted);
+  cursor: pointer;
+}
+
+.schema-er-graph__inspector-close:hover {
+  background: var(--dw-bg-hover);
+  color: var(--dw-text);
+}
+
+.schema-er-graph__inspector-meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+}
+
+.schema-er-graph__inspector-meta div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+}
+
+.schema-er-graph__inspector-meta dt {
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-muted);
+}
+
+.schema-er-graph__inspector-meta dd {
+  margin: 0;
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-secondary);
+  word-break: break-all;
+}
+
+.schema-er-graph__inspector-actions {
+  display: flex;
+  gap: var(--dw-gap-sm);
+}
+
 .schema-er-graph__canvas {
   display: block;
   width: 100%;
@@ -507,11 +897,27 @@ onUnmounted(() => {
   stroke-width: 1;
 }
 
+.schema-er-graph__edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  cursor: pointer;
+  pointer-events: stroke;
+}
+
 .schema-er-graph__edge {
   fill: none;
   stroke: var(--dw-info);
   stroke-width: 1.6;
   opacity: 0.9;
+  cursor: pointer;
+  transition: stroke var(--dw-duration) var(--dw-ease), stroke-width var(--dw-duration) var(--dw-ease);
+}
+
+.schema-er-graph__edge.is-selected {
+  stroke: var(--dw-primary);
+  stroke-width: 2.4;
+  opacity: 1;
 }
 
 .schema-er-graph__arrow {
@@ -522,6 +928,10 @@ onUnmounted(() => {
   fill: var(--dw-info);
   stroke: var(--erg-node-fill);
   stroke-width: 1.5;
+}
+
+.schema-er-graph__anchor.is-selected {
+  fill: var(--dw-primary);
 }
 
 .schema-er-graph__node {
@@ -581,6 +991,16 @@ onUnmounted(() => {
   fill: var(--erg-fk-bg);
 }
 
+.schema-er-graph__row.is-linkable {
+  cursor: crosshair;
+}
+
+.schema-er-graph__row.is-link-pick .schema-er-graph__row-bg {
+  fill: color-mix(in srgb, var(--dw-primary) 22%, var(--erg-node-fill));
+  stroke: color-mix(in srgb, var(--dw-primary) 45%, transparent);
+  stroke-width: 1;
+}
+
 .schema-er-graph__col-name {
   fill: var(--erg-text);
   font-size: var(--dw-text-xs);
@@ -618,30 +1038,6 @@ onUnmounted(() => {
   background: color-mix(in srgb, var(--dw-bg-panel) 88%, transparent);
   border: 1px solid var(--dw-border-light);
   box-shadow: var(--dw-shadow);
-}
-
-.schema-er-graph__dock-btn {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: var(--dw-control-h-sm);
-  padding: 0;
-  border: none;
-  border-radius: var(--dw-control-radius);
-  background: transparent;
-  color: var(--dw-text-secondary);
-  cursor: pointer;
-}
-
-.schema-er-graph__dock-btn svg {
-  width: var(--dw-icon-size-md);
-  height: var(--dw-icon-size-md);
-}
-
-.schema-er-graph__dock-btn:hover,
-.schema-er-graph__dock-btn.active {
-  background: color-mix(in srgb, var(--dw-primary) 12%, transparent);
-  color: var(--dw-primary);
 }
 
 </style>

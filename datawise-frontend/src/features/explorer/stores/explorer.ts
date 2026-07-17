@@ -1445,6 +1445,7 @@ export const useExplorerStore = defineStore('explorer', () => {
         writeFavoritesGroupExpanded(true)
     }
 
+
     const visibleTree = computed(() => {
         void treeVersion.value
         return tree.value

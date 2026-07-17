@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import {useI18n} from 'vue-i18n'
 import type {ExplainMetricPair, ExplainPlanNode} from '@/features/workspace/types/explain-plan'
+import type {ExplainPlanNodeRisk} from '@/features/workspace/services/explain-plan-risk.service'
 
-defineProps<{
+const props = defineProps<{
   node: ExplainPlanNode
   depth: number
   collapsed: Record<string, boolean>
+  risks?: Map<string, ExplainPlanNodeRisk>
 }>()
 
 const emit = defineEmits<{
@@ -13,6 +15,10 @@ const emit = defineEmits<{
 }>()
 
 const {t, te} = useI18n()
+
+function riskLevel(nodeId: string) {
+  return props.risks?.get(nodeId)?.level ?? 'none'
+}
 
 function metricEntries(node: ExplainPlanNode): [string, string | number][] {
   if (!node.metrics || node.metricPairs?.length) return []
@@ -31,7 +37,11 @@ function pairLabel(id: ExplainMetricPair['id']) {
 
 <template>
   <li class="explain-node">
-    <div class="explain-node__row" :style="{ paddingLeft: `${depth * 16 + 8}px` }">
+    <div
+        class="explain-node__row"
+        :class="`explain-node__row--${riskLevel(node.id)}`"
+        :style="{ paddingLeft: `${depth * 16 + 8}px` }"
+    >
       <button
           v-if="node.children?.length"
           class="explain-node__toggle"
@@ -44,7 +54,21 @@ function pairLabel(id: ExplainMetricPair['id']) {
       <span v-else class="explain-node__spacer" aria-hidden="true"/>
 
       <div class="explain-node__body">
-        <div class="explain-node__label">{{ node.label }}</div>
+        <div class="explain-node__label-row">
+          <div class="explain-node__label">{{ node.label }}</div>
+          <span
+              v-if="riskLevel(node.id) === 'warning'"
+              class="explain-node__risk explain-node__risk--warning"
+          >
+            {{ t('queryResult.explainPlanRiskWarning') }}
+          </span>
+          <span
+              v-else-if="riskLevel(node.id) === 'info'"
+              class="explain-node__risk explain-node__risk--info"
+          >
+            {{ t('queryResult.explainPlanRiskInfo') }}
+          </span>
+        </div>
         <div v-if="node.detail" class="explain-node__detail">{{ node.detail }}</div>
         <table v-if="node.metricPairs?.length" class="explain-node__pairs">
           <thead>
@@ -78,6 +102,7 @@ function pairLabel(id: ExplainMetricPair['id']) {
           :node="child"
           :depth="depth + 1"
           :collapsed="collapsed"
+          :risks="risks"
           @toggle="emit('toggle', $event)"
       />
     </ul>
@@ -97,6 +122,38 @@ function pairLabel(id: ExplainMetricPair['id']) {
   align-items: flex-start;
   padding: var(--dw-pad-control-lg);
   border-bottom: 1px solid var(--dw-border-light);
+}
+
+.explain-node__row--warning {
+  background: color-mix(in srgb, var(--dw-warning) 10%, transparent);
+}
+
+.explain-node__row--info {
+  background: color-mix(in srgb, var(--dw-info) 8%, transparent);
+}
+
+.explain-node__label-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-gap-sm);
+  flex-wrap: wrap;
+}
+
+.explain-node__risk {
+  padding: var(--dw-space-1) var(--dw-space-2);
+  border-radius: var(--dw-radius-pill);
+  font-size: var(--dw-text-xs);
+  font-weight: 600;
+}
+
+.explain-node__risk--warning {
+  color: var(--dw-warning);
+  background: color-mix(in srgb, var(--dw-warning) 16%, transparent);
+}
+
+.explain-node__risk--info {
+  color: var(--dw-info);
+  background: color-mix(in srgb, var(--dw-info) 14%, transparent);
 }
 
 .explain-node__toggle {

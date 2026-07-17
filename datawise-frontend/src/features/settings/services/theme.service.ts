@@ -93,19 +93,19 @@ const DARK_UI = {
 } as const
 
 const LIGHT_UI = {
-    border: '#e5e7eb',
-    borderLight: '#eef0f3',
+    border: '#e2e8f0',
+    borderLight: '#eef2f7',
     panelBorder: 'rgba(15, 23, 42, 0.08)',
     panelShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
     text: '#111827',
     textSecondary: '#6b7280',
     textMuted: '#9ca3af',
     textDim: '#808080',
-    chrome: '#e3e6eb',
-    tabBarBg: '#dee1e6',
-    tabBarBorder: '#c8ccd4',
+    chrome: '#dce4ee',
+    tabBarBg: '#dce3ea',
+    tabBarBorder: '#c5cdd8',
     tabActiveBg: '#ffffff',
-    tabActiveBorder: '#007acc',
+    tabActiveBorder: '#2563eb',
     tabActiveText: '#1f2937',
     tabInactiveText: '#6b7280',
     tabHoverBg: 'rgba(0, 0, 0, 0.08)',
@@ -173,10 +173,10 @@ function buildThemeVars(
     primaryTone: PrimaryTone,
     uiSkin: UiSkin = 'classic',
 ): Record<string, string> {
-    const primary = PRIMARY_PRESETS[primaryTone] ?? PRIMARY_PRESETS.violet
+    const primary = PRIMARY_PRESETS[primaryTone] ?? PRIMARY_PRESETS.blue
     const surfaces = mode === 'dark'
-        ? BACKGROUND_PRESETS_DARK[background] ?? BACKGROUND_PRESETS_DARK.default
-        : BACKGROUND_PRESETS_LIGHT[background] ?? BACKGROUND_PRESETS_LIGHT.default
+        ? BACKGROUND_PRESETS_DARK[background] ?? BACKGROUND_PRESETS_DARK.cool
+        : BACKGROUND_PRESETS_LIGHT[background] ?? BACKGROUND_PRESETS_LIGHT.cool
     const ui = mode === 'dark' ? DARK_UI : LIGHT_UI
     const skinDef = resolveUiSkinDefinition(uiSkin)
     const panelShadow = skinDef.panelShadow === 'none' ? 'none' : ui.panelShadow

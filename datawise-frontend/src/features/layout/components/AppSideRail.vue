@@ -1,6 +1,6 @@
 <!-- 最左侧竖条导航：模块切换 + 底部 Terminal（IDEA 工具窗口布局） -->
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {storeToRefs} from 'pinia'
 import {usePopoverEscape} from '@/core/composables/usePopoverEscape'
@@ -23,8 +23,14 @@ const pluginStore = usePluginStore()
 const notifications = useNotificationStore()
 const {showProfileMenu} = storeToRefs(layout)
 const desktopApp = isDesktopApp()
+const profileMenuRootRef = ref<HTMLElement>()
 
-usePopoverEscape(showProfileMenu, () => layout.closeProfileMenu())
+// 桌面端资料菜单在 TitleBarAppMenu（Teleport），侧栏无触发器；
+// 若仍启用 outside dismiss，containRefs 恒为空，pointerdown 会在 click 前关掉菜单。
+usePopoverEscape(showProfileMenu, () => layout.closeProfileMenu(), desktopApp
+  ? {closeOnOutside: false}
+  : {containRefs: () => [profileMenuRootRef.value]},
+)
 
 interface NavItem {
   id: SideRailItemId
@@ -103,7 +109,7 @@ function toggleProfileMenu() {
 
 <template>
   <aside class="tool-stripe tool-stripe--left">
-    <div v-if="!desktopApp" class="nav-brand" data-onboarding="nav-home">
+    <div v-if="!desktopApp" ref="profileMenuRootRef" class="nav-brand" data-onboarding="nav-home">
       <button
           class="tool-btn tool-btn--brand tool-btn--stack"
           :class="{ active: layout.showProfileMenu }"

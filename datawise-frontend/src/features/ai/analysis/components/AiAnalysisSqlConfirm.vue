@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {useI18n} from 'vue-i18n'
 
 defineProps<{
@@ -40,7 +40,7 @@ const {t} = useI18n()
 
     <footer class="sql-confirm__actions">
       <button
-          class="ai-btn ai-btn--primary"
+          class="btn-primary"
           type="button"
           :disabled="busy"
           @click="emit('confirm')"
@@ -48,7 +48,7 @@ const {t} = useI18n()
         {{ busy ? t('ai.analysis.sqlConfirmRunning') : t('ai.analysis.sqlConfirmRun') }}
       </button>
       <button
-          class="ai-btn ai-btn--ghost"
+          class="btn-ghost"
           type="button"
           :disabled="busy"
           @click="emit('cancel')"

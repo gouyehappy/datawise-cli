@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {DwInlineAlert} from '@/core/components'
 import {onMounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
@@ -85,8 +85,8 @@ async function saveSessionPolicy() {
       </section>
 
       <div class="actions">
-        <button class="action-btn" type="button" @click="editProfile">{{ t('profile.editProfile') }}</button>
-        <button v-if="!auth.isGuest" class="action-btn" type="button" @click="changePassword">{{ t('profile.changePassword') }}</button>
+        <button class="btn-secondary" type="button" @click="editProfile">{{ t('profile.editProfile') }}</button>
+        <button v-if="!auth.isGuest" class="btn-secondary" type="button" @click="changePassword">{{ t('profile.changePassword') }}</button>
       </div>
 
       <section v-if="!auth.isGuest && auth.isAdmin" class="setting-block session-policy">
@@ -108,7 +108,7 @@ async function saveSessionPolicy() {
           <span>{{ t('settings.profile.sessionSlidingRenewal') }}</span>
         </label>
         <button
-            class="action-btn"
+            class="btn-secondary"
             type="button"
             :disabled="savingSessionPolicy"
             @click="saveSessionPolicy"

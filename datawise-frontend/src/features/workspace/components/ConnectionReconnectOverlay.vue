@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
@@ -47,7 +47,7 @@ async function onReconnect() {
       </div>
       <button
           type="button"
-          class="connection-reconnect-overlay__btn"
+          class="btn-primary"
           :disabled="reconnecting"
           @click="onReconnect"
       >
@@ -106,25 +106,6 @@ async function onReconnect() {
   color: color-mix(in srgb, var(--dw-text-muted) 92%, transparent);
 }
 
-.connection-reconnect-overlay__btn {
-  border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border));
-  border-radius: var(--dw-control-radius);
-  padding: 7px 18px;
-  background: color-mix(in srgb, var(--dw-on-accent) 85%, var(--dw-primary) 8%);
-  color: var(--dw-primary);
-  font-size: var(--dw-text-sm);
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: var(--dw-shadow-xs);
-}
 
-.connection-reconnect-overlay__btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--dw-on-accent) 70%, var(--dw-primary) 12%);
-  border-color: color-mix(in srgb, var(--dw-primary) 42%, var(--dw-border));
-}
 
-.connection-reconnect-overlay__btn:disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
 </style>

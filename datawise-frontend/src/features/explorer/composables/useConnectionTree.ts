@@ -21,7 +21,7 @@ import type {DatabaseConsoleContext} from '@/features/explorer/services/sql-edit
 import {openSqlFileFromTree} from '@/features/explorer/services/instance-console.service'
 import {deleteInstanceSqlScript} from '@/features/explorer/services/sql-script.service'
 import {useScriptHistoryDrawerStore} from '@/features/explorer/stores/script-history-drawer-store'
-import {runSqlFileForDatabase} from '@/features/explorer/services/run-sql-file.service'
+import {executeSqlFileContent, runSqlFileForDatabase} from '@/features/explorer/services/run-sql-file.service'
 import {
     resolvePlatformFeatureId,
 } from '@/features/explorer/services/explorer-ai-tree.service'
@@ -46,7 +46,7 @@ import {
     resolveTableContext,
 } from '@/features/explorer/services/table-context-actions.service'
 import {filterCreateNamespaceMenuItems, resolveCreateNamespaceErrorMessage} from '@/features/explorer/services/create-namespace.service'
-import {canDdlConnection} from '@/features/team/services/connection-access.service'
+import {canDdlConnection, canDmlConnection} from '@/features/team/services/connection-access.service'
 import {useTeamStore} from '@/features/team/stores/team-store'
 import {
     applySqlExportWizardOutput,
@@ -55,6 +55,14 @@ import {
     type SqlExportWizardContext,
     type SqlExportWizardForm,
 } from '@/features/explorer/services/sql-export-wizard.service'
+import {
+    loadRestoreWizardFile,
+    resolveRestoreWizardContext,
+    type RestoreWizardContext,
+    type RestoreWizardFileState,
+} from '@/features/explorer/services/restore-wizard.service'
+import {resolveProductionApprovalTeams} from '@/features/team/services/production-approval-policy.service'
+import {isProductionEnvironment} from '@/features/connection/services/connection-environment.service'
 import {
     resolveTableMigrationContext,
 } from '@/features/explorer/services/table-migration.service'
@@ -91,6 +99,9 @@ import {
     resolveExplorerInstanceLabel,
     resolveExplorerSqlFileScope,
 } from '@/features/explorer/services/explorer-database-scope'
+import {
+    defaultScheduleNameForSqlFile,
+} from '@/features/platform/services/scheduled-sql-payload.service'
 import {
     canMoveConnectionToGroup,
     injectConnectionMoveSubmenu,
@@ -210,7 +221,18 @@ export function useConnectionTree() {
     const showSqlExportWizard = ref(false)
     const sqlExportWizardContext = ref<SqlExportWizardContext | null>(null)
     const sqlExportWizardExporting = ref(false)
+    const sqlExportWizardActionError = ref('')
     const sqlExportWizardMaxRowsDefault = computed(() => resolveClientMaxResultRows())
+    const sqlExportWizardVariant = ref<'export' | 'backup'>('export')
+    const sqlExportWizardIsProduction = ref(false)
+    const showRestoreWizard = ref(false)
+    const restoreWizardContext = ref<RestoreWizardContext | null>(null)
+    const restoreWizardFileState = ref<RestoreWizardFileState | null>(null)
+    const restoreWizardLoadingFile = ref(false)
+    const restoreWizardExecuting = ref(false)
+    const restoreWizardApprovalError = ref('')
+    const restoreWizardApprovalSubmitting = ref(false)
+    const restoreWizardActionError = ref('')
 
     const flatNodes = useDataSourceFlatNodes(toRef(explorer, 'debouncedSearchQuery')).flatNodes
 
@@ -928,13 +950,20 @@ export function useConnectionTree() {
         )
     }
 
-    function openSqlExportWizard(node: TreeNode) {
+    function openSqlExportWizard(node: TreeNode, variant: 'export' | 'backup' = 'export') {
         const ctx = resolveExplorerSqlExportContext(explorer.tree, node)
         if (!ctx) {
             layout.showErrorToast(t('explorer.exportSqlContextMissing'))
             return
         }
         const connectionLabel = findConnectionLabel(ctx.connectionId)
+        const connectionNode = findAncestorByType(explorer.tree, node.id, 'connection')
+        sqlExportWizardVariant.value = variant
+        sqlExportWizardIsProduction.value = isProductionEnvironment(
+            connectionNode?.env,
+            connectionNode?.envCustom,
+        )
+        sqlExportWizardActionError.value = ''
         if (node.type === 'table') {
             sqlExportWizardContext.value = {
                 ...ctx,
@@ -956,24 +985,152 @@ export function useConnectionTree() {
         const ctx = sqlExportWizardContext.value
         if (!ctx) return
         sqlExportWizardExporting.value = true
+        sqlExportWizardActionError.value = ''
+        const isBackup = sqlExportWizardVariant.value === 'backup'
         try {
             const result = await runSqlExportWizard(ctx, form, tableDetailApi)
             const outcome = await applySqlExportWizardOutput(result, form.output)
             if (outcome === 'empty') {
-                layout.showErrorToast(t('explorer.exportSqlFailed'))
+                sqlExportWizardActionError.value = t(
+                    isBackup ? 'explorer.backupWizard.failed' : 'explorer.exportSqlFailed',
+                )
                 return
             }
+            showSqlExportWizard.value = false
             if (outcome === 'downloaded') {
                 layout.startExport(result.fileName)
-                layout.showSuccessToast(t('explorer.exportSqlSuccess', {name: result.fileName}))
+                layout.showSuccessToast(
+                    t(isBackup ? 'explorer.backupWizard.success' : 'explorer.exportSqlSuccess', {
+                        name: result.fileName,
+                    }),
+                )
             } else {
-                layout.showSuccessToast(t('explorer.exportSqlCopied'))
+                layout.showSuccessToast(
+                    t(isBackup ? 'explorer.backupWizard.copied' : 'explorer.exportSqlCopied'),
+                )
             }
-            showSqlExportWizard.value = false
         } catch {
-            layout.showErrorToast(t('explorer.exportSqlFailed'))
+            sqlExportWizardActionError.value = t(
+                isBackup ? 'explorer.backupWizard.failed' : 'explorer.exportSqlFailed',
+            )
         } finally {
             sqlExportWizardExporting.value = false
+        }
+    }
+
+    function openRestoreWizard(node: TreeNode) {
+        if (node.type !== 'database') return
+        const connectionId = findConnectionId(node)
+        const ctx = resolveRestoreWizardContext(
+            explorer.tree,
+            node,
+            connectionId ? findConnectionLabel(connectionId) : undefined,
+        )
+        if (!ctx) {
+            layout.showErrorToast(t('explorer.restoreWizardContextMissing'))
+            return
+        }
+        restoreWizardContext.value = ctx
+        restoreWizardFileState.value = null
+        restoreWizardApprovalError.value = ''
+        restoreWizardActionError.value = ''
+        showRestoreWizard.value = true
+    }
+
+    const restoreWizardCanWrite = computed(() => {
+        const id = restoreWizardContext.value?.connectionId
+        return id ? canDmlConnection(id, teamStore.teams) : false
+    })
+
+    const restoreWizardCanDdl = computed(() => {
+        const id = restoreWizardContext.value?.connectionId
+        return id ? canDdlConnection(id, teamStore.teams) : false
+    })
+
+    const restoreWizardProductionApprovalTeams = computed(() => {
+        const ctx = restoreWizardContext.value
+        const file = restoreWizardFileState.value
+        if (!ctx || !file) return []
+        return resolveProductionApprovalTeams({
+            env: ctx.env,
+            sql: file.sql,
+            connectionId: ctx.connectionId,
+            teams: teamStore.teams,
+        })
+    })
+
+    async function pickRestoreWizardFile() {
+        restoreWizardLoadingFile.value = true
+        restoreWizardApprovalError.value = ''
+        restoreWizardActionError.value = ''
+        try {
+            const loaded = await loadRestoreWizardFile()
+            if (!loaded) {
+                return
+            }
+            restoreWizardFileState.value = loaded
+        } catch {
+            restoreWizardActionError.value = t('explorer.restoreWizardReadFailed')
+        } finally {
+            restoreWizardLoadingFile.value = false
+        }
+    }
+
+    async function confirmRestoreWizardExecute() {
+        const ctx = restoreWizardContext.value
+        const file = restoreWizardFileState.value
+        if (!ctx || !file || restoreWizardExecuting.value) return
+        if (auth.isGuest) {
+            restoreWizardActionError.value = t('explorer.restoreWizard.guestDenied')
+            return
+        }
+        restoreWizardExecuting.value = true
+        restoreWizardActionError.value = ''
+        try {
+            const ok = await executeSqlFileContent({
+                tree: explorer.tree,
+                databaseNode: {id: ctx.databaseNodeId, label: ctx.database},
+                connectionName: ctx.connectionLabel,
+                sql: file.sql,
+                fileName: file.fileName,
+                statusPrefix: 'restoreWizard',
+                notifyStarted: false,
+            })
+            if (ok) {
+                showRestoreWizard.value = false
+                layout.showSuccessToast(
+                    t('explorer.restoreWizardDone', {name: file.fileName, count: file.preflight.statementCount}),
+                )
+            } else {
+                restoreWizardActionError.value = t('explorer.restoreWizardFailed')
+            }
+        } catch {
+            restoreWizardActionError.value = t('explorer.restoreWizardFailed')
+        } finally {
+            restoreWizardExecuting.value = false
+        }
+    }
+
+    async function submitRestoreWizardProductionApproval(teamId: string) {
+        const ctx = restoreWizardContext.value
+        const file = restoreWizardFileState.value
+        if (!ctx || !file) return
+        restoreWizardApprovalSubmitting.value = true
+        restoreWizardApprovalError.value = ''
+        try {
+            await teamStore.submitProductionApproval(teamId, {
+                connectionId: ctx.connectionId,
+                connectionName: ctx.connectionLabel,
+                database: ctx.database,
+                sql: file.sql,
+            })
+            showRestoreWizard.value = false
+            layout.showSuccessToast(t('console.productionApproval.submitted'))
+        } catch (error) {
+            restoreWizardApprovalError.value =
+                error instanceof Error ? error.message : t('console.productionApproval.submitFailed')
+        } finally {
+            restoreWizardApprovalSubmitting.value = false
         }
     }
 
@@ -1381,6 +1538,34 @@ export function useConnectionTree() {
             return
         }
 
+        if (id === 'schedule-sql-file' && node.type === 'sql_file') {
+            const connectionId = findConnectionId(node)
+            const scope = resolveExplorerSqlFileScope(explorer.tree, node.id)
+            if (!connectionId || !scope) {
+                layout.showErrorToast(t('explorer.scheduleSqlFileContextMissing'))
+                closeMenu()
+                return
+            }
+            layout.setModule('database')
+            workspace.openPlatformCatalog({
+                feature: 'scheduled_tasks',
+                connectionId,
+                database: scope.instanceLabel,
+                instanceId: scope.scopeNode.id,
+                explorerNodeId: node.id,
+                openCreateForm: true,
+                scheduleDraft: {
+                    name: defaultScheduleNameForSqlFile(node.label),
+                    source: 'workspace_file',
+                    sqlFile: node.label,
+                    cronExpression: '0 0 * * *',
+                    enabled: true,
+                },
+            })
+            closeMenu()
+            return
+        }
+
         if (id === 'open') void onOpen(node)
 
         if (id === 'connect' && node.type === 'connection') {
@@ -1586,7 +1771,19 @@ export function useConnectionTree() {
         }
 
         if (id === 'export-wizard' && (node.type === 'table' || node.type === 'database')) {
-            openSqlExportWizard(node)
+            openSqlExportWizard(node, 'export')
+            closeMenu()
+            return
+        }
+
+        if (id === 'backup-wizard' && (node.type === 'table' || node.type === 'database')) {
+            openSqlExportWizard(node, 'backup')
+            closeMenu()
+            return
+        }
+
+        if (id === 'restore-wizard' && node.type === 'database') {
+            openRestoreWizard(node)
             closeMenu()
             return
         }
@@ -2202,6 +2399,7 @@ export function useConnectionTree() {
             showTableActionDialog.value ||
             showDeleteDatabaseDialog.value ||
             showSqlExportWizard.value ||
+            showRestoreWizard.value ||
             showRenameViewModelDialog.value ||
             showDeleteViewModelDialog.value ||
             showMigrateViewModelDialog.value ||
@@ -2379,8 +2577,25 @@ export function useConnectionTree() {
         showSqlExportWizard,
         sqlExportWizardContext,
         sqlExportWizardExporting,
+        sqlExportWizardActionError,
         sqlExportWizardMaxRowsDefault,
+        sqlExportWizardVariant,
+        sqlExportWizardIsProduction,
         confirmSqlExportWizardExport,
+        showRestoreWizard,
+        restoreWizardContext,
+        restoreWizardFileState,
+        restoreWizardLoadingFile,
+        restoreWizardExecuting,
+        restoreWizardCanWrite,
+        restoreWizardCanDdl,
+        restoreWizardProductionApprovalTeams,
+        restoreWizardApprovalError,
+        restoreWizardApprovalSubmitting,
+        restoreWizardActionError,
+        pickRestoreWizardFile,
+        confirmRestoreWizardExecute,
+        submitRestoreWizardProductionApproval,
         onSelect,
         onOpen,
         onContextMenu,

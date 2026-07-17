@@ -33,6 +33,7 @@
 @import './module-page.css';
 @import './settings-panel.css';
 @import './shortcut-panel.css';
+@import './admin-diagnosis-panel.css';
 @import './migration-wizard.css';
 @import './migration-panel.css';
 @import './resizable-table.css';

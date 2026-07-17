@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 模块页组件 — 尺度令牌见 variables.css（:root --mp-*）
  */
 
@@ -77,9 +77,15 @@
 }
 
 .mp-btn {
-    height: var(--mp-btn-h);
-    padding-inline: clamp(10px, 1.2vmin, 14px);
-    font-size: var(--mp-sub);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--dw-btn-height);
+    min-height: var(--dw-btn-height);
+    padding-inline: var(--dw-space-6);
+    border-radius: var(--dw-btn-radius);
+    font-size: var(--dw-font-size-btn);
+    line-height: var(--dw-leading);
     white-space: nowrap;
 }
 
@@ -148,30 +154,6 @@
 }
 
 /* ---- 快捷按钮行 ---- */
-
-.mp-quick-btn {
-    height: var(--mp-quick-h);
-    padding: 0 var(--dw-space-6);
-    border: 1px solid var(--dw-panel-border);
-    border-radius: var(--dw-panel-radius);
-    background: var(--dw-bg-panel);
-    color: var(--dw-text);
-    font-size: var(--mp-sub);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: pointer;
-}
-
-.mp-quick-btn:hover:not(:disabled) {
-    border-color: var(--dw-primary-border);
-    color: var(--dw-primary);
-}
-
-.mp-quick-btn:disabled {
-    opacity: 0.45;
-    cursor: default;
-}
 
 /* ---- 筛选分段 ---- */
 

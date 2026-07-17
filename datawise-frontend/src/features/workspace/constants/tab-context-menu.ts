@@ -117,7 +117,7 @@ export function getResultTabMenu(t: ComposerTranslation, ctx?: ResultTabMenuCont
     return [
         {
             id: 'suggest-index',
-            label: t('queryResult.indexSuggestAction'),
+            label: t('queryResult.indexDraftAction'),
             icon: 'explain',
             disabled: !ctx?.canSuggestIndex,
         },

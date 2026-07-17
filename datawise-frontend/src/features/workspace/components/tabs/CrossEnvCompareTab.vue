@@ -69,21 +69,23 @@ const connectionOptions = computed<SelectOption[]>(() => [
     })),
 ])
 
-function databaseOptions(databases: { id: string; label: string }[]): SelectOption[] {
+function databaseOptions(databases: { id: string; label: string }[], current?: string): SelectOption[] {
+    const options = databases.map((item) => ({value: item.label, label: item.label}))
+    if (current && current.trim() && !options.some((item) => item.value === current)) {
+        options.unshift({value: current, label: current})
+    }
     return [
         {value: '', label: t('crossEnvCompare.selectDatabase')},
-        ...databases.map((item) => ({value: item.label, label: item.label})),
+        ...options,
     ]
 }
 
-function buildScope(connectionId: string, database: string): SchemaScope | null {
-    const conn = connections.value.find((item) => item.id === connectionId)
-    if (!conn || !database) return null
-    return {
-        connectionId: conn.id,
-        connectionLabel: conn.label,
-        database,
-        dbType: conn.dbType,
+async function ensureConnectionDatabases(connectionId: string) {
+    if (!connectionId) return
+    try {
+        await explorer.ensureChildrenLoaded(connectionId)
+    } catch {
+        // tree may be offline; keep current scope labels
     }
 }
 
@@ -96,7 +98,12 @@ const leftConnectionId = computed({
             return
         }
         const database = conn.databases[0]?.label ?? ''
-        leftScope.value = buildScope(conn.id, database)
+        leftScope.value = {
+            connectionId: conn.id,
+            connectionLabel: conn.label,
+            database,
+            dbType: conn.dbType,
+        }
     },
 })
 
@@ -109,7 +116,12 @@ const rightConnectionId = computed({
             return
         }
         const database = conn.databases[0]?.label ?? ''
-        rightScope.value = buildScope(conn.id, database)
+        rightScope.value = {
+            connectionId: conn.id,
+            connectionLabel: conn.label,
+            database,
+            dbType: conn.dbType,
+        }
     },
 })
 
@@ -137,8 +149,12 @@ const rightDatabases = computed(() =>
     connections.value.find((item) => item.id === rightConnectionId.value)?.databases ?? [],
 )
 
-const leftDatabaseOptions = computed(() => databaseOptions(leftDatabases.value))
-const rightDatabaseOptions = computed(() => databaseOptions(rightDatabases.value))
+const leftDatabaseOptions = computed(() =>
+    databaseOptions(leftDatabases.value, leftScope.value?.database),
+)
+const rightDatabaseOptions = computed(() =>
+    databaseOptions(rightDatabases.value, rightScope.value?.database),
+)
 
 const leftEnv = computed(() =>
     leftScope.value
@@ -289,6 +305,28 @@ function localTabStateKey(): string {
         sql: sql.value,
     })
 }
+
+watch(leftConnectionId, (connectionId) => {
+    void ensureConnectionDatabases(connectionId)
+}, {immediate: true})
+
+watch(rightConnectionId, (connectionId) => {
+    void ensureConnectionDatabases(connectionId)
+}, {immediate: true})
+
+watch(leftDatabases, (databases) => {
+    if (!leftScope.value?.connectionId || databases.length === 0) return
+    if (!databases.some((item) => item.label === leftScope.value?.database)) {
+        leftScope.value = {...leftScope.value, database: databases[0]?.label ?? ''}
+    }
+})
+
+watch(rightDatabases, (databases) => {
+    if (!rightScope.value?.connectionId || databases.length === 0) return
+    if (!databases.some((item) => item.label === rightScope.value?.database)) {
+        rightScope.value = {...rightScope.value, database: databases[0]?.label ?? ''}
+    }
+})
 
 watch(leftScope, (value) => {
     props.tab.crossEnvCompareLeft = value ?? undefined

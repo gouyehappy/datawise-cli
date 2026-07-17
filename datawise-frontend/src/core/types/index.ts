@@ -227,6 +227,8 @@ export interface WorkspaceTab {
     migrationSource?: import('@/features/schema-compare/types/schema-compare.types').SchemaScope
     /** 表数据迁移：预选的表名 */
     migrationPreselectedTables?: string[]
+    /** 表数据迁移：从 Schema 对比等场景预填的目标范围 */
+    migrationInitialTarget?: import('@/features/schema-compare/types/schema-compare.types').SchemaScope
     /** 视图模型：显示名称 */
     viewModelName?: string
     /** 视图模型：SELECT SQL（打开 Tab 时缓存） */
@@ -251,6 +253,10 @@ export interface WorkspaceTab {
     redisView?: 'keys' | 'command'
     /** Explorer AI 平台能力目录 Tab */
     platformFeature?: import('@/features/platform/types/platform.types').PlatformFeatureId
+    /** 打开定时任务目录时预填新建草稿（SQL 文件调度） */
+    platformScheduleDraft?: import('@/features/platform/services/scheduled-sql-payload.service').PlatformScheduleDraft
+    /** 打开目录后自动弹出新建表单 */
+    platformOpenCreateForm?: boolean
     /** SSH 脚本记录 */
     sshScriptRecordId?: string
     sshScriptRecordTitle?: string

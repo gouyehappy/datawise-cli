@@ -1,12 +1,14 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
 import ExplainPlanNode from '@/features/workspace/components/ExplainPlanNode.vue'
 import ExplainPlanTable from '@/features/workspace/components/ExplainPlanTable.vue'
+import ExplainPlanGraph from '@/features/workspace/components/ExplainPlanGraph.vue'
 import type {DbType} from '@/core/types'
 import type {ExplainPlanMode, ExplainPlanNode as ExplainPlanNodeType} from '@/features/workspace/types/explain-plan'
 import {buildExplainIndexHints} from '@/features/workspace/services/explain-index-hints.service'
+import {collectExplainPlanRisks} from '@/features/workspace/services/explain-plan-risk.service'
 import {
   buildTabularExplainPlan,
   isTabularExplainPlan,
@@ -14,8 +16,9 @@ import {
 } from '@/features/workspace/services/explain-plan-tabular.service'
 
 const emit = defineEmits<{
-  'suggest-indexes': []
+  'open-index-draft': [payload?: {table?: string}]
   'request-ai-explain': []
+  'request-ai-index-suggest': []
 }>()
 
 const props = withDefaults(defineProps<{
@@ -25,21 +28,42 @@ const props = withDefaults(defineProps<{
   explainMode?: ExplainPlanMode
   aiExplainLoading?: boolean
   enableAiExplain?: boolean
+  /** 始终允许启发式「打开索引草稿」（不依赖 AI 插件） */
+  enableIndexDraft?: boolean
+  /** AI 增强索引建议（插件 p-ai-index-suggest） */
+  enableAiIndexSuggest?: boolean
+  aiIndexSuggestLoading?: boolean
 }>(), {
   aiExplainLoading: false,
   enableAiExplain: false,
+  enableIndexDraft: true,
+  enableAiIndexSuggest: false,
+  aiIndexSuggestLoading: false,
 })
 
 const {t} = useI18n()
 const collapsed = ref<Record<string, boolean>>({})
+const viewMode = ref<'steps' | 'graph'>('steps')
 
 const indexHints = computed(() => buildExplainIndexHints(props.nodes, props.dbType))
+const nodeRisks = computed(() => collectExplainPlanRisks(props.nodes))
 const displaySql = computed(() => stripExplainPrefix(props.sql))
 const showTabularPlan = computed(() => isTabularExplainPlan(props.nodes, props.dbType))
 const tabularPlan = computed(() => buildTabularExplainPlan(props.nodes))
+const canShowGraph = computed(() => props.nodes.length > 0 && !showTabularPlan.value)
+
+const canOpenIndexDraft = computed(() =>
+    props.enableIndexDraft
+    && indexHints.value.length > 0
+    && Boolean(props.sql?.trim()),
+)
 
 function toggleNode(id: string) {
   collapsed.value[id] = !collapsed.value[id]
+}
+
+function openDraftForHint(table?: string) {
+  emit('open-index-draft', table ? {table} : undefined)
 }
 </script>
 
@@ -56,10 +80,37 @@ function toggleNode(id: string) {
           </span>
         </div>
         <div class="explain-plan__actions">
+          <div
+              v-if="canShowGraph"
+              class="dw-segment"
+              role="tablist"
+              :aria-label="t('queryResult.explainPlanView')"
+          >
+            <button
+                type="button"
+                class="dw-segment__btn"
+                :class="{ 'is-active': viewMode === 'steps' }"
+                role="tab"
+                :aria-selected="viewMode === 'steps'"
+                @click="viewMode = 'steps'"
+            >
+              {{ t('queryResult.explainPlanViewSteps') }}
+            </button>
+            <button
+                type="button"
+                class="dw-segment__btn"
+                :class="{ 'is-active': viewMode === 'graph' }"
+                role="tab"
+                :aria-selected="viewMode === 'graph'"
+                @click="viewMode = 'graph'"
+            >
+              {{ t('queryResult.explainPlanViewGraph') }}
+            </button>
+          </div>
           <button
               v-if="enableAiExplain"
               type="button"
-              class="explain-plan__action explain-plan__action--ai"
+              class="dw-text-btn dw-text-btn--accent"
               :disabled="aiExplainLoading"
               @click="emit('request-ai-explain')"
           >
@@ -67,12 +118,22 @@ function toggleNode(id: string) {
             <span>{{ aiExplainLoading ? t('queryResult.aiExplainLoading') : t('queryResult.aiExplain') }}</span>
           </button>
           <button
-              v-if="indexHints.length"
+              v-if="canOpenIndexDraft"
               type="button"
-              class="explain-plan__action"
-              @click="emit('suggest-indexes')"
+              class="dw-text-btn"
+              @click="emit('open-index-draft')"
           >
-            {{ t('queryResult.indexSuggestAction') }}
+            {{ t('queryResult.indexDraftAction') }}
+          </button>
+          <button
+              v-if="enableAiIndexSuggest && canOpenIndexDraft"
+              type="button"
+              class="dw-text-btn dw-text-btn--accent"
+              :disabled="aiIndexSuggestLoading"
+              @click="emit('request-ai-index-suggest')"
+          >
+            <DwIcon name="ai" size="xs" :stroke-width="1.5"/>
+            <span>{{ aiIndexSuggestLoading ? t('queryResult.indexSuggestLoading') : t('queryResult.indexSuggestAction') }}</span>
           </button>
         </div>
       </div>
@@ -86,7 +147,7 @@ function toggleNode(id: string) {
       <pre class="explain-plan__sql">{{ displaySql }}</pre>
     </details>
 
-    <details v-if="indexHints.length" class="explain-plan__hints-panel">
+    <details v-if="indexHints.length" class="explain-plan__hints-panel" open>
       <summary class="explain-plan__hints-summary">
         <DwIcon class="explain-plan__hints-chevron" name="chevron-down" size="xs" :stroke-width="1.5"/>
         <span>{{ t('queryResult.explainPlanHints', {count: indexHints.length}) }}</span>
@@ -97,8 +158,18 @@ function toggleNode(id: string) {
             :key="hint.id"
             :class="`explain-plan__hint explain-plan__hint--${hint.severity}`"
         >
-          <strong>{{ hint.message }}</strong>
-          <span v-if="hint.suggestion">{{ hint.suggestion }}</span>
+          <div class="explain-plan__hint-body">
+            <strong>{{ hint.message }}</strong>
+            <span v-if="hint.suggestion">{{ hint.suggestion }}</span>
+          </div>
+          <button
+              v-if="canOpenIndexDraft"
+              type="button"
+              class="explain-plan__hint-action"
+              @click="openDraftForHint(hint.table)"
+          >
+            {{ t('queryResult.indexDraftHintAction') }}
+          </button>
         </li>
       </ul>
     </details>
@@ -115,6 +186,11 @@ function toggleNode(id: string) {
             :rows="tabularPlan.rows"
         />
 
+        <ExplainPlanGraph
+            v-else-if="viewMode === 'graph'"
+            :nodes="nodes"
+        />
+
         <ul v-else class="explain-plan__tree">
           <ExplainPlanNode
               v-for="node in nodes"
@@ -122,6 +198,7 @@ function toggleNode(id: string) {
               :node="node"
               :depth="0"
               :collapsed="collapsed"
+              :risks="nodeRisks"
               @toggle="toggleNode"
           />
         </ul>
@@ -173,49 +250,14 @@ function toggleNode(id: string) {
   letter-spacing: 0.02em;
 }
 
-.explain-plan__actions {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--dw-gap-sm);
-  flex-shrink: 0;
-}
 
-.explain-plan__action {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--dw-space-2);
-  height: var(--dw-btn-height);
-  padding: 0 var(--dw-space-5);
-  border: 1px solid transparent;
-  border-radius: var(--dw-control-radius-sm);
-  background: transparent;
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-xs);
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--dw-transition-colors);
-}
 
-.explain-plan__action--ai {
-  color: var(--dw-text);
-}
 
-.explain-plan__action:hover:not(:disabled) {
-  color: var(--dw-text);
-  background: color-mix(in srgb, var(--dw-text) 6%, transparent);
-  border-color: color-mix(in srgb, var(--dw-border) 80%, transparent);
-}
 
-.explain-plan__action--ai:hover:not(:disabled) {
-  color: var(--dw-primary);
-  background: var(--dw-primary-softer);
-  border-color: color-mix(in srgb, var(--dw-primary) 20%, var(--dw-border-light));
-}
 
-.explain-plan__action:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+
+
+
 
 .explain-plan__sql-panel,
 .explain-plan__hints-panel,
@@ -283,6 +325,10 @@ function toggleNode(id: string) {
 }
 
 .explain-plan__hint {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--dw-gap);
   padding: var(--dw-pad-control);
   border-radius: var(--dw-control-radius);
   font-size: var(--dw-text-sm);
@@ -290,9 +336,30 @@ function toggleNode(id: string) {
   border: 1px solid var(--dw-border-light);
 }
 
-.explain-plan__hint strong {
+.explain-plan__hint-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.explain-plan__hint-body strong {
   display: block;
   margin-bottom: var(--dw-space-1);
+}
+
+.explain-plan__hint-action {
+  flex-shrink: 0;
+  padding: var(--dw-space-1) var(--dw-space-3);
+  border: 1px solid var(--dw-border-light);
+  border-radius: var(--dw-control-radius-sm);
+  background: var(--dw-bg);
+  color: var(--dw-primary);
+  font-size: var(--dw-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.explain-plan__hint-action:hover {
+  background: var(--dw-primary-soft);
 }
 
 .explain-plan__hint--warning {

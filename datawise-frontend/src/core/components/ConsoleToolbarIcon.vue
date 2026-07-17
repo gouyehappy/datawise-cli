@@ -28,6 +28,8 @@ const ICON_MAP: Record<ConsoleToolbarIconName, DwIconName> = {
     bookmark: 'bookmark',
     viewModel: 'view-model',
     format: 'format',
+    visualQuery: 'tab-schema-er',
+    terminal: 'terminal',
     fullscreen: 'fullscreen',
     ai: 'ai',
 }

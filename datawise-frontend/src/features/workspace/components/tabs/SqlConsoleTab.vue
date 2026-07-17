@@ -46,6 +46,7 @@ import DangerousSqlPendingBar from '@/features/workspace/components/DangerousSql
 import ConsoleSqlCancelDialog from '@/features/workspace/components/ConsoleSqlCancelDialog.vue'
 import SqlParameterPanel from '@/features/workspace/components/SqlParameterPanel.vue'
 import SqlExecutionLimitHint from '@/features/workspace/components/SqlExecutionLimitHint.vue'
+import {useIndexDraftSuggest} from '@/features/workspace/composables/useIndexDraftSuggest'
 import {useDangerousSqlPending} from '@/features/workspace/composables/useDangerousSqlPending'
 import {normalizeConnectionEnvironment} from '@/features/connection/services/connection-environment.service'
 import {shouldConfirmDangerousSql} from '@/features/workspace/services/dangerous-sql-confirm-policy.service'
@@ -65,7 +66,6 @@ import {reviewSql} from '@/features/platform/services/sql-review.service'
 import type {SqlReviewFinding} from '@/features/platform/types/platform.types'
 import {fetchConnectionConfig} from '@/shared/config/connections-catalog.service'
 import {isJdbcSshTunnelEnabled} from '@/features/ssh/services/ssh-jdbc-tunnel.service'
-import {DwIcon} from '@/core/icons'
 
 import {
   CONSOLE_EDITOR_HEIGHT_DEFAULT,
@@ -78,6 +78,9 @@ import {
 const SqlConsoleAiLayer = defineAsyncComponent(
     () => import('@/features/workspace/components/tabs/SqlConsoleAiLayer.vue'),
 )
+const IndexSuggestDialog = defineAsyncComponent(
+    () => import('@/features/workspace/components/IndexSuggestDialog.vue'),
+)
 const SqlConsoleTeamCollabLayer = defineAsyncComponent(
     () => import('@/features/workspace/components/tabs/SqlConsoleTeamCollabLayer.vue'),
 )
@@ -86,6 +89,9 @@ const SaveBookmarkDialog = defineAsyncComponent(
 )
 const SubmitProductionApprovalDialog = defineAsyncComponent(
     () => import('@/features/workspace/components/SubmitProductionApprovalDialog.vue'),
+)
+const VisualQueryBuilderDialog = defineAsyncComponent(
+    () => import('@/features/workspace/components/VisualQueryBuilderDialog.vue'),
 )
 
 const {t} = useI18n()
@@ -225,6 +231,46 @@ function openSaveViewModelDialog() {
     database: instance,
     sql: sql.value,
   })
+}
+
+const visualQueryBuilderOpen = ref(false)
+
+const {
+  dialogOpen: indexDraftDialogOpen,
+  originalSql: indexDraftQuery,
+  suggestedSql: indexDraftSql,
+  requestDraft: requestIndexDraft,
+  applyDraft: applyIndexDraft,
+} = useIndexDraftSuggest({
+  getConnectionId: () => connectionId.value || props.tab.connectionId,
+  getDatabase: () => databaseName.value,
+  getDbType: () => dbDialect.value,
+  openConsole: (options) => workspace.openConsole(options),
+  buildConsoleTitle: () => t('queryResult.indexSuggestConsoleTitle'),
+  emptyMessage: () => t('queryResult.indexDraftEmpty'),
+})
+
+function openVisualQueryBuilder() {
+  const connId = connectionId.value || props.tab.connectionId
+  const database = databaseName.value
+  if (!connId || !database) {
+    workspace.setStatus(t('console.visualQuery.needConnection'))
+    return
+  }
+  visualQueryBuilderOpen.value = true
+}
+
+function applyVisualQuerySql(generatedSql: string, mode: 'replace' | 'insert') {
+  const next = generatedSql.trim()
+  if (!next) return
+  if (mode === 'replace') {
+    setConsoleSql(next)
+    layout.showSuccessToast(t('console.visualQuery.appliedReplace'))
+    return
+  }
+  const current = sql.value.trim()
+  setConsoleSql(current ? `${current}\n\n${next}` : next)
+  layout.showSuccessToast(t('console.visualQuery.appliedInsert'))
 }
 
 const databaseName = computed(() => {
@@ -606,9 +652,9 @@ const {
   getCapabilities: () => connectionCaps.value,
   getCapabilityHint: () => capabilityHint('sqlExplain'),
   getExplainPlanEnabled: () => explainPlanEnabled.value,
-  getIndexSuggestEnabled: () => indexSuggestEnabled.value,
+  getIndexSuggestEnabled: () => true,
   requestIndexSuggest: (targetSql) => {
-    void aiLayerRef.value?.requestAiIndexSuggest({sql: targetSql})
+    requestIndexDraft({sql: targetSql})
   },
 })
 
@@ -838,7 +884,7 @@ onMounted(async () => {
             :title="t('console.openJdbcSshTunnel')"
             @click="openJdbcTunnelSshTerminal"
         >
-          <DwIcon name="terminal" size="sm" :stroke-width="1.5"/>
+          <ConsoleToolbarIcon name="terminal"/>
         </IconButton>
         <span
             v-if="showToolbarRunGroup && showToolbarSaveGroup"
@@ -882,6 +928,13 @@ onMounted(async () => {
             @click="formatSql"
         >
           <ConsoleToolbarIcon name="format"/>
+        </IconButton>
+        <IconButton
+            v-if="can(FeaturePermission.WorkbenchConsoleRun)"
+            :title="t('console.visualQuery.toolbar')"
+            @click="openVisualQueryBuilder"
+        >
+          <ConsoleToolbarIcon name="visualQuery"/>
         </IconButton>
         <EditorFullscreenButton
             v-if="can(FeaturePermission.WorkbenchConsoleFullscreen)"
@@ -1053,7 +1106,8 @@ onMounted(async () => {
           @close-ai-summary="aiLayerRef?.closeAiSummary()"
           @request-ai-explain="onRequestAiExplain"
           @close-ai-explain="aiLayerRef?.closeAiExplain()"
-          @request-index-suggest="(payload) => aiLayerRef?.requestAiIndexSuggest(payload)"
+          @request-index-suggest="(payload) => requestIndexDraft(payload)"
+          @request-ai-index-suggest="(payload) => aiLayerRef?.requestAiIndexSuggest(payload)"
           @open-cross-env-compare="openCrossEnvCompareFromResult"
           @refresh="refreshActiveResult"
           @load-more="onLoadMoreResult"
@@ -1078,6 +1132,13 @@ onMounted(async () => {
         @close="closeEditorMenu"
     />
 
+    <IndexSuggestDialog
+        v-model:open="indexDraftDialogOpen"
+        :query-sql="indexDraftQuery"
+        :suggested-sql="indexDraftSql"
+        @apply="applyIndexDraft"
+    />
+
     <SaveBookmarkDialog
         v-if="bookmarksEnabled"
         v-model:open="bookmarkDialogOpen"
@@ -1097,6 +1158,13 @@ onMounted(async () => {
         :database="databaseName"
         :teams="productionApprovalTeams"
         @submit="onSubmitProductionApproval"
+    />
+
+    <VisualQueryBuilderDialog
+        v-model:open="visualQueryBuilderOpen"
+        :connection-id="connectionId || tab.connectionId"
+        :database="databaseName"
+        @apply="applyVisualQuerySql"
     />
 
     <ConsoleSqlCancelDialog

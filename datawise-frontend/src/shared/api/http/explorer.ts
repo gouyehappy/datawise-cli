@@ -210,6 +210,9 @@ export function createHttpExplorerApi(): ExplorerApi {
         pingConnection: async (connectionId) =>
             getJson<ConnectionTestResult>(API_PATHS.explorer.pingConnection(connectionId)),
 
+        touchConnection: async (connectionId) =>
+            postJson<boolean>(API_PATHS.explorer.touchConnection(connectionId), {}),
+
         disconnectConnection: async (connectionId) => {
             await postJson<void>(API_PATHS.explorer.disconnectConnection(connectionId), {})
         },

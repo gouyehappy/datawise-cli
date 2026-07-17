@@ -17,6 +17,7 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    Calendar,
     CircleAlert,
     Code,
     Columns2,
@@ -112,6 +113,7 @@ export type DwIconName =
     | 'alert-circle'
     | 'alert-triangle'
     | 'check'
+    | 'calendar'
     | 'info'
     | 'send'
     | 'history'
@@ -239,6 +241,7 @@ export const DW_ICON_REGISTRY: Record<DwIconName, Component> = {
     'alert-circle': CircleAlert,
     'alert-triangle': TriangleAlert,
     check: Check,
+    calendar: Calendar,
     info: Info,
     send: Send,
     history: History,

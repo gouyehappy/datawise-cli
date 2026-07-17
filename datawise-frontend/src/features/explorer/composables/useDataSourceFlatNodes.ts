@@ -52,7 +52,6 @@ export function useDataSourceFlatNodes(search: Ref<string>) {
                 showAll: explorer.favoritesShowAll,
             },
         )
-
         if (!favoritesGroup) return baseTree
         return [favoritesGroup, ...baseTree]
     })

@@ -38,6 +38,8 @@ const EXPLORER_CONTEXT_MENU_PERMISSION_BY_ID: Record<string, FeaturePermissionKe
     'sql-editor-new': FeaturePermission.WorkbenchExplorerContextConsole,
     'sql-editor-console': FeaturePermission.WorkbenchExplorerContextConsole,
     'run-sql-file': FeaturePermission.WorkbenchExplorerContextConsole,
+    'restore-wizard': FeaturePermission.WorkbenchExplorerContextConsole,
+    'schedule-sql-file': FeaturePermission.WorkbenchExplorerContextConsole,
     'edit-view-model': FeaturePermission.WorkbenchExplorerContextConsole,
     'open-redis-command': FeaturePermission.WorkbenchExplorerContextConsole,
     'redis-console': FeaturePermission.WorkbenchExplorerContextConsole,
@@ -56,6 +58,7 @@ const EXPLORER_CONTEXT_MENU_PERMISSION_BY_ID: Record<string, FeaturePermissionKe
     'add-connection': FeaturePermission.WorkbenchExplorerContextEdit,
 
     'export-wizard': FeaturePermission.WorkbenchExplorerContextExport,
+    'backup-wizard': FeaturePermission.WorkbenchExplorerContextExport,
     'export-structure': FeaturePermission.WorkbenchExplorerContextExport,
     'export-all': FeaturePermission.WorkbenchExplorerContextExport,
     import: FeaturePermission.WorkbenchExplorerContextExport,

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {AiAnalysisMode} from '@/features/ai/types/analysis'
@@ -73,7 +73,7 @@ function deleteTemplate(template: AiAnalysisTemplate, event: MouseEvent) {
 <template>
   <div class="template-bar">
     <button
-        class="template-bar__toggle"
+        class="dw-text-btn dw-text-btn--compact"
         type="button"
         :aria-expanded="expanded"
         @click="expanded = !expanded"
@@ -83,7 +83,7 @@ function deleteTemplate(template: AiAnalysisTemplate, event: MouseEvent) {
     </button>
 
     <button
-        class="template-bar__save"
+        class="dw-text-btn dw-text-btn--compact"
         type="button"
         :disabled="!prompt.trim()"
         @click="saveCurrent"
@@ -127,20 +127,7 @@ function deleteTemplate(template: AiAnalysisTemplate, event: MouseEvent) {
 }
 
 .template-bar__toggle,
-.template-bar__save {
-  padding: var(--dw-space-2) var(--dw-space-5);
-  border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-radius-pill);
-  background: var(--dw-bg-panel);
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-sm);
-  cursor: pointer;
-}
 
-.template-bar__save:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
 
 .template-bar__count {
   margin-left: var(--dw-space-3);

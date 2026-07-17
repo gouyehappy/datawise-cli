@@ -752,6 +752,68 @@ export function computeMigrationProgressPercent(
     return Math.round(Math.min(99, Math.max(0, percent)))
 }
 
+export interface MigrationRunLiveMetrics {
+    elapsedMs: number
+    rowsMigrated: number
+    rowsPerSecond: number | null
+    etaMs: number | null
+    remainingRows: number | null
+}
+
+/** 运行中吞吐 / ETA：依赖 preflight 行总数时 ETA 更准。 */
+export function computeMigrationRunLiveMetrics(
+    progress: TableMigrationRunProgress | null | undefined,
+    startedAt: string | null | undefined,
+    nowMs = Date.now(),
+): MigrationRunLiveMetrics {
+    const startedMs = startedAt ? Date.parse(startedAt) : Number.NaN
+    const elapsedMs = Number.isFinite(startedMs) ? Math.max(0, nowMs - startedMs) : 0
+
+    const completedRows = (progress?.results ?? []).reduce(
+        (sum, row) => sum + Math.max(0, row.rowsMigrated ?? 0),
+        0,
+    )
+    const currentRows = progress?.currentTable ? Math.max(0, progress.batchRowsMigrated ?? 0) : 0
+    const rowsMigrated = completedRows + currentRows
+
+    const rowsPerSecond = elapsedMs > 0 && rowsMigrated > 0
+        ? rowsMigrated / (elapsedMs / 1000)
+        : null
+
+    let remainingRows: number | null = null
+    const totals = progress?.tableRowTotals
+    if (totals) {
+        const totalKnown = Object.values(totals).reduce((sum, value) => sum + Math.max(0, value), 0)
+        if (totalKnown > 0) {
+            remainingRows = Math.max(0, totalKnown - rowsMigrated)
+        }
+    }
+
+    if (remainingRows == null && progress?.currentTable) {
+        const currentTotal = progress.tableRowTotals?.[progress.currentTable]
+        if (currentTotal != null && currentTotal > 0) {
+            remainingRows = Math.max(0, currentTotal - (progress.batchRowsMigrated ?? 0))
+        }
+    }
+
+    const etaMs = rowsPerSecond != null && rowsPerSecond > 0 && remainingRows != null
+        ? Math.round((remainingRows / rowsPerSecond) * 1000)
+        : null
+
+    return {elapsedMs, rowsMigrated, rowsPerSecond, etaMs, remainingRows}
+}
+
+export function formatMigrationThroughput(
+    rowsPerSecond: number | null | undefined,
+): string {
+    if (rowsPerSecond == null || !Number.isFinite(rowsPerSecond) || rowsPerSecond <= 0) {
+        return '—'
+    }
+    if (rowsPerSecond >= 100) return String(Math.round(rowsPerSecond))
+    if (rowsPerSecond >= 10) return rowsPerSecond.toFixed(1)
+    return rowsPerSecond.toFixed(2)
+}
+
 export function formatMigrationTableProgressLabel(
     progress: TableMigrationRunProgress | null | undefined,
     translate: (key: string, params?: Record<string, unknown>) => string,

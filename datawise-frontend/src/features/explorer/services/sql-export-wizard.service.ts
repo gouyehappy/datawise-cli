@@ -33,6 +33,15 @@ export function createDefaultSqlExportWizardForm(maxRowsDefault: number): SqlExp
     }
 }
 
+/** 备份向导默认：结构+数据、下载文件（运维场景） */
+export function createDefaultBackupWizardForm(maxRowsDefault: number): SqlExportWizardForm {
+    return {
+        contentMode: 'structureAndData',
+        maxRows: maxRowsDefault,
+        output: 'download',
+    }
+}
+
 export function validateSqlExportWizardForm(form: SqlExportWizardForm): string | null {
     if (form.contentMode === 'structureAndData' && form.maxRows < 0) {
         return 'invalidMaxRows'

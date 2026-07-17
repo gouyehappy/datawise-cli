@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, onBeforeMount, ref, shallowRef} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
@@ -77,7 +77,7 @@ async function onSharedFileChange(event: Event) {
   >
     <template #actions>
       <button
-          class="reset-all-btn"
+          class="btn-secondary btn-sm"
           type="button"
           :disabled="readOnly"
           @click="onResetPersonal"
@@ -100,7 +100,7 @@ async function onSharedFileChange(event: Event) {
 
       <div class="sql-snippets-settings__toolbar">
         <button
-            class="config-btn config-btn--primary"
+            class="btn-primary"
             type="button"
             :disabled="readOnly"
             @click="onAddSnippet"
@@ -108,7 +108,7 @@ async function onSharedFileChange(event: Event) {
           + {{ t('settings.sqlSnippets.add') }}
         </button>
         <button
-            class="config-btn"
+            class="btn-secondary"
             type="button"
             :disabled="sharedReadOnly"
             @click="onImportShared"
@@ -116,7 +116,7 @@ async function onSharedFileChange(event: Event) {
           {{ t('settings.sqlEditor.sharedImport') }}
         </button>
         <button
-            class="config-btn"
+            class="btn-secondary"
             type="button"
             :disabled="sharedReadOnly"
             @click="store.exportSharedConfig"

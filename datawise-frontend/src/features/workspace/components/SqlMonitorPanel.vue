@@ -5,14 +5,20 @@ import type {DbType} from '@/core/types'
 import ActiveSessionsPanel from '@/features/workspace/components/ActiveSessionsPanel.vue'
 import LockWaitsPanel from '@/features/workspace/components/LockWaitsPanel.vue'
 import SlowSqlStatsPanel from '@/features/workspace/components/SlowSqlStatsPanel.vue'
+import PrivilegesPanel from '@/features/workspace/components/PrivilegesPanel.vue'
+import ObjectStoragePanel from '@/features/workspace/components/ObjectStoragePanel.vue'
 import SessionKillConfirmDialog from '@/features/workspace/components/SessionKillConfirmDialog.vue'
 import {sessionKillKey} from '@/features/workspace/composables/session-kill-context'
 import {useSessionKill} from '@/features/workspace/composables/useSessionKill'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useConnectionCapabilities} from '@/shared/capabilities/useConnectionCapabilities'
 import {useEditorSettingsStore} from '@/features/settings/stores/editor-settings'
+import {
+    supportsAdminPrivileges,
+    supportsAdminStorage,
+} from '@/features/workspace/services/admin-diagnosis.service'
 
-type MonitorTab = 'sessions' | 'locks' | 'slowSql'
+type MonitorTab = 'sessions' | 'locks' | 'slowSql' | 'privileges' | 'storage'
 
 const props = withDefaults(defineProps<{
   connectionId?: string
@@ -35,6 +41,8 @@ const dbType = computed(() => {
 })
 
 const {caps, hint} = useConnectionCapabilities(dbType)
+const canPrivileges = computed(() => supportsAdminPrivileges(dbType.value))
+const canStorage = computed(() => supportsAdminStorage(dbType.value))
 
 const sessionKill = useSessionKill(
     toRef(props, 'connectionId'),
@@ -54,6 +62,8 @@ const {
 function selectTab(tab: MonitorTab) {
   if (tab === 'sessions' && !caps.value.sessionMonitor) return
   if (tab === 'locks' && !caps.value.lockMonitor) return
+  if (tab === 'privileges' && !canPrivileges.value) return
+  if (tab === 'storage' && !canStorage.value) return
   activeTab.value = tab
 }
 </script>
@@ -95,6 +105,30 @@ function selectTab(tab: MonitorTab) {
       >
         {{ t('shortcut.monitor.tabs.slowSql') }}
       </button>
+      <button
+          class="sql-monitor__tab"
+          :class="{ 'sql-monitor__tab--active': activeTab === 'privileges' }"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === 'privileges'"
+          :disabled="!canPrivileges"
+          :title="!canPrivileges ? t('shortcut.adminDiagnosis.unsupported') : undefined"
+          @click="selectTab('privileges')"
+      >
+        {{ t('shortcut.monitor.tabs.privileges') }}
+      </button>
+      <button
+          class="sql-monitor__tab"
+          :class="{ 'sql-monitor__tab--active': activeTab === 'storage' }"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === 'storage'"
+          :disabled="!canStorage"
+          :title="!canStorage ? t('shortcut.adminDiagnosis.unsupported') : undefined"
+          @click="selectTab('storage')"
+      >
+        {{ t('shortcut.monitor.tabs.storage') }}
+      </button>
     </div>
 
     <div class="sql-monitor__pane" role="tabpanel">
@@ -115,10 +149,26 @@ function selectTab(tab: MonitorTab) {
           @open-sql="emit('openSql', $event)"
       />
       <SlowSqlStatsPanel
-          v-else
+          v-else-if="activeTab === 'slowSql'"
           embedded
           :connection-id="connectionId"
           :slow-threshold-ms="editorSettings.settings.slowQueryThresholdMs"
+          @open-sql="emit('openSql', $event)"
+      />
+      <PrivilegesPanel
+          v-else-if="activeTab === 'privileges'"
+          embedded
+          :connection-id="connectionId"
+          :database="database"
+          :db-type="dbType"
+          @open-sql="emit('openSql', $event)"
+      />
+      <ObjectStoragePanel
+          v-else
+          embedded
+          :connection-id="connectionId"
+          :database="database"
+          :db-type="dbType"
           @open-sql="emit('openSql', $event)"
       />
     </div>
@@ -143,6 +193,7 @@ function selectTab(tab: MonitorTab) {
 
 .sql-monitor__tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--dw-tab-gap);
   padding: 0 var(--dw-space-2);
   border: none;
@@ -152,7 +203,7 @@ function selectTab(tab: MonitorTab) {
 }
 
 .sql-monitor__tab {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   padding: var(--dw-space-3) var(--dw-space-3);
   border-radius: var(--dw-tab-pill-radius);

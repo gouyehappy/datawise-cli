@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type {SelectOption} from '@/core/components/select.types'
 import type {ConnectionAccessLevel} from '@/features/team/services/connection-access.service'
 import DwSelect from '@/core/components/DwSelect.vue'
@@ -79,7 +79,7 @@ const emit = defineEmits<{
       </DwButton>
       <p v-if="requireInviteApproval && showInviteBadge" class="sharing-block__hint">
         {{ $t('team.pendingInvitesHint', {count: pendingInviteCount}) }}
-        <button class="link-btn" type="button" @click="emit('open-invites-tab')">
+        <button class="dw-link-btn" type="button" @click="emit('open-invites-tab')">
           {{ $t('team.openInvitesTab') }}
         </button>
       </p>

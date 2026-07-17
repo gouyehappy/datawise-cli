@@ -458,6 +458,7 @@ const SQL_CONTEXT_MENU_IDS = new Set([
     'sql-editor-new',
     'sql-editor-console',
     'run-sql-file',
+    'restore-wizard',
 ])
 
 const DML_CONTEXT_MENU_IDS = new Set([
@@ -470,6 +471,7 @@ const DML_CONTEXT_MENU_IDS = new Set([
     'export-structure',
     'export-all',
     'export-wizard',
+    'backup-wizard',
     'schema-compare',
     'cross-env-compare',
     'delete',

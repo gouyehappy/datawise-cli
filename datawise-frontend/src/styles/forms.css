@@ -21,19 +21,28 @@
 .dw-field input:not([type='checkbox']):not([type='radio']),
 .dw-field textarea,
 .dw-field select {
+    box-sizing: border-box;
     width: 100%;
+    min-height: var(--dw-control-h);
     padding: var(--dw-pad-control-lg);
     border: 1px solid var(--dw-border);
     border-radius: var(--dw-input-radius);
     background: var(--dw-bg);
     color: var(--dw-text);
+    font-family: inherit;
     font-size: var(--dw-font-size-control);
     line-height: var(--dw-leading);
     transition: var(--dw-transition-shadow);
 }
 
+.dw-field textarea {
+    min-height: calc(var(--dw-control-h) * 2.4);
+    resize: vertical;
+}
+
 .dw-input--sm {
-    height: var(--mp-input-h);
+    height: var(--dw-control-h);
+    min-height: var(--dw-control-h);
     padding: 0 var(--dw-space-5);
     border-radius: var(--dw-input-radius);
     font-size: var(--dw-font-size-control);
@@ -198,7 +207,7 @@
     width: 100%;
     min-height: var(--dw-control-h);
     height: var(--dw-select-trigger-h);
-    padding: 0 var(--dw-space-6) 0 clamp(12px, 1.4vmin, 14px);
+    padding: 0 var(--dw-space-6) 0 var(--dw-space-5);
     border: 1px solid var(--dw-border);
     border-radius: var(--dw-input-radius);
     background: var(--dw-bg);
@@ -209,7 +218,7 @@
     text-align: left;
     cursor: pointer;
     box-shadow: var(--dw-shadow-xs);
-    transition: var(--dw-transition-shadow), background 0.15s ease;
+    transition: var(--dw-transition-shadow), background var(--dw-duration) var(--dw-ease);
 }
 
 .dw-select__trigger:hover:not(:disabled) {
@@ -220,7 +229,7 @@
 .dw-select.is-open .dw-select__trigger,
 .dw-select__trigger:focus-visible {
     outline: none;
-    border-color: var(--dw-primary-border);
+    border-color: var(--dw-focus-border);
     background: var(--dw-bg);
     box-shadow: var(--dw-focus-ring);
 }
@@ -293,8 +302,8 @@
     justify-content: space-between;
     gap: var(--dw-gap-md);
     width: 100%;
-    min-height: 36px;
-    padding: 0 11px;
+    min-height: var(--dw-control-h);
+    padding: 0 var(--dw-space-5);
     border: none;
     border-radius: var(--dw-menu-item-radius);
     background: transparent;
@@ -351,7 +360,7 @@
 
 /* sm — 表单紧凑（字号与 dw-input 对齐，仅略减内边距） */
 .dw-select--sm .dw-select__trigger {
-    height: var(--mp-input-h);
+    height: var(--dw-control-h);
     min-height: var(--dw-control-h-sm);
     padding: 0 var(--dw-space-5) 0 clamp(10px, 1.2vmin, 12px);
     font-size: var(--dw-font-size-control);

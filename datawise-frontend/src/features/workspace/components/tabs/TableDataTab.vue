@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed} from 'vue'
 import {QueryResultPane} from '@/features/workspace/components'
 import TableDataChangeHistoryPanel from '@/features/workspace/components/TableDataChangeHistoryPanel.vue'
@@ -151,14 +151,14 @@ function onRequestAiSummary() {
             @keydown.enter.prevent="applyDocumentFilter"
         />
         <button
-            class="mongo-filter-bar__action mongo-filter-bar__action--primary"
+            class="dw-text-btn dw-text-btn--accent"
             type="button"
             @click="applyDocumentFilter"
         >
           {{ t('dataGrid.documentFilter.apply') }}
         </button>
         <button
-            class="mongo-filter-bar__action"
+            class="dw-text-btn"
             type="button"
             :disabled="!documentFilterDraft && !appliedDocumentFilter"
             @click="clearDocumentFilter"
@@ -290,42 +290,6 @@ function onRequestAiSummary() {
 
 .mongo-filter-bar__input:focus {
   outline: none;
-}
-
-.mongo-filter-bar__action {
-  flex-shrink: 0;
-  height: var(--dw-control-h-sm);
-  padding: 0 var(--dw-space-4);
-  border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-control-radius-sm);
-  background: var(--dw-bg-panel);
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-xs);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: var(--dw-transition-colors);
-}
-
-.mongo-filter-bar__action:hover:not(:disabled) {
-  background: var(--dw-bg-hover);
-  color: var(--dw-text-primary);
-}
-
-.mongo-filter-bar__action:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.mongo-filter-bar__action--primary {
-  border-color: color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border-light));
-  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-panel));
-  color: var(--dw-primary);
-  font-weight: 600;
-}
-
-.mongo-filter-bar__action--primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--dw-primary) 14%, var(--dw-bg-panel));
-  color: var(--dw-primary);
 }
 
 .mongo-filter-bar__error {

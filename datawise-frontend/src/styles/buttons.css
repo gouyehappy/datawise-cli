@@ -90,25 +90,29 @@
     color: var(--dw-primary-hover);
 }
 
-/* ---- 文字按钮 ---- */
+/* ---- 文字 / 工具栏次要按钮（统一：始终可见边框，与主按钮同圆角） ---- */
 .dw-text-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--dw-gap-sm);
     height: var(--dw-btn-height-sm);
-    padding: 0 var(--dw-space-6);
+    min-height: var(--dw-btn-height-sm);
+    padding: 0 var(--dw-space-5);
     border-radius: var(--dw-btn-radius);
-    border: 1px solid transparent;
+    border: 1px solid var(--dw-border);
+    background: var(--dw-bg);
     color: var(--dw-text-secondary);
-    font-size: var(--dw-font-size-btn);
+    font-size: var(--dw-font-size-btn-sm);
+    font-weight: 500;
+    line-height: var(--dw-leading);
     white-space: nowrap;
-    transition: var(--dw-transition-colors);
+    transition: var(--dw-transition-colors), box-shadow var(--dw-duration-fast) var(--dw-ease);
 }
 
-.dw-text-btn:hover {
+.dw-text-btn:hover:not(:disabled) {
     background: var(--dw-primary-softer);
-    border-color: color-mix(in srgb, var(--dw-primary) 16%, transparent);
+    border-color: color-mix(in srgb, var(--dw-primary) 22%, var(--dw-border));
     color: var(--dw-primary);
     box-shadow: inset 0 0 0 999px var(--dw-btn-hover-wash);
 }
@@ -118,14 +122,24 @@
     box-shadow: inset 0 0 0 999px var(--dw-btn-active-wash);
 }
 
+.dw-text-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.dw-text-btn:focus-visible {
+    outline: none;
+    border-color: var(--dw-focus-border);
+    box-shadow: var(--dw-focus-ring);
+}
+
 .dw-text-btn--accent {
     background: var(--dw-primary-tint);
     border-color: var(--dw-primary-ring);
     color: var(--dw-primary);
-    font-weight: 500;
 }
 
-.dw-text-btn--accent:hover {
+.dw-text-btn--accent:hover:not(:disabled) {
     background: var(--dw-primary-soft);
     border-color: var(--dw-primary-border);
     color: var(--dw-primary-hover);
@@ -137,31 +151,92 @@
     color: var(--dw-primary);
 }
 
-.dw-text-btn--solid:hover {
+.dw-text-btn--solid:hover:not(:disabled) {
     background: var(--dw-primary-soft);
     color: var(--dw-primary-hover);
 }
 
 .dw-text-btn--compact {
     height: var(--dw-control-h-sm);
-    padding: 0 var(--dw-space-5);
+    min-height: var(--dw-control-h-sm);
+    padding: 0 var(--dw-space-4);
     font-size: var(--dw-font-size-btn-sm);
+}
+
+/* ---- 分段切换（表格/图表等） ---- */
+.dw-segment {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dw-space-1);
+    height: var(--dw-btn-height-sm);
+    min-height: var(--dw-btn-height-sm);
+    padding: var(--dw-space-1);
+    border: 1px solid var(--dw-border);
+    border-radius: var(--dw-btn-radius);
+    background: var(--dw-bg-muted);
+    flex-shrink: 0;
+}
+
+.dw-segment__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 var(--dw-space-4);
+    border: none;
+    border-radius: calc(var(--dw-btn-radius) - 1px);
+    background: transparent;
+    color: var(--dw-text-secondary);
+    font-size: var(--dw-font-size-btn-sm);
+    font-weight: 500;
+    line-height: var(--dw-leading-tight);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: var(--dw-transition-colors);
+}
+
+.dw-segment__btn:hover:not(:disabled):not(.is-active) {
+    color: var(--dw-text);
+    background: color-mix(in srgb, var(--dw-text) 4%, transparent);
+}
+
+.dw-segment__btn.is-active {
+    background: var(--dw-bg);
+    color: var(--dw-text);
+    font-weight: 600;
+    box-shadow: var(--dw-shadow-xs);
+}
+
+.dw-segment__btn:focus-visible {
+    outline: none;
+    box-shadow: var(--dw-focus-ring);
 }
 
 /* ---- 主/次操作按钮 ---- */
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-ghost {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--dw-gap-sm);
-    height: var(--mp-btn-h);
-    padding: 0 clamp(12px, 1.4vmin, 16px);
+    height: var(--dw-btn-height);
+    min-height: var(--dw-btn-height);
+    padding: 0 var(--dw-space-7);
     border-radius: var(--dw-btn-radius);
     font-size: var(--dw-font-size-btn);
     font-weight: 500;
+    line-height: var(--dw-leading);
     white-space: nowrap;
-    transition: var(--dw-transition-colors), box-shadow 0.12s ease;
+    transition: var(--dw-transition-colors), box-shadow var(--dw-duration-fast) var(--dw-ease);
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-ghost:focus-visible {
+    outline: none;
+    border-color: var(--dw-focus-border);
+    box-shadow: var(--dw-focus-ring);
 }
 
 .btn-primary {
@@ -222,21 +297,10 @@
 }
 
 .btn-ghost {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--dw-gap-sm);
     min-width: 88px;
-    height: var(--dw-btn-height);
-    padding: 0 var(--dw-space-8);
-    border-radius: var(--dw-btn-radius);
     border: 1px solid color-mix(in srgb, var(--dw-primary) 14%, var(--dw-border));
     background: var(--dw-primary-softer);
     color: var(--dw-text);
-    font-size: var(--dw-font-size-btn);
-    font-weight: 500;
-    white-space: nowrap;
-    transition: var(--dw-transition-colors), box-shadow var(--dw-duration-fast) var(--dw-ease);
 }
 
 .btn-ghost:hover:not(:disabled) {
@@ -257,6 +321,7 @@
 
 .btn-sm {
     height: var(--dw-btn-height-sm);
+    min-height: var(--dw-btn-height-sm);
     padding: 0 var(--dw-space-6);
     font-size: var(--dw-font-size-btn-sm);
 }

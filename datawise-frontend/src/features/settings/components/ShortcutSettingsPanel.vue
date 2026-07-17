@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
@@ -69,7 +69,7 @@ function resetAll() {
       :readonly-hint="hint"
   >
     <template #actions>
-      <button class="reset-all-btn" type="button" :disabled="readOnly" @click="resetAll">
+      <button class="btn-secondary btn-sm" type="button" :disabled="readOnly" @click="resetAll">
         <DwIcon name="refresh" size="sm" :stroke-width="1.5"/>
         {{ t('shortcuts.resetAll') }}
       </button>

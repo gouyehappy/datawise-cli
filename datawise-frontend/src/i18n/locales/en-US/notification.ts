@@ -76,7 +76,7 @@ export default {
         },
         scheduledTaskOk: {
             title: 'Scheduled task completed',
-            body: '"{name}" ({type}) finished successfully.',
+            body: '"{name}" ({type}) finished successfully. {message}',
         },
         scheduledTaskFailed: {
             title: 'Scheduled task failed',

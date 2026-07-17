@@ -11,5 +11,7 @@ export function isExplorerFavoritesViewAllId(nodeId: string): boolean {
 }
 
 export function isExplorerVirtualNodeId(nodeId: string): boolean {
-    return isExplorerFavoritesGroupId(nodeId) || isExplorerFavoritesViewAllId(nodeId)
+    return isExplorerFavoritesGroupId(nodeId)
+        || isExplorerFavoritesViewAllId(nodeId)
 }
+

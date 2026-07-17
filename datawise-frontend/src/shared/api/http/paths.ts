@@ -197,6 +197,8 @@ export const API_PATHS = {
         pooledConnections: '/api/explorer/connections/pooled',
         pingConnection: (id: string) =>
             `/api/explorer/connections/${encodeURIComponent(id)}/ping`,
+        touchConnection: (id: string) =>
+            `/api/explorer/connections/${encodeURIComponent(id)}/touch`,
         nodeChildren: (connectionId: string, nodeId: string) =>
             `/api/explorer/connections/${encodeURIComponent(connectionId)}/nodes/${encodeURIComponent(nodeId)}/children`,
         importConnections: '/api/explorer/connections/import',

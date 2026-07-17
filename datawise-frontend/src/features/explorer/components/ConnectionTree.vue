@@ -13,6 +13,7 @@ import {
 import DataSourceTree from '@/features/explorer/components/DataSourceTree.vue'
 import RecentSqlPickerDialog from '@/features/explorer/components/RecentSqlPickerDialog.vue'
 import SqlExportWizardDialog from '@/features/explorer/components/SqlExportWizardDialog.vue'
+import RestoreWizardDialog from '@/features/explorer/components/RestoreWizardDialog.vue'
 import {useConnectionTree} from '@/features/explorer/composables/useConnectionTree'
 import {canMoveConnectionToGroup} from '@/features/explorer/services/explorer-move-connection.service'
 import {useTeamExplorerHighlight} from '@/features/team/composables/useTeamExplorerHighlight'
@@ -59,7 +60,24 @@ const {
   sqlExportWizardContext,
   sqlExportWizardExporting,
   sqlExportWizardMaxRowsDefault,
+  sqlExportWizardVariant,
+  sqlExportWizardIsProduction,
+  sqlExportWizardActionError,
   confirmSqlExportWizardExport,
+  showRestoreWizard,
+  restoreWizardContext,
+  restoreWizardFileState,
+  restoreWizardLoadingFile,
+  restoreWizardExecuting,
+  restoreWizardCanWrite,
+  restoreWizardCanDdl,
+  restoreWizardProductionApprovalTeams,
+  restoreWizardApprovalError,
+  restoreWizardApprovalSubmitting,
+  restoreWizardActionError,
+  pickRestoreWizardFile,
+  confirmRestoreWizardExecute,
+  submitRestoreWizardProductionApproval,
   showRenameViewModelDialog,
   renameViewModelDefaultName,
   showDeleteViewModelDialog,
@@ -168,7 +186,27 @@ onUnmounted(() => {
       :context="sqlExportWizardContext"
       :max-rows-default="sqlExportWizardMaxRowsDefault"
       :exporting="sqlExportWizardExporting"
+      :variant="sqlExportWizardVariant"
+      :is-production="sqlExportWizardIsProduction"
+      :action-error="sqlExportWizardActionError"
       @export="confirmSqlExportWizardExport"
+  />
+
+  <RestoreWizardDialog
+      v-model:open="showRestoreWizard"
+      :context="restoreWizardContext"
+      :file-state="restoreWizardFileState"
+      :loading-file="restoreWizardLoadingFile"
+      :executing="restoreWizardExecuting"
+      :can-write="restoreWizardCanWrite"
+      :can-ddl="restoreWizardCanDdl"
+      :production-approval-teams="restoreWizardProductionApprovalTeams"
+      :production-approval-error="restoreWizardApprovalError"
+      :production-approval-submitting="restoreWizardApprovalSubmitting"
+      :action-error="restoreWizardActionError"
+      @pick-file="pickRestoreWizardFile"
+      @execute="confirmRestoreWizardExecute"
+      @submit-approval="submitRestoreWizardProductionApproval"
   />
 
   <PromptDialog

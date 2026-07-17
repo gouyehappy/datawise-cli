@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, nextTick, onMounted, watch} from 'vue'
 import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
@@ -128,7 +128,7 @@ watch(settingsScrollAnchor, scrollToSettingsAnchor)
           </StatusPill>
           <button
               v-if="referencePresetConflictCount > 0"
-              class="config-btn config-btn--inline"
+              class="dw-text-btn dw-text-btn--compact"
               type="button"
               :disabled="readOnly"
               @click="alignToReferencePreset"
@@ -136,7 +136,7 @@ watch(settingsScrollAnchor, scrollToSettingsAnchor)
             {{ t('settings.plugins.alignReferencePreset') }}
           </button>
           <button
-              class="config-btn config-btn--inline"
+              class="dw-text-btn dw-text-btn--compact"
               type="button"
               @click="openPresetDiff"
           >
@@ -153,12 +153,12 @@ watch(settingsScrollAnchor, scrollToSettingsAnchor)
           tone="sky"
           :badge="`${pluginStore.enabledCount}/${pluginStore.items.length}`"
       >
-        <button class="config-btn" type="button" @click="openPluginCenter">
+        <button class="btn-secondary" type="button" @click="openPluginCenter">
           {{ t('settings.plugins.openPluginCenter') }}
         </button>
         <button
             v-if="appConfig.isPluginDevToolsVisible()"
-            class="config-btn config-btn--inline"
+            class="dw-text-btn dw-text-btn--compact"
             type="button"
             @click="openPluginDevTools"
         >
@@ -188,9 +188,4 @@ watch(settingsScrollAnchor, scrollToSettingsAnchor)
   margin-top: var(--dw-space-6);
 }
 
-.config-btn--inline {
-  margin-top: 0;
-  padding: var(--dw-space-3) var(--dw-space-6);
-  font-size: var(--dw-text-md);
-}
 </style>

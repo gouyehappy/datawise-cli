@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {AppModal, DwInlineAlert, FormField, ModalActions} from '@/core/components'
@@ -90,12 +90,12 @@ async function copySql() {
       @close="close"
   >
     <div class="modal-form">
-      <div class="modal-segment" role="tablist">
+      <div class="dw-segment" role="tablist">
         <button
             v-for="option in kindOptions"
             :key="option"
             type="button"
-            class="modal-segment__btn"
+            class="dw-segment__btn"
             :class="{ 'is-active': kind === option }"
             role="tab"
             :aria-selected="kind === option"

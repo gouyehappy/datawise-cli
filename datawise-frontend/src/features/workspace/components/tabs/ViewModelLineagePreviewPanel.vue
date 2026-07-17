@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwPanelState, EmptyState} from '@/core/components'
@@ -35,7 +35,7 @@ const warnings = computed(() => props.graph?.meta?.warnings ?? [])
         </span>
       </div>
       <div class="vm-lineage-preview__actions">
-        <button type="button" class="dw-btn dw-btn--sm" :disabled="loading" @click="$emit('refresh')">
+        <button type="button" class="btn-secondary btn-sm" :disabled="loading" @click="$emit('refresh')">
           {{ t('lineage.refresh') }}
         </button>
       </div>

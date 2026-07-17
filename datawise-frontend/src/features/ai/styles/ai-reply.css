@@ -1,4 +1,4 @@
-/* Shared surfaces for AI assistant replies (imported from feature components) */
+﻿/* Shared surfaces for AI assistant replies (imported from feature components) */
 
 .ai-code-surface {
     border-radius: var(--dw-radius-xl);
@@ -214,62 +214,3 @@
     padding: var(--dw-space-7) var(--dw-space-9);
 }
 
-.ai-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--dw-gap-sm);
-    padding: 9px 18px;
-    font-size: var(--dw-text-sm);
-    font-weight: 600;
-    line-height: var(--dw-leading-tight);
-    border-radius: var(--dw-radius-lg);
-    border: 1px solid var(--dw-border);
-    background: var(--dw-bg);
-    color: var(--dw-text-secondary);
-    cursor: pointer;
-    transition: var(--dw-transition-colors),
-    color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.12s ease;
-}
-
-.ai-btn:hover:not(:disabled) {
-    border-color: var(--dw-border-light);
-    background: var(--dw-bg-panel);
-    color: var(--dw-text);
-    transform: translateY(-1px);
-}
-
-.ai-btn:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-}
-
-.ai-btn--primary {
-    border-color: var(--dw-primary);
-    background: var(--dw-primary);
-    color: var(--dw-on-accent);
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--dw-primary) 35%, transparent);
-}
-
-.ai-btn--primary:hover:not(:disabled) {
-    background: var(--dw-primary-hover);
-    filter: brightness(1.06);
-    color: var(--dw-on-accent);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--dw-primary) 40%, transparent);
-}
-
-.ai-btn--primary:disabled {
-    background: color-mix(in srgb, var(--dw-primary) 55%, var(--dw-bg));
-    color: var(--dw-on-accent);
-    opacity: 1;
-}
-
-.ai-btn--ghost {
-    background: transparent;
-}
-
-.ai-btn--ghost:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--dw-text) 5%, transparent);
-}

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {EmptyState, StatusPill} from '@/core/components'
@@ -231,10 +231,10 @@ function usageBarWidth(total: number): string {
             <p class="plugin-dev-pane__desc">{{ t('plugin.matrix.description') }}</p>
           </div>
           <div class="plugin-dev-pane__actions">
-            <div class="plugin-dev-view-toggle">
+            <div class="dw-segment">
               <button
                   type="button"
-                  class="plugin-dev-view-toggle__btn"
+                  class="dw-segment__btn"
                   :class="{ 'is-active': matrixView === 'cards' }"
                   @click="matrixView = 'cards'"
               >
@@ -242,14 +242,14 @@ function usageBarWidth(total: number): string {
               </button>
               <button
                   type="button"
-                  class="plugin-dev-view-toggle__btn"
+                  class="dw-segment__btn"
                   :class="{ 'is-active': matrixView === 'table' }"
                   @click="matrixView = 'table'"
               >
                 {{ t('plugin.advanced.viewTable') }}
               </button>
             </div>
-            <button class="mp-segment__btn" type="button" @click="emit('exportMatrixCsv')">
+            <button class="dw-text-btn" type="button" @click="emit('exportMatrixCsv')">
               {{ t('plugin.matrix.exportCsv') }}
             </button>
           </div>
@@ -479,7 +479,7 @@ function usageBarWidth(total: number): string {
             </li>
           </ol>
           <div class="plugin-dev-pane__foot">
-            <button class="plugin-dev-btn" type="button" @click="emit('clearUsage')">
+            <button class="dw-text-btn" type="button" @click="emit('clearUsage')">
               {{ t('plugin.usage.clear') }}
             </button>
           </div>
@@ -560,13 +560,13 @@ function usageBarWidth(total: number): string {
           </div>
           <div class="plugin-dev-preset-sync__actions">
             <button
-                class="mp-segment__btn is-active"
+                class="dw-text-btn dw-text-btn--accent"
                 type="button"
                 @click="emit('alignReferencePreset')"
             >
               {{ t('plugin.devTools.presetSyncAlign', { count: referencePresetMismatchCount }) }}
             </button>
-            <button class="mp-segment__btn" type="button" @click="emit('openPresetDiff')">
+            <button class="dw-text-btn" type="button" @click="emit('openPresetDiff')">
               {{ t('plugin.devTools.presetSyncViewDiff') }}
             </button>
           </div>
@@ -577,7 +577,7 @@ function usageBarWidth(total: number): string {
             <p class="plugin-dev-pane__desc">{{ t('plugin.catalogAudit.description') }}</p>
           </div>
           <div class="plugin-dev-pane__actions">
-            <button class="mp-segment__btn" type="button" @click="emit('exportCatalogDiffCsv')">
+            <button class="dw-text-btn" type="button" @click="emit('exportCatalogDiffCsv')">
               {{ t('plugin.catalogAudit.exportDiffCsv') }}
             </button>
           </div>
@@ -667,13 +667,13 @@ function usageBarWidth(total: number): string {
             <button
                 v-for="tplId in hookTemplateIds"
                 :key="tplId"
-                class="plugin-dev-btn"
+                class="dw-text-btn"
                 type="button"
                 @click="emit('copyHookTemplate', tplId)"
             >
               {{ hookTemplateLabel(tplId) }}
             </button>
-            <button class="plugin-dev-btn" type="button" @click="emit('refreshHooks')">
+            <button class="dw-text-btn" type="button" @click="emit('refreshHooks')">
               {{ t('plugin.hooks.refresh') }}
             </button>
           </div>

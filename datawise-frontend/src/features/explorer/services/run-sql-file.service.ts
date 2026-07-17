@@ -47,44 +47,51 @@ export function pickSqlFile(): Promise<File | null> {
     })
 }
 
-/** 数据库节点右键「运行 SQL 文件」：选文件 → 打开控制台 → 批量执行 */
-export async function runSqlFileForDatabase(
-    tree: TreeNode[],
-    databaseNode: Pick<TreeNode, 'id' | 'label'>,
-    connectionName?: string,
-): Promise<void> {
+export interface ExecuteSqlFileContentOptions {
+    tree: TreeNode[]
+    databaseNode: Pick<TreeNode, 'id' | 'label'>
+    connectionName?: string
+    sql: string
+    fileName: string
+    /** 控制台状态文案前缀；默认 runSqlFile */
+    statusPrefix?: 'runSqlFile' | 'restoreWizard'
+    /** 弹窗仍打开时不要 toast「开始执行」（遵守 toast-while-modal 约束） */
+    notifyStarted?: boolean
+}
+
+/** 将 SQL 内容打开到控制台并批量执行（还原向导 / 运行 SQL 文件共用） */
+export async function executeSqlFileContent(options: ExecuteSqlFileContentOptions): Promise<boolean> {
     const layout = useLayoutStore()
     const workspace = useWorkspaceStore()
     const shortcutPanel = useShortcutPanelStore()
     const appConfig = useAppConfigStore()
+    const prefix = options.statusPrefix ?? 'runSqlFile'
+    const notifyStarted = options.notifyStarted !== false
 
-    const file = await pickSqlFile()
-    if (!file) return
-
-    let sql: string
-    try {
-        sql = await file.text()
-    } catch {
-        layout.showErrorToast(t('explorer.runSqlFileReadFailed'))
-        return
-    }
-
-    const batch = resolveRunSqlBatch(sql)
+    const batch = resolveRunSqlBatch(options.sql)
     if (!batch.length) {
-        layout.showErrorToast(t('explorer.runSqlFileEmpty'))
-        return
+        if (notifyStarted) {
+            layout.showErrorToast(t(`explorer.${prefix}Empty`))
+        }
+        return false
     }
 
-    const ctx = await buildDatabaseConsoleContext(tree, databaseNode, connectionName)
+    const ctx = await buildDatabaseConsoleContext(
+        options.tree,
+        options.databaseNode,
+        options.connectionName,
+    )
     if (!ctx) {
-        layout.showErrorToast(t('explorer.runSqlFileContextMissing'))
-        return
+        if (notifyStarted) {
+            layout.showErrorToast(t(`explorer.${prefix}ContextMissing`))
+        }
+        return false
     }
 
     const tabTitle = resolveConsoleTabTitle({
         connectionHost: ctx.connectionHost,
         connectionName: ctx.connectionName,
-        sqlFile: file.name,
+        sqlFile: options.fileName,
     })
 
     const tabId = await workspace.openConsole({
@@ -92,11 +99,13 @@ export async function runSqlFileForDatabase(
         connectionName: ctx.connectionName,
         instanceId: ctx.databaseNode.id,
         database: ctx.databaseNode.label,
-        sql,
+        sql: options.sql,
         title: tabTitle,
     })
 
-    layout.showToast(t('explorer.runSqlFileStarted', {name: file.name}))
+    if (notifyStarted) {
+        layout.showToast(t(`explorer.${prefix}Started`, {name: options.fileName}))
+    }
 
     const connection = {
         connectionId: ctx.connectionId,
@@ -126,8 +135,37 @@ export async function runSqlFileForDatabase(
 
     if (result.lastErrorMessage) {
         workspace.setStatus(result.lastErrorMessage)
+        return false
+    }
+
+    workspace.setStatus(t(`explorer.${prefix}Done`, {name: options.fileName, count: batch.length}))
+    return true
+}
+
+/** 数据库节点右键「运行 SQL 文件」：选文件 → 打开控制台 → 批量执行 */
+export async function runSqlFileForDatabase(
+    tree: TreeNode[],
+    databaseNode: Pick<TreeNode, 'id' | 'label'>,
+    connectionName?: string,
+): Promise<void> {
+    const layout = useLayoutStore()
+
+    const file = await pickSqlFile()
+    if (!file) return
+
+    let sql: string
+    try {
+        sql = await file.text()
+    } catch {
+        layout.showErrorToast(t('explorer.runSqlFileReadFailed'))
         return
     }
 
-    workspace.setStatus(t('explorer.runSqlFileDone', {name: file.name, count: batch.length}))
+    await executeSqlFileContent({
+        tree,
+        databaseNode,
+        connectionName,
+        sql,
+        fileName: file.name,
+    })
 }

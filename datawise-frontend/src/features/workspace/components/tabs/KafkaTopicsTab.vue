@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
@@ -84,7 +84,7 @@ watch(connectionId, () => {
         <p>{{ connectionLabel }}</p>
         <span class="kafka-topics-workbench__stats">{{ statsLabel }}</span>
       </div>
-      <button class="kafka-topics-workbench__refresh" type="button" @click="refreshTopics">
+      <button class="dw-text-btn" type="button" @click="refreshTopics">
         {{ t('explorer.kafkaBrowser.refresh') }}
       </button>
     </header>
@@ -203,17 +203,6 @@ watch(connectionId, () => {
   font-size: var(--dw-text-xs);
 }
 
-.kafka-topics-workbench__refresh {
-  flex-shrink: 0;
-  height: var(--dw-control-h);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-panel-radius);
-  padding: 0 var(--dw-space-6);
-  background: var(--dw-bg);
-  color: var(--dw-text);
-  font-size: var(--dw-text-sm);
-  cursor: pointer;
-}
 
 .kafka-topics-workbench__body {
   display: grid;

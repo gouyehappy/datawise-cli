@@ -76,7 +76,7 @@ export default {
         },
         scheduledTaskOk: {
             title: '定时任务完成',
-            body: '「{name}」（{type}）已成功执行。',
+            body: '「{name}」（{type}）已成功执行。{message}',
         },
         scheduledTaskFailed: {
             title: '定时任务失败',

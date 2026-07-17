@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed, onUnmounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {defineAsyncComponent} from 'vue'
@@ -335,16 +335,16 @@ onUnmounted(() => {
       <button
           v-if="collabRemoteChanged"
           type="button"
-          class="dw-btn dw-btn--ghost"
+          class="btn-ghost"
           :disabled="collabPulling || collabPushing || collabConflictLoading"
           @click="openCollabConflictReview"
       >
         {{ collabConflictLoading ? t('common.loading') : t('team.sharedQueries.reviewChanges') }}
       </button>
-      <button type="button" class="dw-btn dw-btn--ghost" :disabled="collabPulling || collabPushing" @click="pullTeamSharedQuery">
+      <button type="button" class="btn-ghost" :disabled="collabPulling || collabPushing" @click="pullTeamSharedQuery">
         {{ collabPulling ? t('common.loading') : t('team.sharedQueries.pullLatest') }}
       </button>
-      <button type="button" class="dw-btn dw-btn--primary" :disabled="collabPulling || collabPushing" @click="pushTeamSharedQuery">
+      <button type="button" class="btn-primary" :disabled="collabPulling || collabPushing" @click="pushTeamSharedQuery">
         {{ collabPushing ? t('common.saving') : t('team.sharedQueries.pushCurrent') }}
       </button>
     </div>

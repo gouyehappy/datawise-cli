@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {useI18n} from 'vue-i18n'
 import type {SessionKillMode} from '@/features/workspace/services/session-kill.service'
 
@@ -18,7 +18,7 @@ const {t} = useI18n()
 <template>
   <div v-if="canKill" class="session-kill-actions" @click.stop>
     <button
-        class="session-kill-actions__btn"
+        class="btn-secondary btn-sm"
         type="button"
         :disabled="killing"
         @click="emit('kill', 'query')"
@@ -26,7 +26,7 @@ const {t} = useI18n()
       {{ killing ? t('shortcut.sessionKill.killing') : t('shortcut.sessionKill.killQuery') }}
     </button>
     <button
-        class="session-kill-actions__btn session-kill-actions__btn--danger"
+        class="btn-primary btn-danger btn-sm"
         type="button"
         :disabled="killing"
         @click="emit('kill', 'connection')"
@@ -45,26 +45,4 @@ const {t} = useI18n()
   border-top: 1px solid var(--dw-border-light);
 }
 
-.session-kill-actions__btn {
-  padding: var(--dw-pad-tight);
-  border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-bg-muted);
-  color: var(--dw-text-secondary);
-  font-size: var(--dw-text-xs);
-  font-weight: 600;
-  line-height: var(--dw-leading-snug);
-  cursor: pointer;
-}
-
-.session-kill-actions__btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.session-kill-actions__btn--danger {
-  border-color: color-mix(in srgb, var(--dw-danger) 20%, var(--dw-border-light));
-  background: color-mix(in srgb, var(--dw-danger) 6%, var(--dw-bg-muted));
-  color: var(--dw-danger-fg);
-}
 </style>

@@ -479,12 +479,12 @@ async function onPluginToggle(plugin: PluginItem) {
             </div>
           </div>
           <div class="mp-hero__actions">
-            <button class="mp-segment__btn is-active" type="button" @click="openPluginSettings">
+            <button class="dw-text-btn dw-text-btn--accent" type="button" @click="openPluginSettings">
               {{ t('plugin.openSettings') }}
             </button>
             <button
                 v-if="showConnectorMarketCta"
-                class="mp-segment__btn"
+                class="dw-text-btn"
                 type="button"
                 @click="openConnectorMarket"
             >
@@ -492,7 +492,7 @@ async function onPluginToggle(plugin: PluginItem) {
             </button>
             <button
                 v-if="pluginStore.isDevToolsVisible"
-                class="mp-segment__btn plugin-hero__dev-btn"
+                class="dw-text-btn"
                 type="button"
                 @click="openPluginDevTools"
             >
@@ -505,10 +505,10 @@ async function onPluginToggle(plugin: PluginItem) {
                 {{ pluginStore.catalogAllIssueCount }}
               </StatusPill>
             </button>
-            <button class="mp-segment__btn" type="button" @click="exportPluginConfig">
+            <button class="dw-text-btn" type="button" @click="exportPluginConfig">
               {{ t('plugin.config.export') }}
             </button>
-            <button class="mp-segment__btn" type="button" @click="triggerImportPluginConfig">
+            <button class="dw-text-btn" type="button" @click="triggerImportPluginConfig">
               {{ t('plugin.config.import') }}
             </button>
             <input
@@ -531,10 +531,10 @@ async function onPluginToggle(plugin: PluginItem) {
             <p class="plugin-alert__text">{{ t('plugin.teamViewerHint') }}</p>
           </div>
           <div class="plugin-alert__actions">
-            <button class="mp-segment__btn is-active" type="button" @click="applySuggestedTeamPreset">
+            <button class="dw-text-btn dw-text-btn--accent" type="button" @click="applySuggestedTeamPreset">
               {{ t('plugin.presets.teamViewer.label') }}
             </button>
-            <button class="mp-segment__btn" type="button" @click="dismissTeamViewerHint">
+            <button class="dw-text-btn" type="button" @click="dismissTeamViewerHint">
               {{ t('plugin.teamViewerDismiss') }}
             </button>
           </div>
@@ -553,13 +553,13 @@ async function onPluginToggle(plugin: PluginItem) {
             </p>
           </div>
           <div class="plugin-alert__actions">
-            <button class="mp-segment__btn is-active" type="button" @click="applyClosestPreset">
+            <button class="dw-text-btn dw-text-btn--accent" type="button" @click="applyClosestPreset">
               {{ t('plugin.presets.closestApply', {
                 preset: t(`plugin.presets.${closestPresetMatch.id}.label`),
               }) }}
             </button>
             <button
-                class="mp-segment__btn"
+                class="dw-text-btn"
                 type="button"
                 @click="referencePresetId = closestPresetMatch.id"
             >
@@ -581,16 +581,16 @@ async function onPluginToggle(plugin: PluginItem) {
             </p>
           </div>
           <div class="plugin-alert__actions">
-            <button class="mp-segment__btn is-active" type="button" @click="applyReferencePreset">
+            <button class="dw-text-btn dw-text-btn--accent" type="button" @click="applyReferencePreset">
               {{ t('plugin.presets.referenceConflictAlignAll', { count: presetMismatchCount }) }}
             </button>
-            <button class="mp-segment__btn" type="button" @click="scrollToPresetDiff">
+            <button class="dw-text-btn" type="button" @click="scrollToPresetDiff">
               {{ t('plugin.presets.referenceConflictViewDiff') }}
             </button>
-            <button class="mp-segment__btn" type="button" @click="openReferencePresetInSettings">
+            <button class="dw-text-btn" type="button" @click="openReferencePresetInSettings">
               {{ t('plugin.editReferencePresetInSettings') }}
             </button>
-            <button class="mp-segment__btn" type="button" @click="dismissReferenceConflictBanner">
+            <button class="dw-text-btn" type="button" @click="dismissReferenceConflictBanner">
               {{ t('plugin.presets.referenceConflictDismiss') }}
             </button>
           </div>
@@ -607,7 +607,7 @@ async function onPluginToggle(plugin: PluginItem) {
           <h2 class="plugin-market-cta__title">{{ t('plugin.connectorMarket.title') }}</h2>
           <p class="plugin-market-cta__sub">{{ t('plugin.connectorMarket.ctaHint') }}</p>
         </div>
-        <button class="mp-segment__btn is-active plugin-market-cta__btn" type="button" @click="openConnectorMarket">
+        <button class="dw-text-btn dw-text-btn--accent plugin-market-cta__btn" type="button" @click="openConnectorMarket">
           {{ t('plugin.connectorMarket.open') }}
         </button>
       </section>
@@ -626,7 +626,7 @@ async function onPluginToggle(plugin: PluginItem) {
               <button
                   v-for="presetId in presetIds"
                   :key="`ref-${presetId}`"
-                  class="mp-segment__btn"
+                  class="dw-text-btn"
                   :class="{ 'is-active': referencePresetId === presetId }"
                   type="button"
                   @click="referencePresetId = presetId"
@@ -640,7 +640,7 @@ async function onPluginToggle(plugin: PluginItem) {
               </StatusPill>
               <button
                   v-if="presetMismatchCount"
-                  class="mp-segment__btn is-active"
+                  class="dw-text-btn dw-text-btn--accent"
                   type="button"
                   @click="applyReferencePreset"
               >
@@ -648,10 +648,10 @@ async function onPluginToggle(plugin: PluginItem) {
               </button>
             </div>
             <div class="plugin-panel__actions">
-              <button class="mp-segment__btn" type="button" @click="scrollToPresetDiff">
+              <button class="dw-text-btn" type="button" @click="scrollToPresetDiff">
                 {{ t('plugin.presets.referenceConflictViewDiff') }}
               </button>
-              <button class="mp-segment__btn" type="button" @click="openReferencePresetInSettings">
+              <button class="dw-text-btn" type="button" @click="openReferencePresetInSettings">
                 {{ t('plugin.editReferencePresetInSettings') }}
               </button>
             </div>
@@ -689,10 +689,10 @@ async function onPluginToggle(plugin: PluginItem) {
               <h2 class="plugin-panel__title">{{ t('plugin.layout.config') }}</h2>
             </div>
             <div class="plugin-config-actions">
-              <button class="mp-segment__btn" type="button" @click="resetPluginConfig">
+              <button class="dw-text-btn" type="button" @click="resetPluginConfig">
                 {{ t('plugin.config.reset') }}
               </button>
-              <button class="mp-segment__btn" type="button" @click="openPluginSettings">
+              <button class="dw-text-btn" type="button" @click="openPluginSettings">
                 {{ t('plugin.openSettings') }}
               </button>
             </div>
@@ -730,7 +730,7 @@ async function onPluginToggle(plugin: PluginItem) {
                 </ul>
                 <div v-if="presetDiffRows.length" class="plugin-presets-diff__actions">
                   <button
-                      class="mp-segment__btn is-active"
+                      class="dw-text-btn dw-text-btn--accent"
                       type="button"
                       @click="applyReferencePreset"
                   >
@@ -765,7 +765,7 @@ async function onPluginToggle(plugin: PluginItem) {
                 <button
                     v-for="item in ['all', 'enabled', 'disabled'] as const"
                     :key="item"
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': filter === item }"
                     type="button"
                     @click="filter = item"
@@ -775,7 +775,7 @@ async function onPluginToggle(plugin: PluginItem) {
                   }}
                 </button>
                 <button
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': unmetRequiresOnly }"
                     type="button"
                     @click="unmetRequiresOnly = !unmetRequiresOnly"
@@ -784,7 +784,7 @@ async function onPluginToggle(plugin: PluginItem) {
                   <StatusPill v-if="unmetRequiresCount" variant="warn">{{ unmetRequiresCount }}</StatusPill>
                 </button>
                 <button
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': presetMismatchOnly }"
                     type="button"
                     @click="presetMismatchOnly = !presetMismatchOnly"
@@ -799,7 +799,7 @@ async function onPluginToggle(plugin: PluginItem) {
               <span class="plugin-filter-dock__label">{{ t('plugin.layout.category') }}</span>
               <div class="mp-segment mp-segment--wrap">
                 <button
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': category === 'all' }"
                     type="button"
                     @click="category = 'all'"
@@ -809,7 +809,7 @@ async function onPluginToggle(plugin: PluginItem) {
                 <button
                     v-for="cat in CATEGORY_ORDER"
                     :key="cat"
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': category === cat }"
                     type="button"
                     @click="category = cat"
@@ -823,7 +823,7 @@ async function onPluginToggle(plugin: PluginItem) {
               <span class="plugin-filter-dock__label">{{ t('plugin.layout.more') }}</span>
               <div class="mp-segment mp-segment--wrap">
                 <button
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': surface === 'all' }"
                     type="button"
                     @click="surface = 'all'"
@@ -833,7 +833,7 @@ async function onPluginToggle(plugin: PluginItem) {
                 <button
                     v-for="item in surfaceOptions"
                     :key="item"
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': surface === item }"
                     type="button"
                     @click="surface = item"
@@ -842,7 +842,7 @@ async function onPluginToggle(plugin: PluginItem) {
                 </button>
                 <span class="plugin-filter-dock__label">{{ t('plugin.sortBy') }}</span>
                 <button
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': sortMode === 'default' }"
                     type="button"
                     @click="sortMode = 'default'"
@@ -850,7 +850,7 @@ async function onPluginToggle(plugin: PluginItem) {
                   {{ t('plugin.sortDefault') }}
                 </button>
                 <button
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': sortMode === 'usage' }"
                     type="button"
                     @click="sortMode = 'usage'"
@@ -858,7 +858,7 @@ async function onPluginToggle(plugin: PluginItem) {
                   {{ t('plugin.sortByUsage') }}
                 </button>
                 <button
-                    class="mp-segment__btn"
+                    class="dw-text-btn"
                     :class="{ 'is-active': sortMode === 'recent' }"
                     type="button"
                     @click="sortMode = 'recent'"

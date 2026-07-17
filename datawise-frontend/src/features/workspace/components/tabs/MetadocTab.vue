@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwPanelState} from '@/core/components'
@@ -53,29 +53,29 @@ function downloadCurrent() {
 <template>
   <div class="metadoc-tab">
     <header class="metadoc-tab__toolbar">
-      <div class="metadoc-tab__view-switch">
+      <div class="dw-segment" role="tablist">
         <button
             type="button"
-            class="metadoc-tab__view-btn"
-            :class="{active: activeView === 'preview'}"
+            class="dw-segment__btn"
+            :class="{'is-active': activeView === 'preview'}"
             @click="activeView = 'preview'"
         >
           {{ t('workspace.metadoc.preview') }}
         </button>
         <button
             type="button"
-            class="metadoc-tab__view-btn"
-            :class="{active: activeView === 'markdown'}"
+            class="dw-segment__btn"
+            :class="{'is-active': activeView === 'markdown'}"
             @click="activeView = 'markdown'"
         >
           Markdown
         </button>
       </div>
       <div class="metadoc-tab__actions">
-        <button type="button" class="metadoc-tab__action-btn" @click="copyMarkdown">
+        <button type="button" class="btn-secondary btn-sm" @click="copyMarkdown">
           {{ t('workspace.metadoc.copyMarkdown') }}
         </button>
-        <button type="button" class="metadoc-tab__action-btn metadoc-tab__action-btn--primary" @click="downloadCurrent">
+        <button type="button" class="btn-primary btn-sm" @click="downloadCurrent">
           {{ t('workspace.metadoc.download') }}
         </button>
       </div>
@@ -150,34 +150,16 @@ function downloadCurrent() {
   animation: metadoc-spin 1s linear infinite;
 }
 
-.metadoc-tab__view-switch,
 .metadoc-tab__actions {
   display: flex;
   align-items: center;
   gap: var(--dw-gap);
 }
 
+
 .metadoc-tab__view-btn,
-.metadoc-tab__action-btn {
-  border: 1px solid var(--dw-border);
-  background: var(--dw-bg-muted);
-  color: var(--dw-text);
-  border-radius: var(--dw-control-radius);
-  padding: var(--dw-space-3) var(--dw-space-6);
-  cursor: pointer;
-}
 
-.metadoc-tab__view-btn.active {
-  background: var(--dw-info-soft);
-  border-color: var(--dw-link);
-  color: var(--dw-link);
-}
 
-.metadoc-tab__action-btn--primary {
-  background: var(--dw-link);
-  border-color: var(--dw-link);
-  color: var(--dw-on-accent);
-}
 
 .metadoc-tab__preview-wrap,
 .metadoc-tab__markdown {

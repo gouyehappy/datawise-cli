@@ -27,6 +27,9 @@ import {
     mergeSuggestedOrderByColumns,
     pauseMigrationJob,
     pickDefaultWatermarkColumn,
+    resumeTableMigrationRun,
+    canResumeMigrationRun,
+    recordToMigrationForm,
     runTableMigration,
     runTableMigrationPreflight,
     selectPreflightTableName,
@@ -64,6 +67,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
     const selectedPreflightTable = ref<string | null>(null)
     const wizardStep = ref<MigrationFlowStep>('configure')
     const pausing = ref(false)
+    const resuming = ref(false)
     const activeJobId = ref<string | null>(null)
 
     const running = computed(() => migrationTasks.isRunning)
@@ -144,6 +148,10 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
 
     const progressDetailLabel = computed(() =>
         formatMigrationTableProgressLabel(progress.value, t),
+    )
+
+    const runStartedAt = computed(() =>
+        migrationTasks.activeRun?.startedAt ?? migrationRunRecord.value?.startedAt ?? null,
     )
 
     const targetConnectionLabel = computed(() =>
@@ -393,6 +401,10 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
     async function resetWizard() {
         if (!source.value) return
         form.value = createDefaultTableMigrationForm(preselectedTables.value)
+        if (tab.migrationInitialTarget) {
+            form.value.targetConnectionId = tab.migrationInitialTarget.connectionId
+            form.value.targetDatabase = tab.migrationInitialTarget.database
+        }
         if (tab.migrationSourceSelectSql?.trim()) {
             form.value.sourceSelectSql = tab.migrationSourceSelectSql.trim()
             form.value.migrationTargetTableName = tab.migrationTargetTableName?.trim() ?? ''
@@ -637,6 +649,75 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         }
     }
 
+    const canResumeFromWizard = computed(() => {
+        const record = migrationRunRecord.value
+        if (!record || running.value || resuming.value) return false
+        return canResumeMigrationRun(record)
+    })
+
+    async function resumeFromCheckpoint() {
+        const record = migrationRunRecord.value
+        if (!record || !canResumeFromWizard.value) return
+        resuming.value = true
+        const startedAt = record.startedAt
+        wizardStep.value = 'running'
+        migrationTasks.startRun({
+            id: record.id,
+            startedAt,
+            source: record.source,
+            target: record.target,
+            options: record.options,
+            tablesPlanned: [...record.tablesPlanned],
+        })
+        activeJobId.value = record.id
+        try {
+            const outcome = await resumeTableMigrationRun(
+                record,
+                (nextProgress) => migrationTasks.setProgress(nextProgress),
+                (line) => migrationTasks.appendLog(line),
+            )
+            const finishedAt = new Date().toISOString()
+            const nextRecord = buildMigrationRunRecord({
+                id: record.id,
+                startedAt,
+                finishedAt,
+                source: {
+                    connectionId: record.source.connectionId,
+                    connectionLabel: record.source.connectionLabel,
+                    database: record.source.database,
+                    dbType: record.source.dbType as import('@/core/types').DbType,
+                },
+                targetConnectionId: record.target.connectionId,
+                targetConnectionLabel: record.target.connectionLabel,
+                targetDatabase: record.target.database,
+                form: recordToMigrationForm(record),
+                tablesPlanned: [...record.tablesPlanned],
+                results: outcome.results,
+                logs: migrationTasks.activeRun?.logs ?? record.logs,
+                jobStatus: outcome.paused ? 'paused' : undefined,
+            })
+            migrationTasks.completeRun(nextRecord)
+            if (outcome.paused) {
+                layout.showSuccessToast(t('explorer.tableMigrationWizard.migrationPaused'))
+            } else {
+                const summary = summarizeMigrationResults(outcome.results)
+                if (summary.failed > 0) {
+                    layout.showWarningToast(t('explorer.tableMigrationPartial', summary))
+                } else {
+                    layout.showSuccessToast(t('explorer.tableMigrationSuccess', summary))
+                }
+            }
+        } catch (error) {
+            migrationTasks.abortRun()
+            const message = error instanceof Error ? error.message : String(error)
+            layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
+        } finally {
+            activeJobId.value = null
+            resuming.value = false
+            wizardStep.value = 'complete'
+        }
+    }
+
     async function startMigration() {
         if (!source.value || running.value || preflightLoading.value) return
         const code = validateTableMigrationForm(
@@ -837,6 +918,9 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         progress,
         progressPercent,
         progressDetailLabel,
+        runStartedAt,
+        canResumeFromWizard,
+        resuming,
         migrationResults,
         migrationRunLogs,
         migrationRunLogsFull,
@@ -888,5 +972,6 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         downloadMigrationReport,
         startMigration,
         pauseActiveMigration,
+        resumeFromCheckpoint,
     })
 }

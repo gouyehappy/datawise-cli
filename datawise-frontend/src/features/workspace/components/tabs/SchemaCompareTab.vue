@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import {computed, ref, watch} from 'vue'
+﻿<script setup lang="ts">
+import {computed, defineAsyncComponent, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {WorkspaceTab} from '@/core/types'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
@@ -17,6 +17,15 @@ import {
 } from '@/features/schema-compare/services/schema-compare-selection.service'
 import {scopesEqual} from '@/features/schema-compare/services/schema-scope.service'
 import type {SchemaCompareResult, SchemaScope} from '@/features/schema-compare/types/schema-compare.types'
+import {executeSchemaSyncSql} from '@/features/schema-compare/services/schema-sync-execute.service'
+import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useTeamStore} from '@/features/team/stores/team-store'
+import {canDdlConnection} from '@/features/team/services/connection-access.service'
+import {
+    isProductionEnvironment,
+    normalizeConnectionEnvironment,
+} from '@/features/connection/services/connection-environment.service'
+import {resolveProductionApprovalTeams} from '@/features/team/services/production-approval-policy.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
@@ -30,11 +39,17 @@ import type {SelectOption} from '@/core/components/select.types'
 
 const props = defineProps<{ tab: WorkspaceTab }>()
 
+const SubmitProductionApprovalDialog = defineAsyncComponent(
+    () => import('@/features/workspace/components/SubmitProductionApprovalDialog.vue'),
+)
+
 const {t} = useI18n()
 const explorer = useExplorerStore()
 const layout = useLayoutStore()
 const auth = useAuthStore()
 const appConfig = useAppConfigStore()
+const workspace = useWorkspaceStore()
+const teamStore = useTeamStore()
 
 const leftScope = ref<SchemaScope | null>(props.tab.schemaCompareLeft ?? null)
 const rightScope = ref<SchemaScope | null>(props.tab.schemaCompareRight ?? null)
@@ -46,6 +61,11 @@ const selectedTables = ref<Set<string>>(new Set())
 const selectedColumnsByTable = ref<Map<string, Set<string>>>(new Map())
 const exportDialogOpen = ref(false)
 const exporting = ref(false)
+const syncExecuting = ref(false)
+const syncConfirmArmed = ref(false)
+const syncProductionApprovalDialogOpen = ref(false)
+const syncProductionApprovalSubmitting = ref(false)
+const syncProductionApprovalError = ref('')
 
 const connections = computed(() => extractConnectionsFromTree(explorer.tree))
 
@@ -57,7 +77,7 @@ const leftConnectionId = computed({
       leftScope.value = null
       return
     }
-    const database = conn.databases[0]?.label ?? conn.label
+    const database = conn.databases[0]?.label ?? ''
     leftScope.value = {
       connectionId: conn.id,
       connectionLabel: conn.label,
@@ -75,7 +95,7 @@ const rightConnectionId = computed({
       rightScope.value = null
       return
     }
-    const database = conn.databases[0]?.label ?? conn.label
+    const database = conn.databases[0]?.label ?? ''
     rightScope.value = {
       connectionId: conn.id,
       connectionLabel: conn.label,
@@ -117,15 +137,32 @@ const connectionOptions = computed<SelectOption[]>(() => [
   })),
 ])
 
-function databaseOptions(databases: { id: string; label: string }[]): SelectOption[] {
+function databaseOptions(databases: { id: string; label: string }[], current?: string): SelectOption[] {
+  const options = databases.map((db) => ({value: db.label, label: db.label}))
+  if (current && current.trim() && !options.some((item) => item.value === current)) {
+    options.unshift({value: current, label: current})
+  }
   return [
     {value: '', label: t('schemaCompare.selectDatabase')},
-    ...databases.map((db) => ({value: db.label, label: db.label})),
+    ...options,
   ]
 }
 
-const leftDatabaseOptions = computed(() => databaseOptions(leftDatabases.value))
-const rightDatabaseOptions = computed(() => databaseOptions(rightDatabases.value))
+const leftDatabaseOptions = computed(() =>
+    databaseOptions(leftDatabases.value, leftScope.value?.database),
+)
+const rightDatabaseOptions = computed(() =>
+    databaseOptions(rightDatabases.value, rightScope.value?.database),
+)
+
+async function ensureConnectionDatabases(connectionId: string) {
+  if (!connectionId) return
+  try {
+    await explorer.ensureChildrenLoaded(connectionId)
+  } catch {
+    // tree may be offline; keep current scope labels
+  }
+}
 
 const canCompare = computed(
     () =>
@@ -196,6 +233,76 @@ const canExportMigration = computed(() =>
     selectedChangeCount.value > 0 && !!rightScope.value?.connectionId,
 )
 
+const targetConnectionNode = computed(() => {
+    const connectionId = rightScope.value?.connectionId
+    if (!connectionId) return undefined
+    return explorer.findNode(connectionId)
+})
+
+const targetProductionEnv = computed(() =>
+    isProductionEnvironment(targetConnectionNode.value?.env, targetConnectionNode.value?.envCustom),
+)
+
+const targetConnectionEnv = computed(() =>
+    normalizeConnectionEnvironment(
+        targetConnectionNode.value?.env,
+        targetConnectionNode.value?.envCustom,
+    ).env,
+)
+
+const syncProductionApprovalTeams = computed(() => {
+    if (!effectiveDdl.value || !rightScope.value?.connectionId) return []
+    return resolveProductionApprovalTeams({
+        env: targetConnectionEnv.value,
+        sql: effectiveDdl.value,
+        connectionId: rightScope.value.connectionId,
+        teams: teamStore.teams,
+    })
+})
+
+const needsSyncProductionApproval = computed(() => syncProductionApprovalTeams.value.length > 0)
+
+const syncExecuteActionLabel = computed(() => {
+    if (syncExecuting.value) return t('schemaCompare.syncExecuting')
+    if (syncConfirmArmed.value) {
+        return needsSyncProductionApproval.value
+            ? t('console.productionApproval.submitForApproval')
+            : t('schemaCompare.syncConfirmAction')
+    }
+    return t('schemaCompare.syncExecuteAction')
+})
+
+const canExecuteSync = computed(() => {
+    if (auth.isGuest) return false
+    if (!rightScope.value?.connectionId) return false
+    return canDdlConnection(rightScope.value.connectionId, teamStore.teams)
+})
+
+const syncExecuteDisabledHint = computed(() => {
+    if (auth.isGuest) return t('schemaCompare.syncGuestDenied')
+    if (!canExecuteSync.value) return t('schemaCompare.syncWriteDenied')
+    return undefined
+})
+
+const workflowStep = computed(() => {
+    if (!leftScope.value || !rightScope.value) return 1
+    if (!result.value) return 1
+    if (selectedChangeCount.value <= 0) return 2
+    return 3
+})
+
+const dataMigrationTables = computed(() => {
+    if (!result.value) return [] as string[]
+    return [...selectedTables.value].filter((tableName) => {
+        const diff = result.value?.tableDiffs.find((item) => item.tableName === tableName)
+        return diff && diff.status !== 'removed'
+    })
+})
+
+const canOpenDataMigration = computed(() =>
+    dataMigrationTables.value.length > 0 && !!leftScope.value && !!rightScope.value,
+)
+
 const exportDialogDefault = computed(() =>
     buildDefaultMigrationFileName('schema_compare'),
 )
@@ -260,8 +367,35 @@ watch([leftScope, rightScope], () => {
   clearAppliedMigration()
 })
 
+watch(leftConnectionId, (connectionId) => {
+  void ensureConnectionDatabases(connectionId)
+}, {immediate: true})
+
+watch(rightConnectionId, (connectionId) => {
+  void ensureConnectionDatabases(connectionId)
+}, {immediate: true})
+
+watch(leftDatabases, (databases) => {
+  if (!leftScope.value?.connectionId || databases.length === 0) return
+  if (!databases.some((item) => item.label === leftScope.value?.database)) {
+    leftScope.value = {...leftScope.value, database: databases[0]?.label ?? ''}
+  }
+})
+
+watch(rightDatabases, (databases) => {
+  if (!rightScope.value?.connectionId || databases.length === 0) return
+  if (!databases.some((item) => item.label === rightScope.value?.database)) {
+    rightScope.value = {...rightScope.value, database: databases[0]?.label ?? ''}
+  }
+})
+
 watch([selectedTables, selectedColumnsByTable], () => {
   clearAppliedMigration()
+  syncConfirmArmed.value = false
+})
+
+watch(effectiveDdl, () => {
+  syncConfirmArmed.value = false
 })
 
 async function runCompare() {
@@ -326,6 +460,85 @@ function statusLabel(status: string) {
   const label = t(key)
   return label === key ? status : label
 }
+
+function openSyncInConsole() {
+  if (!effectiveDdl.value || !rightScope.value) return
+  void workspace.openConsole({
+    connectionId: rightScope.value.connectionId,
+    connectionName: rightScope.value.connectionLabel,
+    database: rightScope.value.database,
+    sql: effectiveDdl.value,
+  })
+}
+
+function openDataMigrationWizard() {
+  if (!leftScope.value || !rightScope.value || !canOpenDataMigration.value) return
+  workspace.openTableMigration({
+    source: leftScope.value,
+    preselectedTables: dataMigrationTables.value,
+    initialTarget: rightScope.value,
+  })
+}
+
+async function executeSync() {
+  if (!effectiveDdl.value || !rightScope.value || syncExecuting.value) return
+  if (!canExecuteSync.value) {
+    layout.showErrorToast(syncExecuteDisabledHint.value ?? t('schemaCompare.syncWriteDenied'))
+    return
+  }
+  if (!syncConfirmArmed.value) {
+    syncConfirmArmed.value = true
+    return
+  }
+  if (needsSyncProductionApproval.value) {
+    syncProductionApprovalError.value = ''
+    syncProductionApprovalDialogOpen.value = true
+    return
+  }
+  syncExecuting.value = true
+  try {
+    const outcome = await executeSchemaSyncSql(effectiveDdl.value, {
+      connectionId: rightScope.value.connectionId,
+      database: rightScope.value.database,
+      dbType: rightScope.value.dbType,
+    })
+    if (!outcome.ok) {
+      layout.showErrorToast(t('schemaCompare.syncFailedWithDetail', {message: outcome.message}))
+      return
+    }
+    layout.showSuccessToast(t('schemaCompare.syncSuccess', {count: outcome.statementCount}))
+    syncConfirmArmed.value = false
+    await runCompare()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('schemaCompare.syncFailed')
+    layout.showErrorToast(message)
+  } finally {
+    syncExecuting.value = false
+  }
+}
+
+async function onSubmitSyncProductionApproval(teamId: string) {
+  if (!effectiveDdl.value || !rightScope.value) return
+
+  syncProductionApprovalSubmitting.value = true
+  syncProductionApprovalError.value = ''
+  try {
+    await teamStore.submitProductionApproval(teamId, {
+      connectionId: rightScope.value.connectionId,
+      connectionName: rightScope.value.connectionLabel,
+      database: rightScope.value.database,
+      sql: effectiveDdl.value,
+    })
+    syncProductionApprovalDialogOpen.value = false
+    syncConfirmArmed.value = false
+    layout.showSuccessToast(t('console.productionApproval.submitted'))
+  } catch (error) {
+    syncProductionApprovalError.value =
+        error instanceof Error ? error.message : t('console.productionApproval.submitFailed')
+  } finally {
+    syncProductionApprovalSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -378,6 +591,21 @@ function statusLabel(status: string) {
       </div>
     </section>
 
+    <ol v-if="leftScope && rightScope" class="schema-compare__workflow">
+      <li :class="{ 'is-active': workflowStep >= 1, 'is-current': workflowStep === 1 }">
+        <span class="schema-compare__workflow-index">1</span>
+        <span>{{ t('schemaCompare.workflow.compare') }}</span>
+      </li>
+      <li :class="{ 'is-active': workflowStep >= 2, 'is-current': workflowStep === 2 }">
+        <span class="schema-compare__workflow-index">2</span>
+        <span>{{ t('schemaCompare.workflow.select') }}</span>
+      </li>
+      <li :class="{ 'is-active': workflowStep >= 3, 'is-current': workflowStep === 3 }">
+        <span class="schema-compare__workflow-index">3</span>
+        <span>{{ t('schemaCompare.workflow.sync') }}</span>
+      </li>
+    </ol>
+
     <section v-if="result" class="schema-compare__summary">
       <StatusPill chip status="added" domain="schema">
         {{ t('schemaCompare.summaryAdded', {count: result.summary.added}) }}
@@ -398,8 +626,8 @@ function statusLabel(status: string) {
         <div class="table-list__toolbar">
           <input v-model="tableFilter" class="table-list__search" :placeholder="t('schemaCompare.filterTables')"/>
           <div class="table-list__bulk">
-            <button type="button" class="link-btn" @click="selectAllConflicts">{{ t('schemaCompare.selectAll') }}</button>
-            <button type="button" class="link-btn" @click="clearAllConflicts">{{ t('schemaCompare.selectNone') }}</button>
+            <button type="button" class="dw-link-btn" @click="selectAllConflicts">{{ t('schemaCompare.selectAll') }}</button>
+            <button type="button" class="dw-link-btn" @click="clearAllConflicts">{{ t('schemaCompare.selectNone') }}</button>
           </div>
         </div>
         <ul>
@@ -477,33 +705,89 @@ function statusLabel(status: string) {
 
       <section class="ddl-panel">
         <header>
-          <h3>{{ t('schemaCompare.ddlTitle') }}</h3>
-          <div class="ddl-panel__actions">
-            <DwButton
-                variant="ghost"
-                size="sm"
-                type="button"
-                :disabled="!selectedDdl || aiMigrationLoading"
-                :loading="aiMigrationLoading"
-                @click="suggestMigration"
-            >
-              {{ aiMigrationLoading ? t('schemaCompare.aiMigrationLoading') : t('schemaCompare.aiMigration') }}
-            </DwButton>
-            <DwButton
-                variant="primary"
-                size="sm"
-                type="button"
-                :disabled="!canExportMigration || exporting"
-                :loading="exporting"
-                @click="openExportDialog"
-            >
-              {{ t('schemaCompare.exportMigration') }}
-            </DwButton>
-            <DwButton variant="secondary" size="sm" type="button" :disabled="!effectiveDdl" @click="copyDdl">
-              {{ t('schemaCompare.copyDdl') }}
-            </DwButton>
+          <div>
+            <h3>{{ t('schemaCompare.ddlTitle') }}</h3>
+            <p class="ddl-panel__subtitle">{{ t('schemaCompare.syncSubtitle') }}</p>
           </div>
         </header>
+
+        <div class="ddl-panel__groups">
+          <div class="ddl-panel__group">
+            <span class="ddl-panel__group-label">{{ t('schemaCompare.syncPreview') }}</span>
+            <div class="ddl-panel__actions">
+              <DwButton variant="secondary" size="sm" type="button" :disabled="!effectiveDdl" @click="copyDdl">
+                {{ t('schemaCompare.copyDdl') }}
+              </DwButton>
+              <DwButton
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  :disabled="!canExportMigration || exporting"
+                  :loading="exporting"
+                  @click="openExportDialog"
+              >
+                {{ t('schemaCompare.exportMigration') }}
+              </DwButton>
+              <DwButton
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  :disabled="!selectedDdl || aiMigrationLoading"
+                  :loading="aiMigrationLoading"
+                  @click="suggestMigration"
+              >
+                {{ aiMigrationLoading ? t('schemaCompare.aiMigrationLoading') : t('schemaCompare.aiMigration') }}
+              </DwButton>
+            </div>
+          </div>
+
+          <div class="ddl-panel__group">
+            <span class="ddl-panel__group-label">{{ t('schemaCompare.syncExecute') }}</span>
+            <div class="ddl-panel__actions">
+              <DwButton
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  :disabled="!effectiveDdl"
+                  @click="openSyncInConsole"
+              >
+                {{ t('schemaCompare.openConsole') }}
+              </DwButton>
+              <DwButton
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  :disabled="!canExportMigration || syncExecuting || !canExecuteSync"
+                  :loading="syncExecuting"
+                  @click="executeSync"
+              >
+                {{
+                  syncExecuteActionLabel
+                }}
+              </DwButton>
+              <DwButton
+                  variant="secondary"
+                  size="sm"
+                  type="button"
+                  :disabled="!canOpenDataMigration"
+                  @click="openDataMigrationWizard"
+              >
+                {{ t('schemaCompare.openDataMigration') }}
+              </DwButton>
+            </div>
+          </div>
+        </div>
+
+        <p v-if="syncExecuteDisabledHint && !canExecuteSync" class="ddl-panel__hint">{{ syncExecuteDisabledHint }}</p>
+        <p v-else-if="syncConfirmArmed" class="ddl-panel__hint ddl-panel__hint--warn">
+          {{
+            needsSyncProductionApproval
+              ? t('schemaCompare.syncSubmitForApproval')
+              : (targetProductionEnv
+                ? t('schemaCompare.syncConfirmProd')
+                : t('schemaCompare.syncConfirmHint'))
+          }}
+        </p>
         <p v-if="appliedUpDdl" class="ddl-panel__ai-note">{{ t('schemaCompare.aiMigrationApplied') }}</p>
         <pre class="ddl-panel__code">{{ effectiveDdl || t('schemaCompare.noSelectionDdl') }}</pre>
       </section>
@@ -531,6 +815,17 @@ function statusLabel(status: string) {
         :down-ddl="aiMigrationSuggestion?.down ?? ''"
         :loading="aiMigrationLoading"
         @apply="applySuggestion"
+    />
+
+    <SubmitProductionApprovalDialog
+        v-model:open="syncProductionApprovalDialogOpen"
+        :saving="syncProductionApprovalSubmitting"
+        :error="syncProductionApprovalError"
+        :sql="effectiveDdl"
+        :connection-name="rightScope?.connectionLabel"
+        :database="rightScope?.database"
+        :teams="syncProductionApprovalTeams"
+        @submit="onSubmitSyncProductionApproval"
     />
   </div>
 </template>
@@ -603,6 +898,55 @@ function statusLabel(status: string) {
   display: flex;
   flex-wrap: wrap;
   gap: var(--dw-gap);
+}
+
+.schema-compare__workflow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--dw-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schema-compare__workflow li {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-4) var(--dw-space-5);
+  border: 1px solid var(--dw-border-light);
+  border-radius: var(--dw-control-radius-sm);
+  background: var(--dw-bg-muted);
+  color: var(--dw-text-muted);
+  font-size: var(--dw-text-sm);
+}
+
+.schema-compare__workflow li.is-active {
+  color: var(--dw-text);
+  border-color: color-mix(in srgb, var(--dw-primary) 20%, var(--dw-border-light));
+}
+
+.schema-compare__workflow li.is-current {
+  background: var(--dw-primary-softer);
+  border-color: color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border-light));
+  color: var(--dw-primary);
+  font-weight: 600;
+}
+
+.schema-compare__workflow-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--dw-radius-pill);
+  background: var(--dw-bg);
+  font-size: var(--dw-text-xs);
+  font-weight: 700;
+}
+
+.schema-compare__workflow li.is-current .schema-compare__workflow-index {
+  background: var(--dw-primary-soft);
 }
 
 .schema-compare__body {
@@ -716,16 +1060,58 @@ function statusLabel(status: string) {
 
 .ddl-panel header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--dw-gap);
   margin-bottom: var(--dw-space-4);
+}
+
+.ddl-panel__subtitle {
+  margin: var(--dw-space-2) 0 0;
+  color: var(--dw-text-muted);
+  font-size: var(--dw-text-xs);
+}
+
+.ddl-panel__groups {
+  display: grid;
+  gap: var(--dw-space-4);
+  margin-bottom: var(--dw-space-4);
+}
+
+.ddl-panel__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dw-gap);
+  padding: var(--dw-space-4) var(--dw-space-5);
+  border: 1px solid var(--dw-border-light);
+  border-radius: var(--dw-control-radius-sm);
+  background: var(--dw-bg-muted);
+}
+
+.ddl-panel__group-label {
+  font-size: var(--dw-text-xs);
+  font-weight: 600;
+  color: var(--dw-text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .ddl-panel__actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--dw-gap);
+}
+
+.ddl-panel__hint {
+  margin: 0 0 var(--dw-space-4);
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-muted);
+}
+
+.ddl-panel__hint--warn {
+  color: var(--dw-warning-fg);
 }
 
 .ddl-panel__ai-note {

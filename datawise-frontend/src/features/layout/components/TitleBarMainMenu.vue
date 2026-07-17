@@ -2,6 +2,7 @@
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
+import {usePopoverEscape} from '@/core/composables/usePopoverEscape'
 import {useShortcutSettingsStore} from '@/features/settings/stores/shortcut-settings-store'
 import {formatBinding} from '@/core/shortcuts/shortcut.service'
 import {runExplorerRefresh} from '@/features/explorer/services/explorer-toolbar.actions'
@@ -21,6 +22,7 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [] }>()
 
 const rootRef = ref<HTMLElement | null>(null)
+const recentSubmenuRef = ref<HTMLElement | null>(null)
 
 const {t} = useI18n()
 const shortcuts = useShortcutSettingsStore()
@@ -37,6 +39,12 @@ const {
 const {can} = useFeaturePermission()
 
 const recentOpen = ref(false)
+
+usePopoverEscape(recentOpen, () => {
+  recentOpen.value = false
+}, {
+  containRefs: () => [recentSubmenuRef.value],
+})
 
 const settingsShortcut = computed(() => formatBinding(shortcuts.getBinding('app.openSettings')))
 
@@ -130,6 +138,7 @@ defineExpose({
       </button>
 
       <div
+          ref="recentSubmenuRef"
           class="titlebar-main-menu__submenu"
           @mouseenter="recentOpen = true"
           @mouseleave="recentOpen = false"

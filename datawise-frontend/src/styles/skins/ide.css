@@ -5,6 +5,15 @@
 
 html[data-ui-skin='ide'] {
     --mp-radius: 4px;
+    --mp-btn-h: 28px;
+    --mp-input-h: 28px;
+    --dw-control-h: 28px;
+    --dw-btn-height: 28px;
+    --dw-btn-height-sm: 24px;
+    --dw-control-h-sm: 24px;
+    --dw-select-trigger-h: 28px;
+    --dw-pad-control: 4px 8px;
+    --dw-pad-control-lg: 4px 10px;
     --dw-panel-gap: 0;
     --dw-shell-padding: 0;
     --dw-panel-radius: 0;
@@ -31,6 +40,7 @@ html[data-ui-skin='ide'] {
     --dw-btn-radius: 4px;
     --dw-menu-radius: 6px;
     --dw-menu-item-radius: 4px;
+    --dw-chip-radius: 999px;
     --dw-modal-radius: 6px;
     --dw-titlebar-chip-radius: 3px;
     --mp-title: 16px;
@@ -222,15 +232,13 @@ html[data-ui-skin='ide'] .plugin-dev-tab.is-active {
 }
 
 /* 设置里的分段控件仍保持紧凑圆角，不跟编辑器 Tab 抢风格 */
-html[data-ui-skin='ide'] .modal-segment__btn,
-html[data-ui-skin='ide'] .mp-segment__btn,
-html[data-ui-skin='ide'] .mode-segment__btn {
+html[data-ui-skin='ide'] .dw-segment__btn,
+html[data-ui-skin='ide'] .mp-segment__btn {
     border-radius: var(--dw-control-radius-sm);
 }
 
-html[data-ui-skin='ide'] .modal-segment__btn.is-active,
-html[data-ui-skin='ide'] .mp-segment__btn.is-active,
-html[data-ui-skin='ide'] .mode-segment__btn.is-active {
+html[data-ui-skin='ide'] .dw-segment__btn.is-active,
+html[data-ui-skin='ide'] .mp-segment__btn.is-active {
     box-shadow: none;
     border-color: var(--dw-primary-border);
 }

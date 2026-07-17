@@ -22,6 +22,8 @@ const query = ref('')
 
 usePopoverEscape(open, () => {
   open.value = false
+}, {
+  containRefs: () => [rootRef.value],
 })
 
 const profiles = computed(() => appConfig.aiPreferences.llmProfiles)

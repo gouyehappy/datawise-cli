@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {TableColumn, TableRow} from '@/core/types'
@@ -82,7 +82,7 @@ const statusMessage = computed(() => {
       <pre class="dangerous-pending__rewrite-sql">{{ sqlReviewSuggestedSql }}</pre>
       <button
           type="button"
-          class="dangerous-pending__rewrite-btn"
+          class="dw-text-btn dw-text-btn--accent"
           :disabled="sqlReviewRewriteLoading"
           @click="emit('applySuggestedSql')"
       >
@@ -185,18 +185,5 @@ const statusMessage = computed(() => {
   overflow: auto;
 }
 
-.dangerous-pending__rewrite-btn {
-  border: 1px solid var(--dw-accent);
-  background: transparent;
-  color: var(--dw-accent);
-  border-radius: var(--dw-control-radius-sm);
-  padding: var(--dw-space-2) var(--dw-space-5);
-  font-size: var(--dw-text-xs);
-  cursor: pointer;
-}
 
-.dangerous-pending__rewrite-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 </style>
