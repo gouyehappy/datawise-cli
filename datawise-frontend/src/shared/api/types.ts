@@ -1361,6 +1361,9 @@ export interface SystemMetricsSnapshot {
 export interface SystemApi {
     ping(): Promise<HealthSnapshot>
 
+    /** 探测指定基址的健康检查（保存前试连云端） */
+    pingAt(baseUrl: string): Promise<HealthSnapshot>
+
     resolveEndpointLabel(): string
 
     fetchMetrics(): Promise<SystemMetricsSnapshot>

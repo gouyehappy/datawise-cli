@@ -260,7 +260,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    async function signOut() {
+    async function signOut(options?: {silent?: boolean}) {
         cancelDeferredConfigServerWrites()
         try {
             await authApi.signOut()
@@ -274,7 +274,9 @@ export const useAuthStore = defineStore('auth', () => {
             bootstrapGuestSession()
         }
         await resetUserScopedState()
-        useAppToast().show(t('auth.backToGuest'))
+        if (!options?.silent) {
+            useAppToast().show(t('auth.backToGuest'))
+        }
     }
 
     return {

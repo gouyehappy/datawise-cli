@@ -14,11 +14,14 @@ import ThemeAppearanceCard from '@/features/settings/components/ThemeAppearanceC
 import ThemeSkinCard from '@/features/settings/components/ThemeSkinCard.vue'
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import SettingsSectionCard from '@/features/settings/components/SettingsSectionCard.vue'
+import SettingsSegmentTabs from '@/features/settings/components/SettingsSegmentTabs.vue'
 import {useThemeStore} from '@/features/settings/stores/theme-store'
-import {DwButton, DwInput, FormField, ConfirmDialog, DwInlineAlert} from '@/core/components'
+import {DwButton, DwInput, FormField, ConfirmDialog, DwInlineAlert, DwActionFeedback} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import IconButton from '@/core/components/IconButton.vue'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {settingsApi} from '@/api/modules/settings'
 import {
     applyConfigDirectoryAndRestart,
     loadDataDirectorySettings,
@@ -31,10 +34,18 @@ import {
 } from '@/shared/config/data-directory-layout'
 import {isDesktopApp} from '@/features/layout/services/desktop-chrome'
 import {buildDeepLinkExample} from '@/shared/deep-link/deep-link.service'
+import {
+    loadApiServerPreferences,
+    normalizeApiServerUrl,
+    saveApiServerPreferences,
+    type ApiServerMode,
+} from '@/shared/api/api-server-prefs'
+import {resolveLocalApiBaseUrlLabel} from '@/shared/api/mode'
 
 const {t} = useI18n()
 const theme = useThemeStore()
 const layout = useLayoutStore()
+const auth = useAuthStore()
 const desktopApp = isDesktopApp()
 const deepLinkExample = buildDeepLinkExample()
 const deepLinkCopied = ref(false)
@@ -68,7 +79,157 @@ const configDirError = ref('')
 const restartConfirmOpen = ref(false)
 const dataDirLayout = ref<ResolvedDataDirectoryLayout | null>(null)
 
+const apiServerMode = ref<ApiServerMode>('local')
+const apiServerRemoteUrl = ref('')
+const apiServerSaving = ref(false)
+const apiServerTesting = ref(false)
+const apiServerError = ref('')
+const apiServerTestMessage = ref<string | null>(null)
+const apiServerTestOk = ref<boolean | null>(null)
+const apiServerEndpointTick = ref(0)
+
+const apiServerModeTabs = computed(() => [
+    {id: 'local', label: t('settings.basic.apiServer.modes.local')},
+    {id: 'remote', label: t('settings.basic.apiServer.modes.remote')},
+])
+
+const savedApiServerPrefs = computed(() => {
+    apiServerEndpointTick.value
+    return loadApiServerPreferences()
+})
+
+const localApiEndpointLabel = computed(() => {
+    apiServerEndpointTick.value
+    return resolveLocalApiBaseUrlLabel()
+})
+
+const draftRemoteNormalized = computed(() => normalizeApiServerUrl(apiServerRemoteUrl.value))
+
+const apiServerDirty = computed(() => {
+    const saved = savedApiServerPrefs.value
+    if (apiServerMode.value !== saved.mode) return true
+    if (apiServerMode.value === 'remote') {
+        const draft = draftRemoteNormalized.value ?? apiServerRemoteUrl.value.trim().replace(/\/$/, '')
+        return draft !== saved.remoteUrl
+    }
+    return false
+})
+
+const pendingEndpointLabel = computed(() => {
+    if (!apiServerDirty.value) return null
+    if (apiServerMode.value === 'local') return localApiEndpointLabel.value
+    return draftRemoteNormalized.value
+})
+
+const apiServerStatusLabel = computed(() => {
+    const saved = savedApiServerPrefs.value
+    if (saved.mode === 'remote' && saved.remoteUrl) return saved.remoteUrl
+    return localApiEndpointLabel.value
+})
+
+function refreshApiServerEndpointLabel() {
+    apiServerEndpointTick.value += 1
+}
+
+function loadApiServerDraft() {
+    const prefs = loadApiServerPreferences()
+    apiServerMode.value = prefs.mode
+    apiServerRemoteUrl.value = prefs.remoteUrl
+    apiServerError.value = ''
+    apiServerTestMessage.value = null
+    apiServerTestOk.value = null
+    refreshApiServerEndpointLabel()
+}
+
+function onApiServerModeChange(id: string) {
+    apiServerMode.value = id === 'remote' ? 'remote' : 'local'
+    apiServerError.value = ''
+    apiServerTestMessage.value = null
+    apiServerTestOk.value = null
+}
+
+function resolveLocalTestBaseUrl(): string {
+    const label = resolveLocalApiBaseUrlLabel()
+    if (label.endsWith('/api') && !label.includes('://')) return ''
+    if (label.endsWith('/api')) return label.slice(0, -4)
+    return label.startsWith('http') ? label : ''
+}
+
+async function testApiServer() {
+    apiServerError.value = ''
+    let target = ''
+    if (apiServerMode.value === 'remote') {
+        const normalized = normalizeApiServerUrl(apiServerRemoteUrl.value)
+        if (!normalized) {
+            apiServerError.value = t('settings.basic.apiServer.invalidUrl')
+            return
+        }
+        target = normalized
+    } else {
+        target = resolveLocalTestBaseUrl()
+    }
+
+    apiServerTesting.value = true
+    apiServerTestMessage.value = null
+    apiServerTestOk.value = null
+    try {
+        const snapshot = await settingsApi.pingHealthAt(target)
+        if (snapshot.result?.ok) {
+            apiServerTestOk.value = true
+            apiServerTestMessage.value = t('settings.basic.apiServer.testOk', {
+                latency: snapshot.result.latencyMs,
+            })
+        } else {
+            apiServerTestOk.value = false
+            apiServerTestMessage.value = t('settings.basic.apiServer.testFailed')
+        }
+    } catch {
+        apiServerTestOk.value = false
+        apiServerTestMessage.value = t('settings.basic.apiServer.testFailed')
+    } finally {
+        apiServerTesting.value = false
+    }
+}
+
+async function saveApiServer() {
+    if (apiServerSaving.value) return
+    if (!apiServerDirty.value) {
+        layout.showToast(t('settings.basic.apiServer.unchanged'))
+        return
+    }
+
+    let remoteUrl = apiServerRemoteUrl.value.trim().replace(/\/$/, '')
+    if (apiServerMode.value === 'remote') {
+        const normalized = normalizeApiServerUrl(remoteUrl)
+        if (!normalized) {
+            apiServerError.value = t('settings.basic.apiServer.invalidUrl')
+            return
+        }
+        remoteUrl = normalized
+        apiServerRemoteUrl.value = normalized
+    }
+
+    apiServerSaving.value = true
+    apiServerError.value = ''
+    try {
+        const previous = loadApiServerPreferences()
+        saveApiServerPreferences({
+            mode: apiServerMode.value,
+            remoteUrl: apiServerMode.value === 'remote' ? remoteUrl : previous.remoteUrl,
+        })
+        refreshApiServerEndpointLabel()
+        await auth.signOut({silent: true})
+        auth.openLoginDialog()
+        layout.showSuccessToast(t('settings.basic.apiServer.saved'))
+    } catch {
+        apiServerError.value = t('settings.basic.apiServer.saveFailed')
+    } finally {
+        apiServerSaving.value = false
+    }
+}
+
 onMounted(async () => {
+    loadApiServerDraft()
     const settings = await loadDataDirectorySettings()
     configDirInput.value = settings.configured ?? ''
     resolvedPath.value = settings.resolved
@@ -145,6 +306,89 @@ async function copyDeepLinkExample() {
       :readonly-hint="hint"
   >
     <div class="settings-groups">
+      <SettingsSectionCard
+          :title="t('settings.basic.apiServer.title')"
+          :hint="t('settings.basic.apiServer.hint')"
+          icon="link"
+          tone="sky"
+      >
+        <p class="hint basic-api-status">
+          {{ t('settings.basic.apiServer.currentEndpoint') }}：
+          <code>{{ apiServerStatusLabel }}</code>
+          <span class="basic-api-status__mode">
+            （{{
+              savedApiServerPrefs.mode === 'remote'
+                  ? t('settings.basic.apiServer.modes.remote')
+                  : t('settings.basic.apiServer.modes.local')
+            }}）
+          </span>
+        </p>
+
+        <div class="health-field basic-api-mode">
+          <span class="health-field__label">{{ t('settings.basic.apiServer.mode') }}</span>
+          <SettingsSegmentTabs
+              variant="inline"
+              :model-value="apiServerMode"
+              :tabs="apiServerModeTabs"
+              :aria-label="t('settings.basic.apiServer.mode')"
+              @update:model-value="onApiServerModeChange"
+          />
+        </div>
+
+        <template v-if="apiServerMode === 'local'">
+          <p class="hint">{{ t('settings.basic.apiServer.localHint') }}</p>
+          <dl class="config-dir-meta">
+            <div>
+              <dt>{{ t('settings.basic.apiServer.localEndpoint') }}</dt>
+              <dd><code class="config-dir-path">{{ localApiEndpointLabel }}</code></dd>
+            </div>
+          </dl>
+        </template>
+
+        <template v-else>
+          <FormField
+              :label="t('settings.basic.apiServer.remoteUrl')"
+              input-id="basic-api-server-url"
+              :error="apiServerError || undefined"
+          >
+            <DwInput
+                id="basic-api-server-url"
+                v-model="apiServerRemoteUrl"
+                class="config-dir-input"
+                :disabled="apiServerSaving"
+                :placeholder="t('settings.basic.apiServer.remoteUrlPlaceholder')"
+            />
+          </FormField>
+          <p class="hint">{{ t('settings.basic.apiServer.remoteUrlHint') }}</p>
+        </template>
+
+        <p v-if="pendingEndpointLabel" class="hint basic-api-pending">
+          {{ t('settings.basic.apiServer.willConnect') }}：
+          <code>{{ pendingEndpointLabel }}</code>
+        </p>
+        <DwInlineAlert v-if="apiServerMode === 'local'" :message="apiServerError"/>
+
+        <div class="config-dir-actions">
+          <DwButton
+              variant="secondary"
+              :disabled="apiServerSaving || apiServerTesting"
+              :loading="apiServerTesting"
+              @click="testApiServer"
+          >
+            {{ apiServerTesting ? t('settings.basic.apiServer.testing') : t('settings.basic.apiServer.test') }}
+          </DwButton>
+          <DwButton
+              variant="primary"
+              :disabled="apiServerSaving || apiServerTesting || !apiServerDirty"
+              :loading="apiServerSaving"
+              @click="saveApiServer"
+          >
+            {{ t('settings.basic.apiServer.save') }}
+          </DwButton>
+          <DwActionFeedback :message="apiServerTestMessage" :ok="apiServerTestOk"/>
+        </div>
+      </SettingsSectionCard>
+
       <SettingsSectionCard
           :title="t('settings.basic.uiSkin')"
           :hint="t('settings.basic.uiSkinHint')"
@@ -234,25 +478,23 @@ async function copyDeepLinkExample() {
           tone="panel"
       >
         <FormField :label="t('settings.basic.workspaceRoot.root')" input-id="basic-config-dir">
-          <template #default>
-            <div class="config-dir-row">
-              <DwInput
-                  id="basic-config-dir"
-                  v-model="configDirInput"
-                  class="config-dir-input"
-                  :disabled="!canChangeConfigDir || configDirSaving"
-                  :placeholder="t('settings.basic.workspaceRoot.placeholder')"
-              />
-              <DwButton
-                  v-if="canChangeConfigDir"
-                  variant="secondary"
-                  :disabled="configDirSaving"
-                  @click="browseConfigDir"
-              >
-                {{ t('settings.basic.workspaceRoot.browse') }}
-              </DwButton>
-            </div>
-          </template>
+          <div class="config-dir-row">
+            <DwInput
+                id="basic-config-dir"
+                v-model="configDirInput"
+                class="config-dir-input"
+                :disabled="!canChangeConfigDir || configDirSaving"
+                :placeholder="t('settings.basic.workspaceRoot.placeholder')"
+            />
+            <DwButton
+                v-if="canChangeConfigDir"
+                variant="secondary"
+                :disabled="configDirSaving"
+                @click="browseConfigDir"
+            >
+              {{ t('settings.basic.workspaceRoot.browse') }}
+            </DwButton>
+          </div>
         </FormField>
         <p v-if="canChangeConfigDir" class="hint">{{ t('settings.basic.workspaceRoot.restartHint') }}</p>
         <p v-if="canChangeConfigDir && desktopApp" class="hint">{{ t('settings.basic.workspaceRoot.titleBarHint') }}</p>

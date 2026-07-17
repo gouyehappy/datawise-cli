@@ -19,14 +19,12 @@ export interface HealthSnapshot {
     result: HealthStatus | null
 }
 
-function buildHealthUrl(): string {
-    const baseUrl = readApiBaseUrl()
+function buildHealthUrl(baseUrl = readApiBaseUrl()): string {
     return baseUrl ? `${baseUrl}${API_PATHS.health}` : API_PATHS.health
 }
 
 /** 展示用后端地址 */
-export function resolveBackendEndpointLabel(): string {
-    const baseUrl = readApiBaseUrl()
+export function resolveBackendEndpointLabel(baseUrl = readApiBaseUrl()): string {
     if (baseUrl) return baseUrl
     if (typeof window !== 'undefined') {
         return `${window.location.origin}/api`
@@ -34,9 +32,10 @@ export function resolveBackendEndpointLabel(): string {
     return '/api'
 }
 
-export async function pingHealth(): Promise<HealthSnapshot> {
-    const endpoint = resolveBackendEndpointLabel()
-    const url = buildHealthUrl()
+export async function pingHealthAt(baseUrl: string): Promise<HealthSnapshot> {
+    const normalized = baseUrl.trim().replace(/\/$/, '')
+    const endpoint = resolveBackendEndpointLabel(normalized)
+    const url = buildHealthUrl(normalized)
     const started = performance.now()
 
     try {
@@ -80,9 +79,14 @@ export async function pingHealth(): Promise<HealthSnapshot> {
     }
 }
 
+export async function pingHealth(): Promise<HealthSnapshot> {
+    return pingHealthAt(readApiBaseUrl())
+}
+
 export function createHttpSystemApi() {
     return {
         ping: pingHealth,
+        pingAt: pingHealthAt,
         resolveEndpointLabel: resolveBackendEndpointLabel,
         fetchMetrics: () => getJson<SystemMetricsSnapshot>(API_PATHS.metrics),
     }

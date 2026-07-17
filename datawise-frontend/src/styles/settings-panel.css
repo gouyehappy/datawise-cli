@@ -1247,6 +1247,33 @@
     border-top: 1px solid var(--dw-border-light);
 }
 
+/* ---- Basic settings (API server tweaks only) ---- */
+.module-shell__main .basic-api-mode.health-field {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.module-shell__main .basic-api-status {
+    margin-bottom: var(--dw-space-5);
+}
+
+.module-shell__main .basic-api-status code {
+    font-family: var(--dw-mono);
+    color: var(--dw-text);
+    word-break: break-all;
+}
+
+.module-shell__main .basic-api-status__mode {
+    color: var(--dw-text-muted);
+}
+
+.module-shell__main .basic-api-pending code {
+    font-family: var(--dw-mono);
+    color: var(--dw-text);
+    word-break: break-all;
+}
+
 .module-shell__main .health-field__label {
     display: block;
     margin-bottom: clamp(4px, 0.5vmin, 6px);
