@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DashboardWidgetFrame from '@/features/dashboard/components/DashboardWidgetFrame.vue'
@@ -53,7 +53,7 @@ const subtitle = computed(() =>
     <div class="dash-card__body">
       <EmptyState v-if="!hasTeam" embedded :title="t('dashboard.onCallConnections.noTeam')">
         <template #hint>
-          <button class="dash-link-btn" type="button" @click="emit('openTeam')">
+          <button class="dw-link-btn" type="button" @click="emit('openTeam')">
             {{ t('dashboard.onCallConnections.openTeam') }}
           </button>
         </template>
@@ -64,7 +64,7 @@ const subtitle = computed(() =>
           :title="t('dashboard.onCallConnections.empty')"
       >
         <template #hint>
-          <button class="dash-link-btn" type="button" @click="emit('openTeam')">
+          <button class="dw-link-btn" type="button" @click="emit('openTeam')">
             {{ t('dashboard.onCallConnections.configure') }}
           </button>
         </template>

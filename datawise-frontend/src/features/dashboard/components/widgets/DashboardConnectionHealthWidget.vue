@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DashboardWidgetFrame from '@/features/dashboard/components/DashboardWidgetFrame.vue'
@@ -71,7 +71,7 @@ const runtimeMetricsLabel = computed(() => {
       <div class="dash-card__head-actions">
         <span class="dash-card__badge">{{ connections.length }}</span>
         <button
-            class="dash-card__refresh"
+            class="dw-text-btn dw-text-btn--compact"
             type="button"
             :disabled="healthChecking || runtimeLoading"
             @click="emit('refresh')"
@@ -79,7 +79,7 @@ const runtimeMetricsLabel = computed(() => {
           {{ healthChecking || runtimeLoading ? t('dashboard.connectionHealthChecking') : t('dashboard.connectionHealthRefresh') }}
         </button>
         <button
-            class="dash-card__refresh dash-card__refresh--muted"
+            class="dw-text-btn dw-text-btn--compact"
             type="button"
             @click="emit('openSettings')"
         >

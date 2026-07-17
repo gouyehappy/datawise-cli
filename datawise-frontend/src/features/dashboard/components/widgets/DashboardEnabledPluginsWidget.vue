@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {toRefs} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DashboardWidgetFrame from '@/features/dashboard/components/DashboardWidgetFrame.vue'
@@ -71,14 +71,14 @@ const {t} = useI18n()
         </StatusPill>
         <button
             v-if="showReferenceConflictActions"
-            class="dash-card__link-btn dash-card__link-btn--primary"
+            class="dw-text-btn dw-text-btn--accent"
             type="button"
             @click="emit('alignReferencePreset')"
         >
           {{ t('dashboard.alignReferencePreset') }}
         </button>
         <button
-            class="dash-card__link-btn"
+            class="dw-text-btn"
             type="button"
             @click="emit('openPresetDiff')"
         >
@@ -96,14 +96,14 @@ const {t} = useI18n()
         </p>
         <div class="dash-card__conflict-banner-actions">
           <button
-              class="dash-card__link-btn dash-card__link-btn--primary"
+              class="dw-text-btn dw-text-btn--accent"
               type="button"
               @click="emit('alignReferencePreset')"
           >
             {{ t('plugin.presets.referenceConflictAlignAll', { count: referencePresetConflictCount }) }}
           </button>
           <button
-              class="dash-card__link-btn"
+              class="dw-text-btn"
               type="button"
               @click="dismissReferenceConflict"
           >
@@ -179,24 +179,6 @@ const {t} = useI18n()
   gap: var(--dw-gap);
 }
 
-.dash-card__link-btn {
-  flex-shrink: 0;
-  padding: var(--dw-space-2) var(--dw-space-4);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius-sm);
-  background: transparent;
-  font-size: var(--dw-text-sm);
-  color: var(--dw-primary);
-  cursor: pointer;
-}
 
-.dash-card__link-btn:hover {
-  background: var(--dw-bg-hover);
-}
 
-.dash-card__link-btn--primary {
-  border-color: var(--dw-primary);
-  color: var(--dw-primary);
-  font-weight: 500;
-}
 </style>

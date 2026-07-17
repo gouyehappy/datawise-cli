@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {useI18n} from 'vue-i18n'
 import type {TeamSharedAiSessionSummary} from '@/core/types'
 import DashboardWidgetFrame from '@/features/dashboard/components/DashboardWidgetFrame.vue'
@@ -51,7 +51,7 @@ function formatDate(value: string) {
       <EmptyState v-if="loading" embedded :title="t('dashboard.recentAnalysis.loading')"/>
       <EmptyState v-else-if="!hasTeam" embedded :title="t('dashboard.recentAnalysis.noTeam')">
         <template #hint>
-          <button class="dash-link-btn" type="button" @click="emit('openTeam')">
+          <button class="dw-link-btn" type="button" @click="emit('openTeam')">
             {{ t('dashboard.recentAnalysis.openTeam') }}
           </button>
         </template>

@@ -15,6 +15,7 @@ describe('dashboard-widget.service', () => {
         const prefs = createDefaultDashboardPreferences()
         assert.equal(prefs.widgets.length, 9)
         assert.ok(prefs.widgets.every((widget) => widget.visible))
+        assert.deepEqual(prefs.chartWidgets, [])
     })
 
     it('normalizeDashboardPreferences merges unknown ids and fills missing widgets', () => {

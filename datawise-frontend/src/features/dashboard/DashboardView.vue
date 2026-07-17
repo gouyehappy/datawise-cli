@@ -5,9 +5,11 @@ import {useI18n} from 'vue-i18n'
 import type {NavModule} from '@/core/types'
 import DashboardLayoutDialog from '@/features/dashboard/components/DashboardLayoutDialog.vue'
 import DashboardAiWidgetDialog from '@/features/dashboard/components/DashboardAiWidgetDialog.vue'
+import DashboardSettingsMenu from '@/features/dashboard/components/DashboardSettingsMenu.vue'
 import {DwIcon} from '@/core/icons'
 import type {DwIconName} from '@/core/icons'
 import DashboardWidgetById from '@/features/dashboard/components/DashboardWidgetById.vue'
+import DashboardSavedChartWidget from '@/features/dashboard/components/widgets/DashboardSavedChartWidget.vue'
 import {useDashboardTeamWidgets} from '@/features/dashboard/composables/useDashboardTeamWidgets'
 import {useDashboardWidgetDrag} from '@/features/dashboard/composables/useDashboardWidgetDrag'
 import {
@@ -21,6 +23,10 @@ import {
   type DashboardStatKey,
 } from '@/features/dashboard/services/dashboard-summary.service'
 import {visibleWidgetIdsForColumn} from '@/features/dashboard/services/dashboard-widget.service'
+import {
+  chartWidgetsForColumn,
+  removeDashboardChartWidget,
+} from '@/features/dashboard/services/dashboard-chart-widget.service'
 import {useDashboardConnectionRuntime} from '@/features/dashboard/composables/useDashboardConnectionRuntime'
 import type {DashboardWidgetColumn, DashboardWidgetId} from '@/features/dashboard/services/dashboard-widget.service'
 import {collectConnectionHealthAlerts} from '@/features/explorer/services/connection-health-alert.service'
@@ -112,6 +118,22 @@ const mainWidgetIds = computed(() =>
 const rightWidgetIds = computed(() =>
     visibleWidgetIdsForColumn(appConfig.dashboardPreferences, 'right'),
 )
+
+const leftChartWidgets = computed(() =>
+    chartWidgetsForColumn(appConfig.dashboardPreferences, 'left'),
+)
+const mainChartWidgets = computed(() =>
+    chartWidgetsForColumn(appConfig.dashboardPreferences, 'main'),
+)
+const rightChartWidgets = computed(() =>
+    chartWidgetsForColumn(appConfig.dashboardPreferences, 'right'),
+)
+
+function removeChartWidget(id: string) {
+  appConfig.patchDashboardPreferences(
+      removeDashboardChartWidget(appConfig.dashboardPreferences, id),
+  )
+}
 
 const stats = computed(() =>
     buildDashboardStats({
@@ -328,53 +350,31 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
 <template>
   <div class="module-page module-page--ambient module-page--scroll dashboard">
     <div class="mp-page-wrap">
-      <header class="mp-hero mp-hero--glow">
+      <header class="mp-hero mp-hero--glow dash-hero">
         <div class="mp-hero__glow" aria-hidden="true"/>
+        <div class="dash-hero__settings">
+          <DashboardSettingsMenu
+              :layout-edit-mode="layoutEditMode"
+              @toggle-layout-edit="toggleLayoutEditMode"
+              @customize="layoutDialogOpen = true"
+              @ai-widget="openAiWidgetDialog"
+          />
+        </div>
         <div class="mp-hero__inner">
           <div class="mp-hero__copy">
             <p class="mp-hero__eyebrow">{{ t('dashboard.eyebrow') }}</p>
             <h1 class="mp-hero__title">{{ t('dashboard.title') }}</h1>
             <p class="mp-hero__sub">{{ t('dashboard.subtitle') }}</p>
           </div>
-          <div class="mp-hero__actions">
-            <DwButton
-                v-if="hasOpenTabs"
-                variant="primary"
-                class="mp-btn"
-                @click="continueWork"
-            >
-              {{ t('dashboard.continueWork') }}
-            </DwButton>
-            <DwButton
-                :variant="hasOpenTabs ? 'secondary' : 'primary'"
-                class="mp-btn"
-                @click="openDatabase"
-            >
-              {{ t('dashboard.enterDatabase') }}
-            </DwButton>
-            <DwButton variant="secondary" class="mp-btn" @click="openAi">
-              {{ t('dashboard.openAi') }}
-            </DwButton>
-            <DwButton
-                :variant="layoutEditMode ? 'primary' : 'secondary'"
-                class="mp-btn"
-                @click="toggleLayoutEditMode"
-            >
-              {{ layoutEditMode ? t('dashboard.layoutEditDone') : t('dashboard.layoutEdit') }}
-            </DwButton>
-            <DwButton variant="secondary" class="mp-btn" @click="layoutDialogOpen = true">
-              {{ t('dashboard.customizeWidgets') }}
-            </DwButton>
-            <DwButton variant="secondary" class="mp-btn" @click="openAiWidgetDialog">
-              {{ t('dashboard.aiWidget.open') }}
-            </DwButton>
-          </div>
         </div>
       </header>
 
-      <p v-if="layoutEditMode" class="mp-hint-banner" role="status">
-        {{ t('dashboard.layoutEditHint') }}
-      </p>
+      <div v-if="layoutEditMode" class="dash-edit-bar" role="status">
+        <p class="dash-edit-bar__hint">{{ t('dashboard.layoutEditHint') }}</p>
+        <DwButton variant="secondary" class="mp-btn" @click="toggleLayoutEditMode">
+          {{ t('dashboard.layoutEditDone') }}
+        </DwButton>
+      </div>
 
       <ReleaseHighlightsCards scope="dashboard" @action="runReleaseAction"/>
 
@@ -408,6 +408,13 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
             @dragover.prevent="onColumnDragOver('left', leftWidgetIds.length)"
             @drop.prevent="onColumnDrop('left', leftWidgetIds.length, appConfig.dashboardPreferences)"
         >
+          <DashboardSavedChartWidget
+              v-for="chartWidget in leftChartWidgets"
+              :key="chartWidget.id"
+              :widget="chartWidget"
+              :edit-mode="layoutEditMode"
+              @remove="removeChartWidget(chartWidget.id)"
+          />
           <DashboardWidgetById
               v-for="(widgetId, index) in leftWidgetIds"
               :key="widgetId"
@@ -462,6 +469,13 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
             @dragover.prevent="onColumnDragOver('main', mainWidgetIds.length)"
             @drop.prevent="onColumnDrop('main', mainWidgetIds.length, appConfig.dashboardPreferences)"
         >
+          <DashboardSavedChartWidget
+              v-for="chartWidget in mainChartWidgets"
+              :key="chartWidget.id"
+              :widget="chartWidget"
+              :edit-mode="layoutEditMode"
+              @remove="removeChartWidget(chartWidget.id)"
+          />
           <DashboardWidgetById
               v-for="(widgetId, index) in mainWidgetIds"
               :key="widgetId"
@@ -516,6 +530,13 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
             @dragover.prevent="onColumnDragOver('right', rightWidgetIds.length)"
             @drop.prevent="onColumnDrop('right', rightWidgetIds.length, appConfig.dashboardPreferences)"
         >
+          <DashboardSavedChartWidget
+              v-for="chartWidget in rightChartWidgets"
+              :key="chartWidget.id"
+              :widget="chartWidget"
+              :edit-mode="layoutEditMode"
+              @remove="removeChartWidget(chartWidget.id)"
+          />
           <DashboardWidgetById
               v-for="(widgetId, index) in rightWidgetIds"
               :key="widgetId"
@@ -578,6 +599,36 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
 <style scoped>
 .dashboard {
   line-height: var(--dw-leading-relaxed);
+}
+
+.dash-hero__settings {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: var(--dw-z-raised);
+}
+
+.dash-hero .mp-hero__inner {
+  padding-right: 52px;
+}
+
+.dash-edit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dw-gap);
+  margin: 0 0 var(--mp-gap-lg);
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-panel-border));
+  border-radius: var(--dw-panel-radius);
+  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-editor));
+}
+
+.dash-edit-bar__hint {
+  margin: 0;
+  font-size: var(--dw-text-sm);
+  color: var(--dw-text-secondary);
+  line-height: var(--dw-leading);
 }
 
 .dash-stats {

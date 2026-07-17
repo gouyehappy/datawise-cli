@@ -47,7 +47,7 @@ import {
     DEFAULT_DASHBOARD_PREFERENCES,
     DEFAULT_PLUGIN_PREFERENCES
 } from '@/shared/config/app-config.defaults'
-import {replaceDashboardWidgets} from '@/features/dashboard/services/dashboard-widget.service'
+import {normalizeDashboardPreferences} from '@/features/dashboard/services/dashboard-widget.service'
 import {createAiEmbeddingProfile, createAiLlmProfile} from '@/features/settings/constants/ai-presets'
 import {aiApi} from '@/api'
 import {mergePluginsOnAppConfigImport} from '@/features/plugin/services/plugin-app-config-merge.service'
@@ -306,7 +306,7 @@ export const useAppConfigStore = defineStore('app-config', () => {
     function patchDashboardPreferences(next: DashboardPreferences) {
         config.value = {
             ...config.value,
-            dashboard: replaceDashboardWidgets(next.widgets),
+            dashboard: normalizeDashboardPreferences(next),
         }
         persistSoon()
     }

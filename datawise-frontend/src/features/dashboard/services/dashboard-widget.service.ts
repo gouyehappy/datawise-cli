@@ -9,6 +9,11 @@ export type DashboardWidgetId =
     | 'teamActivity'
     | 'recentAnalysis'
 
+import {
+    normalizeChartWidgets,
+    type DashboardChartWidget,
+} from '@/features/dashboard/services/dashboard-chart-widget.service'
+
 export type DashboardWidgetColumn = 'left' | 'main' | 'right'
 
 export interface DashboardWidgetConfig {
@@ -19,7 +24,10 @@ export interface DashboardWidgetConfig {
 
 export interface DashboardPreferences {
     widgets: DashboardWidgetConfig[]
+    chartWidgets: DashboardChartWidget[]
 }
+
+export type {DashboardChartWidget}
 
 export const DASHBOARD_WIDGET_IDS: DashboardWidgetId[] = [
     'quickActions',
@@ -62,6 +70,7 @@ export function createDefaultDashboardPreferences(): DashboardPreferences {
             column: DEFAULT_DASHBOARD_WIDGET_COLUMN[id],
             visible: true,
         })),
+        chartWidgets: [],
     }
 }
 
@@ -92,6 +101,7 @@ export function normalizeDashboardPreferences(
 
     return {
         widgets: DASHBOARD_WIDGET_IDS.map((id) => byId.get(id)!),
+        chartWidgets: normalizeChartWidgets(raw?.chartWidgets),
     }
 }
 
@@ -130,7 +140,7 @@ export function reorderWidgetInColumn(
     const next = [...widgets]
     const [moved] = next.splice(fromGlobal, 1)
     next.splice(toGlobal, 0, moved)
-    return {widgets: next}
+    return {...prefs, widgets: next}
 }
 
 export function setWidgetVisibility(
@@ -139,6 +149,7 @@ export function setWidgetVisibility(
     visible: boolean,
 ): DashboardPreferences {
     return {
+        ...prefs,
         widgets: prefs.widgets.map((widget) =>
             widget.id === id ? {...widget, visible} : widget,
         ),
@@ -163,11 +174,14 @@ export function setWidgetColumn(
     )
     const insertAt = lastInColumn >= 0 ? lastInColumn + 1 : widgets.length
     widgets.splice(insertAt, 0, {...current, column})
-    return {widgets}
+    return {...prefs, widgets}
 }
 
-export function replaceDashboardWidgets(widgets: DashboardWidgetConfig[]): DashboardPreferences {
-    return normalizeDashboardPreferences({widgets})
+export function replaceDashboardWidgets(
+    widgets: DashboardWidgetConfig[],
+    chartWidgets?: DashboardChartWidget[],
+): DashboardPreferences {
+    return normalizeDashboardPreferences({widgets, chartWidgets})
 }
 
 /** 同列排序或跨列移动 widget 到目标索引 */

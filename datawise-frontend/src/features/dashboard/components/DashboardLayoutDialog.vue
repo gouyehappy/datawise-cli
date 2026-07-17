@@ -7,7 +7,6 @@ import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {
     createDefaultDashboardPreferences,
     reorderWidgetInColumn,
-    replaceDashboardWidgets,
     setWidgetColumn,
     setWidgetVisibility,
     widgetsForColumn,
@@ -16,6 +15,11 @@ import {
     type DashboardWidgetConfig,
     type DashboardWidgetId,
 } from '@/features/dashboard/services/dashboard-widget.service'
+import {
+    setChartWidgetColumn,
+    setChartWidgetVisibility,
+    type DashboardChartWidget,
+} from '@/features/dashboard/services/dashboard-chart-widget.service'
 
 const props = defineProps<{
     open: boolean
@@ -47,6 +51,12 @@ watch(
         if (!isOpen) return
         draft.value = {
             widgets: appConfig.dashboardPreferences.widgets.map((widget: DashboardWidgetConfig) => ({...widget})),
+            chartWidgets: appConfig.dashboardPreferences.chartWidgets.map((widget) => ({
+                ...widget,
+                config: {...widget.config, yFields: [...widget.config.yFields]},
+                columns: widget.columns.map((column) => ({...column})),
+                rows: widget.rows.map((row) => ({...row})),
+            })),
         }
     },
     {immediate: true},
@@ -57,12 +67,30 @@ function close() {
 }
 
 function save() {
-    appConfig.patchDashboardPreferences(replaceDashboardWidgets(draft.value.widgets))
+    appConfig.patchDashboardPreferences({
+        widgets: draft.value.widgets,
+        chartWidgets: draft.value.chartWidgets,
+    })
     close()
 }
 
 function resetDefaults() {
-    draft.value = createDefaultDashboardPreferences()
+    draft.value = {
+        ...createDefaultDashboardPreferences(),
+        chartWidgets: draft.value.chartWidgets,
+    }
+}
+
+function chartWidgetsForLayoutColumn(column: DashboardWidgetColumn): DashboardChartWidget[] {
+    return draft.value.chartWidgets.filter((widget) => widget.column === column)
+}
+
+function toggleChartVisible(id: string, visible: boolean) {
+    draft.value = setChartWidgetVisibility(draft.value, id, visible)
+}
+
+function onChartColumnChange(id: string, column: DashboardWidgetColumn) {
+    draft.value = setChartWidgetColumn(draft.value, id, column)
 }
 
 function columnWidgets(column: DashboardWidgetColumn): DashboardWidgetConfig[] {
@@ -102,7 +130,11 @@ function onDragEnd() {
     dragIndex.value = null
 }
 
-const hasHiddenWidgets = computed(() => draft.value.widgets.some((widget) => !widget.visible))
+const hasHiddenWidgets = computed(() =>
+    draft.value.widgets.some((widget) => !widget.visible)
+        || draft.value.chartWidgets.some((widget) => !widget.visible),
+)
+const hasSavedCharts = computed(() => draft.value.chartWidgets.length > 0)
 </script>
 
 <template>
@@ -164,6 +196,35 @@ const hasHiddenWidgets = computed(() => draft.value.widgets.some((widget) => !wi
             />
           </li>
         </ul>
+
+        <ul v-if="chartWidgetsForLayoutColumn(column).length" class="modal-sort-list modal-sort-list--charts">
+          <li
+              v-for="chartWidget in chartWidgetsForLayoutColumn(column)"
+              :key="chartWidget.id"
+              class="modal-sort-item"
+              :class="{'is-hidden': !chartWidget.visible}"
+          >
+            <span class="modal-sort-item__handle modal-sort-item__handle--static" aria-hidden="true">▦</span>
+            <label class="modal-sort-item__label">
+              <input
+                  type="checkbox"
+                  :checked="chartWidget.visible"
+                  @change="toggleChartVisible(chartWidget.id, ($event.target as HTMLInputElement).checked)"
+              >
+              <span>{{ chartWidget.title }}</span>
+            </label>
+            <DwSelect
+                :model-value="chartWidget.column"
+                size="sm"
+                :options="columnOptions"
+                @update:model-value="onChartColumnChange(chartWidget.id, $event as DashboardWidgetColumn)"
+            />
+          </li>
+        </ul>
+      </section>
+
+      <section v-if="hasSavedCharts" class="modal-sort-section modal-sort-section--hint">
+        <p class="modal-body-hint">{{ t('dashboard.layoutDialog.savedChartsHint') }}</p>
       </section>
     </div>
 
