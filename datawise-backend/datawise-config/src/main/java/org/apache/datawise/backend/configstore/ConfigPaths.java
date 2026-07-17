@@ -27,6 +27,11 @@ public final class ConfigPaths {
     public static final String SCHEMA_CACHE_DIR = "cache/schema";
     public static final String USERS_DIR = "users";
 
+    /** Per-user schema tree snapshot ({@code cache/schema/u{userId}/{connectionId}.json}). */
+    public static String userSchemaCache(long userId, String connectionId) {
+        return SCHEMA_CACHE_DIR + "/u" + userId + "/" + sanitizeScopeKey(connectionId) + ".json";
+    }
+
     private ConfigPaths() {
     }
 

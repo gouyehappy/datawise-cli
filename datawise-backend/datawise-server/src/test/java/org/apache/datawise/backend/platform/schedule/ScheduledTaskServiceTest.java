@@ -12,6 +12,7 @@ import org.apache.datawise.backend.domain.ScheduledTaskDto;
 import org.apache.datawise.backend.domain.SqlReviewRequest;
 import org.apache.datawise.backend.domain.SqlReviewResultDto;
 import org.apache.datawise.backend.model.ScheduledTaskEntry;
+import org.apache.datawise.backend.service.InstanceWorkspaceService;
 import org.apache.datawise.backend.service.TeamService;
 import org.apache.datawise.backend.service.workspace.WorkspaceNotificationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,8 +22,11 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -33,6 +37,7 @@ class ScheduledTaskServiceTest {
     private SqlService sqlService;
     private SqlReviewService sqlReviewService;
     private TeamService teamService;
+    private InstanceWorkspaceService instanceWorkspaceService;
     private AnalysisCanvasPipelineService analysisCanvasPipelineService;
     private ScheduledTaskService service;
 
@@ -42,6 +47,7 @@ class ScheduledTaskServiceTest {
         sqlService = mock(SqlService.class);
         sqlReviewService = mock(SqlReviewService.class);
         teamService = mock(TeamService.class);
+        instanceWorkspaceService = mock(InstanceWorkspaceService.class);
         analysisCanvasPipelineService = mock(AnalysisCanvasPipelineService.class);
         service = new ScheduledTaskService(
                 taskStore,
@@ -50,6 +56,7 @@ class ScheduledTaskServiceTest {
                 mock(SchemaDriftService.class),
                 analysisCanvasPipelineService,
                 teamService,
+                instanceWorkspaceService,
                 mock(WorkspaceNotificationService.class),
                 new ObjectMapper()
         );
@@ -82,10 +89,37 @@ class ScheduledTaskServiceTest {
         ScheduledTaskDto result = service.runNow("task-1");
 
         assertEquals("ok", result.lastRunStatus());
+        assertTrue(result.lastRunMessage().contains("1 statement"));
         verify(sqlReviewService).review(new SqlReviewRequest(sql, "conn-1", "app"));
         verify(sqlService).execute(any(ExecuteSqlRequest.class));
         verify(teamService).recordSqlExecutionAudit("sql.write", "conn-1", "app", sql);
         verify(taskStore).upsert(entry);
+    }
+
+    @Test
+    void runNowLoadsWorkspaceSqlFileAndExecutesBatch() throws Exception {
+        ScheduledTaskEntry entry = new ScheduledTaskEntry();
+        entry.setId("task-file");
+        entry.setName("Nightly file");
+        entry.setType(ScheduledTaskEntry.TYPE_SQL);
+        entry.setCronExpression("0 0 * * * *");
+        entry.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        entry.setPayloadJson(
+                "{\"source\":\"workspace_file\",\"connectionId\":\"conn-1\",\"database\":\"app\",\"sqlFile\":\"job.sql\"}"
+        );
+        when(taskStore.findById("task-file")).thenReturn(entry);
+        when(instanceWorkspaceService.readSql("conn-1", "app", "job.sql"))
+                .thenReturn("SELECT 1; SELECT 2;");
+        when(sqlReviewService.review(any(SqlReviewRequest.class)))
+                .thenReturn(new SqlReviewResultDto(true, false, List.of()));
+
+        ScheduledTaskDto result = service.runNow("task-file");
+
+        assertEquals("ok", result.lastRunStatus());
+        assertTrue(result.lastRunMessage().contains("2 statement"));
+        assertTrue(result.lastRunMessage().contains("workspace_file"));
+        verify(sqlService, times(2)).execute(any(ExecuteSqlRequest.class));
+        verify(instanceWorkspaceService).readSql(eq("conn-1"), eq("app"), eq("job.sql"));
     }
 
     @Test

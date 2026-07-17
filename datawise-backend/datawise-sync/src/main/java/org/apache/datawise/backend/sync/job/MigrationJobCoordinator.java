@@ -85,6 +85,20 @@ public class MigrationJobCoordinator {
         return toView(job);
     }
 
+    public List<MigrationJobView> listViewsForUser(long userId) {
+        return jobStore.listByUser(userId).stream()
+                .sorted((left, right) -> {
+                    Instant leftAt = left.getUpdatedAt() != null ? left.getUpdatedAt() : left.getCreatedAt();
+                    Instant rightAt = right.getUpdatedAt() != null ? right.getUpdatedAt() : right.getCreatedAt();
+                    if (leftAt == null && rightAt == null) return 0;
+                    if (leftAt == null) return 1;
+                    if (rightAt == null) return -1;
+                    return rightAt.compareTo(leftAt);
+                })
+                .map(MigrationJobCoordinator::toView)
+                .toList();
+    }
+
     public MigrationJobEntity requireOwnedJob(long userId, String jobId) {
         return jobStore.requireOwned(userId, jobId);
     }

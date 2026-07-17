@@ -131,7 +131,30 @@ public class TableMigrationService {
 
     public MigrationJobView getJob(String jobId) {
         long userId = userAccountService.requireUserId();
-        return jobCoordinator.viewFor(userId, jobId);
+        MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
+        // JVM 重启后磁盘仍可能是 running，但运行时已无任务：校正为 paused 以便 UI 续传
+        if ("running".equals(view.status()) && !jobRuntime.isRunning(jobId)) {
+            MigrationJobEntity job = jobCoordinator.requireOwnedJob(userId, jobId);
+            jobCoordinator.markJobPaused(job);
+            return jobCoordinator.viewFor(userId, jobId);
+        }
+        return view;
+    }
+
+    public List<MigrationJobView> listJobs() {
+        long userId = userAccountService.requireUserId();
+        List<MigrationJobView> views = jobCoordinator.listViewsForUser(userId);
+        List<MigrationJobView> reconciled = new java.util.ArrayList<>(views.size());
+        for (MigrationJobView view : views) {
+            if ("running".equals(view.status()) && !jobRuntime.isRunning(view.id())) {
+                MigrationJobEntity job = jobCoordinator.requireOwnedJob(userId, view.id());
+                jobCoordinator.markJobPaused(job);
+                reconciled.add(jobCoordinator.viewFor(userId, view.id()));
+            } else {
+                reconciled.add(view);
+            }
+        }
+        return reconciled;
     }
 
     public void openJobStream(String jobId, SseEmitter emitter) {

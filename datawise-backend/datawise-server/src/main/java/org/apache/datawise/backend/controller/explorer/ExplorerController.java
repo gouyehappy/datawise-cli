@@ -130,6 +130,12 @@ public class ExplorerController {
         return ApiResponse.ok(connectionLifecycleService.ping(connectionId));
     }
 
+    /** 仅刷新已建池连接的活跃时间；未连接时返回 false，不自动 connect。 */
+    @PostMapping("/connections/{connectionId}/touch")
+    public ApiResponse<Boolean> touchConnection(@PathVariable String connectionId) {
+        return ApiResponse.ok(connectionLifecycleService.touchIfPooled(connectionId));
+    }
+
     @PostMapping("/connections/{connectionId}/disconnect")
     public ApiResponse<Void> disconnectConnection(@PathVariable String connectionId) {
         featurePermissionAccess.requireExplorerContextConnection();

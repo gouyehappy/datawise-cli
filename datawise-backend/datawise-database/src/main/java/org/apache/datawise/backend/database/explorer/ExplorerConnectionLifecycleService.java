@@ -10,7 +10,6 @@ import org.apache.datawise.backend.jdbc.connection.ConnectionActivityRegistry;
 import org.apache.datawise.backend.jdbc.support.JdbcConnectionPoolManager;
 import org.apache.datawise.backend.jdbc.support.JdbcDriverConnectionFactory;
 
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,6 @@ public class ExplorerConnectionLifecycleService {
     private final ConnectorFacade connectorFacade;
     private final JdbcDriverConnectionFactory jdbcDriverConnectionFactory;
     private final ExplorerSchemaSessionPool schemaSessionPool;
-    private final ExplorerTreeBuilder treeBuilder;
     private final JdbcConnectionPoolWarmupService poolWarmupService;
     private final ConnectionActivityRegistry activityRegistry;
     private final JdbcConnectionPoolManager poolManager;
@@ -35,7 +33,6 @@ public class ExplorerConnectionLifecycleService {
             ConnectorFacade connectorFacade,
             JdbcDriverConnectionFactory jdbcDriverConnectionFactory,
             ExplorerSchemaSessionPool schemaSessionPool,
-            ExplorerTreeBuilder treeBuilder,
             JdbcConnectionPoolWarmupService poolWarmupService,
             ConnectionActivityRegistry activityRegistry,
             JdbcConnectionPoolManager poolManager
@@ -44,7 +41,6 @@ public class ExplorerConnectionLifecycleService {
         this.connectorFacade = connectorFacade;
         this.jdbcDriverConnectionFactory = jdbcDriverConnectionFactory;
         this.schemaSessionPool = schemaSessionPool;
-        this.treeBuilder = treeBuilder;
         this.poolWarmupService = poolWarmupService;
         this.activityRegistry = activityRegistry;
         this.poolManager = poolManager;
@@ -67,11 +63,14 @@ public class ExplorerConnectionLifecycleService {
         return poolManager.listPooledConnectionIds();
     }
 
+    /**
+     * 释放 JDBC 池与 schema 会话，但<strong>保留</strong> schema 树缓存。
+     * 数据源按需连接：断开后仍可用本地缓存展开目录，下次显式 connect 再温热连接池。
+     */
     private void evictConnectionResources(String connectionId) {
         schemaSessionPool.invalidate(connectionId);
         jdbcDriverConnectionFactory.evictPool(connectionId);
         activityRegistry.clear(connectionId);
-        treeBuilder.saveSchemaChildren(connectionId, List.of());
     }
 
     public ConnectionTestResult ping(String connectionId) {
@@ -87,6 +86,22 @@ public class ExplorerConnectionLifecycleService {
                 "probeMs", result.latencyMs()
         );
         return result;
+    }
+
+    /**
+     * 轻量保活：仅在连接池已存在时刷新活跃时间，不建新池、不探测。
+     * @return true 若已建池并刷新；false 表示当前未连接（调用方不应强制 connect）
+     */
+    public boolean touchIfPooled(String connectionId) {
+        if (connectionId == null || connectionId.isBlank()) {
+            return false;
+        }
+        requireAvailableConnection(connectionId);
+        if (!poolManager.listPooledConnectionIds().contains(connectionId)) {
+            return false;
+        }
+        activityRegistry.touch(connectionId);
+        return true;
     }
 
     public ConnectionTestResult connect(String connectionId) {

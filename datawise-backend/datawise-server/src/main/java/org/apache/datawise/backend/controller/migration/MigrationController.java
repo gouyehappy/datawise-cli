@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -97,6 +98,20 @@ public class MigrationController {
             return ApiResponse.ok(view);
         } catch (RuntimeException ex) {
             ApiRequestLogger.logFailure(log, "POST /api/migration/jobs/{id}/resume", ex, "jobId", jobId);
+            throw ex;
+        }
+    }
+
+    @GetMapping("/jobs")
+    public ApiResponse<List<MigrationJobView>> listMigrationJobs() {
+        requireMigrationAccess();
+        ApiRequestLogger.logEntry(log, "GET /api/migration/jobs");
+        try {
+            List<MigrationJobView> views = tableMigrationService.listJobs();
+            ApiRequestLogger.logSuccess(log, "GET /api/migration/jobs", "count", views.size());
+            return ApiResponse.ok(views);
+        } catch (RuntimeException ex) {
+            ApiRequestLogger.logFailure(log, "GET /api/migration/jobs", ex);
             throw ex;
         }
     }

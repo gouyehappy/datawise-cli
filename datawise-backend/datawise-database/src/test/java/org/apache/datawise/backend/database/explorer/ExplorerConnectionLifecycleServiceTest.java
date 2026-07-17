@@ -39,8 +39,6 @@ class ExplorerConnectionLifecycleServiceTest {
     @Mock
     private ExplorerSchemaSessionPool schemaSessionPool;
     @Mock
-    private ExplorerTreeBuilder treeBuilder;
-    @Mock
     private JdbcConnectionPoolWarmupService poolWarmupService;
     @Mock
     private ConnectionActivityRegistry activityRegistry;
@@ -56,7 +54,6 @@ class ExplorerConnectionLifecycleServiceTest {
                 connectorFacade,
                 jdbcDriverConnectionFactory,
                 schemaSessionPool,
-                treeBuilder,
                 poolWarmupService,
                 activityRegistry,
                 poolManager
@@ -72,7 +69,6 @@ class ExplorerConnectionLifecycleServiceTest {
         var order = inOrder(schemaSessionPool, jdbcDriverConnectionFactory);
         order.verify(schemaSessionPool).invalidate("conn-1");
         order.verify(jdbcDriverConnectionFactory).evictPool("conn-1");
-        verify(treeBuilder).saveSchemaChildren("conn-1", List.of());
     }
 
     @Test
@@ -125,7 +121,6 @@ class ExplorerConnectionLifecycleServiceTest {
         assertTrue(result.ok());
         verify(jdbcDriverConnectionFactory).evictPool("conn-3");
         verify(schemaSessionPool).invalidate("conn-3");
-        verify(treeBuilder).saveSchemaChildren("conn-3", List.of());
         verify(poolWarmupService).warmupForConnect(entity);
         verify(catalogAccess, never()).testConnection(entity);
     }

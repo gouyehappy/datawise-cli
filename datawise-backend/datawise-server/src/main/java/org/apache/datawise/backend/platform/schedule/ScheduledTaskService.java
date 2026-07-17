@@ -20,6 +20,7 @@ import org.apache.datawise.backend.domain.SqlReviewResultDto;
 import org.apache.datawise.backend.configstore.UserScheduledTaskStore.OwnedScheduledTask;
 import org.apache.datawise.backend.model.ScheduledTaskEntry;
 import org.apache.datawise.backend.security.UserContext;
+import org.apache.datawise.backend.service.InstanceWorkspaceService;
 import org.apache.datawise.backend.service.TeamService;
 import org.apache.datawise.backend.service.workspace.WorkspaceNotificationService;
 import org.apache.datawise.backend.connector.api.support.SqlWriteClassifier;
@@ -48,6 +49,7 @@ public class ScheduledTaskService {
     private final SchemaDriftService schemaDriftService;
     private final AnalysisCanvasPipelineService analysisCanvasPipelineService;
     private final TeamService teamService;
+    private final InstanceWorkspaceService instanceWorkspaceService;
     private final WorkspaceNotificationService notificationService;
     private final ObjectMapper objectMapper;
 
@@ -58,6 +60,7 @@ public class ScheduledTaskService {
             SchemaDriftService schemaDriftService,
             AnalysisCanvasPipelineService analysisCanvasPipelineService,
             TeamService teamService,
+            InstanceWorkspaceService instanceWorkspaceService,
             WorkspaceNotificationService notificationService,
             ObjectMapper objectMapper
     ) {
@@ -67,6 +70,7 @@ public class ScheduledTaskService {
         this.schemaDriftService = schemaDriftService;
         this.analysisCanvasPipelineService = analysisCanvasPipelineService;
         this.teamService = teamService;
+        this.instanceWorkspaceService = instanceWorkspaceService;
         this.notificationService = notificationService;
         this.objectMapper = objectMapper;
     }
@@ -140,10 +144,7 @@ public class ScheduledTaskService {
         entry.setLastRunAt(started);
         try {
             String successMessage = switch (entry.getType()) {
-                case ScheduledTaskEntry.TYPE_SQL -> {
-                    runSqlTask(entry);
-                    yield "completed";
-                }
+                case ScheduledTaskEntry.TYPE_SQL -> runSqlTask(entry);
                 case ScheduledTaskEntry.TYPE_CANVAS -> runCanvasTask(entry);
                 case ScheduledTaskEntry.TYPE_SCHEMA_DRIFT -> {
                     runSchemaDriftTask(entry);
@@ -166,6 +167,9 @@ public class ScheduledTaskService {
         try {
             String titleKey = ok ? "scheduledTaskOk" : "scheduledTaskFailed";
             String bodyKey = titleKey;
+            String detail = ok
+                    ? (entry.getLastRunMessage() != null ? entry.getLastRunMessage() : "")
+                    : (errorMessage != null ? errorMessage : "");
             notificationService.pushNotification(new PushNotificationRequest(
                     "workspace",
                     titleKey,
@@ -173,7 +177,7 @@ public class ScheduledTaskService {
                     Map.of(
                             "name", entry.getName() != null ? entry.getName() : entry.getId(),
                             "type", entry.getType() != null ? entry.getType() : "",
-                            "message", errorMessage != null ? errorMessage : ""
+                            "message", detail
                     )
             ));
         } catch (RuntimeException ex) {
@@ -181,22 +185,44 @@ public class ScheduledTaskService {
         }
     }
 
-    private void runSqlTask(ScheduledTaskEntry entry) throws Exception {
+    private String runSqlTask(ScheduledTaskEntry entry) throws Exception {
         JsonNode payload = parsePayload(entry.getPayloadJson());
-        String sql = text(payload, "sql");
-        String connectionId = text(payload, "connectionId");
-        String database = text(payload, "database");
+        ScheduledSqlPayloadSupport.ResolvedSql resolved = ScheduledSqlPayloadSupport.resolve(
+                payload,
+                instanceWorkspaceService,
+                teamService
+        );
+        List<String> statements = ScheduledSqlPayloadSupport.splitExecutableStatements(resolved.sql());
+        if (statements.isEmpty()) {
+            throw new IllegalArgumentException("SQL is empty");
+        }
         int maxRows = payload.has("maxRows") ? payload.get("maxRows").asInt(1000) : 1000;
-        ExecuteSqlRequest request = new ExecuteSqlRequest(sql, connectionId, database, maxRows, null, null, null, "scheduled-task");
-        SqlReviewResultDto review = sqlReviewService.review(new SqlReviewRequest(sql, connectionId, database));
-        if (!review.allowed()) {
-            throw new IllegalArgumentException("SQL blocked by review: " + review.findings());
+        int executed = 0;
+        for (String statement : statements) {
+            SqlReviewResultDto review = sqlReviewService.review(
+                    new SqlReviewRequest(statement, resolved.connectionId(), resolved.database())
+            );
+            if (!review.allowed()) {
+                throw new IllegalArgumentException("SQL blocked by review: " + review.findings());
+            }
+            if (review.requiresApproval()) {
+                throw new IllegalArgumentException("SQL requires production approval");
+            }
+            ExecuteSqlRequest request = new ExecuteSqlRequest(
+                    statement,
+                    resolved.connectionId(),
+                    resolved.database(),
+                    maxRows,
+                    null,
+                    null,
+                    null,
+                    "scheduled-task"
+            );
+            sqlService.execute(request);
+            recordTeamSqlAudit(request);
+            executed += 1;
         }
-        if (review.requiresApproval()) {
-            throw new IllegalArgumentException("SQL requires production approval");
-        }
-        sqlService.execute(request);
-        recordTeamSqlAudit(request);
+        return "completed " + executed + " statement(s) via " + resolved.source();
     }
 
     private void recordTeamSqlAudit(ExecuteSqlRequest request) {
