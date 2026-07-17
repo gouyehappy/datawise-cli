@@ -91,6 +91,7 @@ node scripts/pre-commit-check.mjs
 | 文档 | 说明 |
 |------|------|
 | [PLATFORM_ROADMAP.md](./PLATFORM_ROADMAP.md) | 平台功能路线图与完成度 |
+| [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md) | 对标 Chat2DB/DBeaver/Navicat 等的客户端可调整点（含竞品优势与对本系统帮助） |
 | [VIEW_MODEL_LINEAGE_DESIGN.md](./VIEW_MODEL_LINEAGE_DESIGN.md) | ViewModel 字段级血缘详细设计方案（v2） |
 
 ## 子项目 README

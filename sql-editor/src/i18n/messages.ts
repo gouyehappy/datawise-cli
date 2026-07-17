@@ -327,6 +327,9 @@ const EN_MESSAGES = {
     'alias.table_reuse': 'Table · reuse {alias}',
     'alias.table_alias': 'Table · alias {alias}',
 
+    'diagnostics.unknown_column': 'Unknown column {column} for alias {alias} ({table})',
+    'diagnostics.unknown_table': 'Unknown table alias {alias}',
+
     'snippet.sel': 'Standard SELECT query template',
     'snippet.selj': 'SELECT with INNER JOIN template',
     'snippet.self': 'SELECT query with LIMIT',
@@ -697,6 +700,9 @@ const ZH_MESSAGES: Record<SqlEditorMessageKey, string> = {
     'alias.table': '表',
     'alias.table_reuse': '表 · 沿用 {alias}',
     'alias.table_alias': '表 · 别名 {alias}',
+
+    'diagnostics.unknown_column': '别名 {alias}（{table}）不存在列 {column}',
+    'diagnostics.unknown_table': '未知表别名 {alias}',
 
     'snippet.sel': '标准 SELECT 查询模板',
     'snippet.selj': 'SELECT 内连接查询模板',

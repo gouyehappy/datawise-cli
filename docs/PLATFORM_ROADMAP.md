@@ -4,6 +4,8 @@
 
 状态说明：**done** 已实现 · **partial** 有 MVP、缺深度集成 · **todo** 未开始 · **in_progress** 开发中
 
+客户端对标传统 IDE（Chat2DB / DBeaver / Navicat 等）的可调整点、竞品优势与对本系统帮助，见 [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)。
+
 版本主题（对外叙事）：
 
 | 版本 | 主题 | 一句话 |

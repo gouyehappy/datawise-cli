@@ -43,6 +43,7 @@ import {
     isSqlEditorThemeHostManaged,
     resolveSqlEditorTheme,
 } from '@sql-editor/utils/resolve-editor-theme'
+import {collectSqlColumnDiagnostics} from '@sql-editor/utils/sql-column-diagnostics'
 
 const props = withDefaults(
     defineProps<{
@@ -80,6 +81,9 @@ let selectionSyncDisposable: monaco.IDisposable | null = null
 let runGutterDisposable: monaco.IDisposable | null = null
 let initRafOuter = 0
 let initRafInner = 0
+let diagnosticTimer: ReturnType<typeof setTimeout> | null = null
+
+const COLUMN_DIAGNOSTIC_OWNER = 'sql-column-diagnostics'
 
 function resolveTheme(): string {
   void sqlEditorSettingsVersion.value
@@ -184,6 +188,44 @@ function getSelectionStartLine(): number | null {
 function clearErrorLine() {
   if (!editor) return
   errorDecorations = editor.deltaDecorations(errorDecorations, [])
+}
+
+function clearColumnDiagnostics() {
+  const model = editor?.getModel()
+  if (!model) return
+  monaco.editor.setModelMarkers(model, COLUMN_DIAGNOSTIC_OWNER, [])
+}
+
+function scheduleColumnDiagnostics() {
+  if (!editor || props.readonly || props.preview) return
+  if (diagnosticTimer) clearTimeout(diagnosticTimer)
+  diagnosticTimer = setTimeout(() => {
+    diagnosticTimer = null
+    applyColumnDiagnostics()
+  }, 350)
+}
+
+function applyColumnDiagnostics() {
+  const model = editor?.getModel()
+  if (!model || props.readonly || props.preview) return
+  const schema = getActiveSqlEditorRuntime().getSchema()
+  if (!schema.tables.length) {
+    clearColumnDiagnostics()
+    return
+  }
+  const diagnostics = collectSqlColumnDiagnostics(model.getValue(), schema)
+  monaco.editor.setModelMarkers(
+      model,
+      COLUMN_DIAGNOSTIC_OWNER,
+      diagnostics.map((item) => ({
+        severity: monaco.MarkerSeverity.Warning,
+        message: item.message,
+        startLineNumber: item.line,
+        startColumn: item.column,
+        endLineNumber: item.line,
+        endColumn: item.endColumn,
+      })),
+  )
 }
 
 function setErrorLine(lineNumber: number | null) {
@@ -499,6 +541,7 @@ function mountEditor() {
 
     editor.onDidChangeModelContent((event) => {
       emit('update:modelValue', editor?.getValue() ?? '')
+      scheduleColumnDiagnostics()
       const forceColumnRef = event.changes.some((change) => {
         if (!bypassesAutocompleteSuppress(change.text)) return false
         const model = editor?.getModel()
@@ -517,7 +560,10 @@ function mountEditor() {
       scheduleAutoSuggest(forceColumnRef)
     })
     editor.onDidChangeCursorPosition(() => emitCursorChange())
-    editor.onDidFocusEditorText(() => emit('focus'))
+    editor.onDidFocusEditorText(() => {
+      emit('focus')
+      scheduleColumnDiagnostics()
+    })
     editor.onContextMenu((event) => {
       event.event.preventDefault()
       const mouseEvent = event.event.browserEvent as MouseEvent
@@ -530,6 +576,7 @@ function mountEditor() {
   }
   bindLineShortcuts()
   emitCursorChange()
+  scheduleColumnDiagnostics()
 }
 
 watch(
@@ -540,6 +587,7 @@ watch(
         cancelScheduledAutoSuggest()
         editor.setValue(value)
         dismissSuggestWidget()
+        scheduleColumnDiagnostics()
       }
     },
 )
@@ -581,6 +629,8 @@ watch(
 onBeforeUnmount(() => {
   if (initRafOuter) cancelAnimationFrame(initRafOuter)
   if (initRafInner) cancelAnimationFrame(initRafInner)
+  if (diagnosticTimer) clearTimeout(diagnosticTimer)
+  clearColumnDiagnostics()
   suggestDetailsDisposable?.dispose()
   suggestAcceptDisposable?.dispose()
   lineShortcutDisposable?.dispose()
@@ -606,6 +656,7 @@ defineExpose({
   goToLine,
   clearErrorLine,
   setErrorLine,
+  refreshColumnDiagnostics: scheduleColumnDiagnostics,
 })
 </script>
 

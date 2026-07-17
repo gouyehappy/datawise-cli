@@ -270,7 +270,10 @@ onUnmounted(() => {
 
 watch(
     () => schemaFingerprint(schema.value.tables, schema.value.columns),
-    () => scheduleCompletionSync(),
+    () => {
+      scheduleCompletionSync()
+      editorRef.value?.refreshColumnDiagnostics?.()
+    },
 )
 
 watch(
@@ -516,6 +519,7 @@ defineExpose<SqlEditorExpose>({
   goToLine,
   clearErrorLine,
   setErrorLine: (line) => editorRef.value?.setErrorLine(line ?? null),
+  refreshColumnDiagnostics: () => editorRef.value?.refreshColumnDiagnostics?.(),
 })
 </script>
 

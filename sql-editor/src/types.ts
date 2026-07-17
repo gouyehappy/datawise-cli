@@ -293,6 +293,8 @@ export interface SqlEditorExpose {
     clearErrorLine(): void
 
     setErrorLine(lineNumber: number | null): void
+
+    refreshColumnDiagnostics?(): void
 }
 
 export type SqlEditorLocale = 'en' | 'zh-CN'
