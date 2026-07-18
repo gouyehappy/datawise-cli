@@ -185,23 +185,6 @@ final class FederatedJoinResidualFilter {
         regex.append(ch);
     }
 
-    private static boolean isStringLiteral(String token) {
-        if (token == null || token.length() < 2) {
-            return false;
-        }
-        return (token.startsWith("'") && token.endsWith("'"))
-                || (token.startsWith("\"") && token.endsWith("\""));
-    }
-
-    private static String unquoteStringLiteral(String token) {
-        String body = token.substring(1, token.length() - 1);
-        char quote = token.charAt(0);
-        if (quote == '\'') {
-            return body.replace("''", "'");
-        }
-        return body.replace("\"\"", "\"");
-    }
-
     /** Consume a leading SQL string literal; return value + remainder, or null. */
     static StringLiteralTake takeLeadingStringLiteral(String text) {
         if (text == null || text.isBlank()) {
