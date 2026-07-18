@@ -38,7 +38,7 @@ When creating a rule (Explorer → AI → **Data quality** → Add), pick a buil
 | `max_violation_rows` | row_count_lte | yes |
 | `failed_count_threshold` | scalar_lte | no |
 
-Templates are frontend presets only (no backend catalog). User-saved templates and multi-env gate compare remain open.
+Templates include five **built-in** presets plus a **user-saved library** (localStorage, per registered user). From the Add form: pick a template to prefill, **Save as template** to store the current fields, or **Delete saved template** when a saved entry is selected. Multi-env rule auto-pairing remains open.
 
 ## Catalog UI
 

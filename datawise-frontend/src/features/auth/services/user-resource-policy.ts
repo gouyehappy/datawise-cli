@@ -45,6 +45,12 @@ const RESOURCE_RULES: Record<UserResourceType, UserResourceRule> = {
         guestRead: true,
         guestWrite: false,
     },
+    [UserResource.DataQualityTemplates]: {
+        localScope: 'user',
+        serverScope: 'none',
+        guestRead: true,
+        guestWrite: false,
+    },
     [UserResource.ConnectionCatalog]: {
         localScope: 'none',
         serverScope: 'session',

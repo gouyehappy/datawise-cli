@@ -12,6 +12,8 @@ export const UserResource = {
     AiChat: 'ai.chat',
     /** AI 分析模板（localStorage） */
     AiAnalysisTemplates: 'ai.analysis-templates',
+    /** 数据质量规则模板（localStorage） */
+    DataQualityTemplates: 'platform.data-quality-templates',
     /** Explorer 连接/目录（访客会话 catalog / 注册用户 connections.xml） */
     ConnectionCatalog: 'connection.catalog',
     /** 工作区 SQL 脚本（workspace 目录） */

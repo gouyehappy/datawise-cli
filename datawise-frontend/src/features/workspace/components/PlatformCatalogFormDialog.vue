@@ -32,6 +32,18 @@ import {
     DATA_QUALITY_RULE_TEMPLATES,
     findDataQualityRuleTemplate,
 } from '@/features/platform/constants/data-quality-rule-templates'
+import {
+    applyDataQualityUserTemplate,
+    createDataQualityUserTemplate,
+    findDataQualityUserTemplate,
+    readDataQualityUserTemplates,
+    removeDataQualityUserTemplate,
+    upsertDataQualityUserTemplate,
+    writeDataQualityUserTemplates,
+} from '@/features/platform/services/data-quality-user-templates.service'
+import type {DataQualityUserTemplate} from '@/features/platform/types/data-quality-user-template.types'
+import {canPersistLocalResource} from '@/features/auth/services/user-resource-policy'
+import {UserResource} from '@/features/auth/types/user-resource.types'
 
 const props = defineProps<{
     open: boolean
@@ -101,6 +113,20 @@ const taskForm = reactive({
 const canvasOptions = ref<AnalysisCanvasSummary[]>([])
 const canvasOptionsLoading = ref(false)
 const dqTemplateId = ref(DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID)
+const dqUserTemplates = ref<DataQualityUserTemplate[]>([])
+const templateFeedback = ref('')
+
+function reloadDqUserTemplates() {
+    dqUserTemplates.value = readDataQualityUserTemplates()
+}
+
+const canSaveDqUserTemplate = computed(() =>
+    canPersistLocalResource(UserResource.DataQualityTemplates),
+)
+
+const selectedDqUserTemplate = computed(() =>
+    findDataQualityUserTemplate(dqTemplateId.value, dqUserTemplates.value),
+)
 
 const dialogTitle = computed(() => {
     switch (props.feature) {
@@ -202,20 +228,43 @@ const dqTemplateOptions = computed<SelectOption[]>(() => [
         value: item.id,
         label: t(`workspace.platformCatalog.form.dqTemplate.items.${item.nameKey}`),
     })),
+    ...dqUserTemplates.value.map((item) => ({
+        value: item.id,
+        label: t('workspace.platformCatalog.form.dqTemplate.userPrefix', {name: item.name}),
+    })),
 ])
 
 const dqTemplateHint = computed(() => {
+    const user = selectedDqUserTemplate.value
+    if (user) {
+        return user.description || t('workspace.platformCatalog.form.hint.dqUserTemplate')
+    }
     const tpl = findDataQualityRuleTemplate(dqTemplateId.value)
     if (!tpl) return t('workspace.platformCatalog.form.hint.dqTemplate')
     return t(`workspace.platformCatalog.form.dqTemplate.items.${tpl.descriptionKey}`)
 })
 
 function applySelectedDqTemplate(id: string) {
-    const tpl = findDataQualityRuleTemplate(id)
-    if (!tpl) return
-    const fields = applyDataQualityRuleTemplate(tpl, (nameKey) =>
-        t(`workspace.platformCatalog.form.dqTemplate.items.${nameKey}`),
-    )
+    templateFeedback.value = ''
+    const builtin = findDataQualityRuleTemplate(id)
+    if (builtin) {
+        const fields = applyDataQualityRuleTemplate(builtin, (nameKey) =>
+            t(`workspace.platformCatalog.form.dqTemplate.items.${nameKey}`),
+        )
+        taskForm.name = fields.name
+        taskForm.sql = fields.sql
+        taskForm.dqAssertion = fields.dqAssertion
+        taskForm.dqExpected = fields.dqExpected
+        taskForm.dqColumn = fields.dqColumn
+        taskForm.dqBlocking = fields.dqBlocking
+        if (fields.cronExpression != null) {
+            taskForm.cronExpression = fields.cronExpression
+        }
+        return
+    }
+    const user = findDataQualityUserTemplate(id, dqUserTemplates.value)
+    if (!user) return
+    const fields = applyDataQualityUserTemplate(user)
     taskForm.name = fields.name
     taskForm.sql = fields.sql
     taskForm.dqAssertion = fields.dqAssertion
@@ -224,7 +273,55 @@ function applySelectedDqTemplate(id: string) {
     taskForm.dqBlocking = fields.dqBlocking
     if (fields.cronExpression != null) {
         taskForm.cronExpression = fields.cronExpression
+    } else if (isDataQualityCatalog.value) {
+        taskForm.cronExpression = ''
     }
+}
+
+function saveCurrentAsDqUserTemplate() {
+    templateFeedback.value = ''
+    error.value = ''
+    if (!canSaveDqUserTemplate.value) {
+        error.value = t('workspace.platformCatalog.form.dqTemplate.saveDenied')
+        return
+    }
+    const created = createDataQualityUserTemplate({
+        name: taskForm.name,
+        description: '',
+        sql: taskForm.sql,
+        assertion: taskForm.dqAssertion as DataQualityUserTemplate['assertion'],
+        expected: taskForm.dqExpected,
+        column: taskForm.dqColumn,
+        blocking: taskForm.dqBlocking,
+        cronExpression: taskForm.cronExpression,
+    })
+    if (!created) {
+        error.value = t('workspace.platformCatalog.form.dqTemplate.saveNeedNameSql')
+        return
+    }
+    const next = upsertDataQualityUserTemplate(dqUserTemplates.value, created)
+    if (!writeDataQualityUserTemplates(next)) {
+        error.value = t('workspace.platformCatalog.form.dqTemplate.saveFailed')
+        return
+    }
+    dqUserTemplates.value = next
+    dqTemplateId.value = created.id
+    templateFeedback.value = t('workspace.platformCatalog.form.dqTemplate.saved', {name: created.name})
+}
+
+function deleteSelectedDqUserTemplate() {
+    templateFeedback.value = ''
+    error.value = ''
+    const current = selectedDqUserTemplate.value
+    if (!current) return
+    const next = removeDataQualityUserTemplate(dqUserTemplates.value, current.id)
+    if (!writeDataQualityUserTemplates(next)) {
+        error.value = t('workspace.platformCatalog.form.dqTemplate.saveFailed')
+        return
+    }
+    dqUserTemplates.value = next
+    dqTemplateId.value = DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID
+    templateFeedback.value = t('workspace.platformCatalog.form.dqTemplate.deleted', {name: current.name})
 }
 
 const sqlSourceOptions = computed<SelectOption[]>(() => [
@@ -414,6 +511,7 @@ function resetForms() {
     sqlFileOptions.value = []
     sharedQueryOptions.value = []
     error.value = ''
+    templateFeedback.value = ''
 }
 
 function applyScheduleDraft() {
@@ -449,6 +547,7 @@ watch(
     async (isOpen) => {
         if (!isOpen) return
         resetForms()
+        reloadDqUserTemplates()
         if (props.feature === 'data_quality') {
             taskForm.type = 'data_quality'
             taskForm.cronExpression = ''
@@ -946,6 +1045,31 @@ async function submit() {
             />
           </label>
           <p class="modal-hint">{{ dqTemplateHint }}</p>
+          <div class="modal-template-actions">
+            <button
+                type="button"
+                class="dw-text-btn"
+                :disabled="!canSaveDqUserTemplate"
+                @click="saveCurrentAsDqUserTemplate"
+            >
+              {{ t('workspace.platformCatalog.form.dqTemplate.saveCurrent') }}
+            </button>
+            <button
+                v-if="selectedDqUserTemplate"
+                type="button"
+                class="dw-text-btn"
+                :disabled="!canSaveDqUserTemplate"
+                @click="deleteSelectedDqUserTemplate"
+            >
+              {{ t('workspace.platformCatalog.form.dqTemplate.deleteSelected') }}
+            </button>
+          </div>
+          <DwInlineAlert
+              v-if="templateFeedback"
+              density="banner"
+              variant="success"
+              :message="templateFeedback"
+          />
           <FormField :label="t('workspace.platformCatalog.form.sqlLabel')">
             <template #default="{ id }">
               <textarea
@@ -1193,5 +1317,12 @@ async function submit() {
 
 .modal-fieldset:last-of-type {
   margin-bottom: 0;
+}
+
+.modal-template-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 4px 0 8px;
 }
 </style>

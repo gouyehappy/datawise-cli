@@ -60,6 +60,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G13 deepen: data catalog **metric lineage jump** via `relatedTables` → view-model impact (first related table). See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G13 deepen: data catalog **related-table picker** when a metric lists several `relatedTables` before lineage jump. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G13 deepen: discovery **pagination** (`offset` + `hasMore` / total) + data catalog **Load more**. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
+- Wave D G15 deepen: **user-saved data-quality rule templates** (local library + Save/Delete in Add form). See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
 
 ### Still open
