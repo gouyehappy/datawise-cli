@@ -53,6 +53,7 @@ export default {
         table: 'Table',
         connection: 'Connection',
         terminal: 'Terminal',
+        data_catalog: 'Data catalog',
     },
     status: {
         ok: 'Healthy',

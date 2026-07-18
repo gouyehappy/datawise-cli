@@ -332,6 +332,9 @@ export function paletteNavigationEntryAllowed(
     if (entryId === 'action:new-console') {
         return can(FeaturePermission.WorkbenchTabNew)
     }
+    if (entryId === 'action:data-catalog') {
+        return can(FeaturePermission.WorkbenchExplorerSearch) && can(FeaturePermission.WorkbenchTabNew)
+    }
     if (entryId === 'action:bookmarks') {
         return can(FeaturePermission.ShortcutConsole)
     }

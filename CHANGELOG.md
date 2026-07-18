@@ -49,6 +49,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G15 deepen: data-quality rules catalog (Explorer → AI → Data quality) + `blocking` flag + `POST /api/platform/data-quality/gate` release suite; gate-only rules may omit Cron. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G11 / S6 deepen: connector plugin hot-reload — `POST /api/datasources/plugins/reload` (admin); marketplace install auto-reloads so restart is usually unnecessary (Windows JAR lock may still require restart). See [docs/CONNECTOR_PLUGINS.md](./docs/CONNECTOR_PLUGINS.md).
 - Wave D G14 deepen: orchestration DAG status write-back — `http_trigger` `statusUrl` / `statusUrlTemplate`, auto-poll after trigger, `POST /api/platform/orchestration/status`, scheduled-task catalog columns + UI action. See [docs/ORCHESTRATION.md](./docs/ORCHESTRATION.md).
+- Wave D G13 deepen: unified **Data catalog** workspace tab (command palette) over `GET /api/discovery/search` + lineage jump via view-model impact for tables/views. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
 
 ### Still open

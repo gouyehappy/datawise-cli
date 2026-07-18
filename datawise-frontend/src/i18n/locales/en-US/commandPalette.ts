@@ -28,6 +28,7 @@ export default {
         openPluginCenter: 'Open plugin center',
         openPluginDevTools: 'Open plugin developer tools',
         openConnectorMarket: 'Open connector marketplace',
+        openDataCatalog: 'Open data catalog',
         openPluginSettings: 'Open plugin settings',
     },
     plugins: {

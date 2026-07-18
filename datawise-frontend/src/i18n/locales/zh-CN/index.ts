@@ -34,6 +34,7 @@ import commandPalette from './commandPalette'
 import globalObjectSearch from './globalObjectSearch'
 import capabilities from './capabilities'
 import platform from './platform'
+import discovery from './discovery'
 
 export default {
     app,
@@ -72,4 +73,5 @@ export default {
     globalObjectSearch,
     capabilities,
     platform,
+    discovery,
 }

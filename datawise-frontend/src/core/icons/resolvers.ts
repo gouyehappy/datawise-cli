@@ -71,6 +71,8 @@ export function workspaceTabDwIcon(type: WorkspaceTabType): DwIconName {
             return 'tab-yarn'
         case 'platform_catalog':
             return 'ai'
+        case 'data_catalog':
+            return 'search'
         default:
             return 'tab-file'
     }

@@ -188,6 +188,7 @@ export type WorkspaceTabType =
     | 'ssh-terminal'
     | 'ssh-script-record'
     | 'platform_catalog'
+    | 'data_catalog'
     | 'create-database'
 
 export interface WorkspaceTab {

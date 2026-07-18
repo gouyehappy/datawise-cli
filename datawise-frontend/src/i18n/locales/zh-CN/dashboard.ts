@@ -53,6 +53,7 @@ export default {
         table: '表',
         connection: '连接',
         terminal: '终端',
+        data_catalog: '数据目录',
     },
     status: {
         ok: '可用',

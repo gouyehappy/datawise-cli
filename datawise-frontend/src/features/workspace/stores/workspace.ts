@@ -971,6 +971,23 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         return id
     }
 
+    function openDataCatalog() {
+        const existing = tabs.value.find((tab) => tab.type === 'data_catalog')
+        if (existing) {
+            activeTabId.value = existing.id
+            return existing.id
+        }
+        const id = nextTabId('data-catalog')
+        tabs.value.push({
+            id,
+            title: t('discovery.tabTitle'),
+            type: 'data_catalog',
+            closable: true,
+        })
+        activeTabId.value = id
+        return id
+    }
+
     function openPlatformCatalog(options: {
         feature: PlatformFeatureId
         connectionId: string
@@ -1912,6 +1929,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         if (type === 'ssh-terminal') return 'ssh-terminal'
         if (type === 'ssh-script-record') return 'ssh-script-record'
         if (type === 'platform_catalog') return 'platform-catalog'
+        if (type === 'data_catalog') return 'data-catalog'
         if (type === 'create-database') return 'create-database'
         if (type === 'view_model_lineage') return 'lineage'
         return 'tab'
@@ -1992,6 +2010,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         openSchemaTables,
         openMetadataDoc,
         openPlatformCatalog,
+        openDataCatalog,
         openCrossEnvCompare,
         openTableMigration,
         openViewModelData,

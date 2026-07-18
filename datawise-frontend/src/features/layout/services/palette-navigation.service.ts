@@ -34,6 +34,7 @@ export interface BuildPaletteNavigationParams {
     toggleShortcutPanel: (panel: 'console') => void
     openPluginDevTools: () => void
     openConnectorMarket: () => void
+    openDataCatalog: () => void
     openSettingsModule: (section: SettingsSection, anchor?: string) => void
     isPluginDevToolsVisible: () => boolean
     bookmarksEnabled: boolean
@@ -102,6 +103,16 @@ export function buildPaletteNavigationEntries(params: BuildPaletteNavigationPara
         run: () => {
             params.setModule('database')
             params.openConsole()
+        },
+    })
+
+    list.push({
+        id: 'action:data-catalog',
+        label: t('commandPalette.actions.openDataCatalog'),
+        group: t('commandPalette.groups.actions'),
+        run: () => {
+            params.setModule('database')
+            params.openDataCatalog()
         },
     })
 

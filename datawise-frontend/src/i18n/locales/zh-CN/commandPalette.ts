@@ -28,6 +28,7 @@ export default {
         openPluginCenter: '打开插件中心',
         openPluginDevTools: '打开插件开发者工具',
         openConnectorMarket: '打开连接器市场',
+        openDataCatalog: '打开数据目录',
         openPluginSettings: '打开插件设置',
     },
     plugins: {
