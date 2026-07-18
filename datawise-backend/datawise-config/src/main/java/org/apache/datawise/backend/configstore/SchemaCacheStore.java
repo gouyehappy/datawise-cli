@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.configstore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.datawise.backend.domain.TenantIds;
 import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.security.UserContext;
 import org.slf4j.Logger;
@@ -172,7 +173,23 @@ public class SchemaCacheStore {
     }
 
     private Path diskPath(long userId, String connectionId) {
-        return configDirectory.resolve(ConfigPaths.userSchemaCache(userId, connectionId));
+        String tenantId = TenantScopedConfigSupport.currentTenantId();
+        String relative = ConfigPaths.userSchemaCache(userId, tenantId, connectionId);
+        if (TenantIds.DEFAULT.equals(tenantId)) {
+            Path tenantPath = configDirectory.resolve(relative);
+            Path legacyPath = configDirectory.resolve(ConfigPaths.SCHEMA_CACHE_DIR + "/u" + userId
+                    + "/" + connectionId.replaceAll("[^a-zA-Z0-9._-]", "_") + ".json");
+            if (!Files.isRegularFile(tenantPath) && Files.isRegularFile(legacyPath)) {
+                try {
+                    Files.createDirectories(tenantPath.getParent());
+                    Files.copy(legacyPath, tenantPath);
+                } catch (IOException ex) {
+                    log.warn("Failed to migrate schema cache userId={} connectionId={}: {}",
+                            userId, connectionId, ex.toString());
+                }
+            }
+        }
+        return configDirectory.resolve(relative);
     }
 
     private static Instant parseInstant(String value) {

@@ -24,7 +24,8 @@ export interface TableMigrationWizardContext {
 }
 
 export type TargetMissingPolicy = 'block' | 'skip' | 'create'
-export type MigrationMode = 'FULL_APPEND' | 'FULL_REPLACE' | 'INCR_APPEND'
+export type MigrationMode = 'FULL_APPEND' | 'FULL_REPLACE' | 'INCR_APPEND' | 'PK_UPSERT'
+export type MigrationConflictStrategy = 'OVERWRITE' | 'SKIP' | 'FAIL'
 
 export interface TableMigrationWizardForm {
     targetConnectionId: string
@@ -38,6 +39,7 @@ export interface TableMigrationWizardForm {
     throttleMs: number
     truncateTarget: boolean
     targetMissingPolicy: TargetMissingPolicy
+    conflictStrategy: MigrationConflictStrategy
     /** 视图模型迁移：源 SELECT */
     sourceSelectSql?: string
     /** 视图模型迁移：目标物理表名 */
@@ -240,6 +242,7 @@ export function createDefaultTableMigrationForm(
         throttleMs: 0,
         truncateTarget: false,
         targetMissingPolicy: 'block',
+        conflictStrategy: 'OVERWRITE',
     }
 }
 
@@ -634,6 +637,7 @@ export interface TableMigrationRunRecord {
         throttleMs: number
         truncateTarget: boolean
         targetMissingPolicy: TargetMissingPolicy
+        conflictStrategy?: MigrationConflictStrategy
     }
     tablesPlanned: string[]
     summary: ReturnType<typeof summarizeMigrationResults>
@@ -968,6 +972,7 @@ export function buildMigrationRunRecord(input: {
             throttleMs: input.form.throttleMs,
             truncateTarget: input.form.truncateTarget,
             targetMissingPolicy: input.form.targetMissingPolicy,
+            conflictStrategy: input.form.conflictStrategy,
         },
         tablesPlanned: [...input.tablesPlanned],
         summary,
@@ -1226,6 +1231,7 @@ export function recordToMigrationForm(record: TableMigrationRunRecord): TableMig
         throttleMs: record.options.throttleMs,
         truncateTarget: record.options.truncateTarget,
         targetMissingPolicy: record.options.targetMissingPolicy,
+        conflictStrategy: record.options.conflictStrategy ?? 'OVERWRITE',
     }
 }
 

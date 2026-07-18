@@ -20,7 +20,10 @@ export function settingsSectionDwIcon(section: SettingsSection): DwIconName {
         dataAgent: 'settings-data-agent',
         knowledge: 'settings-knowledge',
         about: 'settings-about',
-        userPermissions: 'users',
+        integrations: 'link',
+        secrets: 'key',
+        userPermissions: 'key',
+        tenants: 'users',
     }
     return map[section]
 }

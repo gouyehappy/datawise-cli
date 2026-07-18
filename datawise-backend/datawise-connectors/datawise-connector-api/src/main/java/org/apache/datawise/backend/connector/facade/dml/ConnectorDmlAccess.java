@@ -34,6 +34,20 @@ public class ConnectorDmlAccess {
         return dmlDialectRegistry.buildMultiInsert(dbType, database, tableName, columns, rows);
     }
 
+    public String buildMultiUpsert(
+            String dbType,
+            String database,
+            String tableName,
+            List<Map<String, Object>> columns,
+            List<Map<String, Object>> rows,
+            List<String> keyColumns,
+            String conflictStrategy
+    ) {
+        return dmlDialectRegistry.buildMultiUpsert(
+                dbType, database, tableName, columns, rows, keyColumns, conflictStrategy
+        );
+    }
+
     public String buildUpdate(
             String dbType,
             String database,

@@ -3,7 +3,6 @@ package org.apache.datawise.backend.sync.engine;
 import org.apache.datawise.backend.sync.api.MigrationExecutionControl;
 
 import java.sql.Connection;
-
 import java.util.List;
 
 /** 分页复制一次调用的完整入参。 */
@@ -19,7 +18,9 @@ public record TableCopyCommand(
         List<String> orderByColumns,
         TableMigrationBatchCopier.CopyResumeState resumeState,
         TableMigrationBatchCopier.BatchCommittedCallback callback,
-        MigrationExecutionControl executionControl
+        MigrationExecutionControl executionControl,
+        List<String> primaryKeyColumns,
+        String conflictStrategy
 ) {
     public static TableCopyCommand simple(
             MigrationEndpoints endpoints,
@@ -42,7 +43,9 @@ public record TableCopyCommand(
                 List.of(),
                 TableMigrationBatchCopier.CopyResumeState.fresh(),
                 null,
-                MigrationExecutionControl.noop()
+                MigrationExecutionControl.noop(),
+                List.of(),
+                null
         );
     }
 }

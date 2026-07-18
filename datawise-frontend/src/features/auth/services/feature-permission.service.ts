@@ -33,6 +33,38 @@ export function createPreset(preset: PermissionPresetId): FeaturePermissionMap {
     if (preset === 'full') {
         return Object.fromEntries(ALL_KEYS.map((key) => [key, true])) as FeaturePermissionMap
     }
+    if (preset === 'developer') {
+        const map = createPreset('full')
+        map[FeaturePermission.SettingsUserPermissions] = false
+        map[FeaturePermission.SettingsTenants] = false
+        map[FeaturePermission.SettingsIntegrations] = false
+        return map
+    }
+    if (preset === 'analyst') {
+        const map = createPreset('workbench')
+        map[FeaturePermission.NavDashboard] = true
+        map[FeaturePermission.NavAi] = true
+        map[FeaturePermission.NavSettings] = true
+        map[FeaturePermission.ShortcutExport] = true
+        map[FeaturePermission.WorkbenchConsoleAi] = true
+        map[FeaturePermission.WorkbenchResultAiSummary] = true
+        map[FeaturePermission.WorkbenchExplorerCatalogAi] = true
+        map[FeaturePermission.SettingsBasic] = true
+        map[FeaturePermission.SettingsProfile] = true
+        map[FeaturePermission.SettingsAi] = true
+        map[FeaturePermission.SettingsAbout] = true
+        map[FeaturePermission.WorkbenchConsoleDangerousSql] = false
+        map[FeaturePermission.WorkbenchExplorerContextDangerous] = false
+        return map
+    }
+    if (preset === 'readonly') {
+        const map = createPreset('workbench')
+        map[FeaturePermission.WorkbenchConsoleDangerousSql] = false
+        map[FeaturePermission.WorkbenchExplorerContextDangerous] = false
+        map[FeaturePermission.WorkbenchExplorerAdd] = false
+        map[FeaturePermission.WorkbenchExplorerContextEdit] = false
+        return map
+    }
     const map = Object.fromEntries(ALL_KEYS.map((key) => [key, false])) as FeaturePermissionMap
     if (preset === 'workbench') {
         map[FeaturePermission.NavDatabase] = true
@@ -56,11 +88,28 @@ export function createPreset(preset: PermissionPresetId): FeaturePermissionMap {
 }
 
 export function detectPreset(map: FeaturePermissionMap): PermissionPresetId {
-    const full = createPreset('full')
-    const workbench = createPreset('workbench')
-    if (ALL_KEYS.every((key) => map[key] === full[key])) return 'full'
-    if (ALL_KEYS.every((key) => map[key] === workbench[key])) return 'workbench'
+    const candidates: PermissionPresetId[] = ['full', 'developer', 'analyst', 'readonly', 'workbench']
+    for (const id of candidates) {
+        const preset = createPreset(id)
+        if (ALL_KEYS.every((key) => map[key] === preset[key])) return id
+    }
     return 'custom'
+}
+
+/** 系统角色 key → 权限预设（与后端 TenantRolePresets 对齐）。 */
+export function presetForSystemRoleKey(roleKey: string): PermissionPresetId | null {
+    switch (roleKey) {
+        case 'tenant_admin':
+            return 'full'
+        case 'developer':
+            return 'developer'
+        case 'analyst':
+            return 'analyst'
+        case 'readonly':
+            return 'readonly'
+        default:
+            return null
+    }
 }
 
 export function sideRailFeatureKey(id: SideRailItemId): FeaturePermissionKey | null {

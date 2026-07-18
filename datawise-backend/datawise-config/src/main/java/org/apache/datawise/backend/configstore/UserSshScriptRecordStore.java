@@ -39,11 +39,11 @@ public class UserSshScriptRecordStore {
     }
 
     private JsonListFile<SshScriptRecord> fileFor(long userId, String connectionId) {
-        String key = userId + ":" + connectionId;
+        String key = TenantScopedConfigSupport.cacheKey(userId) + ":" + connectionId;
         return cache.computeIfAbsent(key, ignored -> new JsonListFile<>(
                 configDirectory,
                 objectMapper,
-                ConfigPaths.userSshScriptRecordsScope(userId, connectionId),
+                TenantScopedConfigSupport.ensureUserTenantScopeFile(configDirectory, userId, "ssh-script-records", connectionId),
                 new TypeReference<>() {
                 }
         ));

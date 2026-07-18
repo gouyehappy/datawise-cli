@@ -17,6 +17,13 @@ const migrationModes: Array<{value: TableMigrationWizardForm['mode']; labelKey: 
     {value: 'FULL_APPEND', labelKey: 'explorer.tableMigrationWizard.modeFullAppend'},
     {value: 'FULL_REPLACE', labelKey: 'explorer.tableMigrationWizard.modeFullReplace'},
     {value: 'INCR_APPEND', labelKey: 'explorer.tableMigrationWizard.modeIncrAppend'},
+    {value: 'PK_UPSERT', labelKey: 'explorer.tableMigrationWizard.modePkUpsert'},
+]
+
+const conflictStrategies: Array<{value: TableMigrationWizardForm['conflictStrategy']; labelKey: string}> = [
+    {value: 'OVERWRITE', labelKey: 'explorer.tableMigrationWizard.conflictOverwrite'},
+    {value: 'SKIP', labelKey: 'explorer.tableMigrationWizard.conflictSkip'},
+    {value: 'FAIL', labelKey: 'explorer.tableMigrationWizard.conflictFail'},
 ]
 </script>
 
@@ -165,6 +172,26 @@ const migrationModes: Array<{value: TableMigrationWizardForm['mode']; labelKey: 
             </button>
           </div>
           <p class="options-field__hint">{{ t(w.modeDescriptionKey) }}</p>
+        </div>
+
+        <div v-if="w.form.mode === 'PK_UPSERT'" class="options-field">
+          <span>{{ t('explorer.tableMigrationWizard.conflictStrategy') }}</span>
+          <div class="dw-segment" role="radiogroup" :aria-label="t('explorer.tableMigrationWizard.conflictStrategy')">
+            <button
+                v-for="item in conflictStrategies"
+                :key="item.value"
+                type="button"
+                class="dw-segment__btn"
+                role="radio"
+                :aria-checked="w.form.conflictStrategy === item.value"
+                :class="{ 'is-active': w.form.conflictStrategy === item.value }"
+                :disabled="w.running"
+                @click="w.form.conflictStrategy = item.value"
+            >
+              {{ t(item.labelKey) }}
+            </button>
+          </div>
+          <p class="options-field__hint">{{ t('explorer.tableMigrationWizard.conflictStrategyHint') }}</p>
         </div>
 
         <label class="options-field">

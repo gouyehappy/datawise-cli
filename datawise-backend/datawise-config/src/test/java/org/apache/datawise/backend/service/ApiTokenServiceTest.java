@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.service;
 
 import org.apache.datawise.backend.configstore.ApiTokenStore;
+import org.apache.datawise.backend.configstore.FileApiTokenStore;
 import org.apache.datawise.backend.model.ApiTokenEntity;
 import org.apache.datawise.backend.security.ApiTokenScopes;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +31,7 @@ class ApiTokenServiceTest {
         var configDirectory = new org.apache.datawise.backend.configstore.ConfigDirectoryService(tempDir);
         var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper()
                 .findAndRegisterModules();
-        ApiTokenStore store = new ApiTokenStore(configDirectory, objectMapper);
+        ApiTokenStore store = new FileApiTokenStore(configDirectory, objectMapper);
         apiTokenService = new ApiTokenService(store, new BCryptPasswordEncoder());
 
         ApiTokenEntity token = new ApiTokenEntity();
@@ -59,7 +60,7 @@ class ApiTokenServiceTest {
     void authenticatesUsingLookupIndexWithManyTokens() throws Exception {
         var configDirectory = new org.apache.datawise.backend.configstore.ConfigDirectoryService(tempDir);
         var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
-        ApiTokenStore store = new ApiTokenStore(configDirectory, objectMapper);
+        ApiTokenStore store = new FileApiTokenStore(configDirectory, objectMapper);
         ApiTokenService service = new ApiTokenService(store, new BCryptPasswordEncoder());
 
         for (int index = 0; index < 20; index++) {
@@ -91,7 +92,7 @@ class ApiTokenServiceTest {
     void backfillsLookupForLegacyTokenWithoutIndex() throws Exception {
         var configDirectory = new org.apache.datawise.backend.configstore.ConfigDirectoryService(tempDir);
         var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
-        ApiTokenStore store = new ApiTokenStore(configDirectory, objectMapper);
+        ApiTokenStore store = new FileApiTokenStore(configDirectory, objectMapper);
         ApiTokenService service = new ApiTokenService(store, new BCryptPasswordEncoder());
 
         ApiTokenEntity legacy = new ApiTokenEntity();
@@ -113,7 +114,7 @@ class ApiTokenServiceTest {
     void capsLegacyTokenScanOnLookupMiss() throws Exception {
         var configDirectory = new org.apache.datawise.backend.configstore.ConfigDirectoryService(tempDir);
         var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
-        ApiTokenStore store = new ApiTokenStore(configDirectory, objectMapper);
+        ApiTokenStore store = new FileApiTokenStore(configDirectory, objectMapper);
         ApiTokenService service = new ApiTokenService(store, new BCryptPasswordEncoder());
 
         for (int index = 0; index < 40; index++) {

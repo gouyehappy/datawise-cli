@@ -4,13 +4,38 @@ export const API_PATHS = {
         login: '/login',
         loginGuest: '/login/guest',
         signOut: '/signOut',
+        register: '/api/auth/register',
         session: '/api/auth/session',
+        switchTenant: '/api/auth/switch-tenant',
         sessionPolicy: '/api/auth/session-policy',
         changePassword: '/api/auth/change-password',
+        loginOptions: '/api/auth/login-options',
+        oidcLogin: '/api/auth/oidc/login',
+        oidcConfig: '/api/auth/oidc/config',
+    },
+    tenants: {
+        mine: '/api/tenants/mine',
+        aiUsage: '/api/tenants/mine/ai-usage',
+        list: '/api/tenants',
+        create: '/api/tenants',
+        status: (tenantId: string) => `/api/tenants/${encodeURIComponent(tenantId)}/status`,
+        members: (tenantId: string) => `/api/tenants/${encodeURIComponent(tenantId)}/members`,
+        member: (tenantId: string, userId: number) =>
+            `/api/tenants/${encodeURIComponent(tenantId)}/members/${userId}`,
+    },
+    shares: {
+        list: '/api/shares',
+        create: '/api/shares',
+        revoke: (id: string) => `/api/shares/${encodeURIComponent(id)}`,
+        publicJson: (token: string) => `/api/public/shares/${encodeURIComponent(token)}`,
+        publicPage: (token: string) => `/share/${encodeURIComponent(token)}`,
     },
     admin: {
         users: '/api/admin/users',
+        tenantRoles: '/api/admin/tenant-roles',
+        tenantRole: (roleId: string) => `/api/admin/tenant-roles/${encodeURIComponent(roleId)}`,
         userPermissions: (userId: number) => `/api/admin/users/${userId}/permissions`,
+        userRoles: (userId: number) => `/api/admin/users/${userId}/roles`,
     },
     sql: {
         execute: '/api/sql/execute',
@@ -166,6 +191,7 @@ export const API_PATHS = {
         tablesBatch: '/api/migration/tables/batch',
         tablesBatchStream: '/api/migration/tables/batch/stream',
         preflight: '/api/migration/preflight',
+        rowDiff: '/api/migration/row-diff',
         jobs: '/api/migration/jobs',
         job: (id: string) => `/api/migration/jobs/${encodeURIComponent(id)}`,
         jobPause: (id: string) => `/api/migration/jobs/${encodeURIComponent(id)}/pause`,
@@ -285,6 +311,7 @@ export const API_PATHS = {
     },
     health: '/api/health',
     metrics: '/api/system/metrics',
+    secrets: '/api/system/secrets',
     lineage: {
         viewModels: '/api/lineage/view-models',
         parse: '/api/lineage/view-models/parse',
@@ -314,6 +341,8 @@ export const API_PATHS = {
             `/api/teams/${encodeURIComponent(teamId)}/invites/${encodeURIComponent(inviteId)}/reject`,
         settings: (teamId: string) => `/api/teams/${encodeURIComponent(teamId)}/settings`,
         auditLogs: (teamId: string) => `/api/teams/${encodeURIComponent(teamId)}/audit-logs`,
+        auditLogsExport: (teamId: string) =>
+            `/api/teams/${encodeURIComponent(teamId)}/audit-logs/export`,
         sharedConnections: (teamId: string) =>
             `/api/teams/${encodeURIComponent(teamId)}/shared-connections`,
         onCallConnections: (teamId: string) =>
@@ -365,6 +394,7 @@ export const API_PATHS = {
         analysisCanvasRerun: '/api/platform/analysis-canvas/rerun',
         semanticMetrics: '/api/platform/semantic-metrics',
         semanticMetricsAutoGenerate: '/api/platform/semantic-metrics/auto-generate',
+        discoverySearch: '/api/discovery/search',
         sqlReview: '/api/platform/sql-review',
         federatedViews: '/api/platform/federated-views',
         federatedViewsExecute: '/api/platform/federated-views/execute',
@@ -376,6 +406,11 @@ export const API_PATHS = {
         scheduledTasks: '/api/platform/scheduled-tasks',
         scheduledTaskRun: (id: string) =>
             `/api/platform/scheduled-tasks/${encodeURIComponent(id)}/run`,
+        orchestrationTrigger: '/api/platform/orchestration/trigger',
+        insightActions: '/api/platform/insight-actions',
+        outboundWebhooks: '/api/platform/outbound-webhooks',
+        outboundWebhookTest: (id: string) =>
+            `/api/platform/outbound-webhooks/${encodeURIComponent(id)}/test`,
         queryLibraryVersions: (teamId: string, queryId: string) =>
             `/api/platform/query-library/${encodeURIComponent(teamId)}/${encodeURIComponent(queryId)}/versions`,
         queryLibrarySaveVersion: '/api/platform/query-library/versions',

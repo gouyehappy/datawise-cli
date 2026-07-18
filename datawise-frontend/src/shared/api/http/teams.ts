@@ -17,7 +17,7 @@ import type {
     SubmitTeamProductionApprovalPayload,
     TeamSummary,
 } from '@/core/types'
-import {deleteJson, getJson, postJson, putJson} from '@/shared/api/http/request'
+import {deleteJson, downloadAttachment, getJson, postJson, putJson} from '@/shared/api/http/request'
 import {API_PATHS} from '@/shared/api/http/paths'
 
 export function createHttpTeamApi(): TeamApi {
@@ -54,6 +54,24 @@ export function createHttpTeamApi(): TeamApi {
                 until: query?.until,
             }
             return getJson<TeamAuditLog[]>(API_PATHS.teams.auditLogs(teamId), params)
+        },
+
+        exportAuditLogs: async (teamId, options) => {
+            const {blob, fileName} = await downloadAttachment(API_PATHS.teams.auditLogsExport(teamId), {
+                format: options.format,
+                actorUserId: options.actorUserId != null ? String(options.actorUserId) : undefined,
+                since: options.since,
+                until: options.until,
+                includeFullSql: options.includeFullSql ? 'true' : 'false',
+            })
+            const url = URL.createObjectURL(blob)
+            const anchor = document.createElement('a')
+            anchor.href = url
+            anchor.download = options.fileName
+                || fileName
+                || `team-audit.${options.format}`
+            anchor.click()
+            URL.revokeObjectURL(url)
         },
 
         updateSharedConnections: (teamId, connectionIds, connectionAccess) =>

@@ -192,8 +192,13 @@ async function executeFederatedView() {
   if (!id || runningAction.value) return
   runningAction.value = true
   try {
-    const result = await platformApi.executeFederatedView({viewId: id, maxRows: 100})
-    layout.showSuccessToast(t('platform.federated.executeDone', {rows: result.rowCount ?? 0}))
+    const result = await platformApi.executeFederatedView({viewId: id, maxRows: 1000})
+    const rows = result.rowCount ?? 0
+    if (result.hasMore) {
+      layout.showWarningToast(t('platform.federated.executeTruncated', {rows}))
+    } else {
+      layout.showSuccessToast(t('platform.federated.executeDone', {rows}))
+    }
   } catch (err) {
     layout.showErrorToast(err instanceof Error ? err.message : String(err))
   } finally {

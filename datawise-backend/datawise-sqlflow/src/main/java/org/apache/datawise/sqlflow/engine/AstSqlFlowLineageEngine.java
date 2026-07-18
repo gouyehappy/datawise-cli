@@ -30,11 +30,11 @@ public final class AstSqlFlowLineageEngine implements SqlFlowLineageEngine {
     public static final String ENGINE_ID = "sqlflow-ast";
     public static final String ENGINE_VERSION = "1.0";
     private static final Set<SqlFlowDialect> AST_FRIENDLY_DIALECTS = Set.of(
-            SqlFlowDialect.GENERIC,
-            SqlFlowDialect.HIVE,
-            SqlFlowDialect.IMPALA
+            SqlFlowDialect.GENERIC
     );
     private static final Set<SqlFlowDialect> AST_PARTIAL_DIALECTS = Set.of(
+            SqlFlowDialect.HIVE,
+            SqlFlowDialect.IMPALA,
             SqlFlowDialect.MYSQL,
             SqlFlowDialect.POSTGRESQL,
             SqlFlowDialect.GREENPLUM,

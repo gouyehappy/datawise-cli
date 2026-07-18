@@ -116,6 +116,61 @@ class FederatedQueryServiceTest {
     }
 
     @Test
+    void parserExtractsOuterWhere() {
+        FederatedJoinPlan plan = FederatedJoinSqlParser.parse("""
+                SELECT o.id, u.name
+                FROM (SELECT id, user_id, status FROM orders) @orders o
+                JOIN (SELECT id, name, region FROM users) @users u ON o.user_id = u.id
+                WHERE o.status = 'active' AND u.region = 'CN'
+                """);
+        assertEquals("o.status = 'active' AND u.region = 'CN'", plan.outerWhere());
+        assertEquals("o.user_id = u.id", plan.steps().get(1).onCondition());
+    }
+
+    @Test
+    void executeViewPushesSingleAliasWhereIntoSourceSql() {
+        FederatedViewEntry view = new FederatedViewEntry();
+        view.setSources(List.of(source("orders"), source("users")));
+        view.setSql("""
+                SELECT o.id, u.name
+                FROM (SELECT id, user_id, status FROM orders) @orders o
+                JOIN (SELECT id, name FROM users) @users u ON o.user_id = u.id
+                WHERE o.status = 'active'
+                """);
+
+        when(sqlService.execute(
+                org.mockito.ArgumentMatchers.argThat(sql ->
+                        sql != null
+                                && sql.toUpperCase().contains("STATUS")
+                                && sql.toUpperCase().contains("ACTIVE")
+                ),
+                eq("conn-orders"),
+                eq("shop"),
+                eq(50),
+                isNull()
+        )).thenReturn(sqlResult(
+                List.of(col("id"), col("user_id"), col("status")),
+                List.of(row("id", 1, "user_id", 9, "status", "active"))
+        ));
+        when(sqlService.execute(
+                eq("SELECT id, name FROM users"),
+                eq("conn-users"),
+                eq("shop"),
+                eq(50),
+                isNull()
+        )).thenReturn(sqlResult(
+                List.of(col("id"), col("name")),
+                List.of(row("id", 9, "name", "Carol"))
+        ));
+
+        ExecuteSqlResult result = service.executeView(view, 50);
+
+        assertEquals(1, result.rowCount());
+        assertEquals(1, result.rows().get(0).get("o.id"));
+        assertEquals("Carol", result.rows().get(0).get("u.name"));
+    }
+
+    @Test
     void subquerySupportHandlesNestedParentheses() {
         String sql = "FROM (SELECT id FROM (SELECT id FROM t) x) @orders o";
         assertEquals("SELECT id FROM (SELECT id FROM t) x", FederatedSqlSubquerySupport.extractSubQuery(sql, "orders"));

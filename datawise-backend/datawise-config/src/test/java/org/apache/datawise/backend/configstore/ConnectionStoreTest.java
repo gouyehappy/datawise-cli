@@ -1,5 +1,7 @@
 package org.apache.datawise.backend.configstore;
 
+import org.apache.datawise.backend.configstore.FileConnectionStore;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.ConnectionGroupEntity;
@@ -25,7 +27,7 @@ class ConnectionStoreTest {
     void saveConnectionWritesConnectionsXml() {
         SecretValueCodec codec = SecretTestSupport.testCodec();
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
-        ConnectionStore store = new ConnectionStore(configDirectory, new ObjectMapper(), codec);
+        ConnectionStore store = new FileConnectionStore(configDirectory, new ObjectMapper(), codec);
 
         ConnectionGroupEntity group = new ConnectionGroupEntity();
         group.setId("group-test");
@@ -45,7 +47,7 @@ class ConnectionStoreTest {
         connection.setPort("3306");
         store.saveConnection(connection);
 
-        Path xml = tempDir.resolve(ConfigPaths.CONNECTIONS);
+        Path xml = tempDir.resolve(TenantScopedConfigSupport.defaultTenantConnectionsPath());
         assertTrue(xml.toFile().isFile());
         assertEquals("Local", store.findConnectionById("conn-test").orElseThrow().getName());
     }
@@ -54,7 +56,7 @@ class ConnectionStoreTest {
     void encryptsPasswordOnDiskAndDecryptsOnRead() throws Exception {
         SecretValueCodec codec = SecretTestSupport.testCodec();
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
-        ConnectionStore store = new ConnectionStore(configDirectory, new ObjectMapper(), codec);
+        ConnectionStore store = new FileConnectionStore(configDirectory, new ObjectMapper(), codec);
 
         ConnectionGroupEntity group = new ConnectionGroupEntity();
         group.setId("group-secret");
@@ -72,7 +74,10 @@ class ConnectionStoreTest {
         connection.setSshPassword("plain-ssh-pass");
         store.saveConnection(connection);
 
-        String xml = Files.readString(tempDir.resolve(ConfigPaths.CONNECTIONS), StandardCharsets.UTF_8);
+        String xml = Files.readString(
+                tempDir.resolve(TenantScopedConfigSupport.defaultTenantConnectionsPath()),
+                StandardCharsets.UTF_8
+        );
         assertFalse(xml.contains("plain-db-pass"));
         assertFalse(xml.contains("plain-ssh-pass"));
         assertTrue(xml.contains(SecretValueCodec.PREFIX));
@@ -86,7 +91,7 @@ class ConnectionStoreTest {
     void readsManualXmlEditsWithoutRestart() throws Exception {
         SecretValueCodec codec = SecretTestSupport.testCodec();
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
-        ConnectionStore store = new ConnectionStore(configDirectory, new ObjectMapper(), codec);
+        ConnectionStore store = new FileConnectionStore(configDirectory, new ObjectMapper(), codec);
 
         ConnectionGroupEntity group = new ConnectionGroupEntity();
         group.setId("group-manual");
@@ -102,7 +107,7 @@ class ConnectionStoreTest {
         connection.setDbType("mysql");
         store.saveConnection(connection);
 
-        Path xml = tempDir.resolve(ConfigPaths.CONNECTIONS);
+        Path xml = tempDir.resolve(TenantScopedConfigSupport.defaultTenantConnectionsPath());
         String edited = Files.readString(xml, StandardCharsets.UTF_8).replace("Before", "After manual edit");
         Files.writeString(xml, edited, StandardCharsets.UTF_8);
 
@@ -113,7 +118,7 @@ class ConnectionStoreTest {
     void findAllConnectionsReturnsSharedCatalogRegardlessOfUserId() {
         SecretValueCodec codec = SecretTestSupport.testCodec();
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
-        ConnectionStore store = new ConnectionStore(configDirectory, new ObjectMapper(), codec);
+        ConnectionStore store = new FileConnectionStore(configDirectory, new ObjectMapper(), codec);
 
         ConnectionGroupEntity group = new ConnectionGroupEntity();
         group.setId("group-shared");

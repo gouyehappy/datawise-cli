@@ -60,13 +60,26 @@ async function reloadLogs() {
     }
 }
 
-function exportLogs(format: 'csv' | 'json') {
-    if (!logs.value.length) {
-        layout.showErrorToast(t('team.audit.exportEmpty'))
+async function exportLogs(format: 'csv' | 'json') {
+    const fileName = buildTeamAuditExportFileName(props.teamName, format)
+    try {
+        await teamStore.exportAuditLogs(props.teamId, {
+            format,
+            actorUserId: actorUserId.value === '' ? undefined : actorUserId.value,
+            since: toAuditQueryInstantFromDateInput(sinceDate.value, false),
+            until: toAuditQueryInstantFromDateInput(untilDate.value, true),
+            includeFullSql: includeFullSql.value,
+            fileName,
+        })
+        layout.showSuccessToast(t('team.audit.exportDone', {fileName}))
         return
+    } catch (error) {
+        if (!logs.value.length) {
+            layout.showErrorToast(error instanceof Error ? error.message : t('team.audit.exportEmpty'))
+            return
+        }
     }
     const options = {includeFullSql: includeFullSql.value}
-    const fileName = buildTeamAuditExportFileName(props.teamName, format)
     if (format === 'csv') {
         downloadTeamAuditExport(
             serializeAuditLogsToCsv(logs.value, options),

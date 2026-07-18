@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import {reactive, ref, watch} from 'vue'
+import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {AppModal, DwInput, DwSecretInput, FormField, ModalActions, DwInlineAlert} from '@/core/components'
+import {AppModal, DwButton, DwCheckbox, DwInput, DwSecretInput, FormField, ModalActions, DwInlineAlert} from '@/core/components'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {useAppToast} from '@/features/layout/composables/useAppToast'
+import {authApi} from '@/api'
+import {API_PATHS} from '@/shared/api'
+import {resolveDisplayApiErrorMessage} from '@/shared/api/http/api-error-message'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ 'update:open': [value: boolean]; success: [] }>()
@@ -13,30 +16,70 @@ const auth = useAuthStore()
 const toast = useAppToast()
 
 const loading = ref(false)
+const mode = ref<'login' | 'register'>('login')
 const isDev = import.meta.env.DEV
+const localLoginEnabled = ref(true)
+const oidcEnabled = ref(false)
+const registrationEnabled = ref(false)
+const tenantCreateEnabled = ref(false)
 
 const form = reactive({
   userName: isDev ? 'admin' : '',
   userPassword: '',
+  tenantName: '',
+  createTenant: false,
 })
 
 const errors = reactive({
   userName: '',
   userPassword: '',
+  tenantName: '',
   form: '',
 })
 
+const showLocalForm = computed(() => localLoginEnabled.value)
+const isRegister = computed(() => mode.value === 'register')
+const dialogTitle = computed(() =>
+  isRegister.value ? t('auth.registerTitle') : t('auth.dialogTitle'),
+)
+const dialogSubtitle = computed(() =>
+  isRegister.value ? t('auth.registerSubtitle') : t('auth.dialogSubtitle'),
+)
+
+async function loadOptions() {
+  try {
+    const options = await authApi.getLoginOptions()
+    localLoginEnabled.value = options.localLoginEnabled
+    oidcEnabled.value = options.oidcEnabled
+    registrationEnabled.value = options.registrationEnabled === true
+    tenantCreateEnabled.value = options.tenantCreateEnabled === true
+    if (!registrationEnabled.value) mode.value = 'login'
+  } catch {
+    localLoginEnabled.value = true
+    oidcEnabled.value = false
+    registrationEnabled.value = false
+    tenantCreateEnabled.value = false
+  }
+}
+
 watch(
     () => props.open,
-    (isOpen) => {
+    async (isOpen) => {
       if (!isOpen) return
+      mode.value = 'login'
       errors.userName = ''
       errors.userPassword = ''
+      errors.tenantName = ''
       errors.form = ''
       form.userPassword = ''
+      form.tenantName = ''
+      form.createTenant = false
       if (!form.userName && isDev) form.userName = 'admin'
+      await loadOptions()
     },
 )
+
+onMounted(loadOptions)
 
 function close() {
   emit('update:open', false)
@@ -45,59 +88,89 @@ function close() {
 function clearErrors() {
   errors.userName = ''
   errors.userPassword = ''
+  errors.tenantName = ''
   errors.form = ''
 }
 
 function validateForm(): boolean {
   clearErrors()
   let valid = true
-  if (!form.userName.trim()) {
-    errors.userName = t('auth.usernameRequired')
-    valid = false
-  }
-  if (!form.userPassword) {
-    errors.userPassword = t('auth.passwordRequired')
-    valid = false
+  if (showLocalForm.value) {
+    if (!form.userName.trim()) {
+      errors.userName = t('auth.usernameRequired')
+      valid = false
+    }
+    if (!form.userPassword) {
+      errors.userPassword = t('auth.passwordRequired')
+      valid = false
+    } else if (isRegister.value && form.userPassword.length < 6) {
+      errors.userPassword = t('auth.passwordTooShort')
+      valid = false
+    }
+    if (isRegister.value && form.createTenant && tenantCreateEnabled.value && !form.tenantName.trim()) {
+      errors.tenantName = t('auth.tenantNameRequired')
+      valid = false
+    }
   }
   return valid
 }
 
 function resolveErrorMessage(err: unknown): string {
-  if (err instanceof Error) {
-    if (err.message === 'INVALID_CREDENTIALS') return t('auth.invalidCredentials')
-    return err.message
+  if (!(err instanceof Error) || !err.message.trim()) {
+    return t('auth.failed')
   }
-  return t('auth.failed')
+  return resolveDisplayApiErrorMessage(err, (key) => String(t(key)))
 }
 
 async function handleSubmit() {
   if (loading.value) return
+  if (!showLocalForm.value) return
   if (!validateForm()) return
 
   loading.value = true
   clearErrors()
   try {
-    await auth.login(form.userName.trim(), form.userPassword)
+    if (isRegister.value) {
+      await auth.register({
+        userName: form.userName.trim(),
+        password: form.userPassword,
+        createTenant: form.createTenant && tenantCreateEnabled.value,
+        tenantName: form.createTenant ? form.tenantName.trim() : undefined,
+      })
+      toast.success(t('auth.registerSuccess'))
+    } else {
+      await auth.login(form.userName.trim(), form.userPassword)
+      toast.success(t('auth.success'))
+    }
     emit('success')
     close()
-    toast.success(t('auth.success'))
   } catch (err) {
     errors.form = resolveErrorMessage(err)
   } finally {
     loading.value = false
   }
 }
+
+function startOidcLogin() {
+  window.location.href = API_PATHS.auth.oidcLogin
+}
+
+function toggleMode() {
+  mode.value = isRegister.value ? 'login' : 'register'
+  clearErrors()
+  form.userPassword = ''
+}
 </script>
 
 <template>
   <AppModal
       :open="open"
-      :title="t('auth.dialogTitle')"
-      :subtitle="t('auth.dialogSubtitle')"
+      :title="dialogTitle"
+      :subtitle="dialogSubtitle"
       width="420px"
       @close="close"
   >
-    <form class="modal-form" @submit.prevent="handleSubmit">
+    <form v-if="showLocalForm" class="modal-form" @submit.prevent="handleSubmit">
       <FormField :label="t('auth.usernameLabel')" input-id="login-dialog-username" :error="errors.userName">
         <template #default="{ id }">
           <DwInput
@@ -122,13 +195,46 @@ async function handleSubmit() {
         </template>
       </FormField>
 
+      <template v-if="isRegister && tenantCreateEnabled">
+        <DwCheckbox v-model="form.createTenant" :label="t('auth.createTenantLabel')"/>
+        <FormField
+            v-if="form.createTenant"
+            :label="t('auth.tenantNameLabel')"
+            input-id="login-dialog-tenant"
+            :error="errors.tenantName"
+        >
+          <template #default="{ id }">
+            <DwInput
+                :id="id"
+                v-model="form.tenantName"
+                :placeholder="t('auth.tenantNamePlaceholder')"
+            />
+          </template>
+        </FormField>
+      </template>
+
       <DwInlineAlert :message="errors.form"/>
-      <p v-if="isDev" class="modal-body-hint">{{ t('auth.defaultHint') }}</p>
+      <p v-if="isDev && !isRegister" class="modal-body-hint">{{ t('auth.defaultHint') }}</p>
+      <button
+          v-if="registrationEnabled"
+          type="button"
+          class="mode-toggle"
+          @click="toggleMode"
+      >
+        {{ isRegister ? t('auth.switchToLogin') : t('auth.switchToRegister') }}
+      </button>
     </form>
 
-    <template #footer>
+    <div v-if="oidcEnabled && !isRegister" class="oidc-block">
+      <p v-if="!showLocalForm" class="modal-body-hint">{{ t('auth.oidcOnlyHint') }}</p>
+      <DwButton variant="secondary" class="oidc-btn" @click="startOidcLogin">
+        {{ t('auth.oidcLogin') }}
+      </DwButton>
+    </div>
+
+    <template v-if="showLocalForm" #footer>
       <ModalActions
-          :confirm-label="loading ? '…' : t('auth.submit')"
+          :confirm-label="loading ? '…' : (isRegister ? t('auth.registerSubmit') : t('auth.submit'))"
           :cancel-label="t('common.cancel')"
           :confirm-disabled="loading"
           @cancel="close"
@@ -137,3 +243,24 @@ async function handleSubmit() {
     </template>
   </AppModal>
 </template>
+
+<style scoped>
+.oidc-block {
+  margin-top: 12px;
+}
+.oidc-btn {
+  width: 100%;
+}
+.mode-toggle {
+  margin-top: 10px;
+  border: none;
+  background: transparent;
+  color: var(--dw-primary);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+.mode-toggle:hover {
+  text-decoration: underline;
+}
+</style>

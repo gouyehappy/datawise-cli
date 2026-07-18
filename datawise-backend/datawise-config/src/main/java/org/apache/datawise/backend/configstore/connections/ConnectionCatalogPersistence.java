@@ -1,14 +1,16 @@
 package org.apache.datawise.backend.configstore.connections;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.datawise.backend.common.support.ConnectionsXmlCodec;
+import org.apache.datawise.backend.common.support.XmlConfigSupport;
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
 import org.apache.datawise.backend.configstore.ConfigPaths;
+import org.apache.datawise.backend.configstore.TenantScopedConfigSupport;
+import org.apache.datawise.backend.domain.TenantIds;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.ConnectionGroupEntity;
 import org.apache.datawise.backend.security.ConnectionSecrets;
 import org.apache.datawise.backend.security.SecretValueCodec;
-import org.apache.datawise.backend.common.support.ConnectionsXmlCodec;
-import org.apache.datawise.backend.common.support.XmlConfigSupport;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -17,33 +19,73 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
- * connections.xml 读写、导入与密钥加解密。
+ * connections.xml 读写、导入与密钥加解密（按当前租户路径隔离）。
  */
 public final class ConnectionCatalogPersistence {
 
     private final ConfigDirectoryService configDirectory;
     private final ObjectMapper objectMapper;
     private final SecretValueCodec secretValueCodec;
-    private final ConnectionCatalogCache cache;
-    private final Object loadLock = new Object();
+    private final ConcurrentHashMap<String, ConnectionCatalogCache> caches = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Object> loadLocks = new ConcurrentHashMap<>();
 
     public ConnectionCatalogPersistence(
             ConfigDirectoryService configDirectory,
             ObjectMapper objectMapper,
             SecretValueCodec secretValueCodec,
-            ConnectionCatalogCache cache
+            ConnectionCatalogCache ignoredLegacyCache
     ) {
         this.configDirectory = configDirectory;
         this.objectMapper = objectMapper;
         this.secretValueCodec = secretValueCodec;
-        this.cache = cache;
+        // Eager path ensure for default tenant (legacy migrate).
+        TenantScopedConfigSupport.ensureConnectionsPath(configDirectory, TenantIds.DEFAULT);
+    }
+
+    public ConnectionCatalogPersistence(
+            ConfigDirectoryService configDirectory,
+            ObjectMapper objectMapper,
+            SecretValueCodec secretValueCodec
+    ) {
+        this(configDirectory, objectMapper, secretValueCodec, new ConnectionCatalogCache());
+    }
+
+    /** Ensure empty connections.xml parent dir exists for a tenant. */
+    public void ensureTenantFiles(String tenantId) {
+        String relative = TenantScopedConfigSupport.ensureConnectionsPath(configDirectory, tenantId);
+        Path path = configDirectory.resolve(relative);
+        try {
+            Files.createDirectories(path.getParent());
+            if (!Files.isRegularFile(path)) {
+                ConnectionsXmlCodec.write(path, List.of(), List.of(), objectMapper);
+            }
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to ensure connections.xml for tenant " + tenantId, ex);
+        }
+    }
+
+    private String currentTenantId() {
+        return TenantScopedConfigSupport.currentTenantId();
+    }
+
+    private String connectionsRelativePath() {
+        return TenantScopedConfigSupport.ensureCurrentConnectionsPath(configDirectory);
+    }
+
+    private ConnectionCatalogCache cacheForCurrent() {
+        return caches.computeIfAbsent(currentTenantId(), ignored -> new ConnectionCatalogCache());
+    }
+
+    private Object loadLockForCurrent() {
+        return loadLocks.computeIfAbsent(currentTenantId(), ignored -> new Object());
     }
 
     public Path connectionsFilePath() {
-        return configDirectory.resolve(ConfigPaths.CONNECTIONS);
+        return configDirectory.resolve(connectionsRelativePath());
     }
 
     public String readConnectionsXml() throws IOException {
@@ -82,6 +124,7 @@ public final class ConnectionCatalogPersistence {
     private ConnectionCatalogCache.Entry requireEntry() {
         try {
             Path xmlPath = connectionsFilePath();
+            ConnectionCatalogCache cache = cacheForCurrent();
             if (!ConnectionsXmlCodec.isRegularFile(xmlPath)) {
                 cache.invalidate();
                 return ConnectionCatalogCache.buildEntry(0L, emptyCatalog());
@@ -91,7 +134,7 @@ public final class ConnectionCatalogPersistence {
             if (cached != null) {
                 return cached;
             }
-            synchronized (loadLock) {
+            synchronized (loadLockForCurrent()) {
                 ConnectionCatalogCache.Entry again = cache.getIfFresh(lastModified);
                 if (again != null) {
                     return again;
@@ -162,7 +205,7 @@ public final class ConnectionCatalogPersistence {
     }
 
     synchronized void mutate(Consumer<MutableConnectionCatalog> mutation) {
-        cache.invalidate();
+        cacheForCurrent().invalidate();
         MutableConnectionCatalog catalog = MutableConnectionCatalog.from(loadDecryptedCatalog());
         mutation.accept(catalog);
         writeToDisk(catalog.groups(), catalog.connections());
@@ -199,7 +242,7 @@ public final class ConnectionCatalogPersistence {
             List<ConnectionEntity> toWrite = new ArrayList<>(connections);
             ConnectionSecrets.encryptAll(toWrite, secretValueCodec);
             ConnectionsXmlCodec.write(connectionsFilePath(), groups, toWrite, objectMapper);
-            cache.invalidate();
+            cacheForCurrent().invalidate();
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to persist " + ConfigPaths.CONNECTIONS, ex);
         }

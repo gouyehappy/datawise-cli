@@ -10,8 +10,14 @@ import {
     searchGlobalObjectEntries,
     type GlobalObjectSearchEntry,
 } from '@/features/explorer/services/global-object-search.service'
+import {
+    discoveryHitsToSearchEntries,
+    mergeDiscoveryEntries,
+} from '@/features/explorer/services/global-object-discovery.service'
 import {activateGlobalObjectSearchEntry} from '@/features/explorer/services/global-object-search.actions'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
+import {platformApi} from '@/api'
+import {useDebouncedRef} from '@/core/utils/debounced-ref'
 import {executeShortcutAction} from '@/core/shortcuts/execute-action'
 import {
     isPaletteCommandMode,
@@ -63,6 +69,8 @@ const query = ref('')
 const activeIndex = ref(0)
 const knowledgeEntries = ref<AiKnowledgeEntry[]>([])
 const knowledgeLoaded = ref(false)
+const discoveryEntries = ref<GlobalObjectSearchEntry[]>([])
+const debouncedQuery = useDebouncedRef(query, 220)
 
 const indexedEntries = computed(() => {
     if (!globalObjectSearchOpen.value) return []
@@ -110,7 +118,11 @@ const navigationEntries = computed(() =>
 
 const filteredObjects = computed(() => {
     if (commandMode.value || knowledgeMode.value) return []
-    return searchGlobalObjectEntries(indexedEntries.value, query.value)
+    const local = searchGlobalObjectEntries(indexedEntries.value, query.value)
+    if (!query.value.trim() || query.value.trim().startsWith('>') || query.value.trim().startsWith('#')) {
+        return local
+    }
+    return mergeDiscoveryEntries(local, discoveryEntries.value)
 })
 
 const filteredKnowledge = computed(() =>
@@ -173,15 +185,36 @@ async function ensureKnowledgeLoaded() {
     }
 }
 
+async function refreshDiscovery(q: string) {
+    const trimmed = q.trim()
+    if (!trimmed || trimmed.startsWith('>') || trimmed.startsWith('#') || trimmed.length < 2) {
+        discoveryEntries.value = []
+        return
+    }
+    try {
+        const hits = await platformApi.searchDiscovery(trimmed, 30)
+        discoveryEntries.value = discoveryHitsToSearchEntries(hits)
+    } catch {
+        discoveryEntries.value = []
+    }
+}
+
 watch(globalObjectSearchOpen, (open) => {
     if (open) {
         query.value = ''
         activeIndex.value = 0
+        discoveryEntries.value = []
         void ensureKnowledgeLoaded()
         window.addEventListener('keydown', onKeydown)
     } else {
         window.removeEventListener('keydown', onKeydown)
+        discoveryEntries.value = []
     }
+})
+
+watch(debouncedQuery, (q) => {
+    if (!globalObjectSearchOpen.value) return
+    void refreshDiscovery(q)
 })
 
 watch(listItems, () => {
@@ -284,7 +317,10 @@ function onKeydown(event: KeyboardEvent) {
           <template v-if="item.kind === 'object'">
             <span class="app-palette__label app-palette__label--mono">{{ item.entry.qualifiedLabel }}</span>
             <span class="app-palette__meta">
-              {{ kindLabel(item.entry) }} · {{ item.entry.connectionLabel }}
+              {{ kindLabel(item.entry) }} · {{ item.entry.connectionLabel || '—' }}
+              <template v-if="item.entry.owner"> · {{ item.entry.owner }}</template>
+              <template v-else-if="item.entry.subtitle"> · {{ item.entry.subtitle }}</template>
+              <template v-if="item.entry.source === 'discovery'"> · {{ t('globalObjectSearch.discoveryBadge') }}</template>
             </span>
           </template>
           <template v-else-if="item.kind === 'knowledge'">

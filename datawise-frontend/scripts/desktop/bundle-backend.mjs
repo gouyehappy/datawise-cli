@@ -38,6 +38,16 @@ function copyJre(javaHome, dest) {
         }
         copyDirSync(src, join(dest, dir))
     }
+    if (process.platform === 'darwin') {
+        const javaBin = join(dest, 'bin', 'java')
+        if (!existsSync(javaBin)) {
+            throw new Error(`Bundled macOS JRE missing bin/java under ${dest}`)
+        }
+        log(
+            'bundle-backend',
+            `macOS note: JAVA_HOME must match the package arch (Apple Silicon → arm64 JDK 17+). Current: ${javaHome}`,
+        )
+    }
 }
 
 async function assembleBundle(serverJar) {

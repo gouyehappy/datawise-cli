@@ -2,11 +2,11 @@ package org.apache.datawise.backend.configstore;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.datawise.backend.domain.TenantIds;
 import org.apache.datawise.backend.model.ExportTaskEntity;
 import org.apache.datawise.backend.model.NotificationEntity;
 import org.apache.datawise.backend.model.SavedConsoleEntity;
 import org.apache.datawise.backend.model.SqlHistoryEntity;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -18,16 +18,17 @@ import java.util.Set;
 @Service
 public class WorkspaceStore {
 
-    private final JsonListFile<SqlHistoryEntity> sqlHistory;
+    private final SqlHistoryStore sqlHistoryStore;
     private final JsonListFile<SavedConsoleEntity> savedConsoles;
     private final JsonListFile<ExportTaskEntity> exportTasks;
     private final JsonListFile<NotificationEntity> notifications;
 
-    @Autowired
-    public WorkspaceStore(ConfigDirectoryService configDirectory, ObjectMapper objectMapper) {
-        this.sqlHistory = new JsonListFile<>(
-                configDirectory, objectMapper, ConfigPaths.SQL_HISTORY, new TypeReference<>() {
-        });
+    public WorkspaceStore(
+            SqlHistoryStore sqlHistoryStore,
+            ConfigDirectoryService configDirectory,
+            ObjectMapper objectMapper
+    ) {
+        this.sqlHistoryStore = sqlHistoryStore;
         this.savedConsoles = new JsonListFile<>(
                 configDirectory, objectMapper, ConfigPaths.SAVED_CONSOLES, new TypeReference<>() {
         });
@@ -40,30 +41,21 @@ public class WorkspaceStore {
     }
 
     public List<SqlHistoryEntity> findSqlHistoryByUserId(Long userId) {
-        return sqlHistory.stream()
-                .filter(item -> userId.equals(item.getUserId()))
-                .sorted(Comparator.comparing(SqlHistoryEntity::getExecutedAt).reversed())
-                .toList();
+        return sqlHistoryStore.findByUserId(userId);
     }
 
     public List<SqlHistoryEntity> findSqlHistoryByUserIds(List<Long> userIds) {
-        if (userIds == null || userIds.isEmpty()) {
-            return List.of();
-        }
-        Set<Long> idSet = new HashSet<>(userIds);
-        return sqlHistory.stream()
-                .filter(item -> idSet.contains(item.getUserId()))
-                .sorted(Comparator.comparing(SqlHistoryEntity::getExecutedAt).reversed())
-                .toList();
+        return sqlHistoryStore.findByUserIds(userIds);
     }
 
     public SqlHistoryEntity saveSqlHistory(SqlHistoryEntity entity) {
-        return sqlHistory.append(entity);
+        return sqlHistoryStore.save(entity);
     }
 
     public List<SavedConsoleEntity> findSavedConsolesByUserId(Long userId) {
+        String tenantId = TenantScopedConfigSupport.currentTenantId();
         return savedConsoles.stream()
-                .filter(item -> userId.equals(item.getUserId()))
+                .filter(item -> userId.equals(item.getUserId()) && matchesTenant(item.getTenantId(), tenantId))
                 .sorted(Comparator.comparing(SavedConsoleEntity::getUpdatedAt).reversed())
                 .toList();
     }
@@ -73,20 +65,32 @@ public class WorkspaceStore {
             return List.of();
         }
         Set<String> idSet = new HashSet<>(consoleIds);
+        String tenantId = TenantScopedConfigSupport.currentTenantId();
         return savedConsoles.stream()
-                .filter(item -> idSet.contains(item.getId()))
+                .filter(item -> idSet.contains(item.getId()) && matchesTenant(item.getTenantId(), tenantId))
                 .sorted(Comparator.comparing(SavedConsoleEntity::getUpdatedAt).reversed())
                 .toList();
     }
 
     public Optional<SavedConsoleEntity> findSavedConsoleByUserIdAndName(Long userId, String name) {
+        String tenantId = TenantScopedConfigSupport.currentTenantId();
         return savedConsoles.stream()
-                .filter(item -> userId.equals(item.getUserId()) && name.equals(item.getName()))
+                .filter(item -> userId.equals(item.getUserId())
+                        && name.equals(item.getName())
+                        && matchesTenant(item.getTenantId(), tenantId))
                 .findFirst();
     }
 
     public SavedConsoleEntity saveSavedConsole(SavedConsoleEntity entity) {
+        if (entity.getTenantId() == null || entity.getTenantId().isBlank()) {
+            entity.setTenantId(TenantScopedConfigSupport.currentTenantId());
+        }
         return savedConsoles.upsert(entity, item -> item.getId().equals(entity.getId()));
+    }
+
+    private static boolean matchesTenant(String entityTenantId, String currentTenantId) {
+        return TenantIds.normalizeOrDefault(currentTenantId)
+                .equals(TenantIds.normalizeOrDefault(entityTenantId));
     }
 
     public List<ExportTaskEntity> findExportTasksByUserId(Long userId) {

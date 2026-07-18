@@ -53,6 +53,20 @@ public class DmlDialectRegistry {
         return require(dbType).buildMultiInsert(database, tableName, columns, rows);
     }
 
+    public String buildMultiUpsert(
+            String dbType,
+            String database,
+            String tableName,
+            List<Map<String, Object>> columns,
+            List<Map<String, Object>> rows,
+            List<String> keyColumns,
+            String conflictStrategy
+    ) {
+        return require(dbType).buildMultiUpsert(
+                database, tableName, columns, rows, keyColumns, conflictStrategy
+        );
+    }
+
     public String buildUpdate(
             String dbType,
             String database,

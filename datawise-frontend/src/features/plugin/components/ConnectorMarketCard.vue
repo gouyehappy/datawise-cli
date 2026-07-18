@@ -9,6 +9,7 @@ import {
     buildConnectorInstallGuide,
     CONNECTOR_PLUGIN_DIR,
     formatConnectorCapabilityLabel,
+    formatConnectorIntegrityLabel,
 } from '@/features/datasource/services/connector-market.service'
 import {connectorMarketAccentVars} from '@/features/datasource/services/connector-market-theme.service'
 import type {DbType} from '@/core/types'
@@ -53,6 +54,19 @@ function cardClasses() {
 function capabilityLabel(cap: string) {
     return formatConnectorCapabilityLabel(cap, t, te)
 }
+
+const integrityLabel = computed(() =>
+    formatConnectorIntegrityLabel(props.entry.integrityStatus, t, te),
+)
+
+const integrityClass = computed(() => {
+    const status = props.entry.integrityStatus
+    if (status === 'verified') return 'connector-card__integrity--verified'
+    if (status === 'mismatch') return 'connector-card__integrity--mismatch'
+    if (status === 'missing') return 'connector-card__integrity--missing'
+    if (status === 'unsigned') return 'connector-card__integrity--unsigned'
+    return ''
+})
 
 async function copyInstallGuide(event: Event) {
     event.stopPropagation()
@@ -108,6 +122,7 @@ function openNewConnection(event?: Event) {
       <div class="connector-card__copy">
         <strong class="connector-card__name">{{ entry.label }}</strong>
         <span class="connector-card__id">{{ entry.id }}</span>
+        <span v-if="entry.version" class="connector-card__version">v{{ entry.version }}</span>
       </div>
       <span
           v-if="!standalone"
@@ -142,6 +157,14 @@ function openNewConnection(event?: Event) {
     <p v-else-if="!entry.available && entry.installHint && !dense" class="connector-card__hint">
       {{ entry.installHint }}
     </p>
+
+    <div
+        v-if="integrityLabel"
+        class="connector-card__integrity"
+        :class="integrityClass"
+    >
+      {{ integrityLabel }}
+    </div>
 
     <footer v-if="standalone" class="connector-card__footer">
       <span

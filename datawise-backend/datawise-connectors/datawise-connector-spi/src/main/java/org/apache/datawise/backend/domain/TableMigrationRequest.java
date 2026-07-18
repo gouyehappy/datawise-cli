@@ -17,6 +17,7 @@ public record TableMigrationRequest(
         Boolean truncateTarget,
         Boolean createTargetIfMissing,
         String sourceSelectSql,
-        String targetTableName
+        String targetTableName,
+        String conflictStrategy
 ) {
 }

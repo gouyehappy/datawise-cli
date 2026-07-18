@@ -6,10 +6,12 @@ import org.apache.datawise.backend.domain.TeamAuditLogDto;
 import org.apache.datawise.backend.domain.TeamInviteDto;
 import org.apache.datawise.backend.domain.TeamMemberDto;
 import org.apache.datawise.backend.domain.TeamSummaryDto;
+import org.apache.datawise.backend.domain.TenantIds;
 import org.apache.datawise.backend.model.TeamAuditLogEntity;
 import org.apache.datawise.backend.model.TeamEntity;
 import org.apache.datawise.backend.model.TeamInviteEntity;
 import org.apache.datawise.backend.model.TeamMemberEntity;
+import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.UserAccountService;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +40,7 @@ public class TeamSupport {
     }
 
     public TeamMemberEntity requireMember(String teamId, Long userId) {
+        requireTeam(teamId);
         return teamStore.findMember(teamId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Not a team member"));
     }
@@ -51,8 +54,23 @@ public class TeamSupport {
     }
 
     public TeamEntity requireTeam(String teamId) {
-        return teamStore.findTeamById(teamId)
+        TeamEntity team = teamStore.findTeamById(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("Team not found"));
+        assertCurrentTenant(team.getTenantId());
+        return team;
+    }
+
+    public void assertCurrentTenant(String teamTenantId) {
+        if (!matchesCurrentTenant(teamTenantId)) {
+            throw new IllegalArgumentException("Team not found");
+        }
+    }
+
+    public boolean matchesCurrentTenant(String teamTenantId) {
+        String normalizedTeam = (teamTenantId == null || teamTenantId.isBlank())
+                ? TenantIds.DEFAULT
+                : teamTenantId.trim();
+        return TenantIds.normalizeOrDefault(UserContext.getTenantId()).equals(normalizedTeam);
     }
 
     public String resolveUserName(Long userId) {
@@ -85,6 +103,7 @@ public class TeamSupport {
     public TeamAuditLogDto toAuditDto(TeamAuditLogEntity log) {
         return new TeamAuditLogDto(
                 log.getId(),
+                TenantIds.normalizeOrDefault(log.getTenantId()),
                 log.getActorUserId(),
                 userAccountService.resolveUserName(log.getActorUserId()),
                 log.getAction(),

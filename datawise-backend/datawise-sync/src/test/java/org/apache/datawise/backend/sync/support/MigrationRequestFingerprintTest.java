@@ -37,7 +37,8 @@ class MigrationRequestFingerprintTest {
                 base.throttleMs(),
                 base.truncateTarget(),
                 null,
-                null
+                null,
+                base.conflictStrategy()
         );
         assertNotEquals(
                 MigrationRequestFingerprint.compute(base),
@@ -69,7 +70,8 @@ class MigrationRequestFingerprintTest {
                 0,
                 true,
                 jobId,
-                resumeJobId
+                resumeJobId,
+                null
         );
     }
 }

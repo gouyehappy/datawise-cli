@@ -121,7 +121,9 @@ public class UserAppConfigStore {
     }
 
     public Optional<Map<String, Object>> readPersonalSqlSnippets(long userId) {
-        Path path = configDirectory.resolve(ConfigPaths.userSqlSnippetsPersonal(userId));
+        Path path = configDirectory.resolve(
+                TenantScopedConfigSupport.ensureUserTenantFile(configDirectory, userId, ConfigPaths.SQL_SNIPPETS_PERSONAL)
+        );
         if (!XmlConfigSupport.isRegularFile(path)) {
             return appConfigStore.readSqlSnippets("personal");
         }
@@ -135,7 +137,9 @@ public class UserAppConfigStore {
 
     public void writePersonalSqlSnippets(long userId, Map<String, Object> payload) throws Exception {
         configDirectory.ensureExists();
-        Path path = configDirectory.resolve(ConfigPaths.userSqlSnippetsPersonal(userId));
+        Path path = configDirectory.resolve(
+                TenantScopedConfigSupport.ensureUserTenantFile(configDirectory, userId, ConfigPaths.SQL_SNIPPETS_PERSONAL)
+        );
         Path parent = path.getParent();
         if (parent != null) {
             java.nio.file.Files.createDirectories(parent);

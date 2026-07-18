@@ -1,128 +1,47 @@
 package org.apache.datawise.backend.configstore;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.datawise.backend.configstore.connections.ConnectionCatalogCache;
-import org.apache.datawise.backend.configstore.connections.ConnectionCatalogPersistence;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.ConnectionGroupEntity;
-import org.apache.datawise.backend.security.SecretValueCodec;
-import org.apache.datawise.backend.common.support.ConnectionsXmlCodec;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * 连接与分组门面：{@code config/connections.xml}。
- * <p>
- * 仓库级共享：同一 {@code connections.xml} 对所有登录用户可见；{@code userId} 字段仅作元数据，不参与过滤。
- */
-@Service
-public class ConnectionStore {
+/** Connection catalog scoped to the current tenant (file or jdbc backend). */
+public interface ConnectionStore {
 
-    private final ConnectionCatalogPersistence persistence;
+    void ensureTenantFiles(String tenantId);
 
-    @Autowired
-    public ConnectionStore(
-            ConfigDirectoryService configDirectory,
-            ObjectMapper objectMapper,
-            SecretValueCodec secretValueCodec
-    ) {
-        this(new ConnectionCatalogPersistence(
-                configDirectory,
-                objectMapper,
-                secretValueCodec,
-                new ConnectionCatalogCache()
-        ));
-    }
+    Path connectionsFilePath();
 
-    ConnectionStore(ConnectionCatalogPersistence persistence) {
-        this.persistence = persistence;
-    }
+    String readConnectionsXml() throws Exception;
 
-    public Path connectionsFilePath() {
-        return persistence.connectionsFilePath();
-    }
+    List<ConnectionGroupEntity> findAllGroups();
 
-    public String readConnectionsXml() throws Exception {
-        return persistence.readConnectionsXml();
-    }
+    List<ConnectionEntity> findAllConnections();
 
-    public List<ConnectionGroupEntity> findAllGroups() {
-        return sortedGroups(persistence.loadDecryptedCatalog());
-    }
+    List<ConnectionGroupEntity> findRootGroups();
 
-    public List<ConnectionEntity> findAllConnections() {
-        return sortedConnections(persistence.loadDecryptedCatalog());
-    }
+    List<ConnectionGroupEntity> findChildGroups(String parentId);
 
-    public List<ConnectionGroupEntity> findRootGroups() {
-        return persistence.loadDecryptedCatalog().groups().stream()
-                .filter(group -> group.getParentId() == null)
-                .sorted(Comparator.comparingInt(ConnectionGroupEntity::getSortOrder))
-                .toList();
-    }
+    void replaceAll(List<ConnectionGroupEntity> groups, List<ConnectionEntity> connections);
 
-    public List<ConnectionGroupEntity> findChildGroups(String parentId) {
-        return persistence.loadDecryptedCatalog().groups().stream()
-                .filter(group -> parentId.equals(group.getParentId()))
-                .sorted(Comparator.comparingInt(ConnectionGroupEntity::getSortOrder))
-                .toList();
-    }
+    void importConnectionsXml(String xml) throws IOException;
 
-    public synchronized void replaceAll(List<ConnectionGroupEntity> groups, List<ConnectionEntity> connections) {
-        persistence.replaceAll(groups, connections);
-    }
+    Optional<ConnectionGroupEntity> findGroupById(String groupId);
 
-    public synchronized void importConnectionsXml(String xml) throws IOException {
-        persistence.importConnectionsXml(xml);
-    }
+    ConnectionGroupEntity saveGroup(ConnectionGroupEntity group);
 
-    public Optional<ConnectionGroupEntity> findGroupById(String groupId) {
-        return persistence.findGroupById(groupId);
-    }
+    void deleteGroupById(String groupId);
 
-    public synchronized ConnectionGroupEntity saveGroup(ConnectionGroupEntity group) {
-        return persistence.upsertGroup(group);
-    }
+    Optional<ConnectionEntity> findConnectionById(String connectionId);
 
-    public synchronized void deleteGroupById(String groupId) {
-        persistence.removeGroup(groupId);
-    }
+    List<ConnectionEntity> findConnectionsByGroupId(String groupId);
 
-    public Optional<ConnectionEntity> findConnectionById(String connectionId) {
-        return persistence.findConnectionById(connectionId);
-    }
+    ConnectionEntity saveConnection(ConnectionEntity connection);
 
-    public List<ConnectionEntity> findConnectionsByGroupId(String groupId) {
-        return persistence.findConnectionsByGroupId(groupId);
-    }
+    void deleteConnectionById(String connectionId);
 
-    public synchronized ConnectionEntity saveConnection(ConnectionEntity connection) {
-        return persistence.upsertConnection(connection);
-    }
-
-    public synchronized void deleteConnectionById(String connectionId) {
-        persistence.removeConnection(connectionId);
-    }
-
-    public synchronized int migratePlaintextSecretsIfNeeded() {
-        return persistence.migratePlaintextSecretsIfNeeded();
-    }
-
-    private static List<ConnectionGroupEntity> sortedGroups(ConnectionsXmlCodec.ParsedCatalog catalog) {
-        return catalog.groups().stream()
-                .sorted(Comparator.comparingInt(ConnectionGroupEntity::getSortOrder))
-                .toList();
-    }
-
-    private static List<ConnectionEntity> sortedConnections(ConnectionsXmlCodec.ParsedCatalog catalog) {
-        return catalog.connections().stream()
-                .sorted(Comparator.comparingInt(ConnectionEntity::getSortOrder))
-                .toList();
-    }
+    int migratePlaintextSecretsIfNeeded();
 }

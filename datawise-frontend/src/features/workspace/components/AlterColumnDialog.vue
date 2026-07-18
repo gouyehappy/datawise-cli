@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import {computed, ref, toRef, watch} from 'vue'
+import {computed, nextTick, ref, toRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {AppModal, DwButton, DwConfirmAlert, DwInlineAlert, FormField} from '@/core/components'
 import type {DbType} from '@/core/types'
@@ -22,6 +22,9 @@ const props = defineProps<{
   executeDisabledHint?: string
   executing?: boolean
   productionEnv?: boolean
+  /** Prefill when the dialog opens (e.g. ER graph column double-click). */
+  initialOperation?: AlterColumnOperation
+  initialColumnName?: string
   /** 父级执行结果反馈（弹窗打开时禁止 toast） */
   actionFeedback?: ModalFeedback | null
 }>()
@@ -98,19 +101,31 @@ function applyColumn(column: TableColumnDetail | undefined) {
   defaultValue.value = column.defaultValue != null ? String(column.defaultValue) : ''
 }
 
-function resetForm() {
-  operation.value = 'add'
-  selectedColumn.value = ''
+function hydrateFromInitial() {
   confirmArmed.value = false
   clearFeedback()
   emit('clear-action-feedback')
-  applyColumn(undefined)
+  const initialOp = props.initialOperation ?? 'add'
+  operation.value = initialOp
+  if (initialOp === 'add') {
+    selectedColumn.value = ''
+    applyColumn(undefined)
+    return
+  }
+  const preferred = props.initialColumnName?.trim()
+  void nextTick(() => {
+    const column = preferred
+        ? props.columns.find((item) => item.name === preferred) ?? props.columns[0]
+        : props.columns[0]
+    selectedColumn.value = column?.name ?? ''
+    applyColumn(column)
+  })
 }
 
 watch(
     () => props.open,
     (open) => {
-      if (open) resetForm()
+      if (open) hydrateFromInitial()
     },
 )
 

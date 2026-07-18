@@ -4,6 +4,9 @@ import org.apache.datawise.backend.common.DbType;
 import org.apache.datawise.backend.dml.render.AbstractJdbcDmlDialect;
 import org.apache.datawise.backend.dml.render.DmlSqlSupport;
 
+import java.util.List;
+import java.util.Map;
+
 /** 单库 PostgreSQL 协议 fork 的 DML 渲染（双引号标识符 + schema.table 限定）。 */
 public final class PostgresqlForkDmlDialect extends AbstractJdbcDmlDialect {
 
@@ -38,5 +41,19 @@ public final class PostgresqlForkDmlDialect extends AbstractJdbcDmlDialect {
     @Override
     public String qualifiedTable(String database, String tableName) {
         return DbType.quoteQualifiedTable(dbType.id(), database, tableName);
+    }
+
+    @Override
+    public String buildMultiUpsert(
+            String database,
+            String tableName,
+            List<Map<String, Object>> columns,
+            List<Map<String, Object>> rows,
+            List<String> keyColumns,
+            String conflictStrategy
+    ) {
+        return PostgresqlUpsertSupport.build(
+                this, database, tableName, columns, rows, keyColumns, conflictStrategy
+        );
     }
 }

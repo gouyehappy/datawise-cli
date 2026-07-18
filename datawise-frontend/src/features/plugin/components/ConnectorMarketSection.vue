@@ -34,6 +34,7 @@ const search = ref('')
 const availability = ref<AvailabilityFilter>('all')
 const entries = ref<ConnectorMarketEntry[]>([])
 const loadedPluginJars = ref<string[]>([])
+const manifestSummary = ref<{schemaVersion: number; updatedAt?: string; channel?: string; pluginCount: number} | null>(null)
 const runtimeExpanded = ref(false)
 
 onMounted(() => {
@@ -47,6 +48,7 @@ async function loadMarket() {
         const bundle = await fetchConnectorMarketBundle()
         entries.value = bundle.connectors
         loadedPluginJars.value = bundle.loadedPluginJars
+        manifestSummary.value = bundle.manifest ?? null
     } catch (err) {
         error.value = err instanceof Error ? err.message : String(err)
     } finally {
@@ -152,6 +154,12 @@ function focusPending() {
             <span class="connector-market-stat">
               <span class="connector-market-stat__dot connector-market-stat__dot--total" aria-hidden="true"/>
               <span>{{ t('plugin.connectorMarket.totalCount', {count: summary.total}) }}</span>
+            </span>
+            <span v-if="manifestSummary" class="connector-market-stat">
+              <span>{{ t('plugin.connectorMarket.manifestSummary', {
+                count: manifestSummary.pluginCount,
+                channel: manifestSummary.channel || t('plugin.connectorMarket.manifestChannelLocal'),
+              }) }}</span>
             </span>
           </div>
         </div>

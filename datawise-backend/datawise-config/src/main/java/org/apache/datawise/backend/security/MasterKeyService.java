@@ -16,6 +16,9 @@ import java.util.Base64;
 
 /**
  * 本地主密钥：优先 {@code DATAWISE_MASTER_KEY} 环境变量，否则 {@code config/.datawise-master-key}。
+ * <p>
+ * Multi-node / hosted deployments should inject {@link #MASTER_KEY_ENV} (or mount the same key file)
+ * so ciphertext stays portable across machines.
  */
 @Service
 public class MasterKeyService {
@@ -24,10 +27,13 @@ public class MasterKeyService {
     public static final String MASTER_KEY_FILE = ".datawise-master-key";
 
     private final SecretKey secretKey;
+    private final MasterKeySource source;
 
     @Autowired
     public MasterKeyService(ConfigDirectoryService configDirectory) {
-        this.secretKey = loadOrCreate(configDirectory);
+        LoadedKey loaded = loadOrCreate(configDirectory);
+        this.secretKey = loaded.key();
+        this.source = loaded.source();
     }
 
     /**
@@ -35,27 +41,32 @@ public class MasterKeyService {
      */
     MasterKeyService(byte[] rawKey) {
         this.secretKey = toSecretKey(rawKey);
+        this.source = MasterKeySource.ENV;
     }
 
     public SecretKey secretKey() {
         return secretKey;
     }
 
-    private static SecretKey loadOrCreate(ConfigDirectoryService configDirectory) {
+    public MasterKeySource source() {
+        return source;
+    }
+
+    private static LoadedKey loadOrCreate(ConfigDirectoryService configDirectory) {
         String env = System.getenv(MASTER_KEY_ENV);
         if (env != null && !env.isBlank()) {
-            return toSecretKey(decodeKey(env.trim()));
+            return new LoadedKey(toSecretKey(decodeKey(env.trim())), MasterKeySource.ENV);
         }
         Path keyPath = configDirectory.resolve(MASTER_KEY_FILE);
         if (Files.isRegularFile(keyPath)) {
             try {
                 String encoded = Files.readString(keyPath, StandardCharsets.UTF_8).trim();
-                return toSecretKey(decodeKey(encoded));
+                return new LoadedKey(toSecretKey(decodeKey(encoded)), MasterKeySource.FILE);
             } catch (IOException ex) {
                 throw new IllegalStateException("Failed to read " + MASTER_KEY_FILE, ex);
             }
         }
-        return createAndPersist(configDirectory, keyPath);
+        return new LoadedKey(createAndPersist(configDirectory, keyPath), MasterKeySource.GENERATED);
     }
 
     private static SecretKey createAndPersist(ConfigDirectoryService configDirectory, Path keyPath) {
@@ -84,5 +95,8 @@ public class MasterKeyService {
             throw new IllegalArgumentException("Master key must be 32 bytes");
         }
         return new SecretKeySpec(raw, "AES");
+    }
+
+    private record LoadedKey(SecretKey key, MasterKeySource source) {
     }
 }

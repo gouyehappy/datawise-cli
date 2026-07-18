@@ -5,9 +5,12 @@ import org.apache.datawise.backend.common.DbTypeCatalogEntry;
 import org.apache.datawise.backend.connector.ConnectorCapability;
 import org.apache.datawise.backend.connector.DataSourceConnector;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
+import org.apache.datawise.backend.connector.plugin.ConnectorPluginManifestSupport;
 import org.apache.datawise.backend.connector.support.ConnectorCapabilityCatalog;
 import org.apache.datawise.backend.domain.ConnectorMarketEntryDto;
 import org.apache.datawise.backend.domain.ConnectorPluginLoadFailure;
+import org.apache.datawise.backend.domain.ConnectorPluginManifest;
+import org.apache.datawise.backend.domain.ConnectorPluginManifestEntry;
 import org.apache.datawise.backend.domain.DatasourceDefinitionDto;
 import org.apache.datawise.backend.ops.DatabaseOpsRegistry;
 import org.springframework.stereotype.Service;
@@ -16,7 +19,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,31 +42,67 @@ public class DatasourceCatalogService {
     /** Full connector market: every catalog-listed type with runtime availability. */
     public List<ConnectorMarketEntryDto> listMarket() {
         CatalogSnapshot snap = snapshot();
+        Optional<ConnectorPluginManifest> manifest = connectorFacade.catalog().pluginManifest();
+        Map<String, String> jarByConnector = connectorFacade.catalog().loadedJarByConnectorId();
         List<ConnectorMarketEntryDto> market = new ArrayList<>();
         for (DbType type : DbType.catalogListed()) {
             DbTypeCatalogEntry catalog = type.catalogEntry().orElseThrow();
             DatasourceDefinitionDto available = snap.byId().get(type.id());
+            Optional<ConnectorPluginManifestEntry> manifestEntry = manifest.flatMap(
+                    value -> ConnectorPluginManifestSupport.findById(value, type.id())
+            );
+            String loadedJar = jarByConnector.get(type.id());
+            boolean fromPluginJar = loadedJar != null;
             if (available != null) {
+                String integrity = ConnectorPluginManifestSupport.resolveIntegrityStatus(
+                        true,
+                        fromPluginJar,
+                        manifestEntry,
+                        connectorFacade.catalog().pluginsDirectory(),
+                        loadedJar
+                );
                 market.add(new ConnectorMarketEntryDto(
                         available.id(),
                         available.label(),
                         available.primary(),
                         true,
                         available.capabilities(),
-                        null
+                        null,
+                        manifestEntry.map(ConnectorPluginManifestEntry::version).orElse(null),
+                        loadedJar != null ? loadedJar : manifestEntry.map(ConnectorPluginManifestEntry::jar).orElse(null),
+                        integrity,
+                        manifestEntry.map(ConnectorPluginManifestEntry::downloadUrl).orElse(null)
                 ));
                 continue;
             }
+            String integrity = ConnectorPluginManifestSupport.resolveIntegrityStatus(
+                    false,
+                    false,
+                    manifestEntry,
+                    connectorFacade.catalog().pluginsDirectory(),
+                    null
+            );
+            String hint = manifestEntry
+                    .map(entry -> buildInstallHint(entry))
+                    .orElse("Install connector plugin JAR under config/plugins and restart the backend.");
             market.add(new ConnectorMarketEntryDto(
                     type.id(),
                     type.getDisplayName(),
                     catalog.primary(),
                     false,
                     List.of(),
-                    "Install connector plugin JAR under config/plugins and restart the backend."
+                    hint,
+                    manifestEntry.map(ConnectorPluginManifestEntry::version).orElse(null),
+                    manifestEntry.map(ConnectorPluginManifestEntry::jar).orElse(null),
+                    integrity,
+                    manifestEntry.map(ConnectorPluginManifestEntry::downloadUrl).orElse(null)
             ));
         }
         return List.copyOf(market);
+    }
+
+    public Optional<ConnectorPluginManifest> pluginManifest() {
+        return connectorFacade.catalog().reloadPluginManifest();
     }
 
     public Optional<DatasourceDefinitionDto> findById(String id) {
@@ -150,6 +188,21 @@ public class DatasourceCatalogService {
 
     private static String catalogId(String dbType) {
         return DbType.find(dbType).map(DbType::id).orElse(DbType.normalizeId(dbType));
+    }
+
+    private static String buildInstallHint(ConnectorPluginManifestEntry entry) {
+        StringBuilder hint = new StringBuilder("Install connector plugin JAR under config/plugins");
+        if (entry.jar() != null && !entry.jar().isBlank()) {
+            hint.append(" as ").append(entry.jar());
+        }
+        hint.append(" and restart the backend.");
+        if (entry.version() != null && !entry.version().isBlank()) {
+            hint.append(" Manifest version: ").append(entry.version()).append('.');
+        }
+        if (entry.downloadUrl() != null && !entry.downloadUrl().isBlank()) {
+            hint.append(" Download: ").append(entry.downloadUrl());
+        }
+        return hint.toString();
     }
 
     private record CatalogSnapshot(List<DatasourceDefinitionDto> available, Map<String, DatasourceDefinitionDto> byId) {

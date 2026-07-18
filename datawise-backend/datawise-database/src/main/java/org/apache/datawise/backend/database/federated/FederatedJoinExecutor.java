@@ -8,12 +8,12 @@ import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.model.FederatedViewSource;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /** 在各源执行子查询后在内存中执行联邦 JOIN。 */
@@ -29,9 +29,14 @@ final class FederatedJoinExecutor {
             SqlService sqlService,
             int maxRows
     ) {
+        int resolvedMaxRows = FederatedJoinLimits.resolveMaxRows(maxRows);
+        FederatedJoinPredicatePushdown.PushdownResult pushdown = FederatedJoinPredicatePushdown.apply(plan);
+        FederatedJoinPlan effectivePlan = pushdown.plan();
+
         Map<String, ExecuteSqlResult> partialResults = new LinkedHashMap<>();
         long totalDuration = 0L;
-        for (FederatedJoinStep step : plan.steps()) {
+        boolean sourceTruncated = false;
+        for (FederatedJoinStep step : effectivePlan.steps()) {
             if (partialResults.containsKey(step.sourceAlias())) {
                 continue;
             }
@@ -44,16 +49,24 @@ final class FederatedJoinExecutor {
                     subSql,
                     source.getConnectionId(),
                     source.getDatabase(),
-                    maxRows,
+                    resolvedMaxRows,
                     null
             );
             partialResults.put(step.sourceAlias(), partial);
             totalDuration += partial.durationMs();
+            if (partial.rows() != null && partial.rows().size() >= resolvedMaxRows) {
+                sourceTruncated = true;
+            }
         }
 
-        List<Map<String, Object>> joinedRows = joinRows(plan, partialResults, maxRows);
-        List<Map<String, Object>> outputColumns = buildOutputColumns(plan, joinedRows);
-        List<Map<String, Object>> projectedRows = projectRows(plan, joinedRows, outputColumns);
+        JoinOutcome outcome = joinRows(effectivePlan, partialResults, resolvedMaxRows);
+        List<Map<String, Object>> filtered = FederatedJoinResidualFilter.apply(
+                outcome.rows(),
+                pushdown.residualWhere()
+        );
+        List<Map<String, Object>> outputColumns = buildOutputColumns(effectivePlan, filtered);
+        List<Map<String, Object>> projectedRows = projectRows(effectivePlan, filtered, outputColumns);
+        boolean truncated = sourceTruncated || outcome.truncated();
 
         return new ExecuteSqlResult(
                 viewSql,
@@ -64,13 +77,13 @@ final class FederatedJoinExecutor {
                 null,
                 null,
                 null,
+                truncated ? Boolean.TRUE : null,
                 null,
-                null,
-                null
+                resolvedMaxRows
         );
     }
 
-    private static List<Map<String, Object>> joinRows(
+    private static JoinOutcome joinRows(
             FederatedJoinPlan plan,
             Map<String, ExecuteSqlResult> partialResults,
             int maxRows
@@ -82,6 +95,7 @@ final class FederatedJoinExecutor {
                 first.tableAlias(),
                 firstResult.columns()
         );
+        boolean truncated = false;
 
         for (int i = 1; i < plan.steps().size(); i++) {
             FederatedJoinStep step = plan.steps().get(i);
@@ -91,36 +105,148 @@ final class FederatedJoinExecutor {
                     step.tableAlias(),
                     rightResult.columns()
             );
-            current = innerJoin(current, rightRows, step.onCondition(), maxRows);
+            JoinOutcome stepOutcome = innerJoin(current, rightRows, step.onCondition(), maxRows);
+            current = stepOutcome.rows();
+            truncated = truncated || stepOutcome.truncated();
+            if (truncated && current.size() >= maxRows) {
+                break;
+            }
         }
-        return current;
+        return new JoinOutcome(current, truncated);
     }
 
-    private static List<Map<String, Object>> innerJoin(
+    private static JoinOutcome innerJoin(
             List<Map<String, Object>> leftRows,
             List<Map<String, Object>> rightRows,
             String onCondition,
             int maxRows
     ) {
+        List<String[]> eqPairs = parseEqualityPairs(onCondition);
+        if (eqPairs.isEmpty()) {
+            return crossJoin(leftRows, rightRows, maxRows);
+        }
+        return hashJoin(leftRows, rightRows, eqPairs, maxRows);
+    }
+
+    private static JoinOutcome crossJoin(
+            List<Map<String, Object>> leftRows,
+            List<Map<String, Object>> rightRows,
+            int maxRows
+    ) {
+        long product = (long) leftRows.size() * (long) rightRows.size();
+        if (product > FederatedJoinLimits.MAX_CROSS_PRODUCT) {
+            throw new IllegalArgumentException(
+                    "Federated cross JOIN product too large ("
+                            + leftRows.size() + " × " + rightRows.size()
+                            + "). Add ON equality predicates, reduce source filters, or lower maxRows "
+                            + "(hard cap " + FederatedJoinLimits.HARD_MAX_ROWS + ")."
+            );
+        }
         List<Map<String, Object>> joined = new ArrayList<>();
         for (Map<String, Object> left : leftRows) {
             for (Map<String, Object> right : rightRows) {
                 Map<String, Object> combined = new LinkedHashMap<>(left);
                 combined.putAll(right);
-                if (matchesOn(combined, onCondition)) {
-                    joined.add(combined);
-                    if (joined.size() >= maxRows) {
-                        return joined;
-                    }
+                joined.add(combined);
+                if (joined.size() >= maxRows) {
+                    return new JoinOutcome(joined, true);
                 }
             }
         }
-        return joined;
+        return new JoinOutcome(joined, false);
     }
 
-    private static boolean matchesOn(Map<String, Object> row, String onCondition) {
+    private static JoinOutcome hashJoin(
+            List<Map<String, Object>> leftRows,
+            List<Map<String, Object>> rightRows,
+            List<String[]> eqPairs,
+            int maxRows
+    ) {
+        return hashJoin(leftRows, rightRows, eqPairs, maxRows, FederatedJoinLimits.MEMORY_HASH_BUILD_ROWS);
+    }
+
+    /** Package-visible for tests; {@code spillThreshold} forces Grace spill when build side is larger. */
+    static JoinOutcome hashJoin(
+            List<Map<String, Object>> leftRows,
+            List<Map<String, Object>> rightRows,
+            List<String[]> eqPairs,
+            int maxRows,
+            int spillThreshold
+    ) {
+        boolean buildRight = rightRows.size() <= leftRows.size();
+        List<Map<String, Object>> buildRows = buildRight ? rightRows : leftRows;
+
+        if (buildRows.size() > Math.max(0, spillThreshold)) {
+            return FederatedJoinSpillSupport.hashJoinWithSpill(
+                    leftRows,
+                    rightRows,
+                    eqPairs,
+                    maxRows,
+                    (row, useRightSide) -> buildJoinKey(row, eqPairs, useRightSide)
+            );
+        }
+
+        List<Map<String, Object>> probeRows = buildRight ? leftRows : rightRows;
+        Map<Object, List<Map<String, Object>>> index = new HashMap<>();
+        for (Map<String, Object> row : buildRows) {
+            Object key = buildJoinKey(row, eqPairs, buildRight);
+            if (key == null) {
+                continue;
+            }
+            index.computeIfAbsent(key, ignored -> new ArrayList<>()).add(row);
+        }
+
+        List<Map<String, Object>> joined = new ArrayList<>();
+        for (Map<String, Object> probe : probeRows) {
+            Object key = buildJoinKey(probe, eqPairs, !buildRight);
+            if (key == null) {
+                continue;
+            }
+            List<Map<String, Object>> matches = index.get(key);
+            if (matches == null) {
+                continue;
+            }
+            for (Map<String, Object> build : matches) {
+                Map<String, Object> combined = new LinkedHashMap<>();
+                if (buildRight) {
+                    combined.putAll(probe);
+                    combined.putAll(build);
+                } else {
+                    combined.putAll(build);
+                    combined.putAll(probe);
+                }
+                joined.add(combined);
+                if (joined.size() >= maxRows) {
+                    return new JoinOutcome(joined, true);
+                }
+            }
+        }
+        return new JoinOutcome(joined, false);
+    }
+
+    private static Object buildJoinKey(Map<String, Object> row, List<String[]> eqPairs, boolean useRightSide) {
+        if (eqPairs.size() == 1) {
+            String[] pair = eqPairs.get(0);
+            Object value = resolveRef(row, useRightSide ? pair[1] : pair[0]);
+            return normalizeValue(value);
+        }
+        List<Object> parts = new ArrayList<>(eqPairs.size());
+        for (String[] pair : eqPairs) {
+            Object value = resolveRef(row, useRightSide ? pair[1] : pair[0]);
+            Object normalized = normalizeValue(value);
+            if (normalized == null) {
+                return null;
+            }
+            parts.add(normalized);
+        }
+        return parts;
+    }
+
+    /** Parses {@code a = b AND c = d} into left/right ref pairs. */
+    static List<String[]> parseEqualityPairs(String onCondition) {
+        List<String[]> pairs = new ArrayList<>();
         if (onCondition == null || onCondition.isBlank()) {
-            return true;
+            return pairs;
         }
         String[] conditions = onCondition.split("(?i)\\band\\b");
         for (String condition : conditions) {
@@ -134,13 +260,9 @@ final class FederatedJoinExecutor {
             }
             String leftRef = trimmed.substring(0, eqIdx).trim();
             String rightRef = trimmed.substring(eqIdx + 1).trim();
-            Object left = resolveRef(row, leftRef);
-            Object right = resolveRef(row, rightRef);
-            if (!Objects.equals(normalizeValue(left), normalizeValue(right))) {
-                return false;
-            }
+            pairs.add(new String[]{leftRef, rightRef});
         }
-        return true;
+        return pairs;
     }
 
     private static int findEqualityOperator(String condition) {
@@ -298,5 +420,8 @@ final class FederatedJoinExecutor {
             throw new IllegalArgumentException("unknown source alias: " + alias);
         }
         return source;
+    }
+
+    record JoinOutcome(List<Map<String, Object>> rows, boolean truncated) {
     }
 }

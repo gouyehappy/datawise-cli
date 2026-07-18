@@ -3,6 +3,7 @@ import type {
     AnalysisCanvasDetail,
     AnalysisCanvasSummary,
     AutoGenerateSemanticMetricsRequest,
+    DiscoveryHit,
     ExecuteFederatedViewRequest,
     FederatedViewDetail,
     FederatedViewExecuteResult,
@@ -26,6 +27,13 @@ import type {
     SqlReviewRequest,
     SqlReviewResult,
 } from '@/features/platform/types/platform.types'
+import type {
+    CreateInsightActionRequest,
+    InsightActionResult,
+    OutboundWebhook,
+    OutboundWebhookTestResult,
+    SaveOutboundWebhookRequest,
+} from '@/shared/api/types'
 import {deleteJson, getJson, postJson, putJson} from '@/shared/api/http/request'
 import {API_PATHS} from '@/shared/api/http/paths'
 
@@ -63,6 +71,9 @@ export function createHttpPlatformApi(): PlatformApi {
 
         autoGenerateSemanticMetrics: (request) =>
             postJson<SemanticMetric[]>(paths.semanticMetricsAutoGenerate, request),
+
+        searchDiscovery: (q, limit) =>
+            getJson<DiscoveryHit[]>(paths.discoverySearch, {q, ...(limit != null ? {limit} : {})}),
 
         reviewSql: (request) =>
             postJson<SqlReviewResult>(paths.sqlReview, request),
@@ -117,5 +128,20 @@ export function createHttpPlatformApi(): PlatformApi {
 
         saveQueryLibraryVersion: (request) =>
             postJson<QueryLibraryVersion>(paths.queryLibrarySaveVersion, request),
+
+        listOutboundWebhooks: () =>
+            getJson<OutboundWebhook[]>(paths.outboundWebhooks),
+
+        saveOutboundWebhook: (request: SaveOutboundWebhookRequest) =>
+            putJson<OutboundWebhook>(paths.outboundWebhooks, request),
+
+        deleteOutboundWebhook: (id) =>
+            deleteJson<void>(`${paths.outboundWebhooks}/${encodeId(id)}`),
+
+        testOutboundWebhook: (id) =>
+            postJson<OutboundWebhookTestResult>(paths.outboundWebhookTest(id), {}),
+
+        createInsightAction: (request: CreateInsightActionRequest) =>
+            postJson<InsightActionResult>(paths.insightActions, request),
     }
 }

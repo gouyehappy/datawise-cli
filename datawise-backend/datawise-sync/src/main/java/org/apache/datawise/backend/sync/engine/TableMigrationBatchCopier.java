@@ -140,7 +140,9 @@ public class TableMigrationBatchCopier {
                     endpoints.targetDatabase(),
                     command.tableName(),
                     page,
-                    rows
+                    rows,
+                    command.primaryKeyColumns(),
+                    command.conflictStrategy()
             );
             rowsMigrated += rows.size();
             batches += 1;
@@ -237,7 +239,9 @@ public class TableMigrationBatchCopier {
                         endpoints.targetDatabase(),
                         command.tableName(),
                         page,
-                        rows
+                        rows,
+                        command.primaryKeyColumns(),
+                        command.conflictStrategy()
                 );
                 rowsMigrated += rows.size();
                 batches += 1;
@@ -408,17 +412,32 @@ public class TableMigrationBatchCopier {
             String targetDatabase,
             String tableName,
             ExecuteSqlResult page,
-            List<Map<String, Object>> rows
+            List<Map<String, Object>> rows,
+            List<String> primaryKeyColumns,
+            String conflictStrategy
     ) throws SQLException {
-        String insertSql = connectorFacade.dml().buildMultiInsert(
-                target.getDbType(),
-                targetDatabase,
-                tableName,
-                page.columns(),
-                rows
-        );
-        if (!insertSql.isBlank()) {
-            connectorFacade.jdbc().executeUpdateOnConnection(targetConnection, insertSql);
+        String writeSql;
+        if (conflictStrategy != null && !conflictStrategy.isBlank()) {
+            writeSql = connectorFacade.dml().buildMultiUpsert(
+                    target.getDbType(),
+                    targetDatabase,
+                    tableName,
+                    page.columns(),
+                    rows,
+                    primaryKeyColumns != null ? primaryKeyColumns : List.of(),
+                    conflictStrategy
+            );
+        } else {
+            writeSql = connectorFacade.dml().buildMultiInsert(
+                    target.getDbType(),
+                    targetDatabase,
+                    tableName,
+                    page.columns(),
+                    rows
+            );
+        }
+        if (!writeSql.isBlank()) {
+            connectorFacade.jdbc().executeUpdateOnConnection(targetConnection, writeSql);
         }
     }
 

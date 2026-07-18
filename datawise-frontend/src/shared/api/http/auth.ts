@@ -21,12 +21,18 @@ export function createHttpAuthApi(): AuthApi {
         loginAsGuest: async () =>
             postForm<LoginResult>(API_PATHS.auth.loginGuest, new URLSearchParams(), {authBypass: true}),
 
+        register: async (request) =>
+            postJson<LoginResult>(API_PATHS.auth.register, request, {authBypass: true}),
+
         signOut: async () => {
             await postForm<void>(API_PATHS.auth.signOut, new URLSearchParams(), {authBypass: true})
         },
 
         getCurrentSession: async (options) =>
             getJson<SessionInfo>(API_PATHS.auth.session, undefined, options),
+
+        switchTenant: async (tenantId) =>
+            postJson<SessionInfo>(API_PATHS.auth.switchTenant, {tenantId}),
 
         getSessionPolicy: async () => getJson<AuthSessionPolicy>(API_PATHS.auth.sessionPolicy),
 
@@ -36,6 +42,14 @@ export function createHttpAuthApi(): AuthApi {
         changePassword: async (currentPassword, newPassword) => {
             await postJson<void>(API_PATHS.auth.changePassword, {currentPassword, newPassword})
         },
+
+        getLoginOptions: async () =>
+            getJson(API_PATHS.auth.loginOptions, undefined, {authBypass: true, silent: true}),
+
+        getOidcConfig: async () => getJson(API_PATHS.auth.oidcConfig),
+
+        updateOidcConfig: async (request) =>
+            putJson(API_PATHS.auth.oidcConfig, request),
 
         resolveUserProfile: resolveHttpUserProfile,
     }

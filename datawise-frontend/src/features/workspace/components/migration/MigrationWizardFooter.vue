@@ -36,7 +36,7 @@ const w = useMigrationWizard()
             :loading="w.preflightLoading"
             @click="w.startMigration"
         >
-          {{ t('explorer.tableMigrationWizard.migrate') }}
+          {{ w.migrateActionLabel }}
         </DwButton>
       </template>
 

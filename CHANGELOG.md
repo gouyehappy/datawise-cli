@@ -2,6 +2,64 @@
 
 All notable product-level changes for DataWise are documented in this file.
 
+## Unreleased — Tenancy Phase 0–3 (RBAC + dual-mode + JDBC metadata)
+
+### Highlights
+- Dual-mode tenancy scaffold (`datawise.tenancy.mode=single` default): bootstrap `default` tenant, system roles, and user memberships.
+- Admin detection prefers `tenant_admin` role; effective permissions are **role-first** (membership role union ignores per-user feature map; no role + map → custom; else → readonly). Guest and `tenant_admin` keep special cases.
+- Settings → User permissions: assign tenant roles by default (matrix is read-only preview); custom permissions and roles are mutually exclusive on write.
+- Session / `UserContext` / API tokens carry `tenantId`; connections, groups, and teams are tagged and filtered by tenant.
+- Config layout: `connections.xml` / `teams.json` / `oidc.json` migrate into `tenants/default/` (legacy kept as `*.migrated`).
+- Outbound webhooks are tenant-scoped (`tenants/{id}/outbound-webhooks.json`); admin CRUD; legacy per-user files merge on first access.
+- Team audit logs carry `tenantId`; SQL/terminal audit only fans out to teams in the current tenant.
+- Phase 2 (opt-in `mode=multi`): platform-admin whitelist, tenant create/suspend/soft-delete, member invite, `POST /api/auth/switch-tenant`, profile org switcher.
+- OIDC claim → tenant mapping (`tenantClaim` / `tenantClaimMap`) with optional auto-membership; migration concurrency slots keyed by product tenant; connection hard-cap quota.
+- Optional public registration (`allow-registration`) with login UI toggle; optional self-serve org create when `allow-tenant-create` is on.
+- Optional per-tenant daily AI call cap (`max-ai-calls-per-tenant-per-day`) enforced on AI chat/analyze/SQL endpoints.
+- True path isolation: teams / connections / OIDC read-write under `tenants/{tenantId}/` keyed by session tenant (not only in-memory filters).
+- Personal workspace files (AI knowledge, semantic metrics, scheduled tasks, etc.) live under `users/{id}/tenants/{tenantId}/` (legacy flat files migrate into `default`); `app.xml` stays user-global.
+- Schema cache disk path includes tenant; memory schema cache cleared on tenant switch.
+- Saved consoles / SQL history filtered and stamped by `tenantId`.
+- Optional identity metadata JDBC backend (`datawise.storage.backend=jdbc`) with Flyway schema + one-shot file import; desktop default remains `file`.
+- JDBC team / connection / OIDC / webhook / AI usage / SQL history snapshots when `storage.backend=jdbc`.
+- Settings → Tenants panel for platform admins in multi mode; member invite/role UI; custom tenant roles.
+- Team APIs reject cross-tenant IDs (IDOR guard).
+- Wave C spillover MVP: tenant AI usage card (`GET /api/tenants/mine/ai-usage`); scheduled SQL/canvas `digest` → `insight.digest` webhook; Dashboard chart read-only share links (`/share/{token}`).
+- Wave B S1 slice: table migration mode `PK_UPSERT` with conflict strategies OVERWRITE / SKIP / FAIL (MySQL `ON DUPLICATE KEY` / PostgreSQL `ON CONFLICT`); production-target migration plans go through team approval (approve records consent; managers run the wizard).
+- Wave B S2 slice: federated JOIN hard caps (`FederatedJoinLimits`), hash join for equality ON, cross-product rejection, `hasMore` truncation; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
+- Wave B S3 slice: lakehouse lineage front door (`LakehouseLineageParser`) — normalize stripable Hive clauses, honest PARTIAL for LATERAL VIEW / MATCH_RECOGNIZE / Flink window TVFs; see [docs/LAKEHOUSE_LINEAGE.md](./docs/LAKEHOUSE_LINEAGE.md).
+- Wave C G6 slice: macOS Apple Silicon desktop packaging (`dist:desktop:mac`, electron-builder DMG/zip, host-aware `build.mjs`); see [docs/DESKTOP_MAC.md](./docs/DESKTOP_MAC.md). Unsigned / no CI release yet.
+- Wave D S4 slice: Visual Query Builder field board (drag-in / reorder / remove SELECT columns) + Text-to-SQL side panel that opens AI with the prompt.
+- Wave D S5 slice: ER diagram column edit — click/double-click field opens Alter Column wizard (DDL preview, execute, or open console for approval).
+- Wave D S6 / G11 slice: connector plugin `manifest.json` (version + SHA-256 + optional downloadUrl); marketplace integrity badges; optional `require-manifest-integrity` load gate. See [config/plugins/README.md](./config/plugins/README.md).
+- Wave D G5 slice: external secret references (`dwsecret:env:` / `dwsecret:file:`) + master-key source status (`GET /api/system/secrets`, Settings → Secrets). See [docs/SECRETS.md](./docs/SECRETS.md).
+- Wave D G13 slice: org discovery — `GET /api/discovery/search` over schema cache tables/views + semantic metrics (name/desc/owner); command palette merges hits; metric `owner` field on semantic layer.
+- Wave D G2 slice: OIDC directory sync — groups/role claim → tenant role map on login; optional deprovision (disable membership + revoke sessions) when mapped groups disappear.
+- Wave D G15 slice: schedulable data-quality rules — scheduled task type `data_quality` with SQL assertions (`empty_result` / row count / scalar) and `data_quality.ok|failed` webhooks.
+- Wave D G14 slice: orchestration bridge — scheduled task type `http_trigger` (outbound HTTP to Airflow/dbt/Flink) + `POST /api/platform/orchestration/trigger` inbound run + `orchestration.triggered|failed` webhooks; see [docs/ORCHESTRATION.md](./docs/ORCHESTRATION.md).
+- Wave A G3 deepen: Feishu / DingTalk bot channels on outbound webhooks (`channel=feishu|dingtalk` with platform signing); generic JSON+HMAC remains default.
+- Wave C G10 slice: Insight → ticket export — outbound `github_issue` / `gitlab_issue` channels + `POST /api/platform/insight-actions` (`insight.action`); see [docs/INSIGHT_ACTIONS.md](./docs/INSIGHT_ACTIONS.md).
+- Wave B S1 deepen: PK row-diff preview — `POST /api/migration/row-diff` samples source rows and classifies insert/update/unchanged for `PK_UPSERT` (wizard preflight panel).
+- Wave B S2 deepen: federated equality JOIN Grace hash spill — build side above 512 rows partitions to temp files; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
+- Wave B S2 deepen: federated outer WHERE predicate pushdown — single-alias conjuncts into source SQL; cross-alias residuals filtered in memory; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
+- Wave B S3 deepen: lakehouse hard-feature soften (LATERAL VIEW / window TVF / MATCH_RECOGNIZE) + table-level `_table_deps` fallback; INSERT PARTITION strip; see [docs/LAKEHOUSE_LINEAGE.md](./docs/LAKEHOUSE_LINEAGE.md).
+- Wave D G5 deepen: HashiCorp Vault KV secret references — `dwsecret:vault:path#field` via `VAULT_ADDR`/`VAULT_TOKEN`; see [docs/SECRETS.md](./docs/SECRETS.md).
+- Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
+
+### Still open
+- Object storage backend; remaining file-only assets (plugins JARs, some desktop caches) as needed.
+- Full billing / invoicing (hard quotas only today); per-user/team AI billing.
+- Row-level data ACL.
+- Live embedded dashboards / Feishu·DingTalk channels; Mac signing/notarization + CI release assets.
+
+## Unreleased — Enterprise access (Wave A)
+
+### Highlights
+- Outbound webhooks with HMAC signing for scheduled tasks, production approvals, schema drift, and audit events.
+- OIDC login (Authorization Code + PKCE) with optional local login disable.
+- Server-side team audit export (CSV/JSON) and optional `audit.appended` webhook fan-out.
+- Settings → Integrations UI for webhook CRUD/test and admin OIDC configuration.
+
 ## v2.0.0 - Team real-time collaboration (polish)
 
 ### Highlights

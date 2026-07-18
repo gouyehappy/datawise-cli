@@ -1,13 +1,15 @@
 /**
- * Build DataWise desktop executable (Windows installer + portable).
+ * Build DataWise desktop executable (Windows / macOS / Linux).
  *
  * Usage:
- *   node scripts/desktop/build.mjs [--clean] [--skip-backend] [--dir] [--ide-target]
+ *   node scripts/desktop/build.mjs [--clean] [--skip-backend] [--dir]
+ *     [--win] [--mac] [--linux] [--arm64] [--x64] [--ide-target]
  *
  * npm scripts:
- *   dist:desktop        full build (backend + electron + NSIS/portable)
- *   dist:desktop:clean  full rebuild from scratch
- *   pack:desktop        unpacked win-unpacked dir for quick testing
+ *   dist:desktop           host platform (Windows → NSIS/portable; macOS → DMG/zip arm64)
+ *   dist:desktop:mac       macOS Apple Silicon DMG + zip (must run on macOS)
+ *   dist:desktop:linux     Linux AppImage (must run on Linux)
+ *   pack:desktop           unpacked dir for quick testing
  */
 import {existsSync, readFileSync} from 'node:fs'
 import {join} from 'node:path'
@@ -16,6 +18,7 @@ import {frontendRoot, outputFlagFile} from './paths.mjs'
 import {log, runNpm} from './lib.mjs'
 import {bundleBackend} from './bundle-backend.mjs'
 import {cleanDesktop} from './clean.mjs'
+import {describeDesktopTarget, resolveElectronBuilderArgs} from './platform.mjs'
 
 function parseArgs(argv) {
     return {
@@ -23,6 +26,11 @@ function parseArgs(argv) {
         skipBackend: argv.includes('--skip-backend'),
         dir: argv.includes('--dir'),
         includeIdeTarget: argv.includes('--ide-target'),
+        win: argv.includes('--win'),
+        mac: argv.includes('--mac'),
+        linux: argv.includes('--linux'),
+        arm64: argv.includes('--arm64'),
+        x64: argv.includes('--x64'),
     }
 }
 
@@ -41,6 +49,7 @@ function runElectronBuilder(extraArgs) {
     ]
 
     log('build-desktop', `electron-builder output → ${outputDir}/`)
+    log('build-desktop', `target: ${describeDesktopTarget(extraArgs)}`)
     const result = spawnSync(builderBin, args, {
         cwd: frontendRoot,
         stdio: 'inherit',
@@ -58,23 +67,27 @@ function runElectronBuilder(extraArgs) {
 async function main() {
     const opts = parseArgs(process.argv.slice(2))
 
-    // Optional full wipe. Process stop happens inside clean / Maven purge — not here.
     if (opts.clean) {
         await cleanDesktop('all', {includeIdeTarget: opts.includeIdeTarget})
     }
 
-    // Backend JAR + JRE + plugins → resources/desktop (Maven skips tests)
     if (!opts.skipBackend) {
         await bundleBackend()
     }
 
-    // Electron frontend + installer / unpacked dir
     await cleanDesktop('release')
     runNpm('build:electron')
 
-    const builderArgs = opts.dir ? ['--dir'] : ['--win']
-    runElectronBuilder(builderArgs)
+    let builderArgs
+    try {
+        builderArgs = resolveElectronBuilderArgs(opts)
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        console.error(`[build-desktop] ${message}`)
+        process.exit(1)
+    }
 
+    runElectronBuilder(builderArgs)
     log('build-desktop', 'done')
 }
 

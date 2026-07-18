@@ -23,6 +23,7 @@ export async function resetUserScopedState(): Promise<void> {
             userId: auth.user?.userId ?? readUserId(),
             userName: auth.user?.userName,
             isGuest: auth.isGuest,
+            tenantId: auth.tenantId,
         })
 
         const explorer = useExplorerStore()

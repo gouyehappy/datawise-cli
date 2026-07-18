@@ -72,6 +72,7 @@ export interface SemanticMetric {
     expression: string
     description?: string | null
     unit?: string | null
+    owner?: string | null
     relatedTables?: string[] | null
     upstreamMetrics?: string[] | null
     definitionVersion?: number | null
@@ -88,6 +89,7 @@ export interface SaveSemanticMetricRequest {
     expression: string
     description?: string | null
     unit?: string | null
+    owner?: string | null
     relatedTables?: string[] | null
     upstreamMetrics?: string[] | null
     changeNote?: string | null
@@ -96,6 +98,20 @@ export interface SaveSemanticMetricRequest {
 export interface AutoGenerateSemanticMetricsRequest {
     connectionId: string
     database: string
+}
+
+/** Org-level discovery hit from schema cache + semantic metrics. */
+export interface DiscoveryHit {
+    kind: 'table' | 'view' | 'metric'
+    id: string
+    name: string
+    qualifiedLabel: string
+    connectionId: string
+    connectionLabel: string
+    database: string
+    owner?: string | null
+    subtitle?: string | null
+    score: number
 }
 
 export interface SqlReviewRequest {

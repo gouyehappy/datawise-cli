@@ -99,6 +99,7 @@ class TableMigrationExecutorTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -126,6 +127,7 @@ class TableMigrationExecutorTest {
                 null,
                 null,
                 "SELECT id FROM orders",
+                null,
                 null
         );
 
@@ -182,6 +184,7 @@ class TableMigrationExecutorTest {
                 0,
                 true,
                 true,
+                null,
                 null,
                 null
         );
@@ -470,7 +473,7 @@ class TableMigrationExecutorTest {
     ) throws SQLException {
         TableMigrationBatchPlan plan = new TableMigrationBatchPlan(
                 tables,
-                new TableMigrationPolicy("FULL_APPEND", null, null, null, 500, 0, false, false, null, null)
+                new TableMigrationPolicy("FULL_APPEND", null, null, null, 500, 0, false, false, null, null, null)
         );
         return executor.migrateBatch(
                 new MigrationEndpoints(source, target, database, database),
@@ -491,7 +494,7 @@ class TableMigrationExecutorTest {
     private static TableMigrationBatchPlan incrAppendPlan(List<TableMigrationBatchTableRequest> tables) {
         return new TableMigrationBatchPlan(
                 tables,
-                new TableMigrationPolicy("INCR_APPEND", "updated_at", null, null, 500, 0, false, false, null, null)
+                new TableMigrationPolicy("INCR_APPEND", "updated_at", null, null, 500, 0, false, false, null, null, null)
         );
     }
 
@@ -524,6 +527,7 @@ class TableMigrationExecutorTest {
                 throttleMs,
                 false,
                 false,
+                null,
                 null,
                 null
         );

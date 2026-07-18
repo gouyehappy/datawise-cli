@@ -5,6 +5,7 @@ import {useI18n} from 'vue-i18n'
 import type {NavModule} from '@/core/types'
 import DashboardLayoutDialog from '@/features/dashboard/components/DashboardLayoutDialog.vue'
 import DashboardAiWidgetDialog from '@/features/dashboard/components/DashboardAiWidgetDialog.vue'
+import DashboardSharesDialog from '@/features/dashboard/components/DashboardSharesDialog.vue'
 import DashboardSettingsMenu from '@/features/dashboard/components/DashboardSettingsMenu.vue'
 import {DwIcon} from '@/core/icons'
 import type {DwIconName} from '@/core/icons'
@@ -77,6 +78,7 @@ const {hasOpenTabs, tabs, activeTabId} = storeToRefs(workspace)
 
 const layoutDialogOpen = ref(false)
 const aiWidgetDialogOpen = ref(false)
+const sharesDialogOpen = ref(false)
 
 const {
     layoutEditMode,
@@ -358,6 +360,7 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
               @toggle-layout-edit="toggleLayoutEditMode"
               @customize="layoutDialogOpen = true"
               @ai-widget="openAiWidgetDialog"
+              @shares="sharesDialogOpen = true"
           />
         </div>
         <div class="mp-hero__inner">
@@ -593,6 +596,7 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
         v-model:open="aiWidgetDialogOpen"
         @apply="applyAiWidget"
     />
+    <DashboardSharesDialog v-model:open="sharesDialogOpen"/>
   </div>
 </template>
 

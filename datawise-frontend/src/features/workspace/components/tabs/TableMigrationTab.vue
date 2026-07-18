@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {provide} from 'vue'
+import {defineAsyncComponent, provide} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {WorkspaceTab} from '@/core/types'
 import {DwInlineAlert, EmptyState} from '@/core/components'
@@ -13,6 +13,10 @@ import {MIGRATION_WIZARD_KEY, type MigrationFlowStep} from '@/features/workspace
 import {useTableMigrationWizard} from '@/features/workspace/composables/useTableMigrationWizard'
 
 const props = defineProps<{ tab: WorkspaceTab }>()
+
+const SubmitProductionApprovalDialog = defineAsyncComponent(
+    () => import('@/features/workspace/components/SubmitProductionApprovalDialog.vue'),
+)
 
 const {t} = useI18n()
 const wizard = useTableMigrationWizard(props.tab)
@@ -48,6 +52,17 @@ provide(MIGRATION_WIZARD_KEY, wizard)
     </div>
 
     <MigrationWizardFooter/>
+
+    <SubmitProductionApprovalDialog
+        v-model:open="wizard.productionApprovalDialogOpen"
+        :saving="wizard.productionApprovalSubmitting"
+        :error="wizard.productionApprovalError"
+        :sql="wizard.productionApprovalSql"
+        :connection-name="wizard.targetConnectionLabel"
+        :database="wizard.form.targetDatabase"
+        :teams="wizard.productionApprovalTeams"
+        @submit="wizard.onSubmitProductionApproval"
+    />
   </div>
   <EmptyState v-else embedded :title="t('explorer.tableMigrationContextMissing')"/>
 </template>

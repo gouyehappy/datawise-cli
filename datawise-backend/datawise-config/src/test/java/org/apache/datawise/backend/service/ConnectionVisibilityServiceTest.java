@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
 import org.apache.datawise.backend.configstore.ConnectionStore;
+import org.apache.datawise.backend.configstore.FileConnectionStore;
 import org.apache.datawise.backend.configstore.SessionEphemeralCatalogStore;
 import org.apache.datawise.backend.configstore.TeamStore;
+import org.apache.datawise.backend.configstore.FileTeamStore;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.ConnectionGroupEntity;
 import org.apache.datawise.backend.model.TeamEntity;
@@ -37,8 +39,8 @@ class ConnectionVisibilityServiceTest {
     void registeredUserSeesOwnedLegacyAndTeamSharedConnections() {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
         ObjectMapper objectMapper = new ObjectMapper();
-        ConnectionStore store = new ConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec());
-        TeamStore teamStore = new TeamStore(configDirectory, objectMapper);
+        ConnectionStore store = new FileConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec());
+        TeamStore teamStore = new FileTeamStore(configDirectory, objectMapper);
         SessionEphemeralCatalogStore ephemeralStore = new SessionEphemeralCatalogStore();
         ConnectionVisibilityService service = new ConnectionVisibilityService(store, ephemeralStore, teamStore);
 
@@ -84,11 +86,11 @@ class ConnectionVisibilityServiceTest {
     void legacyConnectionsAreVisibleButNotMutableByRegisteredUsers() {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
         ObjectMapper objectMapper = new ObjectMapper();
-        ConnectionStore store = new ConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec());
+        ConnectionStore store = new FileConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec());
         ConnectionVisibilityService service = new ConnectionVisibilityService(
                 store,
                 new SessionEphemeralCatalogStore(),
-                new TeamStore(configDirectory, objectMapper)
+                new FileTeamStore(configDirectory, objectMapper)
         );
         saveDefaultGroup(store);
 
@@ -105,11 +107,11 @@ class ConnectionVisibilityServiceTest {
     void ownedConnectionsRemainMutableByOwner() {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
         ObjectMapper objectMapper = new ObjectMapper();
-        ConnectionStore store = new ConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec());
+        ConnectionStore store = new FileConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec());
         ConnectionVisibilityService service = new ConnectionVisibilityService(
                 store,
                 new SessionEphemeralCatalogStore(),
-                new TeamStore(configDirectory, objectMapper)
+                new FileTeamStore(configDirectory, objectMapper)
         );
         saveDefaultGroup(store);
 
@@ -124,9 +126,9 @@ class ConnectionVisibilityServiceTest {
     void guestDefaultGroupIdRequiresSessionId() {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
         ConnectionVisibilityService service = new ConnectionVisibilityService(
-                new ConnectionStore(configDirectory, new ObjectMapper(), SecretTestSupport.testCodec()),
+                new FileConnectionStore(configDirectory, new ObjectMapper(), SecretTestSupport.testCodec()),
                 new SessionEphemeralCatalogStore(),
-                new TeamStore(configDirectory, new ObjectMapper())
+                new FileTeamStore(configDirectory, new ObjectMapper())
         );
 
         UserContext.set(3L, true, null);
@@ -144,9 +146,9 @@ class ConnectionVisibilityServiceTest {
         ObjectMapper objectMapper = new ObjectMapper();
         SessionEphemeralCatalogStore ephemeralStore = new SessionEphemeralCatalogStore();
         ConnectionVisibilityService service = new ConnectionVisibilityService(
-                new ConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec()),
+                new FileConnectionStore(configDirectory, objectMapper, SecretTestSupport.testCodec()),
                 ephemeralStore,
-                new TeamStore(configDirectory, objectMapper)
+                new FileTeamStore(configDirectory, objectMapper)
         );
 
         UserContext.set(3L, true, "session-guest");

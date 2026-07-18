@@ -14,6 +14,8 @@
     "build:electron": "cross-env ELECTRON=true vue-tsc --noEmit && cross-env ELECTRON=true vite build",
     "dist:desktop": "npm run gen:icons && node scripts/desktop/build.mjs",
     "dist:desktop:clean": "npm run gen:icons && node scripts/desktop/build.mjs --clean",
+    "dist:desktop:mac": "npm run gen:icons && node scripts/desktop/build.mjs --mac --arm64",
+    "dist:desktop:linux": "npm run gen:icons && node scripts/desktop/build.mjs --linux",
     "pack:desktop": "npm run gen:icons && node scripts/desktop/build.mjs --dir",
     "prepare:desktop": "node scripts/desktop/bundle-backend.mjs",
     "build:backend": "node scripts/desktop/maven.mjs",
@@ -126,6 +128,36 @@
       "icon": "build/icon.ico",
       "signAndEditExecutable": false,
       "verifyUpdateCodeSignature": false
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.png",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null,
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development",
+      "icon": "build/icon.png",
+      "artifactName": "${productName}-${version}-linux-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,

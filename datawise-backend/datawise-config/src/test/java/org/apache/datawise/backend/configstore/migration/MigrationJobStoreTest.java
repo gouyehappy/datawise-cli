@@ -84,6 +84,7 @@ class MigrationJobStoreTest {
                 0,
                 true,
                 id,
+                null,
                 null
         ));
         job.setTablesPlanned(List.of("users"));

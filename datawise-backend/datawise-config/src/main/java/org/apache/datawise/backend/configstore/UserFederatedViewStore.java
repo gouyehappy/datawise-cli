@@ -14,7 +14,7 @@ public class UserFederatedViewStore {
 
     private final ConfigDirectoryService configDirectory;
     private final ObjectMapper objectMapper;
-    private final ConcurrentHashMap<Long, JsonListFile<FederatedViewEntry>> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JsonListFile<FederatedViewEntry>> cache = new ConcurrentHashMap<>();
 
     public UserFederatedViewStore(ConfigDirectoryService configDirectory, ObjectMapper objectMapper) {
         this.configDirectory = configDirectory;
@@ -42,10 +42,10 @@ public class UserFederatedViewStore {
     }
 
     private JsonListFile<FederatedViewEntry> fileFor(long userId) {
-        return cache.computeIfAbsent(userId, uid -> new JsonListFile<>(
+        return cache.computeIfAbsent(TenantScopedConfigSupport.cacheKey(userId), ignored -> new JsonListFile<>(
                 configDirectory,
                 objectMapper,
-                ConfigPaths.userFederatedViews(uid),
+                TenantScopedConfigSupport.ensureUserTenantFile(configDirectory, userId, "federated-views.json"),
                 new TypeReference<>() {
                 }
         ));

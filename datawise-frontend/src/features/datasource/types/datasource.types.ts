@@ -37,10 +37,23 @@ export interface ConnectorMarketEntry {
     available: boolean
     capabilities: string[]
     installHint?: string | null
+    version?: string | null
+    jarName?: string | null
+    /** bundled | verified | mismatch | unsigned | missing | none */
+    integrityStatus?: string | null
+    downloadUrl?: string | null
+}
+
+export interface ConnectorMarketManifestSummary {
+    schemaVersion: number
+    updatedAt?: string
+    channel?: string
+    pluginCount: number
 }
 
 export interface ConnectorMarketBundle {
     connectors: ConnectorMarketEntry[]
     loadedPluginJars: string[]
     pluginLoadFailures: ConnectorPluginLoadFailure[]
+    manifest?: ConnectorMarketManifestSummary | null
 }

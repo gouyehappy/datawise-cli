@@ -60,7 +60,12 @@ public class SessionAuthFilter extends OncePerRequestFilter {
             return false;
         }
         SessionEntity entity = session.get();
-        UserContext.set(entity.getUserId(), entity.isGuest(), entity.getId());
+        UserContext.set(
+                entity.getUserId(),
+                entity.isGuest(),
+                entity.getId(),
+                entity.getTenantId()
+        );
         return true;
     }
 
@@ -74,7 +79,12 @@ public class SessionAuthFilter extends OncePerRequestFilter {
             return false;
         }
         ApiTokenEntity entity = token.get();
-        UserContext.setApiToken(entity.getUserId(), entity.getId(), normalizeScopes(entity.getScopes()));
+        UserContext.setApiToken(
+                entity.getUserId(),
+                entity.getId(),
+                normalizeScopes(entity.getScopes()),
+                entity.getTenantId()
+        );
         return true;
     }
 

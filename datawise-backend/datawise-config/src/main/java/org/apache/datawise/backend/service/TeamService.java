@@ -125,6 +125,16 @@ public class TeamService {
         return auditService.listAuditLogs(teamId, limit, actorUserId, since, until);
     }
 
+    public java.util.stream.Stream<TeamAuditLogDto> exportAuditLogs(
+            String teamId,
+            Long actorUserId,
+            Instant since,
+            Instant until,
+            boolean includeFullSql
+    ) {
+        return auditService.exportAuditLogs(teamId, actorUserId, since, until, includeFullSql);
+    }
+
     public void recordSqlExecutionAudit(String action, String connectionId, String database, String sql) {
         auditService.recordSqlExecutionAudit(action, connectionId, database, sql);
     }

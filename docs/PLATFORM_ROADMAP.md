@@ -6,6 +6,8 @@
 
 客户端对标传统 IDE（Chat2DB / DBeaver / Navicat 等）的可调整点、竞品优势与对本系统帮助，见 [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)。
 
+v2.0 之后的产品缺口（企业准入、招牌深度、价值外溢）与近期补强队列，见 [PRODUCT_GAP_ANALYSIS.md](./PRODUCT_GAP_ANALYSIS.md)。多租户 / 角色权限 dual-mode 设计见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。
+
 版本主题（对外叙事）：
 
 | 版本 | 主题 | 一句话 |

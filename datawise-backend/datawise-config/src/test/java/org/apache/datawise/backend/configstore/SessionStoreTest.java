@@ -1,5 +1,7 @@
 package org.apache.datawise.backend.configstore;
 
+import org.apache.datawise.backend.configstore.FileSessionStore;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.datawise.backend.config.AuthSessionProperties;
@@ -35,7 +37,7 @@ class SessionStoreTest {
         configProperties.setDir(configDir.toString());
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(configProperties);
         policyService = new AuthSessionPolicyService(configDirectory, objectMapper, properties);
-        sessionStore = new SessionStore(configDirectory, objectMapper, policyService);
+        sessionStore = new FileSessionStore(configDirectory, objectMapper, policyService);
     }
 
     @Test

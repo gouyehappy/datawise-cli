@@ -4,15 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
 import org.apache.datawise.backend.configstore.TeamStore;
+import org.apache.datawise.backend.configstore.FileTeamStore;
 import org.apache.datawise.backend.model.TeamEntity;
 import org.apache.datawise.backend.model.TeamMemberEntity;
 import org.apache.datawise.backend.service.UserAccountService;
+
+import org.apache.datawise.backend.service.outbound.OutboundNotifySupport;
 
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.UUID;
 
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 final class TeamServiceTestFixtures {
 
@@ -21,9 +25,10 @@ final class TeamServiceTestFixtures {
 
     static TeamContext newContext(Path tempDir, UserAccountService userAccountService) {
         ObjectMapper objectMapper = testObjectMapper();
-        TeamStore teamStore = new TeamStore(new ConfigDirectoryService(tempDir), objectMapper);
+        TeamStore teamStore = new FileTeamStore(new ConfigDirectoryService(tempDir), objectMapper);
         TeamSupport support = new TeamSupport(teamStore, userAccountService);
-        TeamAuditService auditService = new TeamAuditService(teamStore, support);
+        OutboundNotifySupport outboundNotifySupport = mock(OutboundNotifySupport.class);
+        TeamAuditService auditService = new TeamAuditService(teamStore, support, outboundNotifySupport);
         TeamSharedQueryStreamHub streamHub = new TeamSharedQueryStreamHub();
         return new TeamContext(
                 teamStore,
@@ -32,7 +37,7 @@ final class TeamServiceTestFixtures {
                 new TeamMembershipService(support, auditService),
                 new TeamSharingService(support, auditService, objectMapper),
                 new TeamSharedQueryService(support, auditService, streamHub),
-                new TeamProductionApprovalService(support, auditService)
+                new TeamProductionApprovalService(support, auditService, outboundNotifySupport)
         );
     }
 

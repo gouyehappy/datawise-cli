@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -83,6 +84,26 @@ class ProductionApprovalServiceTest {
         TeamProductionApprovalDetailDto result = productionApprovalService.approveAndExecute("team-1", "apr-1");
 
         assertEquals(failed, result);
+    }
+
+    @Test
+    void approveAndExecute_dataMigrationPlanSkipsSqlExecution() {
+        TeamProductionApprovalEntity pending = pendingApproval();
+        pending.setSql(
+                "/* " + ProductionApprovalService.DATA_MIGRATION_APPROVAL_MARKER + " */\n"
+                        + "INSERT INTO __datawise_data_migration_plan__(note) VALUES ('review-only');"
+        );
+        TeamProductionApprovalDetailDto approved = detail("executed");
+
+        when(teamService.requirePendingProductionApprovalForReview("team-1", "apr-1")).thenReturn(pending);
+        when(teamService.requireAuthenticatedUserId()).thenReturn(42L);
+        when(teamService.finalizeProductionApproval("team-1", "apr-1", 42L, true, null)).thenReturn(approved);
+
+        TeamProductionApprovalDetailDto result = productionApprovalService.approveAndExecute("team-1", "apr-1");
+
+        assertEquals(approved, result);
+        verify(sqlExecuteService, never()).execute(any());
+        verify(teamService).finalizeProductionApproval(eq("team-1"), eq("apr-1"), eq(42L), eq(true), eq(null));
     }
 
     private static TeamProductionApprovalEntity pendingApproval() {

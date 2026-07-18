@@ -98,6 +98,9 @@ public final class ConnectionsXmlCodec {
         if (group.getUserId() != null) {
             groupElement.setAttribute("user-id", String.valueOf(group.getUserId()));
         }
+        if (group.getTenantId() != null && !group.getTenantId().isBlank()) {
+            groupElement.setAttribute("tenant-id", group.getTenantId().trim());
+        }
         parent.appendChild(groupElement);
 
         for (ConnectionEntity connection : allConnections.stream()
@@ -126,6 +129,9 @@ public final class ConnectionsXmlCodec {
         connectionElement.setAttribute("sort-order", String.valueOf(connection.getSortOrder()));
         if (connection.getUserId() != null) {
             connectionElement.setAttribute("user-id", String.valueOf(connection.getUserId()));
+        }
+        if (connection.getTenantId() != null && !connection.getTenantId().isBlank()) {
+            connectionElement.setAttribute("tenant-id", connection.getTenantId().trim());
         }
 
         appendTextChild(document, connectionElement, "env", connection.getEnv());
@@ -176,6 +182,10 @@ public final class ConnectionsXmlCodec {
         if (!userId.isBlank()) {
             group.setUserId(Long.parseLong(userId));
         }
+        String tenantId = element.getAttribute("tenant-id");
+        if (!tenantId.isBlank()) {
+            group.setTenantId(tenantId.trim());
+        }
         return group;
     }
 
@@ -193,6 +203,10 @@ public final class ConnectionsXmlCodec {
         String userId = element.getAttribute("user-id");
         if (!userId.isBlank()) {
             connection.setUserId(Long.parseLong(userId));
+        }
+        String tenantId = element.getAttribute("tenant-id");
+        if (!tenantId.isBlank()) {
+            connection.setTenantId(tenantId.trim());
         }
 
         connection.setEnv(childText(element, "env"));

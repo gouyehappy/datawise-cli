@@ -1,20 +1,36 @@
 package org.apache.datawise.backend.service;
 
+import org.apache.datawise.backend.config.TenancyProperties;
 import org.apache.datawise.backend.configstore.AuthSessionPolicyService;
+import org.apache.datawise.backend.configstore.OidcConfigStore;
+import org.apache.datawise.backend.configstore.SchemaCacheStore;
 import org.apache.datawise.backend.configstore.SessionStore;
+import org.apache.datawise.backend.configstore.TenantStore;
 import org.apache.datawise.backend.configstore.UserStore;
 import org.apache.datawise.backend.domain.AuthSessionPolicyDto;
+import org.apache.datawise.backend.domain.CreateTenantRequest;
 import org.apache.datawise.backend.domain.LoginResult;
+import org.apache.datawise.backend.domain.RegisterRequest;
 import org.apache.datawise.backend.domain.SessionInfo;
+import org.apache.datawise.backend.domain.SwitchTenantRequest;
+import org.apache.datawise.backend.domain.TenantIds;
+import org.apache.datawise.backend.domain.TenantSummaryDto;
 import org.apache.datawise.backend.model.SessionEntity;
+import org.apache.datawise.backend.model.TenantEntity;
+import org.apache.datawise.backend.model.TenantRoleEntity;
 import org.apache.datawise.backend.model.UserEntity;
+import org.apache.datawise.backend.model.UserTenantMembership;
 import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.common.support.IdGenerator;
+import org.apache.datawise.backend.service.tenant.PlatformAdminPolicy;
+import org.apache.datawise.backend.service.tenant.TenantService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -22,33 +38,54 @@ public class AuthService {
     private final UserStore userStore;
     private final SessionStore sessionStore;
     private final AuthSessionPolicyService sessionPolicy;
+    private final OidcConfigStore oidcConfigStore;
     private final PasswordEncoder passwordEncoder;
     private final GuestSessionCleanupService guestSessionCleanupService;
     private final UserAccessPolicy userAccessPolicy;
     private final UserAdminPolicy userAdminPolicy;
     private final UserPermissionPolicy userPermissionPolicy;
+    private final TenancyProperties tenancyProperties;
+    private final TenantStore tenantStore;
+    private final TenantService tenantService;
+    private final PlatformAdminPolicy platformAdminPolicy;
+    private final SchemaCacheStore schemaCacheStore;
 
     public AuthService(
             UserStore userStore,
             SessionStore sessionStore,
             AuthSessionPolicyService sessionPolicy,
+            OidcConfigStore oidcConfigStore,
             PasswordEncoder passwordEncoder,
             GuestSessionCleanupService guestSessionCleanupService,
             UserAccessPolicy userAccessPolicy,
             UserAdminPolicy userAdminPolicy,
-            UserPermissionPolicy userPermissionPolicy
+            UserPermissionPolicy userPermissionPolicy,
+            TenancyProperties tenancyProperties,
+            TenantStore tenantStore,
+            TenantService tenantService,
+            PlatformAdminPolicy platformAdminPolicy,
+            SchemaCacheStore schemaCacheStore
     ) {
         this.userStore = userStore;
         this.sessionStore = sessionStore;
         this.sessionPolicy = sessionPolicy;
+        this.oidcConfigStore = oidcConfigStore;
         this.passwordEncoder = passwordEncoder;
         this.guestSessionCleanupService = guestSessionCleanupService;
         this.userAccessPolicy = userAccessPolicy;
         this.userAdminPolicy = userAdminPolicy;
         this.userPermissionPolicy = userPermissionPolicy;
+        this.tenancyProperties = tenancyProperties;
+        this.tenantStore = tenantStore;
+        this.tenantService = tenantService;
+        this.platformAdminPolicy = platformAdminPolicy;
+        this.schemaCacheStore = schemaCacheStore;
     }
 
     public LoginResult login(String userName, String password) {
+        if (!oidcConfigStore.current().localLoginEnabled) {
+            throw new IllegalArgumentException("LOCAL_LOGIN_DISABLED");
+        }
         UserEntity user = userStore.findByUsername(userName.trim())
                 .orElseThrow(() -> new IllegalArgumentException("INVALID_CREDENTIALS"));
         if (user.isGuest() || user.getPasswordHash() == null
@@ -56,14 +93,103 @@ public class AuthService {
             throw new IllegalArgumentException("INVALID_CREDENTIALS");
         }
         invalidateCurrentSessionIfPresent();
-        return createSession(user);
+        return createSessionForUser(user, "LOCAL");
     }
 
     public LoginResult loginAsGuest() {
+        if (!oidcConfigStore.current().localLoginEnabled) {
+            throw new IllegalArgumentException("LOCAL_LOGIN_DISABLED");
+        }
         invalidateCurrentSessionIfPresent();
         UserEntity guest = userStore.findByUsername("guest")
                 .orElseThrow(() -> new IllegalStateException("Guest user missing in config/users.json"));
-        return createSession(guest);
+        return createSessionForUser(guest, "LOCAL");
+    }
+
+    /**
+     * 公开注册：创建本地账号；可选同时开通组织（需 {@code allow-tenant-create} + multi）。
+     */
+    public LoginResult register(RegisterRequest request) {
+        if (!tenancyProperties.isAllowRegistration()) {
+            throw new IllegalArgumentException("REGISTRATION_DISABLED");
+        }
+        if (!oidcConfigStore.current().localLoginEnabled) {
+            throw new IllegalArgumentException("LOCAL_LOGIN_DISABLED");
+        }
+        if (request == null || request.userName() == null || request.userName().isBlank()) {
+            throw new IllegalArgumentException("USERNAME_REQUIRED");
+        }
+        if (request.password() == null || request.password().length() < 6) {
+            throw new IllegalArgumentException("PASSWORD_TOO_SHORT");
+        }
+        String username = request.userName().trim();
+        if ("guest".equalsIgnoreCase(username)) {
+            throw new IllegalArgumentException("USERNAME_RESERVED");
+        }
+        if (userStore.findByUsername(username).isPresent()) {
+            throw new IllegalArgumentException("USERNAME_TAKEN");
+        }
+        Instant now = Instant.now();
+        long nextId = userStore.listAllUsers().stream()
+                .map(UserEntity::getId)
+                .filter(id -> id != null)
+                .mapToLong(Long::longValue)
+                .max()
+                .orElse(0L) + 1L;
+        UserEntity user = new UserEntity();
+        user.setId(nextId);
+        user.setUsername(username);
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setGuest(false);
+        user.setEmail(request.email() != null && !request.email().isBlank() ? request.email().trim() : null);
+        user.setDisplayName(request.displayName() != null && !request.displayName().isBlank()
+                ? request.displayName().trim()
+                : username);
+        user.setFeaturePermissions(Map.of());
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+        userStore.saveUser(user);
+
+        boolean createOrg = Boolean.TRUE.equals(request.createTenant())
+                && tenancyProperties.isMultiMode()
+                && tenancyProperties.isAllowTenantCreate()
+                && request.tenantName() != null
+                && !request.tenantName().isBlank();
+        String preferredTenantId;
+        if (createOrg) {
+            UserContext.set(user.getId(), false, "register-" + user.getId(), TenantIds.DEFAULT);
+            try {
+                preferredTenantId = tenantService.createTenant(new CreateTenantRequest(
+                        request.tenantName().trim(),
+                        request.tenantSlug(),
+                        user.getId()
+                )).id();
+            } finally {
+                UserContext.clear();
+            }
+        } else {
+            preferredTenantId = TenantIds.normalizeOrDefault(tenancyProperties.getDefaultTenantId());
+            ensureDeveloperMembership(user.getId(), preferredTenantId);
+        }
+        invalidateCurrentSessionIfPresent();
+        return createSessionForUser(user, "LOCAL", preferredTenantId);
+    }
+
+    private void ensureDeveloperMembership(long userId, String tenantId) {
+        String id = TenantIds.normalizeOrDefault(tenantId);
+        if (tenantStore.findMembership(userId, id).isPresent()) {
+            return;
+        }
+        TenantRoleEntity role = tenantStore.findRoleByKey(id, TenantIds.ROLE_DEVELOPER)
+                .or(() -> tenantStore.findRoleById(id, TenantIds.ROLE_ID_DEVELOPER))
+                .orElseThrow(() -> new IllegalStateException("developer role missing for tenant " + id));
+        UserTenantMembership membership = new UserTenantMembership();
+        membership.setUserId(userId);
+        membership.setTenantId(id);
+        membership.setStatus("active");
+        membership.setJoinedAt(Instant.now());
+        membership.setRoleIds(List.of(role.getId()));
+        tenantStore.saveMembership(membership);
     }
 
     public void signOut() {
@@ -83,19 +209,57 @@ public class AuthService {
         UserEntity user = userStore.findById(userId)
                 .orElseThrow(() -> new UnauthorizedException());
         if (UserContext.isApiTokenAuth()) {
-            return new SessionInfo(
+            String tenantId = UserContext.getTenantId();
+            return buildSessionInfo(
                     UserContext.getSessionId(),
-                    user.getUsername(),
+                    user,
                     false,
                     null,
-                    userId,
-                    userAdminPolicy.isAdminUser(userId),
-                    userPermissionPolicy.resolveEffectivePermissions(user)
+                    tenantId
             );
         }
         SessionEntity session = sessionStore.findById(UserContext.getSessionId())
                 .orElseThrow(() -> new UnauthorizedException());
-        return toSessionInfo(session, user);
+        return buildSessionInfo(
+                session.getId(),
+                user,
+                session.isGuest(),
+                toEpochMs(session.getExpiresAt()),
+                TenantIds.normalizeOrDefault(session.getTenantId())
+        );
+    }
+
+    public SessionInfo switchTenant(SwitchTenantRequest request) {
+        if (UserContext.isApiTokenAuth()) {
+            throw new UnauthorizedException();
+        }
+        userAccessPolicy.requireRegisteredUser();
+        if (request == null || request.tenantId() == null || request.tenantId().isBlank()) {
+            throw new IllegalArgumentException("tenantId is required");
+        }
+        if (tenancyProperties.isSingleMode()) {
+            throw new IllegalArgumentException("TENANCY_MULTI_REQUIRED");
+        }
+        String tenantId = TenantIds.normalizeOrDefault(request.tenantId());
+        Long userId = UserContext.requireUserId();
+        if (!tenantService.userCanAccessTenant(userId, tenantId)) {
+            throw new IllegalArgumentException("TENANT_ACCESS_DENIED");
+        }
+        tenantService.requireActiveTenant(tenantId);
+        SessionEntity session = sessionStore.findById(UserContext.getSessionId())
+                .orElseThrow(() -> new UnauthorizedException());
+        session.setTenantId(tenantId);
+        sessionStore.save(session);
+        UserContext.set(userId, session.isGuest(), session.getId(), tenantId);
+        schemaCacheStore.clearSession(session.getId());
+        UserEntity user = userStore.findById(userId).orElseThrow(() -> new UnauthorizedException());
+        return buildSessionInfo(
+                session.getId(),
+                user,
+                session.isGuest(),
+                toEpochMs(session.getExpiresAt()),
+                tenantId
+        );
     }
 
     public AuthSessionPolicyDto getSessionPolicy() {
@@ -137,33 +301,115 @@ public class AuthService {
         sessionStore.deleteById(sessionId);
     }
 
-    private LoginResult createSession(UserEntity user) {
+    /** Force-logout all sessions for a user (OIDC deprovision / admin revoke). */
+    public void revokeSessionsForUser(long userId) {
+        sessionStore.deleteByUserId(userId);
+    }
+
+    public LoginResult createSessionForUser(UserEntity user, String securityConfigType) {
+        return createSessionForUser(user, securityConfigType, null);
+    }
+
+    public LoginResult createSessionForUser(UserEntity user, String securityConfigType, String preferredTenantId) {
+        invalidateCurrentSessionIfPresent();
+        String tenantId = resolveLoginTenantId(user, preferredTenantId);
         SessionEntity session = new SessionEntity();
         session.setId(IdGenerator.shortId("session-"));
         session.setUserId(user.getId());
         session.setGuest(user.isGuest());
+        session.setTenantId(tenantId);
         SessionEntity saved = sessionStore.create(session);
-        return new LoginResult(
+        String provider = securityConfigType != null && !securityConfigType.isBlank()
+                ? securityConfigType.trim()
+                : "LOCAL";
+        UserContext.set(user.getId(), user.isGuest(), saved.getId(), tenantId);
+        SessionInfo info = buildSessionInfo(
                 saved.getId(),
-                user.getUsername(),
-                "LOCAL",
+                user,
+                user.isGuest(),
                 toEpochMs(saved.getExpiresAt()),
-                user.getId(),
-                userAdminPolicy.isAdminUser(user.getId()),
-                userPermissionPolicy.resolveEffectivePermissions(user)
+                tenantId
+        );
+        return new LoginResult(
+                info.sessionId(),
+                info.userName(),
+                provider,
+                info.expiresAtEpochMs(),
+                info.userId(),
+                info.admin(),
+                info.featurePermissions(),
+                info.tenantId(),
+                info.tenantName(),
+                info.tenancyMode(),
+                info.platformAdmin(),
+                info.tenants()
         );
     }
 
-    private SessionInfo toSessionInfo(SessionEntity session, UserEntity user) {
+    private SessionInfo buildSessionInfo(
+            String sessionId,
+            UserEntity user,
+            boolean guest,
+            Long expiresAtEpochMs,
+            String tenantId
+    ) {
+        String normalizedTenant = TenantIds.normalizeOrDefault(tenantId);
+        List<TenantSummaryDto> tenants = guest
+                ? List.of()
+                : tenantService.listActiveSummariesForUser(user.getId());
+        String tenantName = tenantStore.findTenantById(normalizedTenant)
+                .map(TenantEntity::getName)
+                .orElse(normalizedTenant);
+        String mode = tenancyProperties.isMultiMode() ? "multi" : "single";
+        boolean platformAdmin = !guest && platformAdminPolicy.isPlatformAdmin(user.getId());
         return new SessionInfo(
-                session.getId(),
+                sessionId,
                 user.getUsername(),
-                session.isGuest(),
-                toEpochMs(session.getExpiresAt()),
+                guest,
+                expiresAtEpochMs,
                 user.getId(),
                 userAdminPolicy.isAdminUser(user.getId()),
-                userPermissionPolicy.resolveEffectivePermissions(user)
+                userPermissionPolicy.resolveEffectivePermissions(user),
+                normalizedTenant,
+                tenantName,
+                mode,
+                platformAdmin,
+                tenants
         );
+    }
+
+    private String resolveLoginTenantId(UserEntity user) {
+        return resolveLoginTenantId(user, null);
+    }
+
+    private String resolveLoginTenantId(UserEntity user, String preferredTenantId) {
+        if (user.isGuest()) {
+            return TenantIds.normalizeOrDefault(tenancyProperties.getDefaultTenantId());
+        }
+        String defaultId = TenantIds.normalizeOrDefault(tenancyProperties.getDefaultTenantId());
+        if (tenancyProperties.isSingleMode()) {
+            if (tenantService.userCanAccessTenant(user.getId(), defaultId)) {
+                return defaultId;
+            }
+            throw new IllegalArgumentException("TENANT_ACCESS_DENIED");
+        }
+        if (preferredTenantId != null && !preferredTenantId.isBlank()) {
+            String preferred = TenantIds.normalizeOrDefault(preferredTenantId);
+            if (tenantService.userCanAccessTenant(user.getId(), preferred)) {
+                tenantService.requireActiveTenant(preferred);
+                return preferred;
+            }
+        }
+        List<TenantSummaryDto> memberships = tenantService.listActiveSummariesForUser(user.getId());
+        for (TenantSummaryDto summary : memberships) {
+            if (defaultId.equals(summary.id())) {
+                return defaultId;
+            }
+        }
+        if (!memberships.isEmpty()) {
+            return memberships.get(0).id();
+        }
+        throw new IllegalArgumentException("TENANT_ACCESS_DENIED");
     }
 
     private static Long toEpochMs(Instant instant) {

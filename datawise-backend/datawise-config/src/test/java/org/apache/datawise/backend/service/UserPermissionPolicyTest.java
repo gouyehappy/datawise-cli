@@ -1,7 +1,11 @@
 package org.apache.datawise.backend.service;
 
+import org.apache.datawise.backend.config.TenancyProperties;
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
+import org.apache.datawise.backend.configstore.TenantStore;
+import org.apache.datawise.backend.configstore.FileTenantStore;
 import org.apache.datawise.backend.configstore.UserStore;
+import org.apache.datawise.backend.configstore.FileUserStore;
 import org.apache.datawise.backend.domain.UserFeaturePermission;
 import org.apache.datawise.backend.model.UserEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,13 +27,17 @@ class UserPermissionPolicyTest {
 
     private UserPermissionPolicy policy;
     private UserAdminPolicy adminPolicy;
+    private TenantStore tenantStore;
 
     @BeforeEach
     void setUp() {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
-        UserStore userStore = new UserStore(configDirectory, new ObjectMapper());
-        adminPolicy = new UserAdminPolicy(userStore, new UserAccessPolicy());
-        policy = new UserPermissionPolicy(adminPolicy);
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        UserStore userStore = new FileUserStore(configDirectory, objectMapper);
+        tenantStore = new FileTenantStore(configDirectory, objectMapper);
+        TenancyProperties tenancyProperties = new TenancyProperties();
+        adminPolicy = new UserAdminPolicy(userStore, new UserAccessPolicy(), tenantStore, tenancyProperties);
+        policy = new UserPermissionPolicy(adminPolicy, tenantStore, tenancyProperties);
 
         userStore.saveUser(user("admin", 1L, false));
         userStore.saveUser(user("demo", 2L, false));
@@ -45,9 +53,11 @@ class UserPermissionPolicyTest {
     }
 
     @Test
-    void registeredUserWithoutOverridesGetsFullPermissions() {
+    void registeredUserWithoutRoleOrOverrideGetsReadonly() {
         UserEntity demo = user("demo", 2L, false);
-        assertTrue(policy.hasPermission(demo, UserFeaturePermission.NAV_DASHBOARD));
+        assertTrue(policy.hasPermission(demo, UserFeaturePermission.NAV_DATABASE));
+        assertFalse(policy.hasPermission(demo, UserFeaturePermission.NAV_DASHBOARD));
+        assertFalse(policy.hasPermission(demo, UserFeaturePermission.SETTINGS_USER_PERMISSIONS));
     }
 
     @Test
@@ -59,12 +69,41 @@ class UserPermissionPolicyTest {
     }
 
     @Test
-    void storedPermissionsOverrideDefaults() {
+    void customMapAppliesOnlyWhenNoRoles() {
         UserEntity demo = user("demo", 2L, false);
         demo.setFeaturePermissions(Map.of(
                 UserFeaturePermission.NAV_DATABASE, true,
                 UserFeaturePermission.NAV_DASHBOARD, false
         ));
+        assertTrue(policy.hasPermission(demo, UserFeaturePermission.NAV_DATABASE));
+        assertFalse(policy.hasPermission(demo, UserFeaturePermission.NAV_DASHBOARD));
+    }
+
+    @Test
+    void rolePermissionsTakePrecedenceOverCustomMap() {
+        UserEntity demo = user("demo", 2L, false);
+        demo.setFeaturePermissions(Map.of(
+                UserFeaturePermission.NAV_DASHBOARD, true,
+                UserFeaturePermission.NAV_DATABASE, true
+        ));
+
+        org.apache.datawise.backend.model.TenantRoleEntity role = new org.apache.datawise.backend.model.TenantRoleEntity();
+        role.setId(org.apache.datawise.backend.domain.TenantIds.ROLE_ID_READONLY);
+        role.setTenantId(org.apache.datawise.backend.domain.TenantIds.DEFAULT);
+        role.setKey(org.apache.datawise.backend.domain.TenantIds.ROLE_READONLY);
+        role.setName("Read Only");
+        role.setSystem(true);
+        role.setPermissions(org.apache.datawise.backend.domain.TenantRolePresets.readonly());
+        tenantStore.saveRole(role);
+
+        org.apache.datawise.backend.model.UserTenantMembership membership =
+                new org.apache.datawise.backend.model.UserTenantMembership();
+        membership.setUserId(2L);
+        membership.setTenantId(org.apache.datawise.backend.domain.TenantIds.DEFAULT);
+        membership.setStatus("active");
+        membership.setRoleIds(java.util.List.of(org.apache.datawise.backend.domain.TenantIds.ROLE_ID_READONLY));
+        tenantStore.saveMembership(membership);
+
         assertTrue(policy.hasPermission(demo, UserFeaturePermission.NAV_DATABASE));
         assertFalse(policy.hasPermission(demo, UserFeaturePermission.NAV_DASHBOARD));
     }
@@ -85,6 +124,32 @@ class UserPermissionPolicyTest {
         ));
         assertTrue(policy.hasPermission(guest, UserFeaturePermission.WORKBENCH_EXPLORER_ADD));
         assertFalse(policy.hasPermission(guest, UserFeaturePermission.NAV_DASHBOARD));
+    }
+
+    @Test
+    void rolePermissionsApplyWhenNoLegacyFeatureMap() {
+        UserEntity demo = user("demo", 2L, false);
+
+        org.apache.datawise.backend.model.TenantRoleEntity role = new org.apache.datawise.backend.model.TenantRoleEntity();
+        role.setId(org.apache.datawise.backend.domain.TenantIds.ROLE_ID_READONLY);
+        role.setTenantId(org.apache.datawise.backend.domain.TenantIds.DEFAULT);
+        role.setKey(org.apache.datawise.backend.domain.TenantIds.ROLE_READONLY);
+        role.setName("Read Only");
+        role.setSystem(true);
+        role.setPermissions(org.apache.datawise.backend.domain.TenantRolePresets.readonly());
+        tenantStore.saveRole(role);
+
+        org.apache.datawise.backend.model.UserTenantMembership membership =
+                new org.apache.datawise.backend.model.UserTenantMembership();
+        membership.setUserId(2L);
+        membership.setTenantId(org.apache.datawise.backend.domain.TenantIds.DEFAULT);
+        membership.setStatus("active");
+        membership.setRoleIds(java.util.List.of(org.apache.datawise.backend.domain.TenantIds.ROLE_ID_READONLY));
+        tenantStore.saveMembership(membership);
+
+        assertTrue(policy.hasPermission(demo, UserFeaturePermission.NAV_DATABASE));
+        assertFalse(policy.hasPermission(demo, UserFeaturePermission.NAV_DASHBOARD));
+        assertFalse(policy.hasPermission(demo, UserFeaturePermission.SETTINGS_USER_PERMISSIONS));
     }
 
     private static UserEntity user(String username, long id, boolean guest) {

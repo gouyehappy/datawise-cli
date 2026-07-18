@@ -1,6 +1,10 @@
 package org.apache.datawise.backend.security;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -9,6 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SecretValueCodecTest {
 
     private final SecretValueCodec codec = SecretTestSupport.testCodec();
+
+    @TempDir
+    Path temp;
 
     @Test
     void encryptsAndDecryptsRoundTrip() {
@@ -28,5 +35,18 @@ class SecretValueCodecTest {
         String once = codec.encryptForStorage("token");
         String twice = codec.encryptForStorage(once);
         assertEquals(once, twice);
+    }
+
+    @Test
+    void leavesSecretReferencesUnencryptedAndResolvesFile() throws Exception {
+        Path secrets = temp.resolve("secrets");
+        Files.createDirectories(secrets);
+        Files.writeString(secrets.resolve("pwd.txt"), "from-file");
+        SecretValueCodec withRefs = SecretTestSupport.testCodec(temp);
+        String ref = "dwsecret:file:secrets/pwd.txt";
+        assertEquals(ref, withRefs.encryptForStorage(ref));
+        assertTrue(withRefs.isSecretReference(ref));
+        assertFalse(withRefs.isEncrypted(ref));
+        assertEquals("from-file", withRefs.decryptForUse(ref));
     }
 }

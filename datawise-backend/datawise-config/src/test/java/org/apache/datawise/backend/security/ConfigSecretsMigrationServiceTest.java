@@ -5,6 +5,8 @@ import org.apache.datawise.backend.configstore.AppConfigStore;
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
 import org.apache.datawise.backend.configstore.ConfigPaths;
 import org.apache.datawise.backend.configstore.ConnectionStore;
+import org.apache.datawise.backend.configstore.FileConnectionStore;
+import org.apache.datawise.backend.configstore.TenantScopedConfigSupport;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.ConnectionGroupEntity;
 import org.apache.datawise.backend.common.support.ConnectionsXmlCodec;
@@ -31,12 +33,6 @@ class ConfigSecretsMigrationServiceTest {
         SecretValueCodec codec = SecretTestSupport.testCodec();
         ObjectMapper objectMapper = new ObjectMapper();
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
-        ConnectionStore connectionStore = new ConnectionStore(configDirectory, objectMapper, codec);
-        AppConfigStore appConfigStore = new AppConfigStore(configDirectory, objectMapper, codec);
-        ConfigSecretsMigrationService migrationService = new ConfigSecretsMigrationService(
-                connectionStore,
-                appConfigStore
-        );
 
         ConnectionGroupEntity group = new ConnectionGroupEntity();
         group.setId("g1");
@@ -69,7 +65,15 @@ class ConfigSecretsMigrationServiceTest {
                 StandardCharsets.UTF_8
         );
 
-        String connectionsBefore = Files.readString(tempDir.resolve(ConfigPaths.CONNECTIONS), StandardCharsets.UTF_8);
+        ConnectionStore connectionStore = new FileConnectionStore(configDirectory, objectMapper, codec);
+        AppConfigStore appConfigStore = new AppConfigStore(configDirectory, objectMapper, codec);
+        ConfigSecretsMigrationService migrationService = new ConfigSecretsMigrationService(
+                connectionStore,
+                appConfigStore
+        );
+
+        Path connectionsPath = tempDir.resolve(TenantScopedConfigSupport.defaultTenantConnectionsPath());
+        String connectionsBefore = Files.readString(connectionsPath, StandardCharsets.UTF_8);
         String appBefore = Files.readString(tempDir.resolve(ConfigPaths.APP), StandardCharsets.UTF_8);
         assertTrue(connectionsBefore.contains("legacy-pass"));
         assertTrue(appBefore.contains("sk-plain"));
@@ -78,7 +82,7 @@ class ConfigSecretsMigrationServiceTest {
         assertEquals(1, first.connectionSecretFields());
         assertEquals(1, first.llmApiKeys());
 
-        String connectionsAfterFirst = Files.readString(tempDir.resolve(ConfigPaths.CONNECTIONS), StandardCharsets.UTF_8);
+        String connectionsAfterFirst = Files.readString(connectionsPath, StandardCharsets.UTF_8);
         String appAfterFirst = Files.readString(appPath, StandardCharsets.UTF_8);
         assertFalse(connectionsAfterFirst.contains("legacy-pass"));
         assertTrue(connectionsAfterFirst.contains(SecretValueCodec.PREFIX));
@@ -102,7 +106,7 @@ class ConfigSecretsMigrationServiceTest {
         SecretValueCodec codec = SecretTestSupport.testCodec();
         ObjectMapper objectMapper = new ObjectMapper();
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
-        ConnectionStore connectionStore = new ConnectionStore(configDirectory, objectMapper, codec);
+        ConnectionStore connectionStore = new FileConnectionStore(configDirectory, objectMapper, codec);
         AppConfigStore appConfigStore = new AppConfigStore(configDirectory, objectMapper, codec);
         ConfigSecretsMigrationService migrationService = new ConfigSecretsMigrationService(
                 connectionStore,

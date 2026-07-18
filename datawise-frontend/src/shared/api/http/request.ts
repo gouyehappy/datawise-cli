@@ -204,6 +204,47 @@ export async function deleteJson<T>(path: string, options?: HttpRequestOptions):
     )
 }
 
+/** Download a binary/text attachment (non-ApiResponse body). */
+export async function downloadAttachment(
+    path: string,
+    query?: Record<string, string | undefined>,
+    options?: HttpRequestOptions,
+): Promise<{blob: Blob; fileName: string | null}> {
+    maybeRejectBlockedRequest(options)
+    const params = new URLSearchParams()
+    if (query) {
+        for (const [key, value] of Object.entries(query)) {
+            if (value != null && value !== '') params.set(key, value)
+        }
+    }
+    const qs = params.toString()
+    const url = buildUrl(path) + (qs ? `?${qs}` : '')
+    const signal = fetchSignal(options?.timeoutMs)
+    let response: Response
+    try {
+        response = await fetch(url, {
+            method: 'GET',
+            headers: sessionHeaders(),
+            credentials: 'include',
+            signal,
+        })
+    } catch {
+        const error = new ApiError(HTTP_NOT_READY)
+        notifyApiError(error, options)
+        throw error
+    }
+    if (!response.ok) {
+        const error = new ApiError(`HTTP ${response.status}`)
+        notifyUnauthorizedIfNeeded(error, options)
+        notifyApiError(error, options)
+        throw error
+    }
+    const disposition = response.headers.get('Content-Disposition') || ''
+    const match = /filename="?([^";]+)"?/i.exec(disposition)
+    const blob = await response.blob()
+    return {blob, fileName: match?.[1] ?? null}
+}
+
 export function notReady<T>(): Promise<T> {
     return Promise.reject(new Error(HTTP_NOT_READY))
 }

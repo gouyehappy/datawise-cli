@@ -21,13 +21,14 @@ class MigrationTaskAdmissionServiceTest {
     @Test
     void enqueue_registersTenantPolicyAndAdmitsTask() {
         TaskConcurrencyController controller = mock(TaskConcurrencyController.class);
-        when(controller.getTenantPolicy(7)).thenReturn(java.util.Optional.empty());
+        int slotKey = MigrationTaskAdmissionService.toSlotTenantId("default");
+        when(controller.getTenantPolicy(slotKey)).thenReturn(java.util.Optional.empty());
 
         MigrationTaskAdmissionService service = new MigrationTaskAdmissionService(2, 5);
-        service.enqueue(7L, "job-1", request(1, 100, 0, null), controller);
+        service.enqueue(7L, "default", "job-1", request(1, 100, 0, null), controller);
 
         verify(controller).upsertTenantPolicy(TenantSlotPolicy.builder()
-                .tenantId(7)
+                .tenantId(slotKey)
                 .allocatedSlots(2)
                 .reservedSlots(1)
                 .maxConcurrent(2)
@@ -36,27 +37,35 @@ class MigrationTaskAdmissionServiceTest {
         verify(controller).enqueue(argThat(request ->
                 request != null
                         && "job-1".equals(request.getTaskId())
-                        && request.getTenantId() == 7
+                        && request.getTenantId() == slotKey
                         && request.getPriority() == 8));
     }
 
     @Test
     void enqueue_skipsPolicyUpsertWhenTenantExists() {
         TaskConcurrencyController controller = mock(TaskConcurrencyController.class);
-        when(controller.getTenantPolicy(7)).thenReturn(java.util.Optional.of(
-                TenantSlotPolicy.builder().tenantId(7).allocatedSlots(2).build()
+        int slotKey = MigrationTaskAdmissionService.toSlotTenantId("acme");
+        when(controller.getTenantPolicy(slotKey)).thenReturn(java.util.Optional.of(
+                TenantSlotPolicy.builder().tenantId(slotKey).allocatedSlots(2).build()
         ));
 
         MigrationTaskAdmissionService service = new MigrationTaskAdmissionService(2, 5);
-        service.enqueue(7L, "job-1", request(3, 500, 0, null), controller);
+        service.enqueue(7L, "acme", "job-1", request(3, 500, 0, null), controller);
 
         verify(controller, never()).upsertTenantPolicy(any());
         verify(controller).enqueue(any());
     }
 
     @Test
-    void toTenantId_mapsUserId() {
-        assertEquals(7, MigrationTaskAdmissionService.toTenantId(7L));
+    void toSlotTenantId_isStableForSameProductTenant() {
+        assertEquals(
+                MigrationTaskAdmissionService.toSlotTenantId("default"),
+                MigrationTaskAdmissionService.toSlotTenantId("default")
+        );
+        assertEquals(
+                MigrationTaskAdmissionService.toSlotTenantId(null),
+                MigrationTaskAdmissionService.toSlotTenantId("default")
+        );
     }
 
     @Test
@@ -112,7 +121,8 @@ class MigrationTaskAdmissionServiceTest {
                 throttleMs,
                 false,
                 "job-x",
-                resumeJobId
+                resumeJobId,
+                null
         );
     }
 }

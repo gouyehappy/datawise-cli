@@ -121,7 +121,7 @@ public class AppConfigStore {
     }
 
     public Optional<Map<String, Object>> readSqlSnippets(String layer) {
-        String filename = snippetFilename(layer);
+        String filename = resolveSnippetPath(layer);
         var path = configDirectory.resolve(filename);
         if (!XmlConfigSupport.isRegularFile(path)) {
             return Optional.empty();
@@ -141,7 +141,7 @@ public class AppConfigStore {
 
     public void writeSqlSnippets(String layer, Map<String, Object> payload) throws Exception {
         configDirectory.ensureExists();
-        String filename = snippetFilename(layer);
+        String filename = resolveSnippetPath(layer);
         var path = configDirectory.resolve(filename);
         Document document = XmlConfigSupport.newDocument();
         Element root = document.createElement("datawise-sql-snippets");
@@ -187,8 +187,11 @@ public class AppConfigStore {
         XmlConfigSupport.writeDocument(path, document);
     }
 
-    private static String snippetFilename(String layer) {
-        return "shared".equals(layer) ? ConfigPaths.SQL_SNIPPETS_SHARED : ConfigPaths.SQL_SNIPPETS_PERSONAL;
+    private String resolveSnippetPath(String layer) {
+        if ("shared".equals(layer)) {
+            return TenantScopedConfigSupport.ensureCurrentSharedSqlSnippetsPath(configDirectory);
+        }
+        return ConfigPaths.SQL_SNIPPETS_PERSONAL;
     }
 
     private static Map<String, Object> defaultUpdaterPreferences() {

@@ -67,6 +67,7 @@ public class SemanticLayerService {
         entry.setExpression(trimOrNull(request.expression()));
         entry.setDescription(trimOrNull(request.description()));
         entry.setUnit(trimOrNull(request.unit()));
+        entry.setOwner(trimOrNull(request.owner()));
         entry.setRelatedTables(request.relatedTables() != null ? request.relatedTables() : List.of());
         entry.setUpstreamMetrics(request.upstreamMetrics() != null ? request.upstreamMetrics() : List.of());
         applyDefinitionVersion(entry, previousExpression, trimOrNull(request.changeNote()));

@@ -76,6 +76,12 @@ public final class ConnectionSecrets {
     }
 
     public static boolean isPlaintextSecret(String value, SecretValueCodec codec) {
-        return value != null && !value.isBlank() && !codec.isEncrypted(value);
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        if (codec.isEncrypted(value) || codec.isSecretReference(value)) {
+            return false;
+        }
+        return true;
     }
 }

@@ -1,13 +1,19 @@
 package org.apache.datawise.backend.service;
 
 import org.apache.datawise.backend.common.UnauthorizedException;
+import org.apache.datawise.backend.config.TenancyProperties;
 import org.apache.datawise.backend.configstore.AuthSessionPolicyService;
+import org.apache.datawise.backend.configstore.OidcConfigStore;
+import org.apache.datawise.backend.configstore.SchemaCacheStore;
 import org.apache.datawise.backend.configstore.SessionStore;
+import org.apache.datawise.backend.configstore.TenantStore;
 import org.apache.datawise.backend.configstore.UserStore;
 import org.apache.datawise.backend.domain.AuthSessionPolicyDto;
 import org.apache.datawise.backend.model.SessionEntity;
 import org.apache.datawise.backend.model.UserEntity;
 import org.apache.datawise.backend.security.UserContext;
+import org.apache.datawise.backend.service.tenant.PlatformAdminPolicy;
+import org.apache.datawise.backend.service.tenant.TenantService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,10 +22,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -34,6 +42,8 @@ class AuthServiceTest {
     @Mock
     private AuthSessionPolicyService sessionPolicy;
     @Mock
+    private OidcConfigStore oidcConfigStore;
+    @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private GuestSessionCleanupService guestSessionCleanupService;
@@ -43,6 +53,17 @@ class AuthServiceTest {
     private UserAdminPolicy userAdminPolicy;
     @Mock
     private UserPermissionPolicy userPermissionPolicy;
+    @Mock
+    private TenancyProperties tenancyProperties;
+    @Mock
+    private org.apache.datawise.backend.configstore.TenantStore tenantStore;
+    @Mock
+    private TenantService tenantService;
+    @Mock
+    private PlatformAdminPolicy platformAdminPolicy;
+
+    @Mock
+    private SchemaCacheStore schemaCacheStore;
 
     @InjectMocks
     private AuthService authService;
@@ -88,6 +109,10 @@ class AuthServiceTest {
         when(userPermissionPolicy.resolveEffectivePermissions(user)).thenReturn(
                 org.apache.datawise.backend.domain.UserFeaturePermission.fullPreset()
         );
+        when(tenancyProperties.isMultiMode()).thenReturn(false);
+        when(platformAdminPolicy.isPlatformAdmin(7L)).thenReturn(true);
+        when(tenantService.listActiveSummariesForUser(7L)).thenReturn(List.of());
+        when(tenantStore.findTenantById(anyString())).thenReturn(Optional.empty());
 
         var info = authService.getCurrentSession();
 
@@ -95,6 +120,7 @@ class AuthServiceTest {
         assertEquals("admin", info.userName());
         assertEquals(false, info.guest());
         assertEquals(7L, info.userId());
+        assertEquals("default", info.tenantId());
     }
 
     @Test
@@ -136,6 +162,10 @@ class AuthServiceTest {
         when(userPermissionPolicy.resolveEffectivePermissions(user)).thenReturn(
                 org.apache.datawise.backend.domain.UserFeaturePermission.fullPreset()
         );
+        when(tenancyProperties.isMultiMode()).thenReturn(false);
+        when(platformAdminPolicy.isPlatformAdmin(7L)).thenReturn(false);
+        when(tenantService.listActiveSummariesForUser(7L)).thenReturn(List.of());
+        when(tenantStore.findTenantById(anyString())).thenReturn(Optional.empty());
 
         var info = authService.getCurrentSession();
 

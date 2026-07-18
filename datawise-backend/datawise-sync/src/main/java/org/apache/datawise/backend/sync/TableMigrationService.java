@@ -178,7 +178,13 @@ public class TableMigrationService {
             throw new IllegalStateException("Migration job already running: " + jobId);
         }
         if (useTaskConcurrencyPool()) {
-            migrationTaskAdmission.enqueue(userId, jobId, request, taskConcurrencyController);
+            migrationTaskAdmission.enqueue(
+                    userId,
+                    org.apache.datawise.backend.security.UserContext.getTenantId(),
+                    jobId,
+                    request,
+                    taskConcurrencyController
+            );
             return jobCoordinator.viewFor(userId, jobId);
         }
         UserContext.Snapshot snapshot = UserContext.snapshotOrNull();
@@ -320,7 +326,8 @@ public class TableMigrationService {
                 stored.throttleMs(),
                 stored.truncateTarget(),
                 jobId,
-                jobId
+                jobId,
+                stored.conflictStrategy()
         );
         return startJobAsync(resumeRequest);
     }

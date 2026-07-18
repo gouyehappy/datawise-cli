@@ -9,6 +9,8 @@ export interface ScheduledSqlPayloadInput {
     teamId?: string
     queryId?: string
     maxRows?: number
+    digest?: boolean
+    digestMaxRows?: number
 }
 
 export interface PlatformScheduleDraft {
@@ -37,6 +39,12 @@ export function buildScheduledSqlPayloadJson(input: ScheduledSqlPayloadInput): s
     }
     if (input.maxRows != null && Number.isFinite(input.maxRows)) {
         base.maxRows = input.maxRows
+    }
+    if (input.digest) {
+        base.digest = true
+        if (input.digestMaxRows != null && Number.isFinite(input.digestMaxRows)) {
+            base.digestMaxRows = input.digestMaxRows
+        }
     }
 
     switch (input.source) {
@@ -87,6 +95,8 @@ export function parseScheduledSqlPayloadJson(payloadJson?: string | null): Parti
             teamId,
             queryId,
             maxRows: typeof parsed.maxRows === 'number' ? parsed.maxRows : undefined,
+            digest: parsed.digest === true,
+            digestMaxRows: typeof parsed.digestMaxRows === 'number' ? parsed.digestMaxRows : undefined,
         }
     } catch {
         return {source: 'inline'}

@@ -136,6 +136,154 @@ public class TeamController {
         ));
     }
 
+    @GetMapping("/{teamId}/audit-logs/export")
+    public void exportAuditLogs(
+            @PathVariable String teamId,
+            @RequestParam(defaultValue = "csv") String format,
+            @RequestParam(required = false) Long actorUserId,
+            @RequestParam(required = false) String since,
+            @RequestParam(required = false) String until,
+            @RequestParam(defaultValue = "false") boolean includeFullSql,
+            jakarta.servlet.http.HttpServletResponse response
+    ) throws java.io.IOException {
+        String normalized = format != null ? format.trim().toLowerCase() : "csv";
+        boolean json = "json".equals(normalized);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType(json ? "application/json;charset=utf-8" : "text/csv;charset=utf-8");
+        response.setHeader(
+                "Content-Disposition",
+                "attachment; filename=\"team-audit." + (json ? "json" : "csv") + "\""
+        );
+        var logs = teamService.exportAuditLogs(
+                teamId,
+                actorUserId,
+                parseAuditInstant(since),
+                parseAuditInstant(until),
+                includeFullSql
+        ).toList();
+        try (var writer = response.getWriter()) {
+            if (json) {
+                writeAuditJson(writer, logs, includeFullSql);
+            } else {
+                writeAuditCsv(writer, logs, includeFullSql);
+            }
+        }
+    }
+
+    private static void writeAuditCsv(
+            java.io.PrintWriter writer,
+            List<TeamAuditLogDto> logs,
+            boolean includeFullSql
+    ) {
+        if (includeFullSql) {
+            writer.println("createdAt,actorUserName,actorUserId,action,detail,sql");
+        } else {
+            writer.println("createdAt,actorUserName,actorUserId,action,detail");
+        }
+        for (TeamAuditLogDto log : logs) {
+            String detail = log.detail() != null ? log.detail() : "";
+            if (!includeFullSql && detail.length() > 120) {
+                detail = detail.substring(0, 120) + "…";
+            }
+            String sql = "";
+            if (includeFullSql) {
+                String raw = log.detail() != null ? log.detail() : "";
+                int marker = raw.indexOf(" | sql:");
+                if (marker >= 0) {
+                    sql = raw.substring(marker + 7);
+                } else if (raw.startsWith("sql:")) {
+                    sql = raw.substring(4);
+                }
+            }
+            writer.print(escapeCsv(log.createdAt()));
+            writer.print(',');
+            writer.print(escapeCsv(log.actorUserName()));
+            writer.print(',');
+            writer.print(escapeCsv(log.actorUserId() != null ? String.valueOf(log.actorUserId()) : ""));
+            writer.print(',');
+            writer.print(escapeCsv(log.action()));
+            writer.print(',');
+            writer.print(escapeCsv(detail));
+            if (includeFullSql) {
+                writer.print(',');
+                writer.print(escapeCsv(sql));
+            }
+            writer.println();
+        }
+    }
+
+    private static void writeAuditJson(
+            java.io.PrintWriter writer,
+            List<TeamAuditLogDto> logs,
+            boolean includeFullSql
+    ) throws java.io.IOException {
+        writer.write('[');
+        boolean first = true;
+        for (TeamAuditLogDto log : logs) {
+            if (!first) {
+                writer.write(',');
+            }
+            first = false;
+            String detail = log.detail() != null ? log.detail() : "";
+            if (!includeFullSql && detail.length() > 120) {
+                detail = detail.substring(0, 120) + "…";
+            }
+            writer.write("{\"id\":");
+            writer.write(jsonString(log.id()));
+            writer.write(",\"createdAt\":");
+            writer.write(jsonString(log.createdAt()));
+            writer.write(",\"actorUserId\":");
+            writer.write(log.actorUserId() != null ? String.valueOf(log.actorUserId()) : "null");
+            writer.write(",\"actorUserName\":");
+            writer.write(jsonString(log.actorUserName()));
+            writer.write(",\"action\":");
+            writer.write(jsonString(log.action()));
+            writer.write(",\"detail\":");
+            writer.write(jsonString(detail));
+            if (includeFullSql) {
+                String raw = log.detail() != null ? log.detail() : "";
+                String sql = "";
+                int marker = raw.indexOf(" | sql:");
+                if (marker >= 0) {
+                    sql = raw.substring(marker + 7);
+                } else if (raw.startsWith("sql:")) {
+                    sql = raw.substring(4);
+                }
+                writer.write(",\"sql\":");
+                writer.write(jsonString(sql));
+            }
+            writer.write('}');
+        }
+        writer.write(']');
+    }
+
+    private static String escapeCsv(String value) {
+        String text = value != null ? value : "";
+        if (text.indexOf('"') >= 0 || text.indexOf(',') >= 0 || text.indexOf('\n') >= 0 || text.indexOf('\r') >= 0) {
+            return '"' + text.replace("\"", "\"\"") + '"';
+        }
+        return text;
+    }
+
+    private static String jsonString(String value) {
+        String text = value != null ? value : "";
+        StringBuilder sb = new StringBuilder(text.length() + 2);
+        sb.append('"');
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            switch (c) {
+                case '"' -> sb.append("\\\"");
+                case '\\' -> sb.append("\\\\");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default -> sb.append(c);
+            }
+        }
+        sb.append('"');
+        return sb.toString();
+    }
+
     private static java.time.Instant parseAuditInstant(String value) {
         if (value == null || value.isBlank()) {
             return null;

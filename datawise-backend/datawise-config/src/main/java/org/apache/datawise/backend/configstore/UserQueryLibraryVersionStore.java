@@ -15,7 +15,7 @@ public class UserQueryLibraryVersionStore {
 
     private final ConfigDirectoryService configDirectory;
     private final ObjectMapper objectMapper;
-    private final ConcurrentHashMap<Long, JsonListFile<QueryLibraryVersionEntry>> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JsonListFile<QueryLibraryVersionEntry>> cache = new ConcurrentHashMap<>();
 
     public UserQueryLibraryVersionStore(ConfigDirectoryService configDirectory, ObjectMapper objectMapper) {
         this.configDirectory = configDirectory;
@@ -35,10 +35,10 @@ public class UserQueryLibraryVersionStore {
     }
 
     private JsonListFile<QueryLibraryVersionEntry> fileFor(long userId) {
-        return cache.computeIfAbsent(userId, uid -> new JsonListFile<>(
+        return cache.computeIfAbsent(TenantScopedConfigSupport.cacheKey(userId), ignored -> new JsonListFile<>(
                 configDirectory,
                 objectMapper,
-                ConfigPaths.userQueryLibraryVersions(uid),
+                TenantScopedConfigSupport.ensureUserTenantFile(configDirectory, userId, "query-library-versions.json"),
                 new TypeReference<>() {
                 }
         ));

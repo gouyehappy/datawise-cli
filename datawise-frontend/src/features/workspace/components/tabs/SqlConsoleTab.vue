@@ -273,6 +273,12 @@ function applyVisualQuerySql(generatedSql: string, mode: 'replace' | 'insert') {
   layout.showSuccessToast(t('console.visualQuery.appliedInsert'))
 }
 
+function onVisualQueryTextToSql(prompt: string) {
+  const text = prompt.trim()
+  if (!text) return
+  void aiLayerRef.value?.openAiInput(text)
+}
+
 const databaseName = computed(() => {
   void explorer.treeVersion
   return resolveConsoleInstanceLabel({
@@ -1165,6 +1171,7 @@ onMounted(async () => {
         :connection-id="connectionId || tab.connectionId"
         :database="databaseName"
         @apply="applyVisualQuerySql"
+        @text-to-sql="onVisualQueryTextToSql"
     />
 
     <ConsoleSqlCancelDialog

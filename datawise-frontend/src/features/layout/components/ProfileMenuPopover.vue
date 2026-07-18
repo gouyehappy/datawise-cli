@@ -3,7 +3,9 @@ import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {useProfileSidebarMenuGroups} from '@/features/layout/composables/useProfileMenuGroups'
+import {resolveDisplayApiErrorMessage} from '@/shared/api/http/api-error-message'
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -15,6 +17,16 @@ const {t} = useI18n()
 const layout = useLayoutStore()
 const auth = useAuthStore()
 const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
+
+async function onSwitchTenant(nextId: string) {
+  if (nextId === auth.tenantId) return
+  emit('close')
+  try {
+    await auth.switchTenant(nextId)
+  } catch (error) {
+    useAppToast().error(resolveDisplayApiErrorMessage(error, (key) => String(t(key))))
+  }
+}
 </script>
 
 <template>
@@ -34,8 +46,26 @@ const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
           <span v-if="auth.isGuest" class="menu-guest-badge">{{ t('auth.guestBadge') }}</span>
         </div>
         <div class="menu-email">{{ layout.profileEmail }}</div>
+        <div v-if="auth.tenantName && !auth.isGuest" class="menu-tenant">
+          {{ t('auth.tenantCurrent') }} · {{ auth.tenantName }}
+        </div>
       </div>
     </header>
+
+    <div v-if="auth.canSwitchTenant" class="tenant-switch">
+      <div class="tenant-switch-label">{{ t('auth.tenantSwitch') }}</div>
+      <button
+          v-for="item in auth.tenants"
+          :key="item.id"
+          type="button"
+          class="tenant-option"
+          :class="{'tenant-option--active': item.id === auth.tenantId}"
+          @click="onSwitchTenant(item.id)"
+      >
+        <span class="tenant-option-name">{{ item.name }}</span>
+        <span v-if="item.id === auth.tenantId" class="tenant-option-check">✓</span>
+      </button>
+    </div>
 
     <nav class="menu-list">
       <template v-for="(group, groupIndex) in menuGroups" :key="group[0]?.id ?? groupIndex">
@@ -138,6 +168,70 @@ const menuGroups = useProfileSidebarMenuGroups(() => emit('close'))
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.menu-tenant {
+  margin-top: var(--dw-space-1);
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tenant-switch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+  margin: 0 0 var(--dw-space-3);
+  padding: 0 var(--dw-space-2);
+}
+
+.tenant-switch-label {
+  padding: 0 var(--dw-space-3);
+  color: var(--dw-text-muted);
+  font-size: var(--dw-text-xs);
+  font-weight: 600;
+}
+
+.tenant-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dw-gap-sm);
+  width: 100%;
+  min-height: 32px;
+  padding: 0 var(--dw-space-3);
+  border: none;
+  border-radius: var(--dw-control-radius);
+  background: transparent;
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tenant-option:hover {
+  background: var(--dw-bg-hover);
+  color: var(--dw-text);
+}
+
+.tenant-option--active {
+  background: var(--dw-primary-soft);
+  color: var(--dw-primary);
+  font-weight: 600;
+}
+
+.tenant-option-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tenant-option-check {
+  flex-shrink: 0;
+  font-size: var(--dw-text-xs);
 }
 
 .menu-list {

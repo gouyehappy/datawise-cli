@@ -31,51 +31,64 @@ export function useSchemaErColumns(
     const commentsByTable = ref<Map<string, string>>(new Map())
     const loadingColumns = ref(false)
     const columnsError = ref<string | null>(null)
+    let loadGeneration = 0
+
+    async function reloadColumns() {
+        const connectionId = tab.connectionId
+        const generation = ++loadGeneration
+        columnsError.value = null
+        if (!connectionId || !graph.value.nodes.length) {
+            columnsByTable.value = new Map()
+            commentsByTable.value = new Map()
+            return
+        }
+
+        loadingColumns.value = true
+        try {
+            const entries = await mapInBatches(
+                graph.value.nodes,
+                BATCH_SIZE,
+                async (node) => {
+                    try {
+                        const properties = await tableDetailApi.fetchProperties(node.tableName, {
+                            connectionId,
+                            database: databaseName.value,
+                        })
+                        return {
+                            tableName: node.tableName,
+                            columns: properties.columns,
+                            comment: properties.comment?.trim() || '',
+                        }
+                    } catch {
+                        return {
+                            tableName: node.tableName,
+                            columns: [] as TableColumnDetail[],
+                            comment: '',
+                        }
+                    }
+                },
+            )
+            if (generation !== loadGeneration) return
+            columnsByTable.value = new Map(entries.map((entry) => [entry.tableName, entry.columns]))
+            commentsByTable.value = new Map(
+                entries
+                    .filter((entry) => entry.comment)
+                    .map((entry) => [entry.tableName, entry.comment]),
+            )
+        } catch (error) {
+            if (generation !== loadGeneration) return
+            columnsError.value = error instanceof Error ? error.message : 'Failed to load table columns'
+        } finally {
+            if (generation === loadGeneration) {
+                loadingColumns.value = false
+            }
+        }
+    }
 
     watch(
         () => [graph.value.nodes.map((node) => node.tableName).join('\0'), tab.connectionId, databaseName.value] as const,
-        async ([, connectionId]) => {
-            columnsError.value = null
-            columnsByTable.value = new Map()
-            commentsByTable.value = new Map()
-            if (!connectionId || !graph.value.nodes.length) return
-
-            loadingColumns.value = true
-            try {
-                const entries = await mapInBatches(
-                    graph.value.nodes,
-                    BATCH_SIZE,
-                    async (node) => {
-                        try {
-                            const properties = await tableDetailApi.fetchProperties(node.tableName, {
-                                connectionId,
-                                database: databaseName.value,
-                            })
-                            return {
-                                tableName: node.tableName,
-                                columns: properties.columns,
-                                comment: properties.comment?.trim() || '',
-                            }
-                        } catch {
-                            return {
-                                tableName: node.tableName,
-                                columns: [] as TableColumnDetail[],
-                                comment: '',
-                            }
-                        }
-                    },
-                )
-                columnsByTable.value = new Map(entries.map((entry) => [entry.tableName, entry.columns]))
-                commentsByTable.value = new Map(
-                    entries
-                        .filter((entry) => entry.comment)
-                        .map((entry) => [entry.tableName, entry.comment]),
-                )
-            } catch (error) {
-                columnsError.value = error instanceof Error ? error.message : 'Failed to load table columns'
-            } finally {
-                loadingColumns.value = false
-            }
+        () => {
+            void reloadColumns()
         },
         {immediate: true},
     )
@@ -91,7 +104,9 @@ export function useSchemaErColumns(
 
     return {
         enrichedGraph,
+        columnsByTable,
         loadingColumns,
         columnsError,
+        reloadColumns,
     }
 }

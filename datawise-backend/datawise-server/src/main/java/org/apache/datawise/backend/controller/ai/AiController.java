@@ -15,6 +15,7 @@ import org.apache.datawise.backend.ai.domain.AiTestConnectionRequest;
 import org.apache.datawise.backend.ai.domain.AiTestEmbeddingRequest;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
 import org.apache.datawise.backend.security.UserContext;
+import org.apache.datawise.backend.service.tenant.TenantQuotaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -35,14 +36,21 @@ public class AiController {
 
     private final AiService aiService;
     private final AiDataAgentService aiDataAgentService;
+    private final TenantQuotaService tenantQuotaService;
 
-    public AiController(AiService aiService, AiDataAgentService aiDataAgentService) {
+    public AiController(
+            AiService aiService,
+            AiDataAgentService aiDataAgentService,
+            TenantQuotaService tenantQuotaService
+    ) {
         this.aiService = aiService;
         this.aiDataAgentService = aiDataAgentService;
+        this.tenantQuotaService = tenantQuotaService;
     }
 
     @PostMapping("/chat")
     public ApiResponse<AiChatReply> chat(@RequestBody AiChatRequest request) {
+        tenantQuotaService.requireAiCallQuota();
         int targetCount = request.targets() != null ? request.targets().size() : 0;
         AiCallLogger.logChatEntry(log, request.prompt(), targetCount, request.llm());
         AiCallLogger.logChatEntry(auditLog, request.prompt(), targetCount, request.llm());
@@ -61,6 +69,7 @@ public class AiController {
 
     @PostMapping(value = "/analyze/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter analyzeStream(@RequestBody AiChatRequest request) {
+        tenantQuotaService.requireAiCallQuota();
         int targetCount = request.targets() != null ? request.targets().size() : 0;
         AiCallLogger.logChatEntry(log, request.prompt(), targetCount, request.llm());
         AiCallLogger.logChatEntry(auditLog, request.prompt(), targetCount, request.llm());
@@ -126,6 +135,7 @@ public class AiController {
 
     @PostMapping("/sql/generate")
     public ApiResponse<AiSqlGenerateReply> generateSql(@RequestBody AiSqlGenerateRequest request) {
+        tenantQuotaService.requireAiCallQuota();
         AiCallLogger.logSqlGenerateEntry(
                 log,
                 request.prompt(),

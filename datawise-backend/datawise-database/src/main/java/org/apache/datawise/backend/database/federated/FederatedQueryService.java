@@ -90,7 +90,7 @@ public class FederatedQueryService {
 
     public ExecuteSqlResult execute(ExecuteFederatedViewRequest request) {
         FederatedViewEntry view = requireEntry(request.viewId());
-        int maxRows = request.maxRows() != null && request.maxRows() > 0 ? request.maxRows() : 1000;
+        int maxRows = FederatedJoinLimits.resolveMaxRows(request.maxRows());
         return executeView(view, maxRows);
     }
 
@@ -118,6 +118,7 @@ public class FederatedQueryService {
         }
 
         Map<String, ExecuteSqlResult> partialResults = new LinkedHashMap<>();
+        boolean sourceTruncated = false;
         for (FederatedViewSource source : view.getSources()) {
             String subSql = FederatedSqlSubquerySupport.extractSubQuery(view.getSql(), source.getAlias());
             if (subSql == null || subSql.isBlank()) {
@@ -131,13 +132,32 @@ public class FederatedQueryService {
                     null
             );
             partialResults.put(source.getAlias(), partial);
+            if (partial.rows() != null && partial.rows().size() >= maxRows) {
+                sourceTruncated = true;
+            }
         }
 
         if (partialResults.size() == 1) {
             return partialResults.values().iterator().next();
         }
 
-        return mergeResults(view.getSql(), sourceByAlias, partialResults);
+        ExecuteSqlResult merged = mergeResults(view.getSql(), sourceByAlias, partialResults);
+        if (!sourceTruncated) {
+            return merged;
+        }
+        return new ExecuteSqlResult(
+                merged.sql(),
+                merged.rowCount(),
+                merged.durationMs(),
+                merged.columns(),
+                merged.rows(),
+                merged.where(),
+                merged.orderBy(),
+                merged.cursorId(),
+                Boolean.TRUE,
+                merged.pageOffset(),
+                maxRows
+        );
     }
 
     private static boolean containsFederatedJoin(String sql) {

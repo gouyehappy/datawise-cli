@@ -1,6 +1,8 @@
 package org.apache.datawise.backend.service;
 
 import org.apache.datawise.backend.common.UnauthorizedException;
+import org.apache.datawise.backend.config.TenancyProperties;
+import org.apache.datawise.backend.configstore.TenantStore;
 import org.apache.datawise.backend.configstore.UserStore;
 import org.apache.datawise.backend.domain.UserFeaturePermission;
 import org.apache.datawise.backend.model.UserEntity;
@@ -28,13 +30,16 @@ class FeaturePermissionAccessTest {
     @Mock
     private UserAdminPolicy adminPolicy;
 
+    @Mock
+    private TenantStore tenantStore;
+
     private UserPermissionPolicy permissionPolicy;
     private UserResourcePolicy resourcePolicy;
     private FeaturePermissionAccess access;
 
     @BeforeEach
     void setUp() {
-        permissionPolicy = new UserPermissionPolicy(adminPolicy);
+        permissionPolicy = new UserPermissionPolicy(adminPolicy, tenantStore, new TenancyProperties());
         resourcePolicy = new UserResourcePolicy(new UserAccessPolicy());
         access = new FeaturePermissionAccess(userStore, permissionPolicy, resourcePolicy);
         UserContext.set(2L, true, "guest-session");

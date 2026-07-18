@@ -9,6 +9,8 @@ public class SqlHistoryEntity {
 
     private Long userId;
 
+    private String tenantId;
+
     private String connectionId;
 
     private String database;
@@ -37,6 +39,14 @@ public class SqlHistoryEntity {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getConnectionId() {

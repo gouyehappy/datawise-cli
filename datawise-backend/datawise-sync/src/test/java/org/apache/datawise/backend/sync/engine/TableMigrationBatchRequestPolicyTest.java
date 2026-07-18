@@ -31,6 +31,7 @@ class TableMigrationBatchRequestPolicyTest {
                 0,
                 false,
                 null,
+                null,
                 null
         );
 
@@ -56,6 +57,7 @@ class TableMigrationBatchRequestPolicyTest {
                 500,
                 0,
                 false,
+                null,
                 null,
                 null
         );

@@ -14,7 +14,7 @@ public class UserSchemaDriftMonitorStore {
 
     private final ConfigDirectoryService configDirectory;
     private final ObjectMapper objectMapper;
-    private final ConcurrentHashMap<Long, JsonListFile<SchemaDriftMonitorEntry>> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JsonListFile<SchemaDriftMonitorEntry>> cache = new ConcurrentHashMap<>();
 
     public UserSchemaDriftMonitorStore(ConfigDirectoryService configDirectory, ObjectMapper objectMapper) {
         this.configDirectory = configDirectory;
@@ -42,10 +42,10 @@ public class UserSchemaDriftMonitorStore {
     }
 
     private JsonListFile<SchemaDriftMonitorEntry> fileFor(long userId) {
-        return cache.computeIfAbsent(userId, uid -> new JsonListFile<>(
+        return cache.computeIfAbsent(TenantScopedConfigSupport.cacheKey(userId), ignored -> new JsonListFile<>(
                 configDirectory,
                 objectMapper,
-                ConfigPaths.userSchemaDriftMonitors(uid),
+                TenantScopedConfigSupport.ensureUserTenantFile(configDirectory, userId, "schema-drift-monitors.json"),
                 new TypeReference<>() {
                 }
         ));

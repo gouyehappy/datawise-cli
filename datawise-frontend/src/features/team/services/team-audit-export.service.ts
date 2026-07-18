@@ -45,12 +45,13 @@ export function serializeAuditLogsToCsv(
     options: TeamAuditExportOptions,
 ): string {
     const headers = options.includeFullSql
-        ? ['createdAt', 'actorUserName', 'actorUserId', 'action', 'detail', 'sql']
-        : ['createdAt', 'actorUserName', 'actorUserId', 'action', 'detail']
+        ? ['createdAt', 'tenantId', 'actorUserName', 'actorUserId', 'action', 'detail', 'sql']
+        : ['createdAt', 'tenantId', 'actorUserName', 'actorUserId', 'action', 'detail']
     const lines = logs.map((log) => {
         const detail = formatAuditDetailForExport(log.detail ?? '', options.includeFullSql)
         const cells = [
             log.createdAt,
+            log.tenantId ?? '',
             log.actorUserName,
             String(log.actorUserId),
             log.action,
@@ -72,6 +73,7 @@ export function serializeAuditLogsToJson(
         const detail = formatAuditDetailForExport(log.detail ?? '', options.includeFullSql)
         const item: Record<string, string | number> = {
             id: log.id,
+            tenantId: log.tenantId ?? '',
             createdAt: log.createdAt,
             actorUserId: log.actorUserId,
             actorUserName: log.actorUserName,

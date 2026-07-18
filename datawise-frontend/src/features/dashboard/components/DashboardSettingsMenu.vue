@@ -13,6 +13,7 @@ const emit = defineEmits<{
   'toggle-layout-edit': []
   customize: []
   'ai-widget': []
+  shares: []
 }>()
 
 const {t} = useI18n()
@@ -59,7 +60,7 @@ async function toggle() {
   placeMenu()
 }
 
-function run(action: 'toggle-layout-edit' | 'customize' | 'ai-widget') {
+function run(action: 'toggle-layout-edit' | 'customize' | 'ai-widget' | 'shares') {
   close()
   // Narrow before emit: Vue's typed emit uses per-event overloads, so a union is rejected.
   switch (action) {
@@ -71,6 +72,9 @@ function run(action: 'toggle-layout-edit' | 'customize' | 'ai-widget') {
       break
     case 'ai-widget':
       emit('ai-widget')
+      break
+    case 'shares':
+      emit('shares')
       break
   }
 }
@@ -143,6 +147,15 @@ onUnmounted(() => {
         >
           <DwIcon name="settings-ai" :stroke-width="1.6"/>
           <span>{{ t('dashboard.settingsMenu.aiWidget') }}</span>
+        </button>
+        <button
+            type="button"
+            class="dash-settings__item"
+            role="menuitem"
+            @click="run('shares')"
+        >
+          <DwIcon name="link" :stroke-width="1.6"/>
+          <span>{{ t('dashboard.settingsMenu.shares') }}</span>
         </button>
       </div>
     </Teleport>

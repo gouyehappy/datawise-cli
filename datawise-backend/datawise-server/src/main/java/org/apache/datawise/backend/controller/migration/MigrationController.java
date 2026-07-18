@@ -9,8 +9,11 @@ import org.apache.datawise.backend.domain.TableMigrationPreflightRequest;
 import org.apache.datawise.backend.domain.TableMigrationPreflightResult;
 import org.apache.datawise.backend.domain.TableMigrationRequest;
 import org.apache.datawise.backend.domain.TableMigrationResult;
+import org.apache.datawise.backend.domain.TableMigrationRowDiffRequest;
+import org.apache.datawise.backend.domain.TableMigrationRowDiffResult;
 import org.apache.datawise.backend.sync.support.MigrationBatchReportSupport;
 import org.apache.datawise.backend.sync.preflight.TableMigrationPreflightService;
+import org.apache.datawise.backend.sync.preflight.TableMigrationRowDiffService;
 import org.apache.datawise.backend.sync.api.MigrationPausedException;
 import org.apache.datawise.backend.sync.api.TableMigrationProgressListener;
 import org.apache.datawise.backend.sync.TableMigrationService;
@@ -42,15 +45,18 @@ public class MigrationController {
 
     private final TableMigrationService tableMigrationService;
     private final TableMigrationPreflightService tableMigrationPreflightService;
+    private final TableMigrationRowDiffService tableMigrationRowDiffService;
     private final ExecutorService migrationJobTaskExecutor;
 
     public MigrationController(
             TableMigrationService tableMigrationService,
             TableMigrationPreflightService tableMigrationPreflightService,
+            TableMigrationRowDiffService tableMigrationRowDiffService,
             @Qualifier("migrationJobTaskExecutor") ExecutorService migrationJobTaskExecutor
     ) {
         this.tableMigrationService = tableMigrationService;
         this.tableMigrationPreflightService = tableMigrationPreflightService;
+        this.tableMigrationRowDiffService = tableMigrationRowDiffService;
         this.migrationJobTaskExecutor = migrationJobTaskExecutor;
     }
 
@@ -176,6 +182,37 @@ public class MigrationController {
                     "POST /api/migration/preflight",
                     ex,
                     "targetConnectionId", request.targetConnectionId()
+            );
+            throw ex;
+        }
+    }
+
+    @PostMapping("/row-diff")
+    public ApiResponse<TableMigrationRowDiffResult> rowDiff(@RequestBody TableMigrationRowDiffRequest request) {
+        requireMigrationAccess();
+        ApiRequestLogger.logEntry(
+                log,
+                "POST /api/migration/row-diff",
+                "sourceConnectionId", request.sourceConnectionId(),
+                "targetConnectionId", request.targetConnectionId(),
+                "tableName", request.tableName()
+        );
+        try {
+            TableMigrationRowDiffResult result = tableMigrationRowDiffService.diff(request);
+            ApiRequestLogger.logSuccess(
+                    log,
+                    "POST /api/migration/row-diff",
+                    "sampled", result.sampledSourceRows(),
+                    "insert", result.insertCount(),
+                    "update", result.updateCount()
+            );
+            return ApiResponse.ok(result);
+        } catch (RuntimeException ex) {
+            ApiRequestLogger.logFailure(
+                    log,
+                    "POST /api/migration/row-diff",
+                    ex,
+                    "tableName", request.tableName()
             );
             throw ex;
         }

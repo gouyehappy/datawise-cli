@@ -3,6 +3,7 @@ package org.apache.datawise.backend.sync.engine;
 import org.apache.datawise.backend.domain.TableMigrationBatchRequest;
 import org.apache.datawise.backend.domain.TableMigrationBatchTableRequest;
 import org.apache.datawise.backend.domain.TableMigrationRequest;
+import org.apache.datawise.backend.migration.MigrationConflictStrategy;
 
 import java.util.List;
 
@@ -17,7 +18,8 @@ public record TableMigrationPolicy(
         boolean truncateTarget,
         boolean createTargetIfMissing,
         String sourceSelectSql,
-        String targetTableName
+        String targetTableName,
+        String conflictStrategy
 ) {
     public static TableMigrationPolicy from(TableMigrationRequest request, int defaultBatchSize) {
         return new TableMigrationPolicy(
@@ -30,7 +32,8 @@ public record TableMigrationPolicy(
                 Boolean.TRUE.equals(request.truncateTarget()),
                 Boolean.TRUE.equals(request.createTargetIfMissing()),
                 request.sourceSelectSql(),
-                request.targetTableName()
+                request.targetTableName(),
+                request.conflictStrategy()
         );
     }
 
@@ -45,6 +48,17 @@ public record TableMigrationPolicy(
         return sourceSelectSql != null && !sourceSelectSql.isBlank();
     }
 
+    public boolean usesPkUpsert() {
+        return MigrationConflictStrategy.isUpsertMode(mode);
+    }
+
+    public String resolvedConflictStrategy() {
+        if (!usesPkUpsert()) {
+            return null;
+        }
+        return MigrationConflictStrategy.normalize(conflictStrategy);
+    }
+
     public static TableMigrationPolicy sharedFrom(TableMigrationBatchRequest request, int defaultBatchSize) {
         return new TableMigrationPolicy(
                 request.mode(),
@@ -56,7 +70,8 @@ public record TableMigrationPolicy(
                 Boolean.TRUE.equals(request.truncateTarget()),
                 false,
                 null,
-                null
+                null,
+                request.conflictStrategy()
         );
     }
 
@@ -75,7 +90,8 @@ public record TableMigrationPolicy(
                 truncateTarget,
                 createTargetIfMissing,
                 sourceSelectSql,
-                targetTableName
+                targetTableName,
+                conflictStrategy
         );
     }
 }

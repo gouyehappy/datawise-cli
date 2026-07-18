@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwButton} from '@/core/components'
+import {sharesApi} from '@/api'
 import AiAnalysisChart from '@/features/ai/analysis/components/AiAnalysisChart.vue'
 import {buildAiChartOption} from '@/features/ai/analysis/services/ai-chart.service'
 import DashboardWidgetFrame from '@/features/dashboard/components/DashboardWidgetFrame.vue'
@@ -10,6 +11,8 @@ import {
     pivotQueryResultRows,
     toAiChartSpec,
 } from '@/features/workspace/services/query-result-chart.service'
+import {useAppToast} from '@/features/layout/composables/useAppToast'
+import {resolveDisplayApiErrorMessage} from '@/shared/api/http/api-error-message'
 import '@/features/dashboard/styles/dashboard-widgets.css'
 
 const props = defineProps<{
@@ -22,6 +25,8 @@ const emit = defineEmits<{
 }>()
 
 const {t} = useI18n()
+const toast = useAppToast()
+const sharing = ref(false)
 
 const chartRows = computed(() => {
   if (!props.widget.pivotEnabled) return props.widget.rows
@@ -36,6 +41,34 @@ const chartOption = computed(() => {
   const spec = toAiChartSpec(props.widget.config, props.widget.columns)
   return buildAiChartOption(spec, props.widget.columns, chartRows.value)
 })
+
+async function shareSnapshot() {
+  if (sharing.value) return
+  sharing.value = true
+  try {
+    const created = await sharesApi.create({
+      title: props.widget.title,
+      kind: 'dashboard_chart',
+      payloadJson: JSON.stringify({
+        columns: props.widget.columns,
+        rows: props.widget.rows.slice(0, 500),
+        config: props.widget.config,
+        pivotEnabled: props.widget.pivotEnabled,
+      }),
+      expiresInDays: 30,
+    })
+    const url = sharesApi.publicPageUrl(created.token)
+    await navigator.clipboard.writeText(url)
+    toast.success(t('dashboard.savedChart.shareCopied'))
+  } catch (error) {
+    toast.error(
+        resolveDisplayApiErrorMessage(error, (key) => String(t(key)))
+        || t('dashboard.savedChart.shareFailed'),
+    )
+  } finally {
+    sharing.value = false
+  }
+}
 </script>
 
 <template>
@@ -52,6 +85,15 @@ const chartOption = computed(() => {
       </div>
       <div class="dash-card__head-actions">
         <span class="dash-card__badge">{{ t(`queryResult.chart.types.${widget.config.chartType}`) }}</span>
+        <DwButton
+            variant="ghost"
+            size="sm"
+            type="button"
+            :disabled="sharing"
+            @click="shareSnapshot"
+        >
+          {{ t('dashboard.savedChart.share') }}
+        </DwButton>
         <DwButton
             v-if="editMode"
             variant="ghost"

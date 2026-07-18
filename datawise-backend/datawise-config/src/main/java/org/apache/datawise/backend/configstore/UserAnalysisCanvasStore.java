@@ -14,7 +14,7 @@ public class UserAnalysisCanvasStore {
 
     private final ConfigDirectoryService configDirectory;
     private final ObjectMapper objectMapper;
-    private final ConcurrentHashMap<Long, JsonListFile<AiAnalysisCanvasEntry>> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JsonListFile<AiAnalysisCanvasEntry>> cache = new ConcurrentHashMap<>();
 
     public UserAnalysisCanvasStore(ConfigDirectoryService configDirectory, ObjectMapper objectMapper) {
         this.configDirectory = configDirectory;
@@ -42,10 +42,10 @@ public class UserAnalysisCanvasStore {
     }
 
     private JsonListFile<AiAnalysisCanvasEntry> fileFor(long userId) {
-        return cache.computeIfAbsent(userId, uid -> new JsonListFile<>(
+        return cache.computeIfAbsent(TenantScopedConfigSupport.cacheKey(userId), ignored -> new JsonListFile<>(
                 configDirectory,
                 objectMapper,
-                ConfigPaths.userAnalysisCanvas(uid),
+                TenantScopedConfigSupport.ensureUserTenantFile(configDirectory, userId, "analysis-canvas.json"),
                 new TypeReference<>() {
                 }
         ));

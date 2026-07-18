@@ -8,6 +8,10 @@ public record ConnectorMarketEntryDto(
         boolean primary,
         boolean available,
         List<String> capabilities,
-        String installHint
+        String installHint,
+        String version,
+        String jarName,
+        String integrityStatus,
+        String downloadUrl
 ) {
 }

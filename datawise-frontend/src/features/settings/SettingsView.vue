@@ -14,7 +14,11 @@ const layout = useLayoutStore()
 const appConfig = useAppConfigStore()
 const auth = useAuthStore()
 
-const navGroups = computed(() => buildSettingsNavGroups({isAdmin: auth.isAdmin}))
+const navGroups = computed(() => buildSettingsNavGroups({
+  isAdmin: auth.isAdmin,
+  platformAdmin: auth.platformAdmin,
+  multiTenancy: auth.tenancyMode === 'multi',
+}))
 
 const visibleNavGroups = computed(() =>
     navGroups.value

@@ -4,6 +4,9 @@ import org.apache.datawise.backend.common.DbType;
 import org.apache.datawise.backend.dml.render.AbstractJdbcDmlDialect;
 import org.apache.datawise.backend.dml.render.DmlSqlSupport;
 
+import java.util.List;
+import java.util.Map;
+
 /** PostgreSQL 协议族 DML（postgresql / kingbase / greenplum / opengauss / highgo）。 */
 public final class PostgresqlFamilyDmlDialect extends AbstractJdbcDmlDialect {
 
@@ -30,5 +33,19 @@ public final class PostgresqlFamilyDmlDialect extends AbstractJdbcDmlDialect {
     @Override
     public String qualifiedTable(String database, String tableName) {
         return DbType.quoteQualifiedTable(DbType.POSTGRESQL.id(), database, tableName);
+    }
+
+    @Override
+    public String buildMultiUpsert(
+            String database,
+            String tableName,
+            List<Map<String, Object>> columns,
+            List<Map<String, Object>> rows,
+            List<String> keyColumns,
+            String conflictStrategy
+    ) {
+        return PostgresqlUpsertSupport.build(
+                this, database, tableName, columns, rows, keyColumns, conflictStrategy
+        );
     }
 }

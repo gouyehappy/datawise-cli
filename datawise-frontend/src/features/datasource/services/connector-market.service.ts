@@ -1,15 +1,16 @@
-import {datasourcesApi} from '@/api'
 import type {
     ConnectorMarketBundle,
     ConnectorMarketEntry,
 } from '@/features/datasource/types/datasource.types'
 
 export async function fetchConnectorMarketBundle(): Promise<ConnectorMarketBundle> {
+    const {datasourcesApi} = await import('@/api')
     const data = await datasourcesApi.market()
     return {
         connectors: data.connectors,
         loadedPluginJars: data.loadedPluginJars ?? [],
         pluginLoadFailures: data.pluginLoadFailures ?? [],
+        manifest: data.manifest ?? null,
     }
 }
 
@@ -21,16 +22,21 @@ export function filterConnectorMarketEntries(
     if (!normalized) return entries
     return entries.filter((entry) =>
         entry.label.toLowerCase().includes(normalized)
-        || entry.id.toLowerCase().includes(normalized),
+        || entry.id.toLowerCase().includes(normalized)
+        || (entry.version ?? '').toLowerCase().includes(normalized),
     )
 }
 
 export function summarizeConnectorMarket(entries: ConnectorMarketEntry[]) {
     const available = entries.filter((entry) => entry.available).length
+    const verified = entries.filter((entry) => entry.integrityStatus === 'verified').length
+    const mismatch = entries.filter((entry) => entry.integrityStatus === 'mismatch').length
     return {
         total: entries.length,
         available,
         pending: entries.length - available,
+        verified,
+        mismatch,
     }
 }
 
@@ -40,14 +46,43 @@ export function buildConnectorInstallGuide(entry: ConnectorMarketEntry): string 
     const lines = [
         `# ${entry.label} (${entry.id})`,
         `1. Build or obtain the connector plugin JAR for "${entry.id}".`,
-        `2. Copy the JAR into ${CONNECTOR_PLUGIN_DIR}/`,
-        '3. Restart the backend process.',
-        '4. Refresh this marketplace page.',
     ]
+    if (entry.jarName) {
+        lines.push(`2. Place it as ${CONNECTOR_PLUGIN_DIR}/${entry.jarName}`)
+    } else {
+        lines.push(`2. Copy the JAR into ${CONNECTOR_PLUGIN_DIR}/`)
+    }
+    lines.push(
+        '3. Optionally add/update an entry in config/plugins/manifest.json (version + sha256).',
+        '4. Restart the backend process.',
+        '5. Refresh this marketplace page.',
+    )
+    if (entry.version) {
+        lines.push('', `Manifest version: ${entry.version}`)
+    }
+    if (entry.downloadUrl) {
+        lines.push(`Download URL: ${entry.downloadUrl}`)
+    }
     if (entry.installHint) {
         lines.push('', entry.installHint)
     }
     return lines.join('\n')
+}
+
+export function formatConnectorIntegrityLabel(
+    status: string | null | undefined,
+    t: (key: string) => string,
+    te: (key: string) => boolean,
+): string | null {
+    if (!status || status === 'none' || status === 'bundled') {
+        if (status === 'bundled') {
+            const key = 'plugin.connectorMarket.integrity.bundled'
+            return te(key) ? t(key) : 'Bundled'
+        }
+        return null
+    }
+    const key = `plugin.connectorMarket.integrity.${status}`
+    return te(key) ? t(key) : status
 }
 
 export function formatConnectorCapabilityLabel(

@@ -18,7 +18,7 @@ public class UserAiKnowledgeStore {
     private final ConfigDirectoryService configDirectory;
     private final ObjectMapper objectMapper;
     private final JsonListFile<AiKnowledgeEntry> legacyGlobal;
-    private final ConcurrentHashMap<Long, JsonListFile<AiKnowledgeEntry>> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JsonListFile<AiKnowledgeEntry>> cache = new ConcurrentHashMap<>();
 
     public UserAiKnowledgeStore(ConfigDirectoryService configDirectory, ObjectMapper objectMapper) {
         this.configDirectory = configDirectory;
@@ -57,14 +57,14 @@ public class UserAiKnowledgeStore {
     }
 
     private JsonListFile<AiKnowledgeEntry> entriesFor(long userId) {
-        return cache.computeIfAbsent(userId, this::loadUserEntries);
+        return cache.computeIfAbsent(TenantScopedConfigSupport.cacheKey(userId), ignored -> loadUserEntries(userId));
     }
 
     private JsonListFile<AiKnowledgeEntry> loadUserEntries(long userId) {
         JsonListFile<AiKnowledgeEntry> file = new JsonListFile<>(
                 configDirectory,
                 objectMapper,
-                ConfigPaths.userAiKnowledge(userId),
+                TenantScopedConfigSupport.ensureUserTenantFile(configDirectory, userId, ConfigPaths.AI_KNOWLEDGE),
                 new TypeReference<>() {
                 }
         );

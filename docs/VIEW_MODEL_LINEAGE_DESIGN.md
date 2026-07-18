@@ -171,8 +171,8 @@ public class SqlLineageParserRegistry {
 | MySQL / MariaDB / TiDB | JSQLParser | 同左 | 可选 Calcite fallback |
 | PostgreSQL / Kingbase / OpenGauss | JSQLParser | 同左 | 可选 Calcite fallback |
 | Oracle / SQL Server / DB2 | JSQLParser（partial） | 增强 | Calcite |
-| Hive / Spark | **不支持** → failed/partial | dt-sql-parser sidecar | Calcite |
-| Flink / Trino / Presto | **不支持** → failed/partial | dt-sql-parser sidecar | Calcite |
+| Hive / Spark | **lakehouse** front door → AST（standard SELECT = partial） | dt-sql-parser sidecar | Calcite |
+| Flink / Trino / Presto | **lakehouse**（Flink hard features → honest partial；Trino/Presto = complete） | dt-sql-parser sidecar | Calcite |
 | ClickHouse / Doris / StarRocks | partial（简单 SELECT） | dt-sql-parser | Calcite |
 
 配置示例（`application.yml`）：

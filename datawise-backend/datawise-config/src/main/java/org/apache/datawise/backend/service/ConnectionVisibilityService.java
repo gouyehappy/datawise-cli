@@ -173,6 +173,9 @@ public class ConnectionVisibilityService {
     }
 
     private boolean isConnectionVisible(ConnectionEntity connection, long userId, Set<String> teamSharedConnectionIds) {
+        if (!belongsToCurrentTenant(connection.getTenantId())) {
+            return false;
+        }
         if (connection.getUserId() != null && connection.getUserId().equals(userId)) {
             return true;
         }
@@ -180,6 +183,14 @@ public class ConnectionVisibilityService {
             return true;
         }
         return teamSharedConnectionIds.contains(connection.getId());
+    }
+
+    private boolean belongsToCurrentTenant(String tenantId) {
+        String current = UserContext.getTenantId();
+        String normalized = (tenantId == null || tenantId.isBlank())
+                ? org.apache.datawise.backend.domain.TenantIds.DEFAULT
+                : tenantId.trim();
+        return org.apache.datawise.backend.domain.TenantIds.normalizeOrDefault(current).equals(normalized);
     }
 
     private boolean isGroupVisible(
@@ -235,7 +246,7 @@ public class ConnectionVisibilityService {
         Set<String> shared = new HashSet<>();
         for (TeamMemberEntity membership : teamStore.findMembersByUserId(userId)) {
             TeamEntity team = teamStore.findTeamById(membership.getTeamId()).orElse(null);
-            if (team == null) {
+            if (team == null || !belongsToCurrentTenant(team.getTenantId())) {
                 continue;
             }
             shared.addAll(team.getSharedConnectionIds());

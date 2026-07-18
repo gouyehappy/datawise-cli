@@ -7,19 +7,24 @@ import org.apache.datawise.backend.database.drift.SchemaDriftService;
 import org.apache.datawise.backend.database.sql.SqlReviewService;
 import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
+import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.domain.RerunAnalysisCanvasRequest;
 import org.apache.datawise.backend.domain.ScheduledTaskDto;
 import org.apache.datawise.backend.domain.SqlReviewRequest;
 import org.apache.datawise.backend.domain.SqlReviewResultDto;
 import org.apache.datawise.backend.model.ScheduledTaskEntry;
+import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.InstanceWorkspaceService;
 import org.apache.datawise.backend.service.TeamService;
+import org.apache.datawise.backend.service.outbound.OutboundNotifySupport;
 import org.apache.datawise.backend.service.workspace.WorkspaceNotificationService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,6 +44,7 @@ class ScheduledTaskServiceTest {
     private TeamService teamService;
     private InstanceWorkspaceService instanceWorkspaceService;
     private AnalysisCanvasPipelineService analysisCanvasPipelineService;
+    private OutboundNotifySupport outboundNotifySupport;
     private ScheduledTaskService service;
 
     @BeforeEach
@@ -49,6 +55,7 @@ class ScheduledTaskServiceTest {
         teamService = mock(TeamService.class);
         instanceWorkspaceService = mock(InstanceWorkspaceService.class);
         analysisCanvasPipelineService = mock(AnalysisCanvasPipelineService.class);
+        outboundNotifySupport = mock(OutboundNotifySupport.class);
         service = new ScheduledTaskService(
                 taskStore,
                 sqlService,
@@ -58,8 +65,14 @@ class ScheduledTaskServiceTest {
                 teamService,
                 instanceWorkspaceService,
                 mock(WorkspaceNotificationService.class),
+                outboundNotifySupport,
                 new ObjectMapper()
         );
+    }
+
+    @AfterEach
+    void tearDown() {
+        UserContext.clear();
     }
 
     @Test
@@ -142,6 +155,144 @@ class ScheduledTaskServiceTest {
         assertEquals("Weekly GMV · 12 rows · Revenue increased", result.lastRunMessage());
         verify(analysisCanvasPipelineService).rerunPipeline(new RerunAnalysisCanvasRequest("canvas-1", null));
         verify(taskStore).upsert(entry);
+    }
+
+    @Test
+    void runNowPublishesInsightDigestWhenEnabled() {
+        UserContext.set(9L, false, "session-1", "default");
+        ScheduledTaskEntry entry = sqlTask("SELECT id FROM users");
+        entry.setPayloadJson(
+                "{\"sql\":\"SELECT id FROM users\",\"connectionId\":\"conn-1\",\"database\":\"app\",\"digest\":true,\"digestMaxRows\":1}"
+        );
+        when(taskStore.findById("task-1")).thenReturn(entry);
+        when(sqlReviewService.review(any(SqlReviewRequest.class)))
+                .thenReturn(new SqlReviewResultDto(true, false, List.of()));
+        when(sqlService.execute(any(ExecuteSqlRequest.class))).thenReturn(new ExecuteSqlResult(
+                "SELECT id FROM users",
+                2,
+                5L,
+                List.of(Map.of("name", "id")),
+                List.of(Map.of("id", 1), Map.of("id", 2)),
+                null,
+                null,
+                null,
+                false,
+                null,
+                null
+        ));
+
+        ScheduledTaskDto result = service.runNow("task-1");
+
+        assertEquals("ok", result.lastRunStatus());
+        verify(outboundNotifySupport).insightDigest(
+                eq("Nightly SQL"),
+                eq(ScheduledTaskEntry.TYPE_SQL),
+                any(),
+                eq(Map.of(
+                        "rowCount", 2,
+                        "columns", List.of("id"),
+                        "rows", List.of(Map.of("id", 1)),
+                        "truncated", true
+                )),
+                eq(9L)
+        );
+    }
+
+    @Test
+    void runNowSkipsInsightDigestWhenDisabled() {
+        UserContext.set(9L, false, "session-1", "default");
+        ScheduledTaskEntry entry = sqlTask("SELECT 1");
+        when(taskStore.findById("task-1")).thenReturn(entry);
+        when(sqlReviewService.review(any(SqlReviewRequest.class)))
+                .thenReturn(new SqlReviewResultDto(true, false, List.of()));
+        when(sqlService.execute(any(ExecuteSqlRequest.class))).thenReturn(new ExecuteSqlResult(
+                "SELECT 1",
+                1,
+                1L,
+                List.of(Map.of("name", "c")),
+                List.of(Map.of("c", 1)),
+                null,
+                null,
+                null,
+                false,
+                null,
+                null
+        ));
+
+        service.runNow("task-1");
+
+        verify(outboundNotifySupport).scheduledTask(eq(true), eq("Nightly SQL"), eq("sql"), any(), eq(9L));
+        verify(outboundNotifySupport, times(0)).insightDigest(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void runNowDataQualityFailsWhenAssertionFails() {
+        ScheduledTaskEntry entry = new ScheduledTaskEntry();
+        entry.setId("task-dq");
+        entry.setName("Negative amounts");
+        entry.setType(ScheduledTaskEntry.TYPE_DATA_QUALITY);
+        entry.setCronExpression("0 0 * * * *");
+        entry.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        entry.setPayloadJson(
+                "{\"connectionId\":\"conn-1\",\"database\":\"app\",\"sql\":\"SELECT id FROM orders WHERE amount < 0\","
+                        + "\"assertion\":\"empty_result\",\"expected\":\"0\"}"
+        );
+        when(taskStore.findById("task-dq")).thenReturn(entry);
+        when(sqlReviewService.review(any(SqlReviewRequest.class)))
+                .thenReturn(new SqlReviewResultDto(true, false, List.of()));
+        when(sqlService.execute(any(ExecuteSqlRequest.class))).thenReturn(new ExecuteSqlResult(
+                "SELECT id FROM orders WHERE amount < 0",
+                1,
+                3L,
+                List.of(Map.of("name", "id")),
+                List.of(Map.of("id", 9)),
+                null,
+                null,
+                null,
+                false,
+                null,
+                null
+        ));
+
+        ScheduledTaskDto result = service.runNow("task-dq");
+
+        assertEquals("failed", result.lastRunStatus());
+        assertTrue(result.lastRunMessage().contains("DQ_ASSERTION_FAILED"));
+        verify(outboundNotifySupport).dataQuality(eq(false), eq("Negative amounts"), any(), any(), any());
+        verifyNoInteractions(analysisCanvasPipelineService);
+    }
+
+    @Test
+    void runNowHttpTriggerFailsOnNon2xx() throws Exception {
+        com.sun.net.httpserver.HttpServer server =
+                com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/fail", exchange -> {
+            byte[] body = "boom".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(503, body.length);
+            try (java.io.OutputStream os = exchange.getResponseBody()) {
+                os.write(body);
+            }
+        });
+        server.start();
+        try {
+            String url = "http://127.0.0.1:" + server.getAddress().getPort() + "/fail";
+            ScheduledTaskEntry entry = new ScheduledTaskEntry();
+            entry.setId("task-http");
+            entry.setName("Trigger DAG");
+            entry.setType(ScheduledTaskEntry.TYPE_HTTP_TRIGGER);
+            entry.setCronExpression("0 0 * * * *");
+            entry.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+            entry.setPayloadJson("{\"url\":\"" + url + "\",\"method\":\"POST\",\"bodyJson\":{}}");
+            when(taskStore.findById("task-http")).thenReturn(entry);
+
+            ScheduledTaskDto result = service.runNow("task-http");
+
+            assertEquals("failed", result.lastRunStatus());
+            assertTrue(result.lastRunMessage().contains("HTTP 503"));
+            verify(outboundNotifySupport).orchestration(eq(false), eq("Trigger DAG"), any(), any(), any());
+        } finally {
+            server.stop(0);
+        }
     }
 
     private static ScheduledTaskEntry canvasTask(String canvasId) {

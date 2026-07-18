@@ -17,7 +17,7 @@ public final class ConnectionCatalogCache {
 
     private volatile Entry entry;
 
-    Entry getIfFresh(long lastModified) {
+    public Entry getIfFresh(long lastModified) {
         Entry cached = entry;
         if (cached != null && cached.lastModified == lastModified) {
             return cached;
@@ -25,21 +25,21 @@ public final class ConnectionCatalogCache {
         return null;
     }
 
-    Entry putAndGet(long lastModified, ConnectionsXmlCodec.ParsedCatalog catalog) {
+    public Entry putAndGet(long lastModified, ConnectionsXmlCodec.ParsedCatalog catalog) {
         Entry built = buildEntry(lastModified, catalog);
         entry = built;
         return built;
     }
 
-    void put(long lastModified, ConnectionsXmlCodec.ParsedCatalog catalog) {
+    public void put(long lastModified, ConnectionsXmlCodec.ParsedCatalog catalog) {
         putAndGet(lastModified, catalog);
     }
 
-    void invalidate() {
+    public void invalidate() {
         entry = null;
     }
 
-    static Entry buildEntry(long lastModified, ConnectionsXmlCodec.ParsedCatalog catalog) {
+    public static Entry buildEntry(long lastModified, ConnectionsXmlCodec.ParsedCatalog catalog) {
         Map<String, ConnectionEntity> connectionsById = new HashMap<>();
         for (ConnectionEntity connection : catalog.connections()) {
             connectionsById.put(connection.getId(), connection);
@@ -72,7 +72,7 @@ public final class ConnectionCatalogCache {
         );
     }
 
-    record Entry(
+    public record Entry(
             long lastModified,
             ConnectionsXmlCodec.ParsedCatalog catalog,
             Map<String, ConnectionEntity> connectionsById,

@@ -10,6 +10,8 @@ public class ApiTokenEntity {
     private String id;
     private String name;
     private Long userId;
+    /** 创建时绑定的租户；缺失时按 default。 */
+    private String tenantId;
     private String tokenHash;
     private String tokenLookup;
     private List<String> scopes = new ArrayList<>();
@@ -38,6 +40,14 @@ public class ApiTokenEntity {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getTokenHash() {

@@ -129,11 +129,11 @@ public class TableDataChangeAuditStore {
     }
 
     private JsonListFile<TableDataChangeAuditEntry> entriesFor(long userId, String scopeKey) {
-        String cacheKey = userId + ":" + scopeKey;
+        String cacheKey = TenantScopedConfigSupport.cacheKey(userId) + ":" + scopeKey;
         return cache.computeIfAbsent(cacheKey, ignored -> new JsonListFile<>(
                 configDirectory,
                 objectMapper,
-                ConfigPaths.userTableDataAuditScope(userId, scopeKey),
+                TenantScopedConfigSupport.ensureUserTenantScopeFile(configDirectory, userId, "table-data-audit", scopeKey),
                 new TypeReference<>() {
                 }
         ));

@@ -292,6 +292,7 @@ async function save() {
 
     <section v-if="wizardStep === 'sources'" class="federated-wizard__panel">
       <p class="federated-wizard__hint">{{ t('platform.federated.wizard.sourcesHint') }}</p>
+      <p class="federated-wizard__hint federated-wizard__hint--bounds">{{ t('platform.federated.boundsHint') }}</p>
 
       <div class="federated-wizard__picker">
         <label class="federated-wizard__field">

@@ -37,7 +37,8 @@ class ExplorerGroupServiceGuestTest {
         ExplorerCatalogPersistence catalogPersistence = new ExplorerCatalogPersistence(
                 resourcePolicy,
                 ephemeral,
-                mock(org.apache.datawise.backend.configstore.ConnectionStore.class)
+                mock(org.apache.datawise.backend.configstore.ConnectionStore.class),
+                mock(org.apache.datawise.backend.service.tenant.TenantQuotaService.class)
         );
 
         when(connectionContext.requireUserId()).thenReturn(3L);

@@ -86,6 +86,20 @@ export const useTeamStore = defineStore('team', () => {
         return list
     }
 
+    async function exportAuditLogs(
+        teamId: string,
+        options: {
+            format: 'csv' | 'json'
+            actorUserId?: number
+            since?: string
+            until?: string
+            includeFullSql?: boolean
+            fileName?: string
+        },
+    ) {
+        await teamsApi.exportAuditLogs(teamId, options)
+    }
+
     async function fetchSharedAiSessions(teamId: string) {
         const list = await teamsApi.fetchSharedAiSessions(teamId)
         sharedAiSessionsByTeamId.value = {...sharedAiSessionsByTeamId.value, [teamId]: list}
@@ -267,6 +281,7 @@ export const useTeamStore = defineStore('team', () => {
         fetchMembers,
         fetchInvites,
         fetchAuditLogs,
+        exportAuditLogs,
         fetchSharedAiSessions,
         getSharedAiSession,
         updateMemberRole,

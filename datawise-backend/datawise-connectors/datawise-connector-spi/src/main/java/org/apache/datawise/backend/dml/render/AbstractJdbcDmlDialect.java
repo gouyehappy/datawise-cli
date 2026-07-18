@@ -76,6 +76,54 @@ public abstract class AbstractJdbcDmlDialect implements DmlDialect {
                 + String.join(", ", tuples);
     }
 
+    /**
+     * Shared column/key extraction for multi-row INSERT/UPSERT builders.
+     */
+    public record MultiRowColumns(List<String> names, List<String> keys) {
+    }
+
+    public MultiRowColumns requireMultiRowColumns(List<Map<String, Object>> columns) {
+        if (columns == null || columns.isEmpty()) {
+            throw new IllegalArgumentException("Insert requires column metadata");
+        }
+        List<String> columnNames = new ArrayList<>();
+        List<String> columnKeys = new ArrayList<>();
+        for (Map<String, Object> column : columns) {
+            Object nameObj = column.get("name");
+            Object keyObj = column.get("key");
+            if (nameObj == null || keyObj == null) {
+                continue;
+            }
+            columnNames.add(String.valueOf(nameObj));
+            columnKeys.add(String.valueOf(keyObj));
+        }
+        if (columnNames.isEmpty()) {
+            throw new IllegalArgumentException("Insert requires at least one column");
+        }
+        return new MultiRowColumns(columnNames, columnKeys);
+    }
+
+    public String buildMultiInsertBody(
+            String database,
+            String tableName,
+            MultiRowColumns meta,
+            List<Map<String, Object>> rows
+    ) {
+        String target = qualifiedTable(database, tableName);
+        String columnSql = meta.names().stream()
+                .map(this::quoteIdentifier)
+                .collect(Collectors.joining(", "));
+        List<String> tuples = new ArrayList<>(rows.size());
+        for (Map<String, Object> row : rows) {
+            String valueSql = meta.keys().stream()
+                    .map(key -> DmlSqlSupport.sqlLiteral(row.get(key)))
+                    .collect(Collectors.joining(", "));
+            tuples.add("(" + valueSql + ")");
+        }
+        return "INSERT INTO " + target + " (" + columnSql + ") VALUES "
+                + String.join(", ", tuples);
+    }
+
     @Override
     public String buildTruncateTable(String database, String tableName) {
         return "TRUNCATE TABLE " + qualifiedTable(database, tableName);

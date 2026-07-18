@@ -11,14 +11,14 @@ import java.util.Set;
 
 /**
  * Phase 3 Calcite 解析器占位实现。
- * 启用 {@code lineage.calcite.enabled=true} 后注册，当前返回 not-implemented。
+ * 启用 {@code lineage.calcite.enabled=true} 后注册；未实现前返回 FAILED，由 fallback 链继续。
  */
 @Component
 @ConditionalOnProperty(name = "lineage.calcite.enabled", havingValue = "true")
 public class CalciteLineageParser implements SqlLineageParser {
 
     private static final Set<String> OLAP = Set.of(
-            "flink", "hive", "spark", "trino", "presto", "impala"
+            "flink", "hive", "spark", "trino", "presto", "impala", "kylin"
     );
 
     @Override
@@ -28,7 +28,8 @@ public class CalciteLineageParser implements SqlLineageParser {
 
     @Override
     public int priority() {
-        return 50;
+        // After lakehouse front door (40) / sqlflow-ast (50); only useful once implemented.
+        return 60;
     }
 
     @Override
@@ -46,8 +47,8 @@ public class CalciteLineageParser implements SqlLineageParser {
         return LineageParseResult.failed(
                 engineId(),
                 engineVersion(),
-                LineageDialectCompatibility.UNKNOWN,
-                "Calcite parser not yet implemented"
+                LineageDialectCompatibility.PARTIAL,
+                "Calcite lakehouse parser is not implemented yet; use the lakehouse/AST fallback path"
         );
     }
 }

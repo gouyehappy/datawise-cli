@@ -83,11 +83,19 @@ export async function pingHealth(): Promise<HealthSnapshot> {
     return pingHealthAt(readApiBaseUrl())
 }
 
+export interface SecretsStatus {
+    masterKeySource: string
+    masterKeyFromEnvironment: boolean
+    supportedSecretRefSchemes: string[]
+    secretRefHint?: string
+}
+
 export function createHttpSystemApi() {
     return {
         ping: pingHealth,
         pingAt: pingHealthAt,
         resolveEndpointLabel: resolveBackendEndpointLabel,
         fetchMetrics: () => getJson<SystemMetricsSnapshot>(API_PATHS.metrics),
+        fetchSecretsStatus: () => getJson<SecretsStatus>(API_PATHS.secrets),
     }
 }

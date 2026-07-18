@@ -200,7 +200,8 @@ class MigrationJobCoordinatorTest {
                 0,
                 true,
                 jobId,
-                resumeJobId
+                resumeJobId,
+                null
         );
     }
 

@@ -377,6 +377,15 @@ public class TableMigrationExecutor {
                     notifyBatchProgress(hooks, slot, tableName, offset, rowsMigrated, batches);
                 };
 
+        List<String> primaryKeyColumns = policy.usesPkUpsert()
+                ? loadPrimaryKeyColumns(endpoints.source(), endpoints.sourceDatabase(), tableName)
+                : List.of();
+        if (policy.usesPkUpsert() && primaryKeyColumns.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "PK_UPSERT requires a primary key on table " + tableName
+            );
+        }
+
         TableMigrationBatchCopier.BatchCopyResult copyResult = batchCopier.copy(new TableCopyCommand(
                 endpoints,
                 session.sourceConnection(),
@@ -389,7 +398,9 @@ public class TableMigrationExecutor {
                 orderByColumns,
                 resumeState,
                 callback,
-                hooks.executionControlOrNoop()
+                hooks.executionControlOrNoop(),
+                primaryKeyColumns,
+                policy.resolvedConflictStrategy()
         ));
 
         if (checkpointSink != null) {

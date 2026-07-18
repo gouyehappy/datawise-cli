@@ -17,6 +17,12 @@ type ConnectorMarketResponse = {
     connectors: ConnectorMarketEntry[]
     loadedPluginJars?: string[]
     pluginLoadFailures?: Array<{jarName: string; reason: string}>
+    manifest?: {
+        schemaVersion: number
+        updatedAt?: string
+        channel?: string
+        pluginCount: number
+    } | null
 }
 
 export function createHttpDatasourcesApi(): DatasourcesApi {

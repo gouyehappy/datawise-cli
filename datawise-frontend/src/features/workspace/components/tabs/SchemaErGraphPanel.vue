@@ -4,6 +4,7 @@ import {useI18n} from 'vue-i18n'
 import {DwButton, DwPanelState} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import type {DbType, WorkspaceTab} from '@/core/types'
+import type {ModalFeedback} from '@/core/composables/useModalFeedback'
 import {findNodeById} from '@/core/utils/tree'
 import {useSchemaErColumns} from '@/features/workspace/composables/useSchemaErColumns'
 import {useSchemaRelations} from '@/features/workspace/composables/useSchemaRelations'
@@ -36,23 +37,38 @@ import {
   buildDropForeignKeySql,
   type SchemaErFkDraft,
 } from '@/features/workspace/services/schema-er-fk-ddl.service'
+import {
+  supportsAlterColumnWizard,
+  type AlterColumnOperation,
+} from '@/features/workspace/services/alter-column-ddl.service'
+import {executeAlterColumnSql} from '@/features/workspace/services/execute-alter-column.service'
 import SchemaErFkDdlDialog from '@/features/workspace/components/SchemaErFkDdlDialog.vue'
+import AlterColumnDialog from '@/features/workspace/components/AlterColumnDialog.vue'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useTeamStore} from '@/features/team/stores/team-store'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource-catalog'
+import {supportsSqlExecute} from '@/shared/capabilities/db-type-capabilities'
+import {canDdlConnection} from '@/features/team/services/connection-access.service'
+import {isProductionEnvironment} from '@/features/connection/services/connection-environment.service'
 
 const props = defineProps<{ tab: WorkspaceTab }>()
 const {t} = useI18n()
 const layoutStore = useLayoutStore()
 const workspace = useWorkspaceStore()
 const explorer = useExplorerStore()
+const teamStore = useTeamStore()
+const auth = useAuthStore()
+const catalogStore = useDatasourceCatalogStore()
 
 const {schema, loading, error, databaseName} = useSchemaRelations(props.tab, {
   shouldLoad: () => true,
 })
 
 const baseGraph = computed(() => buildSchemaRelationGraph(schema.value, props.tab.tableName))
-const {enrichedGraph, loadingColumns} = useSchemaErColumns(
+const {enrichedGraph, columnsByTable, loadingColumns, reloadColumns} = useSchemaErColumns(
     props.tab,
     baseGraph,
     schema,
@@ -73,11 +89,19 @@ const canvasWrapRef = ref<HTMLDivElement | null>(null)
 
 const linkMode = ref(false)
 const selectedEdgeId = ref<string | null>(null)
+const selectedColumnTarget = ref<{table: string; column: string} | null>(null)
 const linkFrom = ref<{nodeId: string; table: string; column: string} | null>(null)
 const fkDialogOpen = ref(false)
 const fkDialogTitle = ref('')
 const fkDialogSql = ref('')
 const fkDialogSummary = ref<string[]>([])
+
+const alterColumnOpen = ref(false)
+const alterTableName = ref('')
+const alterInitialOperation = ref<AlterColumnOperation>('modify')
+const alterInitialColumnName = ref('')
+const alterExecuting = ref(false)
+const alterActionFeedback = ref<ModalFeedback | null>(null)
 
 const dbType = computed<DbType | undefined>(() => {
   if (props.tab.dbType) return props.tab.dbType
@@ -85,6 +109,36 @@ const dbType = computed<DbType | undefined>(() => {
   if (!connectionId) return undefined
   return findNodeById(explorer.tree, connectionId)?.dbType
 })
+
+const connectionNode = computed(() => {
+  if (!props.tab.connectionId) return undefined
+  return findNodeById(explorer.tree, props.tab.connectionId)
+})
+
+const canAlterColumn = computed(() => {
+  if (!supportsAlterColumnWizard(dbType.value)) return false
+  return supportsSqlExecute(dbType.value, catalogStore.items)
+})
+
+const canExecuteAlter = computed(() => {
+  if (auth.isGuest) return false
+  if (!props.tab.connectionId) return false
+  return canDdlConnection(props.tab.connectionId, teamStore.teams)
+})
+
+const alterExecuteDisabledHint = computed(() => {
+  if (auth.isGuest) return t('workspace.tableDetail.alterColumn.guestDenied')
+  if (!canExecuteAlter.value) return t('workspace.tableDetail.alterColumn.writeDenied')
+  return undefined
+})
+
+const alterProductionEnv = computed(() =>
+    isProductionEnvironment(connectionNode.value?.env, connectionNode.value?.envCustom),
+)
+
+const alterDialogColumns = computed(
+    () => columnsByTable.value.get(alterTableName.value) ?? [],
+)
 
 watch(
     layout,
@@ -239,17 +293,20 @@ function columnTypeLabel(column: TableRelationGraphColumn): string {
 function selectEdge(edge: TableRelationGraphEdge, event?: Event) {
   event?.stopPropagation()
   selectedEdgeId.value = edge.id
+  selectedColumnTarget.value = null
   linkMode.value = false
   linkFrom.value = null
 }
 
 function clearSelection() {
   selectedEdgeId.value = null
+  selectedColumnTarget.value = null
 }
 
 function toggleLinkMode() {
   linkMode.value = !linkMode.value
   selectedEdgeId.value = null
+  selectedColumnTarget.value = null
   linkFrom.value = null
 }
 
@@ -257,9 +314,33 @@ function isColumnLinkSelected(nodeId: string, column: string): boolean {
   return linkFrom.value?.nodeId === nodeId && linkFrom.value.column === column
 }
 
+function isColumnInspected(table: string, column: string): boolean {
+  return selectedColumnTarget.value?.table === table && selectedColumnTarget.value.column === column
+}
+
+function openAlterColumn(
+    tableName: string,
+    operation: AlterColumnOperation = 'modify',
+    columnName = '',
+) {
+  if (!canAlterColumn.value) {
+    workspace.setStatus(t('workspace.tableDetail.alterColumn.unsupported'))
+    return
+  }
+  alterTableName.value = tableName
+  alterInitialOperation.value = operation
+  alterInitialColumnName.value = columnName
+  alterActionFeedback.value = null
+  alterColumnOpen.value = true
+}
+
 function onColumnClick(event: Event, node: TableRelationGraphNode, column: TableRelationGraphColumn) {
-  if (!linkMode.value) return
   event.stopPropagation()
+  if (!linkMode.value) {
+    selectedEdgeId.value = null
+    selectedColumnTarget.value = {table: node.tableName, column: column.name}
+    return
+  }
   const pick = {nodeId: node.id, table: node.tableName, column: column.name}
   if (!linkFrom.value) {
     linkFrom.value = pick
@@ -282,6 +363,70 @@ function onColumnClick(event: Event, node: TableRelationGraphNode, column: Table
   openAddFkDialog(draft)
   linkFrom.value = null
   linkMode.value = false
+}
+
+function onColumnDblClick(event: Event, node: TableRelationGraphNode, column: TableRelationGraphColumn) {
+  event.stopPropagation()
+  if (linkMode.value) return
+  openAlterColumn(node.tableName, 'modify', column.name)
+}
+
+function openAlterFromInspector(operation: AlterColumnOperation) {
+  const target = selectedColumnTarget.value
+  if (!target) return
+  openAlterColumn(
+      target.table,
+      operation,
+      operation === 'add' ? '' : target.column,
+  )
+}
+
+function openAlterSqlInConsole(sql: string) {
+  void workspace.openConsole({
+    connectionId: props.tab.connectionId,
+    instanceId: props.tab.instanceId,
+    database: databaseName.value,
+    sql,
+    title: t('workspace.schemaEr.alterConsoleTitle'),
+  })
+}
+
+async function executeAlterColumn(sql: string) {
+  if (!props.tab.connectionId || alterExecuting.value) return
+  if (!canExecuteAlter.value) {
+    alterActionFeedback.value = {
+      variant: 'warning',
+      message: alterExecuteDisabledHint.value ?? t('workspace.tableDetail.alterColumn.writeDenied'),
+    }
+    return
+  }
+  alterExecuting.value = true
+  alterActionFeedback.value = null
+  try {
+    const result = await executeAlterColumnSql(sql, {
+      connectionId: props.tab.connectionId,
+      database: databaseName.value,
+      dbType: dbType.value,
+    })
+    if (!result.ok) {
+      alterActionFeedback.value = {
+        variant: 'error',
+        message: t('workspace.tableDetail.alterColumn.failedWithDetail', {message: result.message}),
+      }
+      return
+    }
+    alterColumnOpen.value = false
+    await reloadColumns()
+    layoutStore.showSuccessToast(t('workspace.tableDetail.alterColumn.success'))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('workspace.tableDetail.alterColumn.failed')
+    alterActionFeedback.value = {
+      variant: 'error',
+      message: t('workspace.tableDetail.alterColumn.failedWithDetail', {message}),
+    }
+  } finally {
+    alterExecuting.value = false
+  }
 }
 
 function openAddFkDialog(draft: SchemaErFkDraft) {
@@ -577,8 +722,10 @@ onUnmounted(() => {
                   'is-fk': column.highlighted && column.keyType !== 'PRI',
                   'is-link-pick': isColumnLinkSelected(node.id, column.name),
                   'is-linkable': linkMode,
+                  'is-inspected': isColumnInspected(node.tableName, column.name),
                 }"
                 @pointerdown="onColumnClick($event, node, column)"
+                @dblclick="onColumnDblClick($event, node, column)"
             >
               <rect
                   :x="6"
@@ -624,7 +771,49 @@ onUnmounted(() => {
         </g>
       </svg>
 
-      <aside v-if="selectedEdge && selectedEdgeDraft" class="schema-er-graph__inspector">
+      <aside v-if="selectedColumnTarget" class="schema-er-graph__inspector">
+        <header class="schema-er-graph__inspector-head">
+          <div>
+            <p class="schema-er-graph__inspector-kicker">{{ t('workspace.schemaEr.columnInspector') }}</p>
+            <h3>{{ selectedColumnTarget.table }}.{{ selectedColumnTarget.column }}</h3>
+          </div>
+          <button type="button" class="schema-er-graph__inspector-close" @click="clearSelection">
+            <DwIcon name="close" size="xs" :stroke-width="1.5"/>
+          </button>
+        </header>
+        <p class="schema-er-graph__inspector-hint">{{ t('workspace.schemaEr.columnInspectorHint') }}</p>
+        <div class="schema-er-graph__inspector-actions">
+          <DwButton
+              variant="primary"
+              size="sm"
+              type="button"
+              :disabled="!canAlterColumn"
+              @click="openAlterFromInspector('modify')"
+          >
+            {{ t('workspace.schemaEr.columnEditAction') }}
+          </DwButton>
+          <DwButton
+              variant="secondary"
+              size="sm"
+              type="button"
+              :disabled="!canAlterColumn"
+              @click="openAlterFromInspector('add')"
+          >
+            {{ t('workspace.schemaEr.columnAddAction') }}
+          </DwButton>
+          <DwButton
+              variant="ghost"
+              size="sm"
+              type="button"
+              :disabled="!canAlterColumn"
+              @click="openAlterFromInspector('drop')"
+          >
+            {{ t('workspace.schemaEr.columnDropAction') }}
+          </DwButton>
+        </div>
+      </aside>
+
+      <aside v-else-if="selectedEdge && selectedEdgeDraft" class="schema-er-graph__inspector">
         <header class="schema-er-graph__inspector-head">
           <div>
             <p class="schema-er-graph__inspector-kicker">{{ t('workspace.schemaEr.fkInspector') }}</p>
@@ -698,6 +887,24 @@ onUnmounted(() => {
         :sql="fkDialogSql"
         :summary-bits="fkDialogSummary"
         @apply="applyFkDialog"
+    />
+
+    <AlterColumnDialog
+        v-model:open="alterColumnOpen"
+        :db-type="dbType"
+        :table-name="alterTableName"
+        :database="databaseName"
+        :columns="alterDialogColumns"
+        :initial-operation="alterInitialOperation"
+        :initial-column-name="alterInitialColumnName"
+        :can-execute="canExecuteAlter"
+        :execute-disabled-hint="alterExecuteDisabledHint"
+        :executing="alterExecuting"
+        :production-env="alterProductionEnv"
+        :action-feedback="alterActionFeedback"
+        @open-console="openAlterSqlInConsole"
+        @execute="executeAlterColumn"
+        @clear-action-feedback="alterActionFeedback = null"
     />
   </div>
 </template>
@@ -877,7 +1084,15 @@ onUnmounted(() => {
 
 .schema-er-graph__inspector-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--dw-gap-sm);
+}
+
+.schema-er-graph__inspector-hint {
+  margin: 0;
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-muted);
+  line-height: var(--dw-leading);
 }
 
 .schema-er-graph__canvas {
@@ -993,6 +1208,16 @@ onUnmounted(() => {
 
 .schema-er-graph__row.is-linkable {
   cursor: crosshair;
+}
+
+.schema-er-graph__row:not(.is-linkable) {
+  cursor: pointer;
+}
+
+.schema-er-graph__row.is-inspected .schema-er-graph__row-bg {
+  fill: color-mix(in srgb, var(--dw-primary) 18%, transparent);
+  stroke: var(--dw-primary);
+  stroke-width: 1;
 }
 
 .schema-er-graph__row.is-link-pick .schema-er-graph__row-bg {

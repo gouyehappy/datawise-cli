@@ -76,14 +76,31 @@ export const FeaturePermission = {
     SettingsDataAgent: 'settings.dataAgent',
     SettingsPlugins: 'settings.plugins',
     SettingsAbout: 'settings.about',
+    SettingsIntegrations: 'settings.integrations',
     SettingsUserPermissions: 'settings.userPermissions',
+    SettingsTenants: 'settings.tenants',
 } as const
 
 export type FeaturePermissionKey = (typeof FeaturePermission)[keyof typeof FeaturePermission]
 
 export type FeaturePermissionMap = Record<FeaturePermissionKey, boolean>
 
-export type PermissionPresetId = 'full' | 'workbench' | 'custom'
+/** 与后端 TenantRolePresets / full|workbench 对齐；custom 表示逐项覆盖。 */
+export type PermissionPresetId =
+    | 'full'
+    | 'developer'
+    | 'analyst'
+    | 'readonly'
+    | 'workbench'
+    | 'custom'
+
+export interface TenantRoleSummary {
+    id: string
+    key: string
+    name: string
+    system: boolean
+    permissions?: FeaturePermissionMap
+}
 
 export interface UserPermissionSummary {
     id: number
@@ -92,4 +109,7 @@ export interface UserPermissionSummary {
     guest: boolean
     admin: boolean
     featurePermissions: FeaturePermissionMap
+    roleIds?: string[]
+    roleKeys?: string[]
+    usesLegacyPermissions?: boolean
 }

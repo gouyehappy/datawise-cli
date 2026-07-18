@@ -1,6 +1,12 @@
 # Desktop packaging scripts
 
-Build Windows desktop executables (NSIS installer + portable) with an embedded backend and JRE.
+Build desktop executables with an embedded backend and JRE.
+
+| Host | Default product |
+|------|-----------------|
+| Windows | NSIS installer + portable |
+| macOS (Apple Silicon) | DMG + zip (`arm64`) — see [DESKTOP_MAC.md](../../../docs/DESKTOP_MAC.md) |
+| Linux | AppImage (scaffold) |
 
 ## Why `target-desktop/`
 
@@ -20,9 +26,11 @@ desktop mvn  →  datawise-backend/**/target-desktop/  →  resources/desktop/  
 
 | Command | Description |
 |---------|-------------|
-| `npm run dist:desktop` | Full build: Maven backend → bundle JRE/config → Electron → installer |
+| `npm run dist:desktop` | Full build for **host** OS (Win / Mac arm64 / Linux) |
+| `npm run dist:desktop:mac` | macOS Apple Silicon DMG + zip (**must run on macOS**) |
+| `npm run dist:desktop:linux` | Linux AppImage |
 | `npm run dist:desktop:clean` | Full rebuild (`--clean`: wipe packaging artifacts first) |
-| `npm run pack:desktop` | Unpacked `release/win-unpacked/` for quick testing (no installer) |
+| `npm run pack:desktop` | Unpacked app dir for quick testing (no installer) |
 | `npm run prepare:desktop` | Backend bundle only → `resources/desktop/` |
 | `npm run build:backend` | Maven only → `target-desktop/` |
 | `npm run clean:desktop` | Wipe frontend packaging artifacts + all `target-desktop/` (keeps IDE `target/`) |
@@ -66,12 +74,15 @@ scripts/desktop/
   build-cds.mjs      — AppCDS class archive (load-plugins=false during train)
   clean.mjs          — clean release dir or all packaging artifacts
   build.mjs          — orchestrator (optional clean → bundle → electron-builder)
+  platform.mjs       — host/flag → electron-builder args (win/mac/linux)
 ```
 
 ## Advanced flags
 
 ```powershell
 node scripts/desktop/build.mjs --skip-backend          # reuse existing resources/desktop/
+node scripts/desktop/build.mjs --mac --arm64           # macOS (on a Mac)
+node scripts/desktop/build.mjs --linux                 # Linux AppImage
 node scripts/desktop/bundle-backend.mjs --skip-maven   # re-bundle JRE/config from existing JAR
 node scripts/desktop/clean.mjs --all                   # packaging clean without building
 node scripts/desktop/clean.mjs --all --ide-target      # also wipe IDE target/

@@ -23,7 +23,7 @@ import {
 } from '@/features/auth/services/auth-session-persist.service'
 import {resetUserScopedState} from '@/features/auth/services/user-session-reset.service'
 import {cancelDeferredConfigServerWrites} from '@/shared/config/app-config.service'
-import type {SessionInfo, LoginResult} from '@/shared/api/types'
+import type {SessionInfo, LoginResult, TenantSummary} from '@/shared/api/types'
 import {
     setActiveFeaturePermissions,
     createPreset,
@@ -46,8 +46,16 @@ export const useAuthStore = defineStore('auth', () => {
     const user = ref<AuthUser | null>(null)
     const loginDialogOpen = ref(false)
     const isAdmin = ref(false)
+    const tenantId = ref<string | null>(null)
+    const tenantName = ref<string | null>(null)
+    const tenancyMode = ref<'single' | 'multi'>('single')
+    const platformAdmin = ref(false)
+    const tenants = ref<TenantSummary[]>([])
 
     const isGuest = computed(() => user.value?.isGuest ?? true)
+    const canSwitchTenant = computed(
+        () => tenancyMode.value === 'multi' && !isGuest.value && tenants.value.length > 1,
+    )
 
     function applyPermissionsFromSession(
         session: {
@@ -97,10 +105,19 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    function applyTenancyFromSession(session: SessionInfo | LoginResult) {
+        tenantId.value = session.tenantId ?? null
+        tenantName.value = session.tenantName ?? null
+        tenancyMode.value = session.tenancyMode === 'multi' ? 'multi' : 'single'
+        platformAdmin.value = session.platformAdmin === true
+        tenants.value = Array.isArray(session.tenants) ? [...session.tenants] : []
+    }
+
     function applySessionInfo(session: SessionInfo) {
         persistAuthSession(session)
         sessionId.value = session.sessionId
         applyPermissionsFromSession(session)
+        applyTenancyFromSession(session)
         applyUserProfile(buildUser(session.userName, session.guest, session.userId, session.admin === true))
     }
 
@@ -215,7 +232,47 @@ export const useAuthStore = defineStore('auth', () => {
             admin: result.admin === true,
             featurePermissions: result.featurePermissions,
         })
+        applyTenancyFromSession(result)
         applyUserProfile(buildUser(result.userName ?? userName, false, result.userId, result.admin === true))
+        await resetUserScopedState()
+    }
+
+    async function register(payload: {
+        userName: string
+        password: string
+        email?: string
+        displayName?: string
+        tenantName?: string
+        tenantSlug?: string
+        createTenant?: boolean
+    }) {
+        const result = await authApi.register(payload)
+        if (!result.sessionId) {
+            throw new Error(t('auth.failed'))
+        }
+        persistLoginResult(result, result.userName ?? payload.userName, false)
+        sessionId.value = result.sessionId
+        applyPermissionsFromSession({
+            guest: false,
+            admin: result.admin === true,
+            featurePermissions: result.featurePermissions,
+        })
+        applyTenancyFromSession(result)
+        applyUserProfile(buildUser(
+            result.userName ?? payload.userName,
+            false,
+            result.userId,
+            result.admin === true,
+        ))
+        await resetUserScopedState()
+    }
+
+    /** Complete OIDC redirect: persist session id then refresh profile from backend. */
+    async function completeOidcLogin(oidcSessionId: string, fallbackUserName?: string) {
+        persistSession(oidcSessionId, fallbackUserName || 'oidc-user', false, null, null)
+        sessionId.value = oidcSessionId
+        const session = await authApi.getCurrentSession({authBypass: true})
+        applySessionInfo(session)
         await resetUserScopedState()
     }
 
@@ -260,6 +317,16 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    async function switchTenant(nextTenantId: string) {
+        if (!nextTenantId || nextTenantId === tenantId.value) {
+            return
+        }
+        const session = await authApi.switchTenant(nextTenantId)
+        applySessionInfo(session)
+        await resetUserScopedState()
+        useAppToast().show(t('auth.tenantSwitched', {name: session.tenantName || nextTenantId}))
+    }
+
     async function signOut(options?: {silent?: boolean}) {
         cancelDeferredConfigServerWrites()
         try {
@@ -284,6 +351,12 @@ export const useAuthStore = defineStore('auth', () => {
         user,
         isGuest,
         isAdmin,
+        tenantId,
+        tenantName,
+        tenancyMode,
+        platformAdmin,
+        tenants,
+        canSwitchTenant,
         loginDialogOpen,
         restoreSession,
         bootstrap,
@@ -292,9 +365,12 @@ export const useAuthStore = defineStore('auth', () => {
         openLoginDialog,
         closeLoginDialog,
         login,
+        register,
+        completeOidcLogin,
         loginAsGuest,
         refreshSessionPermissions,
         handleUnauthorizedAccess,
+        switchTenant,
         signOut,
     }
 })

@@ -37,7 +37,8 @@ class UserAccessPolicyTest {
         ExplorerCatalogPersistence catalogPersistence = new ExplorerCatalogPersistence(
                 resourcePolicy,
                 ephemeral,
-                connectionStore
+                connectionStore,
+                mock(org.apache.datawise.backend.service.tenant.TenantQuotaService.class)
         );
 
         ConnectionGroupEntity group = new ConnectionGroupEntity();

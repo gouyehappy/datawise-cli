@@ -15,6 +15,8 @@ public class SemanticMetricEntry {
     private String expression;
     private String description;
     private String unit;
+    /** Optional owner / steward for org discovery (free-form display name). */
+    private String owner;
     private List<String> relatedTables = new ArrayList<>();
     private List<String> upstreamMetrics = new ArrayList<>();
     private Integer definitionVersion;
@@ -76,6 +78,14 @@ public class SemanticMetricEntry {
 
     public void setUnit(String unit) {
         this.unit = unit;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
 
     public List<String> getRelatedTables() {

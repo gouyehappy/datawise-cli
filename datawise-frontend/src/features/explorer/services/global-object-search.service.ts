@@ -2,7 +2,7 @@ import type {DbType, TreeNode, TreeNodeType} from '@/core/types'
 import {walkTree} from '@/core/utils/tree'
 import {isCatalogSchemaDbType} from '@/shared/db-type-families'
 
-export type GlobalObjectSearchKind = 'table' | 'view' | 'column' | 'procedure' | 'function'
+export type GlobalObjectSearchKind = 'table' | 'view' | 'column' | 'procedure' | 'function' | 'metric'
 
 export interface GlobalObjectSearchEntry {
     nodeId: string
@@ -14,6 +14,10 @@ export interface GlobalObjectSearchEntry {
     database: string
     dbType?: DbType
     tableName?: string
+    owner?: string
+    subtitle?: string
+    /** Local explorer index vs org discovery API */
+    source?: 'explorer' | 'discovery'
     searchText: string
 }
 
@@ -99,6 +103,7 @@ export function indexGlobalObjectSearchEntries(tree: readonly TreeNode[]): Globa
             database,
             dbType: connection.dbType,
             tableName,
+            source: 'explorer',
             searchText,
         })
     })

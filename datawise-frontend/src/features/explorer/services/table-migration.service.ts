@@ -98,6 +98,23 @@ export async function runTableMigrationPreflight(
     return migrationApi.preflight(buildPreflightRequest(source, form))
 }
 
+export async function runTableMigrationRowDiff(
+    source: SchemaScope,
+    form: TableMigrationWizardForm,
+    tableName: string,
+): Promise<import('@/shared/api/types').TableMigrationRowDiffResult> {
+    const {migrationApi} = await import('@/api/modules/migration')
+    return migrationApi.rowDiff({
+        sourceConnectionId: source.connectionId,
+        sourceDatabase: source.database,
+        targetConnectionId: form.targetConnectionId,
+        targetDatabase: form.targetDatabase,
+        tableName,
+        whereClause: form.whereClause?.trim() || undefined,
+        sampleLimit: 50,
+    })
+}
+
 export function downloadMigrationRunReport(record: TableMigrationRunRecord): void {
     const stamp = record.startedAt.replace(/[:.]/g, '-').slice(0, 19)
     const blob = new Blob([JSON.stringify(record, null, 2)], {type: 'application/json;charset=utf-8'})
@@ -239,6 +256,7 @@ function buildMigrationBatchRequest(
         truncateTarget: form.truncateTarget,
         jobId: jobOptions?.jobId,
         resumeJobId: jobOptions?.resumeJobId,
+        conflictStrategy: form.mode === 'PK_UPSERT' ? form.conflictStrategy : undefined,
     }
 }
 

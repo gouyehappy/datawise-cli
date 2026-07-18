@@ -163,6 +163,45 @@ const w = useMigrationWizard()
               </StatusPill>
             </header>
 
+            <div
+                v-if="w.form.mode === 'PK_UPSERT'"
+                class="preflight-detail__section"
+            >
+              <strong>{{ t('explorer.tableMigrationWizard.rowDiffTitle') }}</strong>
+              <p class="preflight-detail__text">{{ t('explorer.tableMigrationWizard.rowDiffHint') }}</p>
+              <DwButton
+                  variant="secondary"
+                  size="sm"
+                  :disabled="w.rowDiffLoading || w.running"
+                  @click="w.runRowDiff"
+              >
+                {{ w.rowDiffLoading
+                  ? t('explorer.tableMigrationWizard.rowDiffRunning')
+                  : t('explorer.tableMigrationWizard.rowDiffRun') }}
+              </DwButton>
+              <p v-if="w.rowDiffError" class="preflight-detail__text">{{ w.rowDiffError }}</p>
+              <template v-if="w.rowDiffResult && w.rowDiffResult.tableName === w.selectedPreflightDetail.tableName">
+                <p class="preflight-detail__stats">
+                  {{ t('explorer.tableMigrationWizard.rowDiffSummary', {
+                    sampled: w.rowDiffResult.sampledSourceRows,
+                    insert: w.rowDiffResult.insertCount,
+                    update: w.rowDiffResult.updateCount,
+                    unchanged: w.rowDiffResult.unchangedCount,
+                  }) }}
+                </p>
+                <p v-if="w.rowDiffResult.message" class="preflight-detail__text">{{ w.rowDiffResult.message }}</p>
+                <ul v-if="w.rowDiffResult.samples.length" class="preflight-issues">
+                  <li v-for="(sample, idx) in w.rowDiffResult.samples.slice(0, 12)" :key="idx">
+                    {{ sample.kind.toUpperCase() }}
+                    · PK {{ Object.entries(sample.primaryKey).map(([k, v]) => `${k}=${v}`).join(', ') }}
+                    <template v-if="sample.changedColumns.length">
+                      · {{ sample.changedColumns.join(', ') }}
+                    </template>
+                  </li>
+                </ul>
+              </template>
+            </div>
+
             <div v-if="w.selectedPreflightDetail.issues.length" class="preflight-detail__section">
               <strong>{{ t('explorer.tableMigrationWizard.preflightIssues') }}</strong>
               <ul class="preflight-issues">

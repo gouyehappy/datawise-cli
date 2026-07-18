@@ -97,7 +97,8 @@ class SemanticLayerServiceTest {
                 "CNY",
                 List.of("orders"),
                 List.of("order_amount"),
-                "switch to paid amount"
+                "switch to paid amount",
+                "alice"
         ));
 
         assertEquals(3, saved.definitionVersion());
@@ -126,7 +127,8 @@ class SemanticLayerServiceTest {
                 "CNY",
                 List.of("orders"),
                 List.of("order_amount"),
-                "text tweak only"
+                "text tweak only",
+                null
         ));
 
         assertEquals(2, saved.definitionVersion());

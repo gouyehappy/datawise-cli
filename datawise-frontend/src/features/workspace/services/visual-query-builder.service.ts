@@ -136,3 +136,52 @@ export function createEmptyVisualQueryState(): VisualQueryBuilderState {
         limit: 100,
     }
 }
+
+export function visualColumnKey(tableAlias: string, column: string): string {
+    return `${tableAlias}.${column}`
+}
+
+export function parseVisualColumnKey(key: string): VisualQueryColumnRef | null {
+    const trimmed = key.trim()
+    const dot = trimmed.indexOf('.')
+    if (dot <= 0 || dot >= trimmed.length - 1) return null
+    return {
+        tableAlias: trimmed.slice(0, dot),
+        column: trimmed.slice(dot + 1),
+    }
+}
+
+/** Insert or move a column key so SELECT order matches the board. */
+export function upsertSelectedColumnKey(
+    keys: readonly string[],
+    key: string,
+    toIndex?: number,
+): string[] {
+    const normalized = key.trim()
+    if (!normalized) return [...keys]
+    const without = keys.filter((item) => item !== normalized)
+    const index = toIndex == null
+        ? without.length
+        : Math.max(0, Math.min(toIndex, without.length))
+    const next = [...without]
+    next.splice(index, 0, normalized)
+    return next
+}
+
+export function moveSelectedColumnKey(
+    keys: readonly string[],
+    fromIndex: number,
+    toIndex: number,
+): string[] {
+    if (fromIndex < 0 || fromIndex >= keys.length) return [...keys]
+    if (toIndex < 0 || toIndex >= keys.length || fromIndex === toIndex) return [...keys]
+    const next = [...keys]
+    const [item] = next.splice(fromIndex, 1)
+    if (!item) return [...keys]
+    next.splice(toIndex, 0, item)
+    return next
+}
+
+export function removeSelectedColumnKey(keys: readonly string[], key: string): string[] {
+    return keys.filter((item) => item !== key)
+}

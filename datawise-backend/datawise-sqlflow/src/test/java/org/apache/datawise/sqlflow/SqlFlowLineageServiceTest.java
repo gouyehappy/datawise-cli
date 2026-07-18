@@ -67,6 +67,17 @@ class SqlFlowLineageServiceTest {
     }
 
     @Test
+    void hiveDialectEmitsPartialCompatibilityWarning() {
+        SqlFlowLineageService service = SqlFlowLineageServices.createDefault();
+        SqlFlowLineageResult result = service.analyze(new SqlFlowAnalyzeRequest(
+                "SELECT 1 AS one",
+                DbType.HIVE.id()
+        ));
+        assertEquals(DialectCompatibility.PARTIAL, result.dialectCompatibility());
+        assertTrue(result.warnings().stream().anyMatch(w -> "DIALECT_PARTIAL_COMPAT".equals(w.code())));
+    }
+
+    @Test
     void mysqlDialectEmitsPartialCompatibilityWarning() {
         SqlFlowLineageService service = SqlFlowLineageServices.createDefault();
         SqlFlowLineageResult result = service.analyze(new SqlFlowAnalyzeRequest(

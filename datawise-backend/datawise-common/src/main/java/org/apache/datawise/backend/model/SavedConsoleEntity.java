@@ -9,6 +9,8 @@ public class SavedConsoleEntity {
 
     private Long userId;
 
+    private String tenantId;
+
     private String connectionId;
 
     private String instanceId;
@@ -41,6 +43,14 @@ public class SavedConsoleEntity {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getConnectionId() {

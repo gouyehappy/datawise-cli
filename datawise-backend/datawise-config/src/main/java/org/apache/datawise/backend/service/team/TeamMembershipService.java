@@ -35,6 +35,7 @@ public class TeamMembershipService {
         Long userId = support.requireUserId();
         return support.teamStore().findMembersByUserId(userId).stream()
                 .map(member -> support.teamStore().findTeamById(member.getTeamId())
+                        .filter(team -> support.matchesCurrentTenant(team.getTenantId()))
                         .map(team -> support.toSummary(team, member.getRole()))
                         .orElse(null))
                 .filter(item -> item != null)
@@ -50,6 +51,7 @@ public class TeamMembershipService {
         team.setId(IdGenerator.shortId("team-"));
         team.setName(request.name().trim());
         team.setOwnerUserId(userId);
+        team.setTenantId(org.apache.datawise.backend.security.UserContext.getTenantId());
         team.setInviteCode(UUID.randomUUID().toString().substring(0, 8));
         team.setRequireInviteApproval(true);
         team.setCreatedAt(Instant.now());
@@ -73,6 +75,7 @@ public class TeamMembershipService {
         }
         String code = request.code().trim();
         TeamEntity team = support.teamStore().findTeamByInviteCode(code)
+                .filter(candidate -> support.matchesCurrentTenant(candidate.getTenantId()))
                 .orElseThrow(() -> new IllegalArgumentException("Invalid invite code"));
 
         if (support.teamStore().findMember(team.getId(), userId).isPresent()) {

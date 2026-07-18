@@ -17,6 +17,9 @@ public final class FederatedJoinSqlParser {
     private static final Pattern SOURCE_ALIAS = Pattern.compile(
             "@([a-zA-Z]\\w*)\\s+([a-zA-Z]\\w*)"
     );
+    private static final Pattern TRAILING_CLAUSE = Pattern.compile(
+            "(?i)\\b(WHERE|GROUP\\s+BY|ORDER\\s+BY|HAVING|LIMIT)\\b"
+    );
 
     private FederatedJoinSqlParser() {
     }
@@ -31,6 +34,9 @@ public final class FederatedJoinSqlParser {
         }
         String selectClause = selectMatcher.group(1).trim();
         String fromAndJoins = selectMatcher.group(2).trim();
+
+        TrailingClauses trailing = splitTrailingClauses(fromAndJoins);
+        fromAndJoins = trailing.body();
 
         int joinIdx = indexOfJoinKeyword(fromAndJoins);
         String fromSegment = joinIdx >= 0 ? fromAndJoins.substring(0, joinIdx).trim() : fromAndJoins;
@@ -61,7 +67,55 @@ public final class FederatedJoinSqlParser {
         }
 
         List<String> selectItems = parseSelectItems(selectClause);
-        return new FederatedJoinPlan(selectItems, steps);
+        return new FederatedJoinPlan(selectItems, steps, trailing.where());
+    }
+
+    static TrailingClauses splitTrailingClauses(String fromAndJoins) {
+        if (fromAndJoins == null || fromAndJoins.isBlank()) {
+            return new TrailingClauses("", null);
+        }
+        int cut = indexOfKeywordOutsideParens(fromAndJoins, TRAILING_CLAUSE);
+        if (cut < 0) {
+            return new TrailingClauses(fromAndJoins.trim(), null);
+        }
+        String body = fromAndJoins.substring(0, cut).trim();
+        String tail = fromAndJoins.substring(cut).trim();
+        String where = null;
+        Matcher whereMatcher = Pattern.compile("(?is)^WHERE\\s+(.+?)(?=\\s+\\b(?:GROUP\\s+BY|ORDER\\s+BY|HAVING|LIMIT)\\b|$)")
+                .matcher(tail);
+        if (whereMatcher.find()) {
+            where = whereMatcher.group(1).trim();
+            if (where.isEmpty()) {
+                where = null;
+            }
+        }
+        return new TrailingClauses(body, where);
+    }
+
+    private static int indexOfKeywordOutsideParens(String sql, Pattern keyword) {
+        int depth = 0;
+        for (int i = 0; i < sql.length(); ) {
+            char ch = sql.charAt(i);
+            if (ch == '(') {
+                depth++;
+                i++;
+                continue;
+            }
+            if (ch == ')') {
+                depth = Math.max(0, depth - 1);
+                i++;
+                continue;
+            }
+            if (depth == 0) {
+                Matcher m = keyword.matcher(sql);
+                m.region(i, sql.length());
+                if (m.lookingAt()) {
+                    return i;
+                }
+            }
+            i++;
+        }
+        return -1;
     }
 
     private static int indexOfJoinKeyword(String sql) {
@@ -152,6 +206,9 @@ public final class FederatedJoinSqlParser {
     record FederatedSourceRef(String sourceAlias, String tableAlias) {
     }
 
+    record TrailingClauses(String body, String where) {
+    }
+
     public record FederatedJoinStep(
             String sourceAlias,
             String tableAlias,
@@ -162,7 +219,19 @@ public final class FederatedJoinSqlParser {
 
     public record FederatedJoinPlan(
             List<String> selectItems,
-            List<FederatedJoinStep> steps
+            List<FederatedJoinStep> steps,
+            String outerWhere
     ) {
+        public FederatedJoinPlan(List<String> selectItems, List<FederatedJoinStep> steps) {
+            this(selectItems, steps, null);
+        }
+
+        public FederatedJoinPlan {
+            selectItems = selectItems == null ? List.of() : List.copyOf(selectItems);
+            steps = steps == null ? List.of() : List.copyOf(steps);
+            if (outerWhere != null && outerWhere.isBlank()) {
+                outerWhere = null;
+            }
+        }
     }
 }

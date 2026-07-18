@@ -1,26 +1,43 @@
 export const APP_CONFIG_KEY = 'dw-app-config'
 
-const SCOPED_STORAGE_BASE_KEYS = [
+/** 用户全局偏好：不随租户切换（主题 / 编辑器 / app-config）。 */
+const USER_GLOBAL_STORAGE_BASE_KEYS = [
     APP_CONFIG_KEY,
+    'dw-cli-editor-settings',
+    'dw-cli-theme-prefs',
+] as const
+
+/** 连接/组织相关：随租户切换隔离。 */
+const USER_TENANT_STORAGE_BASE_KEYS = [
     'dw-cli-ai-chat',
     'dw-cli-ai-analysis-templates',
     'datawise-pinned-explorer-nodes',
     'dw-grid-view-state-v1',
-    'dw-cli-editor-settings',
-    'dw-cli-theme-prefs',
     'datawise.table-migration.history',
 ] as const
 
-let activeStorageScope = 'guest'
-let activeAppConfigStorageKey = `${APP_CONFIG_KEY}:${activeStorageScope}`
+const SCOPED_STORAGE_BASE_KEYS = [
+    ...USER_GLOBAL_STORAGE_BASE_KEYS,
+    ...USER_TENANT_STORAGE_BASE_KEYS,
+] as const
+
+let activeUserScope = 'guest'
+let activeTenantScope = 'guest'
+let activeAppConfigStorageKey = `${APP_CONFIG_KEY}:${activeUserScope}`
 
 export function resolveAppConfigStorageKey(): string {
     return activeAppConfigStorageKey
 }
 
-/** 按当前登录用户解析 localStorage key（访客与注册用户隔离）。 */
+/**
+ * 按当前登录用户解析 localStorage key。
+ * 连接相关 key 自动带上租户后缀；全局偏好仅按用户隔离。
+ */
 export function resolveUserStorageKey(baseKey: string): string {
-    return `${baseKey}:${activeStorageScope}`
+    if ((USER_TENANT_STORAGE_BASE_KEYS as readonly string[]).includes(baseKey)) {
+        return `${baseKey}:${activeTenantScope}`
+    }
+    return `${baseKey}:${activeUserScope}`
 }
 
 function migrateLegacyScopedKey(baseKey: string, scope: string, legacyScopes: string[] = []): void {
@@ -48,23 +65,37 @@ export interface AppConfigStorageScopeOptions {
     userId?: number | null
     userName?: string
     isGuest: boolean
+    tenantId?: string | null
 }
 
-/** 切换登录用户时更新 localStorage 命名空间，避免读到上一用户的布局/偏好。 */
+/** 切换登录用户 / 租户时更新 localStorage 命名空间。 */
 export function setAppConfigStorageScope(options: AppConfigStorageScopeOptions): void {
-    const scope = options.isGuest
+    const userScope = options.isGuest
         ? 'guest'
         : `user:${options.userId ?? 'unknown'}`
-    activeStorageScope = scope
-    activeAppConfigStorageKey = `${APP_CONFIG_KEY}:${scope}`
+    const tenantId = (options.tenantId || 'default').trim() || 'default'
+    const tenantScope = options.isGuest
+        ? 'guest'
+        : `${userScope}:tenant:${tenantId}`
+
+    activeUserScope = userScope
+    activeTenantScope = tenantScope
+    activeAppConfigStorageKey = `${APP_CONFIG_KEY}:${userScope}`
 
     const legacyScopes = !options.isGuest && options.userName?.trim()
         ? [options.userName.trim()]
         : []
 
     if (typeof localStorage !== 'undefined') {
-        for (const baseKey of SCOPED_STORAGE_BASE_KEYS) {
-            migrateLegacyScopedKey(baseKey, scope, legacyScopes)
+        for (const baseKey of USER_GLOBAL_STORAGE_BASE_KEYS) {
+            migrateLegacyScopedKey(baseKey, userScope, legacyScopes)
+        }
+        for (const baseKey of USER_TENANT_STORAGE_BASE_KEYS) {
+            // 从旧 user-only key 迁到 user+tenant（默认租户）
+            migrateLegacyScopedKey(baseKey, tenantScope, [userScope, ...legacyScopes])
         }
     }
 }
+
+/** @deprecated 仅测试兼容：全部 scoped keys 列表 */
+export const __TEST_SCOPED_STORAGE_BASE_KEYS = SCOPED_STORAGE_BASE_KEYS

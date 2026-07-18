@@ -65,7 +65,10 @@ export type SettingsSection =
     | 'dataAgent'
     | 'knowledge'
     | 'about'
+    | 'integrations'
+    | 'secrets'
     | 'userPermissions'
+    | 'tenants'
 
 /** 右侧快捷栏面板，对应 Chat2DB Shortcut Bar */
 export type ShortcutPanel = 'info' | 'history' | 'monitor' | 'console' | 'export' | 'migration'
@@ -473,6 +476,7 @@ export interface TeamInvite {
 
 export interface TeamAuditLog {
     id: string
+    tenantId?: string
     actorUserId: number
     actorUserName: string
     action: string

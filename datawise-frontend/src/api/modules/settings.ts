@@ -6,4 +6,5 @@ export const settingsApi = {
     pingHealthAt: (baseUrl: string) => api.system.pingAt(baseUrl),
     resolveBackendEndpointLabel: () => api.system.resolveEndpointLabel(),
     fetchMetrics: () => api.system.fetchMetrics(),
+    fetchSecretsStatus: () => api.system.fetchSecretsStatus(),
 }

@@ -10,6 +10,10 @@ public class ScheduledTaskEntry {
     public static final String TYPE_SQL = "sql";
     public static final String TYPE_CANVAS = "canvas";
     public static final String TYPE_SCHEMA_DRIFT = "schema_drift";
+    /** SQL assertion rule (empty result / row count / scalar). */
+    public static final String TYPE_DATA_QUALITY = "data_quality";
+    /** Outbound HTTP call to Airflow / dbt / Flink / generic orchestration APIs. */
+    public static final String TYPE_HTTP_TRIGGER = "http_trigger";
 
     private String id;
     private String name;

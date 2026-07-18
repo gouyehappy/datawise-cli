@@ -11,6 +11,7 @@ import org.apache.datawise.backend.database.drift.SchemaDriftService;
 import org.apache.datawise.backend.database.sql.SqlReviewService;
 import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
+import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.domain.PushNotificationRequest;
 import org.apache.datawise.backend.domain.RerunAnalysisCanvasRequest;
 import org.apache.datawise.backend.domain.SaveScheduledTaskRequest;
@@ -22,6 +23,7 @@ import org.apache.datawise.backend.model.ScheduledTaskEntry;
 import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.InstanceWorkspaceService;
 import org.apache.datawise.backend.service.TeamService;
+import org.apache.datawise.backend.service.outbound.OutboundNotifySupport;
 import org.apache.datawise.backend.service.workspace.WorkspaceNotificationService;
 import org.apache.datawise.backend.connector.api.support.SqlWriteClassifier;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -32,7 +34,10 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +48,9 @@ public class ScheduledTaskService {
 
     private static final Logger log = LoggerFactory.getLogger(ScheduledTaskService.class);
 
+    private static final int DEFAULT_DIGEST_MAX_ROWS = 20;
+    private static final int HARD_DIGEST_MAX_ROWS = 50;
+
     private final ScheduledTaskStore taskStore;
     private final SqlService sqlService;
     private final SqlReviewService sqlReviewService;
@@ -51,7 +59,9 @@ public class ScheduledTaskService {
     private final TeamService teamService;
     private final InstanceWorkspaceService instanceWorkspaceService;
     private final WorkspaceNotificationService notificationService;
+    private final OutboundNotifySupport outboundNotifySupport;
     private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
 
     public ScheduledTaskService(
             ScheduledTaskStore taskStore,
@@ -62,6 +72,7 @@ public class ScheduledTaskService {
             TeamService teamService,
             InstanceWorkspaceService instanceWorkspaceService,
             WorkspaceNotificationService notificationService,
+            OutboundNotifySupport outboundNotifySupport,
             ObjectMapper objectMapper
     ) {
         this.taskStore = taskStore;
@@ -72,7 +83,12 @@ public class ScheduledTaskService {
         this.teamService = teamService;
         this.instanceWorkspaceService = instanceWorkspaceService;
         this.notificationService = notificationService;
+        this.outboundNotifySupport = outboundNotifySupport;
         this.objectMapper = objectMapper;
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
     }
 
     public List<ScheduledTaskDto> list() {
@@ -130,7 +146,13 @@ public class ScheduledTaskService {
                 continue;
             }
             UserContext.runAs(
-                    new UserContext.Snapshot(owned.userId(), false, "scheduled-task:" + entry.getId()),
+                    new UserContext.Snapshot(
+                            owned.userId(),
+                            false,
+                            "scheduled-task:" + entry.getId(),
+                            null,
+                            owned.tenantId()
+                    ),
                     () -> {
                         executeTask(entry);
                         taskStore.upsert(entry);
@@ -143,27 +165,34 @@ public class ScheduledTaskService {
         Instant started = Instant.now();
         entry.setLastRunAt(started);
         try {
-            String successMessage = switch (entry.getType()) {
+            TaskRunOutcome outcome = switch (entry.getType()) {
                 case ScheduledTaskEntry.TYPE_SQL -> runSqlTask(entry);
                 case ScheduledTaskEntry.TYPE_CANVAS -> runCanvasTask(entry);
                 case ScheduledTaskEntry.TYPE_SCHEMA_DRIFT -> {
                     runSchemaDriftTask(entry);
-                    yield "completed";
+                    yield TaskRunOutcome.messageOnly("completed");
                 }
+                case ScheduledTaskEntry.TYPE_DATA_QUALITY -> runDataQualityTask(entry);
+                case ScheduledTaskEntry.TYPE_HTTP_TRIGGER -> runHttpTriggerTask(entry);
                 default -> throw new IllegalArgumentException("unsupported task type: " + entry.getType());
             };
             entry.setLastRunStatus("ok");
-            entry.setLastRunMessage(successMessage);
-            pushTaskNotification(entry, true, null);
+            entry.setLastRunMessage(outcome.message());
+            pushTaskNotification(entry, true, null, outcome.digest());
         } catch (Exception ex) {
             entry.setLastRunStatus("failed");
             String message = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
             entry.setLastRunMessage(message);
-            pushTaskNotification(entry, false, message);
+            pushTaskNotification(entry, false, message, null);
         }
     }
 
-    private void pushTaskNotification(ScheduledTaskEntry entry, boolean ok, String errorMessage) {
+    private void pushTaskNotification(
+            ScheduledTaskEntry entry,
+            boolean ok,
+            String errorMessage,
+            Map<String, Object> digest
+    ) {
         try {
             String titleKey = ok ? "scheduledTaskOk" : "scheduledTaskFailed";
             String bodyKey = titleKey;
@@ -180,12 +209,48 @@ public class ScheduledTaskService {
                             "message", detail
                     )
             ));
+            outboundNotifySupport.scheduledTask(
+                    ok,
+                    entry.getName() != null ? entry.getName() : entry.getId(),
+                    entry.getType(),
+                    detail,
+                    UserContext.getUserId()
+            );
+            if (ScheduledTaskEntry.TYPE_DATA_QUALITY.equals(entry.getType())) {
+                outboundNotifySupport.dataQuality(
+                        ok,
+                        entry.getName() != null ? entry.getName() : entry.getId(),
+                        detail,
+                        digest,
+                        UserContext.getUserId()
+                );
+            }
+            if (ScheduledTaskEntry.TYPE_HTTP_TRIGGER.equals(entry.getType())) {
+                outboundNotifySupport.orchestration(
+                        ok,
+                        entry.getName() != null ? entry.getName() : entry.getId(),
+                        detail,
+                        digest,
+                        UserContext.getUserId()
+                );
+            }
+            if (ok && digest != null && !digest.isEmpty()
+                    && !ScheduledTaskEntry.TYPE_DATA_QUALITY.equals(entry.getType())
+                    && !ScheduledTaskEntry.TYPE_HTTP_TRIGGER.equals(entry.getType())) {
+                outboundNotifySupport.insightDigest(
+                        entry.getName() != null ? entry.getName() : entry.getId(),
+                        entry.getType(),
+                        detail,
+                        digest,
+                        UserContext.getUserId()
+                );
+            }
         } catch (RuntimeException ex) {
             ExceptionLogging.warn(log, "scheduledTask.notification taskId=" + entry.getId(), ex);
         }
     }
 
-    private String runSqlTask(ScheduledTaskEntry entry) throws Exception {
+    private TaskRunOutcome runSqlTask(ScheduledTaskEntry entry) throws Exception {
         JsonNode payload = parsePayload(entry.getPayloadJson());
         ScheduledSqlPayloadSupport.ResolvedSql resolved = ScheduledSqlPayloadSupport.resolve(
                 payload,
@@ -197,7 +262,10 @@ public class ScheduledTaskService {
             throw new IllegalArgumentException("SQL is empty");
         }
         int maxRows = payload.has("maxRows") ? payload.get("maxRows").asInt(1000) : 1000;
+        boolean digest = payload.path("digest").asBoolean(false);
+        int digestMaxRows = resolveDigestMaxRows(payload);
         int executed = 0;
+        ExecuteSqlResult lastResult = null;
         for (String statement : statements) {
             SqlReviewResultDto review = sqlReviewService.review(
                     new SqlReviewRequest(statement, resolved.connectionId(), resolved.database())
@@ -218,11 +286,15 @@ public class ScheduledTaskService {
                     null,
                     "scheduled-task"
             );
-            sqlService.execute(request);
+            lastResult = sqlService.execute(request);
             recordTeamSqlAudit(request);
             executed += 1;
         }
-        return "completed " + executed + " statement(s) via " + resolved.source();
+        String message = "completed " + executed + " statement(s) via " + resolved.source();
+        if (!digest || lastResult == null) {
+            return TaskRunOutcome.messageOnly(message);
+        }
+        return new TaskRunOutcome(message, buildSqlDigest(lastResult, digestMaxRows));
     }
 
     private void recordTeamSqlAudit(ExecuteSqlRequest request) {
@@ -241,14 +313,78 @@ public class ScheduledTaskService {
         }
     }
 
-    private String runCanvasTask(ScheduledTaskEntry entry) throws Exception {
+    private TaskRunOutcome runCanvasTask(ScheduledTaskEntry entry) throws Exception {
         JsonNode payload = parsePayload(entry.getPayloadJson());
         String canvasId = text(payload, "canvasId");
         Map<String, String> parameterValues = readStringMap(payload.get("parameterValues"));
+        boolean digest = payload.path("digest").asBoolean(false);
         AnalysisCanvasPipelineService.PipelineRerunResult result = analysisCanvasPipelineService.rerunPipeline(
                 new RerunAnalysisCanvasRequest(canvasId, parameterValues.isEmpty() ? null : parameterValues)
         );
-        return result.statusMessage();
+        String message = result.statusMessage();
+        if (!digest) {
+            return TaskRunOutcome.messageOnly(message);
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("canvasId", result.canvasId() != null ? result.canvasId() : canvasId);
+        data.put("title", result.title() != null ? result.title() : "");
+        data.put("rowCount", result.rowCount());
+        data.put("summary", clip(result.summary(), 500));
+        if (result.sql() != null && !result.sql().isBlank()) {
+            data.put("sql", result.sql());
+        }
+        return new TaskRunOutcome(message, data);
+    }
+
+    private static Map<String, Object> buildSqlDigest(ExecuteSqlResult result, int digestMaxRows) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("rowCount", result.rowCount());
+        List<String> columnNames = new ArrayList<>();
+        if (result.columns() != null) {
+            for (Map<String, Object> column : result.columns()) {
+                if (column == null) {
+                    continue;
+                }
+                Object name = column.get("name");
+                if (name == null) {
+                    name = column.get("key");
+                }
+                if (name != null && !name.toString().isBlank()) {
+                    columnNames.add(name.toString());
+                }
+            }
+        }
+        data.put("columns", columnNames);
+        List<Map<String, Object>> rows = result.rows() != null ? result.rows() : List.of();
+        int limit = Math.min(digestMaxRows, rows.size());
+        data.put("rows", rows.subList(0, limit));
+        data.put("truncated", rows.size() > limit || Boolean.TRUE.equals(result.hasMore()));
+        return data;
+    }
+
+    private static int resolveDigestMaxRows(JsonNode payload) {
+        int value = payload.has("digestMaxRows") ? payload.get("digestMaxRows").asInt(DEFAULT_DIGEST_MAX_ROWS) : DEFAULT_DIGEST_MAX_ROWS;
+        if (value < 1) {
+            return 1;
+        }
+        return Math.min(HARD_DIGEST_MAX_ROWS, value);
+    }
+
+    private static String clip(String value, int maxChars) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() <= maxChars) {
+            return trimmed;
+        }
+        return trimmed.substring(0, Math.max(0, maxChars - 3)) + "...";
+    }
+
+    private record TaskRunOutcome(String message, Map<String, Object> digest) {
+        static TaskRunOutcome messageOnly(String message) {
+            return new TaskRunOutcome(message, null);
+        }
     }
 
     private static Map<String, String> readStringMap(JsonNode node) {
@@ -268,6 +404,75 @@ public class ScheduledTaskService {
         JsonNode payload = parsePayload(entry.getPayloadJson());
         String monitorId = text(payload, "monitorId");
         schemaDriftService.runMonitor(monitorId);
+    }
+
+    private TaskRunOutcome runDataQualityTask(ScheduledTaskEntry entry) throws Exception {
+        JsonNode payload = parsePayload(entry.getPayloadJson());
+        String connectionId = text(payload, "connectionId");
+        String database = text(payload, "database");
+        String sql = text(payload, "sql");
+        if (SqlWriteClassifier.requiresWriteAccess(sql)) {
+            throw new IllegalArgumentException("DQ rules must be read-only SELECT statements");
+        }
+        String assertion = payload.has("assertion") && !payload.get("assertion").isNull()
+                ? payload.get("assertion").asText("empty_result").trim()
+                : DataQualityAssertionSupport.EMPTY_RESULT;
+        String expected = payload.has("expected") && !payload.get("expected").isNull()
+                ? payload.get("expected").asText("")
+                : "0";
+        String column = payload.has("column") && !payload.get("column").isNull()
+                ? payload.get("column").asText(null)
+                : null;
+        int maxRows = payload.has("maxRows") ? payload.get("maxRows").asInt(1000) : 1000;
+
+        SqlReviewResultDto review = sqlReviewService.review(new SqlReviewRequest(sql, connectionId, database));
+        if (!review.allowed()) {
+            throw new IllegalArgumentException("SQL blocked by review: " + review.findings());
+        }
+        if (review.requiresApproval()) {
+            throw new IllegalArgumentException("SQL requires production approval");
+        }
+
+        ExecuteSqlRequest request = new ExecuteSqlRequest(
+                sql,
+                connectionId,
+                database,
+                maxRows,
+                null,
+                null,
+                null,
+                "data-quality"
+        );
+        ExecuteSqlResult result = sqlService.execute(request);
+        DataQualityAssertionSupport.evaluate(result, assertion, expected, column);
+
+        Map<String, Object> digest = new LinkedHashMap<>();
+        digest.put("assertion", assertion);
+        digest.put("expected", expected);
+        digest.put("rowCount", result.rowCount());
+        if (column != null && !column.isBlank()) {
+            digest.put("column", column);
+        }
+        return new TaskRunOutcome(
+                "DQ ok: " + assertion + " (rowCount=" + result.rowCount() + ")",
+                digest
+        );
+    }
+
+    private TaskRunOutcome runHttpTriggerTask(ScheduledTaskEntry entry) throws Exception {
+        JsonNode payload = parsePayload(entry.getPayloadJson());
+        OrchestrationHttpSupport.Result result = OrchestrationHttpSupport.execute(payload, objectMapper, httpClient);
+        Map<String, Object> digest = new LinkedHashMap<>();
+        digest.put("method", result.method());
+        digest.put("url", result.url());
+        digest.put("statusCode", result.statusCode());
+        if (result.bodyPreview() != null && !result.bodyPreview().isBlank()) {
+            digest.put("responsePreview", result.bodyPreview());
+        }
+        return new TaskRunOutcome(
+                "HTTP " + result.statusCode() + " " + result.method() + " " + result.url(),
+                digest
+        );
     }
 
     private static boolean isDue(ScheduledTaskEntry entry, Instant now) {

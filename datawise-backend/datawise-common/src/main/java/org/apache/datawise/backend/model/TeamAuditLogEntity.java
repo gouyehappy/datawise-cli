@@ -5,6 +5,7 @@ import java.time.Instant;
 public class TeamAuditLogEntity {
 
     private String id;
+    private String tenantId;
     private String teamId;
     private Long actorUserId;
     private String action;
@@ -17,6 +18,14 @@ public class TeamAuditLogEntity {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getTeamId() {

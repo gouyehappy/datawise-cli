@@ -5,7 +5,7 @@ import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {extractConnectionsFromTree} from '@/features/explorer/utils/tree-targets'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import type {SelectOption} from '@/core/components/select.types'
-import type {TableMigrationPreflightResult, TableMigrationResult} from '@/shared/api/types'
+import type {TableMigrationPreflightResult, TableMigrationResult, TableMigrationRowDiffResult} from '@/shared/api/types'
 import {
     buildMigrationRunRecord,
     buildWatermarkColumnSelectOptions,
@@ -32,6 +32,7 @@ import {
     recordToMigrationForm,
     runTableMigration,
     runTableMigrationPreflight,
+    runTableMigrationRowDiff,
     selectPreflightTableName,
     summarizeMigrationResults,
     toggleOrderByColumn,
@@ -43,6 +44,10 @@ import {
     validateTableMigrationForPreflight,
 } from '@/features/explorer/services/table-migration.service'
 import {useMigrationTaskStore} from '@/features/explorer/stores/migration-task-store'
+import {useTeamStore} from '@/features/team/stores/team-store'
+import {normalizeConnectionEnvironment} from '@/features/connection/services/connection-environment.service'
+import {resolveProductionApprovalTeams} from '@/features/team/services/production-approval-policy.service'
+import {buildDataMigrationApprovalSql} from '@/features/explorer/services/data-migration-approval.service'
 import type {MigrationFlowStep} from '@/features/workspace/components/migration/migration-wizard.types'
 
 export function useTableMigrationWizard(tab: WorkspaceTab) {
@@ -50,6 +55,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
     const explorer = useExplorerStore()
     const layout = useLayoutStore()
     const migrationTasks = useMigrationTaskStore()
+    const teamStore = useTeamStore()
 
     const form = ref<TableMigrationWizardForm>(createDefaultTableMigrationForm())
     const tableFilter = ref('')
@@ -64,11 +70,18 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
     const preflightError = ref<string | null>(null)
     const preflightResult = ref<TableMigrationPreflightResult | null>(null)
     const preflightSnapshot = ref('')
+    const rowDiffLoading = ref(false)
+    const rowDiffError = ref<string | null>(null)
+    const rowDiffResult = ref<TableMigrationRowDiffResult | null>(null)
     const selectedPreflightTable = ref<string | null>(null)
     const wizardStep = ref<MigrationFlowStep>('configure')
     const pausing = ref(false)
     const resuming = ref(false)
     const activeJobId = ref<string | null>(null)
+    const productionApprovalDialogOpen = ref(false)
+    const productionApprovalSubmitting = ref(false)
+    const productionApprovalError = ref('')
+    const productionApprovalSql = ref('')
 
     const running = computed(() => migrationTasks.isRunning)
     const canPauseMigration = computed(() => Boolean(activeJobId.value && running.value && !pausing.value))
@@ -225,6 +238,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
             FULL_APPEND: 'explorer.tableMigrationWizard.modeFullAppendDesc',
             FULL_REPLACE: 'explorer.tableMigrationWizard.modeFullReplaceDesc',
             INCR_APPEND: 'explorer.tableMigrationWizard.modeIncrAppendDesc',
+            PK_UPSERT: 'explorer.tableMigrationWizard.modePkUpsertDesc',
         }
         return keys[form.value.mode]
     })
@@ -241,6 +255,50 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         if (!preflightResult.value || preflightStale.value) return true
         return canProceedMigration(form.value, preflightResult.value)
     })
+
+    const targetConnectionNode = computed(() => {
+        const connectionId = form.value.targetConnectionId?.trim()
+        if (!connectionId) return undefined
+        return explorer.findNode(connectionId)
+    })
+
+    const targetConnectionEnv = computed(() =>
+        normalizeConnectionEnvironment(
+            targetConnectionNode.value?.env,
+            targetConnectionNode.value?.envCustom,
+        ).env,
+    )
+
+    const migrationApprovalSqlPreview = computed(() => {
+        if (!source.value || !form.value.targetConnectionId || !form.value.targetDatabase) return ''
+        const tables = resolveMigrationTables(form.value, preflightResult.value)
+        return buildDataMigrationApprovalSql({
+            sourceConnectionLabel: source.value.connectionLabel,
+            sourceDatabase: source.value.database,
+            targetConnectionLabel: targetConnectionLabel.value,
+            targetDatabase: form.value.targetDatabase,
+            form: form.value,
+            tables,
+        })
+    })
+
+    const productionApprovalTeams = computed(() => {
+        if (!form.value.targetConnectionId || !migrationApprovalSqlPreview.value) return []
+        return resolveProductionApprovalTeams({
+            env: targetConnectionEnv.value,
+            sql: migrationApprovalSqlPreview.value,
+            connectionId: form.value.targetConnectionId,
+            teams: teamStore.teams,
+        })
+    })
+
+    const needsProductionApproval = computed(() => productionApprovalTeams.value.length > 0)
+
+    const migrateActionLabel = computed(() =>
+        needsProductionApproval.value
+            ? t('console.productionApproval.submitForApproval')
+            : t('explorer.tableMigrationWizard.migrate'),
+    )
 
     const footerHint = computed(() => {
         switch (wizardStep.value) {
@@ -260,6 +318,9 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
                 }
                 if (migrateBlockedReason.value) {
                     return migrateBlockedReason.value
+                }
+                if (needsProductionApproval.value) {
+                    return t('explorer.tableMigrationWizard.footerHintProductionApproval')
                 }
                 if (preflightResult.value) {
                     return t('explorer.tableMigrationWizard.footerHintPreflightReady', {
@@ -421,6 +482,9 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         preflightError.value = null
         preflightResult.value = null
         preflightSnapshot.value = ''
+        rowDiffLoading.value = false
+        rowDiffError.value = null
+        rowDiffResult.value = null
         selectedPreflightTable.value = null
         wizardStep.value = 'configure'
         await loadSourceTables()
@@ -553,6 +617,8 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         preflightResult.value = null
         preflightSnapshot.value = ''
         preflightError.value = null
+        rowDiffResult.value = null
+        rowDiffError.value = null
         selectedPreflightTable.value = null
         formError.value = null
         wizardStep.value = 'configure'
@@ -572,6 +638,8 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         }
         formError.value = null
         preflightError.value = null
+        rowDiffResult.value = null
+        rowDiffError.value = null
         preflightLoading.value = true
         try {
             preflightResult.value = await runTableMigrationPreflight(source.value, form.value)
@@ -596,6 +664,26 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
             formError.value = message
         } finally {
             preflightLoading.value = false
+        }
+    }
+
+    async function runRowDiff() {
+        if (!source.value || rowDiffLoading.value || running.value) return
+        if (form.value.mode !== 'PK_UPSERT') return
+        const tableName = selectedPreflightTable.value?.trim()
+        if (!tableName) {
+            rowDiffError.value = t('explorer.tableMigrationWizard.rowDiffNeedTable')
+            return
+        }
+        rowDiffError.value = null
+        rowDiffLoading.value = true
+        try {
+            rowDiffResult.value = await runTableMigrationRowDiff(source.value, form.value, tableName)
+        } catch (error) {
+            rowDiffResult.value = null
+            rowDiffError.value = resolveErrorMessage(error, 'explorer.tableMigrationWizard.rowDiffFailed')
+        } finally {
+            rowDiffLoading.value = false
         }
     }
 
@@ -746,8 +834,38 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
             return
         }
         formError.value = null
+        if (needsProductionApproval.value) {
+            productionApprovalSql.value = migrationApprovalSqlPreview.value
+            productionApprovalError.value = ''
+            productionApprovalDialogOpen.value = true
+            return
+        }
         wizardStep.value = 'running'
         await submit()
+    }
+
+    async function onSubmitProductionApproval(teamId: string) {
+        if (!source.value || !form.value.targetConnectionId) return
+        const sql = productionApprovalSql.value.trim() || migrationApprovalSqlPreview.value
+        if (!sql) return
+
+        productionApprovalSubmitting.value = true
+        productionApprovalError.value = ''
+        try {
+            await teamStore.submitProductionApproval(teamId, {
+                connectionId: form.value.targetConnectionId,
+                connectionName: targetConnectionLabel.value,
+                database: form.value.targetDatabase,
+                sql,
+            })
+            productionApprovalDialogOpen.value = false
+            layout.showSuccessToast(t('explorer.tableMigrationWizard.productionApprovalSubmitted'))
+        } catch (error) {
+            productionApprovalError.value =
+                error instanceof Error ? error.message : t('console.productionApproval.submitFailed')
+        } finally {
+            productionApprovalSubmitting.value = false
+        }
     }
 
     async function submit() {
@@ -804,6 +922,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
                 throttleMs: form.value.throttleMs,
                 truncateTarget: form.value.truncateTarget,
                 targetMissingPolicy: form.value.targetMissingPolicy,
+                conflictStrategy: form.value.conflictStrategy,
             },
             tablesPlanned,
         })
@@ -910,6 +1029,9 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         preflightError,
         preflightResult,
         preflightStale,
+        rowDiffLoading,
+        rowDiffError,
+        rowDiffResult,
         selectedPreflightTable,
         wizardStep,
         pausing,
@@ -946,6 +1068,13 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         canMigrate,
         migrateBlockedReason,
         migrateTablesCount,
+        needsProductionApproval,
+        migrateActionLabel,
+        productionApprovalDialogOpen,
+        productionApprovalSubmitting,
+        productionApprovalError,
+        productionApprovalSql,
+        productionApprovalTeams,
         isFlowStepAccessible,
         isFlowStepCompleted,
         goToFlowStep,
@@ -964,6 +1093,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         backToConfigureStep,
         startNewMigration,
         runPreflight,
+        runRowDiff,
         formatDuration,
         formatLogLine,
         openMigrationTasksPanel,
@@ -971,6 +1101,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         copyMigrationLog,
         downloadMigrationReport,
         startMigration,
+        onSubmitProductionApproval,
         pauseActiveMigration,
         resumeFromCheckpoint,
     })

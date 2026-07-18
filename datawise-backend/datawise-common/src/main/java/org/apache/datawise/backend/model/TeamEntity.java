@@ -15,6 +15,9 @@ public class TeamEntity {
 
     private Long ownerUserId;
 
+    /** 所属租户；缺失时按 default 处理。 */
+    private String tenantId;
+
     private String inviteCode;
 
     private Instant createdAt;
@@ -55,6 +58,14 @@ public class TeamEntity {
 
     public void setOwnerUserId(Long ownerUserId) {
         this.ownerUserId = ownerUserId;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getInviteCode() {

@@ -40,6 +40,7 @@ import type {
     AnalysisCanvasDetail,
     AnalysisCanvasSummary,
     AutoGenerateSemanticMetricsRequest,
+    DiscoveryHit,
     ExecuteFederatedViewRequest,
     FederatedViewDetail,
     FederatedViewSummary,
@@ -71,6 +72,50 @@ export interface ApiResponse<T = unknown> {
     data: T
 }
 
+export interface TenantSummary {
+    id: string
+    slug: string
+    name: string
+    status: string
+    roleKeys?: string[]
+}
+
+export interface TenantAiUsage {
+    tenantId: string
+    day: string
+    calls: number
+    limit: number
+    remaining: number
+    unlimited: boolean
+}
+
+export interface ShareSnapshot {
+    id: string
+    title: string
+    kind: string
+    expiresAt?: string | null
+    createdAt?: string | null
+    revoked: boolean
+}
+
+export interface CreateShareResult {
+    id: string
+    token: string
+    title: string
+    kind: string
+    expiresAt?: string | null
+    createdAt?: string | null
+    path: string
+}
+
+export interface TenantMember {
+    userId: number
+    username: string
+    status: string
+    roleKeys?: string[]
+    joinedAt?: string | null
+}
+
 export interface LoginResult {
     sessionId: string
     userName?: string
@@ -79,6 +124,11 @@ export interface LoginResult {
     userId?: number | null
     admin?: boolean
     featurePermissions?: Record<string, boolean>
+    tenantId?: string | null
+    tenantName?: string | null
+    tenancyMode?: string | null
+    platformAdmin?: boolean
+    tenants?: TenantSummary[]
 }
 
 export interface SessionInfo {
@@ -89,6 +139,11 @@ export interface SessionInfo {
     userId?: number | null
     admin?: boolean
     featurePermissions?: Record<string, boolean>
+    tenantId?: string | null
+    tenantName?: string | null
+    tenancyMode?: string | null
+    platformAdmin?: boolean
+    tenants?: TenantSummary[]
 }
 
 export interface AuthSessionPolicy {
@@ -115,9 +170,13 @@ export interface AuthApi {
 
     loginAsGuest(): Promise<LoginResult>
 
+    register(request: RegisterRequest): Promise<LoginResult>
+
     signOut(): Promise<void>
 
     getCurrentSession(options?: HttpRequestOptions): Promise<SessionInfo>
+
+    switchTenant(tenantId: string): Promise<SessionInfo>
 
     getSessionPolicy(): Promise<AuthSessionPolicy>
 
@@ -125,15 +184,149 @@ export interface AuthApi {
 
     changePassword(currentPassword: string, newPassword: string): Promise<void>
 
+    getLoginOptions(): Promise<AuthLoginOptions>
+
+    getOidcConfig(): Promise<OidcConfig>
+
+    updateOidcConfig(request: SaveOidcConfigRequest): Promise<OidcConfig>
+
     resolveUserProfile(userName: string, isGuest: boolean): AuthUserProfile
+}
+
+export interface AuthLoginOptions {
+    localLoginEnabled: boolean
+    oidcEnabled: boolean
+    oidcProviderLabel?: string | null
+    registrationEnabled?: boolean
+    tenantCreateEnabled?: boolean
+    tenancyMode?: string | null
+}
+
+export interface RegisterRequest {
+    userName: string
+    password: string
+    email?: string
+    displayName?: string
+    tenantName?: string
+    tenantSlug?: string
+    createTenant?: boolean
+}
+
+export interface OidcConfig {
+    enabled: boolean
+    issuer?: string | null
+    clientId?: string | null
+    hasClientSecret: boolean
+    redirectUri?: string | null
+    frontendRedirectBase?: string | null
+    scopes?: string | null
+    localLoginEnabled: boolean
+    tenantClaim?: string | null
+    tenantClaimMap?: Record<string, string> | null
+    defaultOidcRoleKey?: string | null
+    autoProvisionMembership?: boolean
+    roleClaim?: string | null
+    roleClaimMap?: Record<string, string> | null
+    syncRolesFromClaim?: boolean
+    deprovisionMissingRoleClaim?: boolean
+}
+
+export interface SaveOidcConfigRequest {
+    enabled?: boolean
+    issuer?: string
+    clientId?: string
+    clientSecret?: string
+    redirectUri?: string
+    frontendRedirectBase?: string
+    scopes?: string
+    localLoginEnabled?: boolean
+    tenantClaim?: string
+    tenantClaimMap?: Record<string, string>
+    defaultOidcRoleKey?: string
+    autoProvisionMembership?: boolean
+    roleClaim?: string
+    roleClaimMap?: Record<string, string>
+    syncRolesFromClaim?: boolean
+    deprovisionMissingRoleClaim?: boolean
+}
+
+export interface OutboundWebhook {
+    id: string
+    name: string
+    enabled: boolean
+    channel?: string
+    url: string
+    hasSecret: boolean
+    eventTypes: string[]
+    timeoutMs: number
+    includeSql: boolean
+    createdAt?: string | null
+    updatedAt?: string | null
+    lastSuccessAt?: string | null
+    lastFailureAt?: string | null
+    lastError?: string | null
+}
+
+export interface SaveOutboundWebhookRequest {
+    id?: string
+    name: string
+    enabled?: boolean
+    channel?: string
+    url: string
+    secret?: string
+    eventTypes?: string[]
+    timeoutMs?: number
+    includeSql?: boolean
+}
+
+export interface OutboundWebhookTestResult {
+    ok: boolean
+    statusCode: number
+    message: string
+}
+
+export interface CreateInsightActionRequest {
+    title: string
+    body?: string
+    data?: Record<string, unknown>
+}
+
+export interface InsightActionResult {
+    eventId: string
+    type: string
+    title: string
 }
 
 export interface UserAdminApi {
     listUsers(): Promise<import('@/features/auth/types/feature-permission.types').UserPermissionSummary[]>
 
+    listTenantRoles(): Promise<import('@/features/auth/types/feature-permission.types').TenantRoleSummary[]>
+
+    createTenantRole(body: {
+        key: string
+        name: string
+        permissions: import('@/features/auth/types/feature-permission.types').FeaturePermissionMap
+    }): Promise<import('@/features/auth/types/feature-permission.types').TenantRoleSummary>
+
+    updateTenantRole(
+        roleId: string,
+        body: {
+            key?: string
+            name: string
+            permissions: import('@/features/auth/types/feature-permission.types').FeaturePermissionMap
+        },
+    ): Promise<import('@/features/auth/types/feature-permission.types').TenantRoleSummary>
+
+    deleteTenantRole(roleId: string): Promise<void>
+
     updateUserPermissions(
         userId: number,
         featurePermissions: import('@/features/auth/types/feature-permission.types').FeaturePermissionMap,
+    ): Promise<import('@/features/auth/types/feature-permission.types').UserPermissionSummary>
+
+    updateUserRoles(
+        userId: number,
+        roleIds: string[],
     ): Promise<import('@/features/auth/types/feature-permission.types').UserPermissionSummary>
 }
 
@@ -586,6 +779,7 @@ export interface TableMigrationRequest {
     createTargetIfMissing?: boolean
     sourceSelectSql?: string
     targetTableName?: string
+    conflictStrategy?: string
 }
 
 export interface TableMigrationBatchTableRequest {
@@ -608,6 +802,7 @@ export interface TableMigrationBatchRequest {
     truncateTarget?: boolean
     jobId?: string
     resumeJobId?: string
+    conflictStrategy?: string
 }
 
 export interface TableMigrationBatchResult {
@@ -668,6 +863,36 @@ export interface TableMigrationPreflightResult {
     blockedCount: number
     canProceed: boolean
     tables: TableMigrationPreflightTableResult[]
+}
+
+export interface TableMigrationRowDiffRequest {
+    sourceConnectionId: string
+    sourceDatabase: string
+    targetConnectionId: string
+    targetDatabase: string
+    tableName: string
+    whereClause?: string
+    sampleLimit?: number
+}
+
+export interface TableMigrationRowDiffItem {
+    kind: 'insert' | 'update' | 'unchanged' | string
+    primaryKey: Record<string, unknown>
+    changedColumns: string[]
+    sourceValues: Record<string, unknown>
+    targetValues?: Record<string, unknown> | null
+}
+
+export interface TableMigrationRowDiffResult {
+    tableName: string
+    primaryKeyColumns: string[]
+    sampledSourceRows: number
+    insertCount: number
+    updateCount: number
+    unchangedCount: number
+    truncated: boolean
+    message?: string | null
+    samples: TableMigrationRowDiffItem[]
 }
 
 export interface TableDetailFetchOptions {
@@ -1225,6 +1450,12 @@ export interface DatasourcesApi {
         connectors: import('@/features/datasource/types/datasource.types').ConnectorMarketEntry[]
         loadedPluginJars?: string[]
         pluginLoadFailures?: Array<{jarName: string; reason: string}>
+        manifest?: {
+            schemaVersion: number
+            updatedAt?: string
+            channel?: string
+            pluginCount: number
+        } | null
     }>
 
     resolveDriver(request: JdbcDriverResolveRequest): Promise<JdbcDriverResolveResult>
@@ -1258,6 +1489,18 @@ export interface TeamApi {
     updateSettings(teamId: string, requireInviteApproval: boolean): Promise<TeamSummary>
 
     fetchAuditLogs(teamId: string, query?: TeamAuditLogQuery): Promise<TeamAuditLog[]>
+
+    exportAuditLogs(
+        teamId: string,
+        options: {
+            format: 'csv' | 'json'
+            actorUserId?: number
+            since?: string
+            until?: string
+            includeFullSql?: boolean
+            fileName?: string
+        },
+    ): Promise<void>
 
     updateSharedConnections(
         teamId: string,
@@ -1367,6 +1610,8 @@ export interface SystemApi {
     resolveEndpointLabel(): string
 
     fetchMetrics(): Promise<SystemMetricsSnapshot>
+
+    fetchSecretsStatus(): Promise<import('@/shared/api/http/system').SecretsStatus>
 }
 
 export interface ConfigApi {
@@ -1424,6 +1669,8 @@ export interface MigrationApi {
 
     preflight(request: TableMigrationPreflightRequest): Promise<TableMigrationPreflightResult>
 
+    rowDiff(request: TableMigrationRowDiffRequest): Promise<TableMigrationRowDiffResult>
+
     getJob(jobId: string): Promise<MigrationJobView>
 
     listJobs(): Promise<MigrationJobView[]>
@@ -1455,6 +1702,8 @@ export interface PlatformApi {
     deleteSemanticMetric(id: string): Promise<void>
 
     autoGenerateSemanticMetrics(request: AutoGenerateSemanticMetricsRequest): Promise<SemanticMetric[]>
+
+    searchDiscovery(q: string, limit?: number): Promise<DiscoveryHit[]>
 
     reviewSql(request: SqlReviewRequest): Promise<SqlReviewResult>
 
@@ -1491,6 +1740,16 @@ export interface PlatformApi {
     listQueryLibraryVersions(teamId: string, queryId: string): Promise<QueryLibraryVersion[]>
 
     saveQueryLibraryVersion(request: SaveQueryLibraryVersionRequest): Promise<QueryLibraryVersion>
+
+    listOutboundWebhooks(): Promise<OutboundWebhook[]>
+
+    saveOutboundWebhook(request: SaveOutboundWebhookRequest): Promise<OutboundWebhook>
+
+    deleteOutboundWebhook(id: string): Promise<void>
+
+    testOutboundWebhook(id: string): Promise<OutboundWebhookTestResult>
+
+    createInsightAction(request: CreateInsightActionRequest): Promise<InsightActionResult>
 }
 
 // ── Client ──────────────────────────────────────────────────────────────────

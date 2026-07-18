@@ -2,7 +2,12 @@ import {describe, it} from 'node:test'
 import assert from 'node:assert/strict'
 import {
     buildVisualQuerySql,
+    moveSelectedColumnKey,
+    parseVisualColumnKey,
+    removeSelectedColumnKey,
     suggestTableAlias,
+    upsertSelectedColumnKey,
+    visualColumnKey,
 } from '@/features/workspace/services/visual-query-builder.service'
 
 describe('visual-query-builder.service', () => {
@@ -86,5 +91,30 @@ describe('visual-query-builder.service', () => {
     it('suggests unique aliases', () => {
         assert.equal(suggestTableAlias('orders'), 'o')
         assert.equal(suggestTableAlias('orders', ['o']), 'o2')
+    })
+
+    it('parses and builds visual column keys', () => {
+        assert.equal(visualColumnKey('o', 'id'), 'o.id')
+        assert.deepEqual(parseVisualColumnKey('o.id'), {tableAlias: 'o', column: 'id'})
+        assert.equal(parseVisualColumnKey('noid'), null)
+    })
+
+    it('upserts selected column keys in board order', () => {
+        assert.deepEqual(upsertSelectedColumnKey([], 'o.id'), ['o.id'])
+        assert.deepEqual(upsertSelectedColumnKey(['o.id', 'u.name'], 'o.status', 1), [
+            'o.id',
+            'o.status',
+            'u.name',
+        ])
+        assert.deepEqual(upsertSelectedColumnKey(['o.id', 'u.name'], 'o.id', 1), [
+            'u.name',
+            'o.id',
+        ])
+    })
+
+    it('moves and removes selected column keys', () => {
+        assert.deepEqual(moveSelectedColumnKey(['a', 'b', 'c'], 0, 2), ['b', 'c', 'a'])
+        assert.deepEqual(moveSelectedColumnKey(['a', 'b'], 3, 0), ['a', 'b'])
+        assert.deepEqual(removeSelectedColumnKey(['o.id', 'u.name'], 'o.id'), ['u.name'])
     })
 })

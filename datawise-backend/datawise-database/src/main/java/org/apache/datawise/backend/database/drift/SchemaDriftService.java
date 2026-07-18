@@ -17,7 +17,9 @@ import org.apache.datawise.backend.migration.TableMigrationPreflightSupport;
 import org.apache.datawise.backend.migration.TableMigrationPreflightSupport.ColumnCompareResult;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.SchemaDriftMonitorEntry;
+import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.ConnectionVisibilityService;
+import org.apache.datawise.backend.service.outbound.OutboundNotifySupport;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -33,17 +35,20 @@ public class SchemaDriftService {
     private final SchemaDriftMonitorStore monitorStore;
     private final TableDetailService tableDetailService;
     private final ConnectionVisibilityService connectionVisibilityService;
+    private final OutboundNotifySupport outboundNotifySupport;
     private final ObjectMapper objectMapper;
 
     public SchemaDriftService(
             SchemaDriftMonitorStore monitorStore,
             TableDetailService tableDetailService,
             ConnectionVisibilityService connectionVisibilityService,
+            OutboundNotifySupport outboundNotifySupport,
             ObjectMapper objectMapper
     ) {
         this.monitorStore = monitorStore;
         this.tableDetailService = tableDetailService;
         this.connectionVisibilityService = connectionVisibilityService;
+        this.outboundNotifySupport = outboundNotifySupport;
         this.objectMapper = objectMapper;
     }
 
@@ -134,6 +139,16 @@ public class SchemaDriftService {
             monitor.setLastReportJson(null);
         }
         monitorStore.upsert(monitor);
+        try {
+            outboundNotifySupport.schemaDrift(
+                    report.driftTableCount() > 0,
+                    monitorId,
+                    report.driftTableCount(),
+                    UserContext.getUserId()
+            );
+        } catch (RuntimeException ignored) {
+            // outbound must not break monitor runs
+        }
         return report;
     }
 

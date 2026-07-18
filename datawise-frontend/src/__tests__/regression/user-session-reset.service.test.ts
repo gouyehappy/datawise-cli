@@ -11,16 +11,23 @@ import {
 
 describe('user session app config scope', () => {
     it('setAppConfigStorageScope isolates storage keys per registered user id', () => {
-        setAppConfigStorageScope({userId: 7, userName: 'admin', isGuest: false})
+        setAppConfigStorageScope({userId: 7, userName: 'admin', isGuest: false, tenantId: 'default'})
         assert.equal(resolveAppConfigStorageKey(), `${APP_CONFIG_KEY}:user:7`)
-        assert.equal(resolveUserStorageKey(AI_CHAT_STORAGE_KEY), `${AI_CHAT_STORAGE_KEY}:user:7`)
+        assert.equal(
+            resolveUserStorageKey(AI_CHAT_STORAGE_KEY),
+            `${AI_CHAT_STORAGE_KEY}:user:7:tenant:default`,
+        )
         assert.equal(
             resolveUserStorageKey(AI_ANALYSIS_TEMPLATE_STORAGE_KEY),
-            `${AI_ANALYSIS_TEMPLATE_STORAGE_KEY}:user:7`,
+            `${AI_ANALYSIS_TEMPLATE_STORAGE_KEY}:user:7:tenant:default`,
         )
 
-        setAppConfigStorageScope({userId: 9, userName: 'bob', isGuest: false})
+        setAppConfigStorageScope({userId: 9, userName: 'bob', isGuest: false, tenantId: 'acme'})
         assert.equal(resolveAppConfigStorageKey(), `${APP_CONFIG_KEY}:user:9`)
+        assert.equal(
+            resolveUserStorageKey(AI_CHAT_STORAGE_KEY),
+            `${AI_CHAT_STORAGE_KEY}:user:9:tenant:acme`,
+        )
 
         setAppConfigStorageScope({isGuest: true})
         assert.equal(resolveAppConfigStorageKey(), `${APP_CONFIG_KEY}:guest`)

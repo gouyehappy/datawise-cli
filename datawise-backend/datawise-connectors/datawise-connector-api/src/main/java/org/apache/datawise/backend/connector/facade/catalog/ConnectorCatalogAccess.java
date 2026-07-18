@@ -6,12 +6,16 @@ import org.apache.datawise.backend.connector.catalog.SchemaSession;
 import org.apache.datawise.backend.connector.plugin.ConnectorPluginLoader;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
 import org.apache.datawise.backend.domain.ConnectorPluginLoadFailure;
+import org.apache.datawise.backend.domain.ConnectorPluginManifest;
 import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /** 连接器解析与 Catalog / 连接测试能力入口。 */
 @Component
@@ -67,5 +71,21 @@ public class ConnectorCatalogAccess {
 
     public List<ConnectorPluginLoadFailure> failedPluginLoads() {
         return pluginLoader.failedPluginLoads();
+    }
+
+    public Optional<ConnectorPluginManifest> pluginManifest() {
+        return pluginLoader.manifest();
+    }
+
+    public Optional<ConnectorPluginManifest> reloadPluginManifest() {
+        return pluginLoader.reloadManifest();
+    }
+
+    public Map<String, String> loadedJarByConnectorId() {
+        return pluginLoader.loadedJarByConnectorId();
+    }
+
+    public Path pluginsDirectory() {
+        return pluginLoader.pluginsDirectory();
     }
 }

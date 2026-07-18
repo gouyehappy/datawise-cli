@@ -16,18 +16,21 @@ npm run typecheck
 
 端口：开发后端 `18421`（dev）、桌面包后端 `18423`（desktop），见 [runtime-ports.json](./runtime-ports.json)。
 
-## Electron 打包（Windows）
+## Electron 打包
 
 ```powershell
-npm run dist:desktop        # 推荐：内嵌后端 + JRE，生成 NSIS 安装包与便携版
+npm run dist:desktop        # 当前 OS：Windows → NSIS/便携；macOS → DMG/zip (arm64)
+npm run dist:desktop:mac    # Apple Silicon（须在 macOS 上执行）
+npm run dist:desktop:linux  # Linux AppImage
 npm run dist:desktop:clean  # 全量重建（清理前后端产物 + purge target/）
-npm run pack:desktop        # 仅生成 release/win-unpacked/ 目录，便于快速测试
+npm run pack:desktop        # 仅生成 unpacked 目录，便于快速测试
 npm run prepare:desktop     # 只打包后端资源到 resources/desktop/（不构建 Electron）
 npm run build:backend       # 仅编译后端（释放锁 → 清空 target/ → mvn install → 校验 JAR）
 ```
 
+产物在 `release/`。macOS 说明见 [docs/DESKTOP_MAC.md](../docs/DESKTOP_MAC.md)。
 
-产物在 `release/`。配置目录：便携版为 exe 同目录 `config/`；安装版为 `%APPDATA%\DataWise CLI\config`。
+配置目录：便携版为 exe 同目录 `config/`；Windows 安装版为 `%APPDATA%\DataWise CLI\config`；macOS 为 `~/Library/Application Support/DataWise CLI/config`。
 
 脚本说明见 [scripts/desktop/README.md](./scripts/desktop/README.md)。
 

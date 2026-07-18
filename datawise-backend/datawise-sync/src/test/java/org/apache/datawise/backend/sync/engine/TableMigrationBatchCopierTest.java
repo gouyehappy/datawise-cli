@@ -169,7 +169,9 @@ class TableMigrationBatchCopierTest {
                 List.of(),
                 new TableMigrationBatchCopier.CopyResumeState(200, 200L, 2, List.of()),
                 null,
-                MigrationExecutionControl.noop()
+                MigrationExecutionControl.noop(),
+                List.of(),
+                null
         ));
 
         assertEquals(201L, result.rowsMigrated());
@@ -216,7 +218,9 @@ class TableMigrationBatchCopierTest {
                 List.of("id"),
                 TableMigrationBatchCopier.CopyResumeState.fresh(),
                 null,
-                MigrationExecutionControl.noop()
+                MigrationExecutionControl.noop(),
+                List.of(),
+                null
         ));
 
         assertEquals(2L, result.rowsMigrated());

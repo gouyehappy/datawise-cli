@@ -85,7 +85,9 @@ public final class UserFeaturePermission {
     public static final String SETTINGS_DATA_AGENT = "settings.dataAgent";
     public static final String SETTINGS_PLUGINS = "settings.plugins";
     public static final String SETTINGS_ABOUT = "settings.about";
+    public static final String SETTINGS_INTEGRATIONS = "settings.integrations";
     public static final String SETTINGS_USER_PERMISSIONS = "settings.userPermissions";
+    public static final String SETTINGS_TENANTS = "settings.tenants";
 
     public static final Set<String> ALL = Set.of(
             NAV_DATABASE,
@@ -154,7 +156,9 @@ public final class UserFeaturePermission {
             SETTINGS_DATA_AGENT,
             SETTINGS_PLUGINS,
             SETTINGS_ABOUT,
-            SETTINGS_USER_PERMISSIONS
+            SETTINGS_INTEGRATIONS,
+            SETTINGS_USER_PERMISSIONS,
+            SETTINGS_TENANTS
     );
 
     private UserFeaturePermission() {

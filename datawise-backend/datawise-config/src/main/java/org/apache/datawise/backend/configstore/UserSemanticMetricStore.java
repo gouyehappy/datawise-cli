@@ -15,7 +15,7 @@ public class UserSemanticMetricStore {
 
     private final ConfigDirectoryService configDirectory;
     private final ObjectMapper objectMapper;
-    private final ConcurrentHashMap<Long, JsonListFile<SemanticMetricEntry>> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JsonListFile<SemanticMetricEntry>> cache = new ConcurrentHashMap<>();
 
     public UserSemanticMetricStore(ConfigDirectoryService configDirectory, ObjectMapper objectMapper) {
         this.configDirectory = configDirectory;
@@ -64,10 +64,10 @@ public class UserSemanticMetricStore {
     }
 
     private JsonListFile<SemanticMetricEntry> fileFor(long userId) {
-        return cache.computeIfAbsent(userId, uid -> new JsonListFile<>(
+        return cache.computeIfAbsent(TenantScopedConfigSupport.cacheKey(userId), ignored -> new JsonListFile<>(
                 configDirectory,
                 objectMapper,
-                ConfigPaths.userSemanticMetrics(uid),
+                TenantScopedConfigSupport.ensureUserTenantFile(configDirectory, userId, "semantic-metrics.json"),
                 new TypeReference<>() {
                 }
         ));

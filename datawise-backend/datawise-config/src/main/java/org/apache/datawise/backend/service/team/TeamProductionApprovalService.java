@@ -9,9 +9,11 @@ import org.apache.datawise.backend.domain.TeamProductionApprovalSummaryDto;
 import org.apache.datawise.backend.model.TeamEntity;
 import org.apache.datawise.backend.model.TeamMemberEntity;
 import org.apache.datawise.backend.model.TeamProductionApprovalEntity;
+import org.apache.datawise.backend.service.outbound.OutboundNotifySupport;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -24,10 +26,16 @@ public class TeamProductionApprovalService {
 
     private final TeamSupport support;
     private final TeamAuditService auditService;
+    private final OutboundNotifySupport outboundNotifySupport;
 
-    public TeamProductionApprovalService(TeamSupport support, TeamAuditService auditService) {
+    public TeamProductionApprovalService(
+            TeamSupport support,
+            TeamAuditService auditService,
+            OutboundNotifySupport outboundNotifySupport
+    ) {
         this.support = support;
         this.auditService = auditService;
+        this.outboundNotifySupport = outboundNotifySupport;
     }
 
     public TeamProductionApprovalSummaryDto submitProductionApproval(
@@ -64,6 +72,13 @@ public class TeamProductionApprovalService {
         support.teamStore().saveProductionApproval(entity);
         auditService.audit(teamId, userId, "prod.approval.submit",
                 "Submitted production SQL on " + entity.getConnectionId());
+        outboundNotifySupport.productionApprovalPending(
+                teamId,
+                entity.getId(),
+                entity.getConnectionId(),
+                userId,
+                managerUserIds(teamId)
+        );
         return toProductionApprovalSummaryDto(entity);
     }
 
@@ -118,6 +133,17 @@ public class TeamProductionApprovalService {
         support.teamStore().saveProductionApproval(entity);
         auditService.audit(teamId, reviewerUserId, success ? "prod.approval.execute" : "prod.approval.failed",
                 (success ? "Executed" : "Failed to execute") + " production SQL on " + entity.getConnectionId());
+        List<Long> recipients = new ArrayList<>(managerUserIds(teamId));
+        if (entity.getRequestedByUserId() != null && !recipients.contains(entity.getRequestedByUserId())) {
+            recipients.add(entity.getRequestedByUserId());
+        }
+        outboundNotifySupport.productionApprovalDecided(
+                teamId,
+                approvalId,
+                success ? STATUS_EXECUTED : STATUS_FAILED,
+                entity.getRequestedByUserId(),
+                recipients
+        );
         return toProductionApprovalDetailDto(entity);
     }
 
@@ -140,7 +166,27 @@ public class TeamProductionApprovalService {
         support.teamStore().saveProductionApproval(entity);
         auditService.audit(teamId, userId, "prod.approval.reject",
                 "Rejected production SQL on " + entity.getConnectionId());
+        List<Long> recipients = new ArrayList<>(managerUserIds(teamId));
+        if (entity.getRequestedByUserId() != null && !recipients.contains(entity.getRequestedByUserId())) {
+            recipients.add(entity.getRequestedByUserId());
+        }
+        outboundNotifySupport.productionApprovalDecided(
+                teamId,
+                approvalId,
+                STATUS_REJECTED,
+                entity.getRequestedByUserId(),
+                recipients
+        );
         return toProductionApprovalDetailDto(entity);
+    }
+
+    private List<Long> managerUserIds(String teamId) {
+        return support.teamStore().findMembersByTeamId(teamId).stream()
+                .filter(member -> TeamRoleSupport.canManageTeam(member.getRole()))
+                .map(TeamMemberEntity::getUserId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
     }
 
     private void requireProductionApprovalReadAccess(

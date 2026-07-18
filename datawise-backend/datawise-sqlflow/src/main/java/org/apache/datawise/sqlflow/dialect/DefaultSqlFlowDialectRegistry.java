@@ -90,8 +90,8 @@ public final class DefaultSqlFlowDialectRegistry implements SqlFlowDialectRegist
         map.put(DbType.HIVE.id(), SqlFlowDialect.HIVE);
         map.put(DbType.FLINK.id(), SqlFlowDialect.HIVE);
         map.put(DbType.KYLIN.id(), SqlFlowDialect.HIVE);
-        map.put(DbType.TRINO.id(), SqlFlowDialect.HIVE);
-        map.put(DbType.PRESTO.id(), SqlFlowDialect.HIVE);
+        map.put(DbType.TRINO.id(), SqlFlowDialect.GENERIC);
+        map.put(DbType.PRESTO.id(), SqlFlowDialect.GENERIC);
 
         map.put(DbType.CLICKHOUSE.id(), SqlFlowDialect.GENERIC);
         map.put(DbType.SQLITE3.id(), SqlFlowDialect.GENERIC);

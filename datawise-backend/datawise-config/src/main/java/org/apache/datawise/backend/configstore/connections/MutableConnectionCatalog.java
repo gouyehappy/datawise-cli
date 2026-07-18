@@ -7,7 +7,7 @@ import org.apache.datawise.backend.common.support.ConnectionsXmlCodec;
 import java.util.ArrayList;
 import java.util.List;
 
-final class MutableConnectionCatalog {
+public final class MutableConnectionCatalog {
 
     private final List<ConnectionGroupEntity> groups;
     private final List<ConnectionEntity> connections;
@@ -17,18 +17,18 @@ final class MutableConnectionCatalog {
         this.connections = connections;
     }
 
-    static MutableConnectionCatalog from(ConnectionsXmlCodec.ParsedCatalog catalog) {
+    public static MutableConnectionCatalog from(ConnectionsXmlCodec.ParsedCatalog catalog) {
         return new MutableConnectionCatalog(
                 new ArrayList<>(catalog.groups()),
                 new ArrayList<>(catalog.connections())
         );
     }
 
-    List<ConnectionGroupEntity> groups() {
+    public List<ConnectionGroupEntity> groups() {
         return groups;
     }
 
-    List<ConnectionEntity> connections() {
+    public List<ConnectionEntity> connections() {
         return connections;
     }
 }

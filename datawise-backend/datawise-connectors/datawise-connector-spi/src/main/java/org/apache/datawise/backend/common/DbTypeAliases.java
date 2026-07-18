@@ -15,7 +15,9 @@ final class DbTypeAliases {
             "postgres", DbType.POSTGRESQL,
             "sqlite", DbType.SQLITE3,
             "hsqldb", DbType.HSQL,
-            "dameng", DbType.DM
+            "dameng", DbType.DM,
+            "spark", DbType.HIVE,
+            "impala", DbType.HIVE
     );
 
     private DbTypeAliases() {

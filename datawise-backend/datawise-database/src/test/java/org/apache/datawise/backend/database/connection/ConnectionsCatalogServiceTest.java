@@ -3,8 +3,10 @@ package org.apache.datawise.backend.database.connection;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
 import org.apache.datawise.backend.configstore.ConnectionStore;
+import org.apache.datawise.backend.configstore.FileConnectionStore;
 import org.apache.datawise.backend.configstore.SessionEphemeralCatalogStore;
 import org.apache.datawise.backend.configstore.TeamStore;
+import org.apache.datawise.backend.configstore.FileTeamStore;
 import org.apache.datawise.backend.domain.ConnectionEntryDto;
 import org.apache.datawise.backend.domain.ConnectionGroupDto;
 import org.apache.datawise.backend.domain.ConnectionsCatalogDto;
@@ -47,11 +49,11 @@ class ConnectionsCatalogServiceTest {
         when(codec.decryptForUse(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
-        ConnectionStore store = new ConnectionStore(configDirectory, new ObjectMapper(), codec);
+        ConnectionStore store = new FileConnectionStore(configDirectory, new ObjectMapper(), codec);
         ConnectionVisibilityService visibilityService = new ConnectionVisibilityService(
                 store,
                 new SessionEphemeralCatalogStore(),
-                new TeamStore(configDirectory, new ObjectMapper())
+                new FileTeamStore(configDirectory, new ObjectMapper())
         );
         UserResourcePolicy resourcePolicy = new UserResourcePolicy(new UserAccessPolicy());
         ConnectionsCatalogService service = new ConnectionsCatalogService(store, visibilityService, resourcePolicy);

@@ -3,6 +3,7 @@ package org.apache.datawise.backend.security;
 
 
 import org.apache.datawise.backend.common.UnauthorizedException;
+import org.apache.datawise.backend.domain.TenantIds;
 
 
 
@@ -28,13 +29,21 @@ public final class UserContext {
 
     private static final ThreadLocal<Set<String>> API_TOKEN_SCOPES = new ThreadLocal<>();
 
+    private static final ThreadLocal<String> TENANT_ID = new ThreadLocal<>();
 
 
-    public record Snapshot(Long userId, boolean guest, String sessionId, Set<String> apiTokenScopes) {
+
+    public record Snapshot(Long userId, boolean guest, String sessionId, Set<String> apiTokenScopes, String tenantId) {
 
         public Snapshot(Long userId, boolean guest, String sessionId) {
 
-            this(userId, guest, sessionId, null);
+            this(userId, guest, sessionId, null, TenantIds.DEFAULT);
+
+        }
+
+        public Snapshot(Long userId, boolean guest, String sessionId, Set<String> apiTokenScopes) {
+
+            this(userId, guest, sessionId, apiTokenScopes, TenantIds.DEFAULT);
 
         }
 
@@ -50,6 +59,14 @@ public final class UserContext {
 
     public static void set(Long userId, boolean guest, String sessionId) {
 
+        set(userId, guest, sessionId, TenantIds.DEFAULT);
+
+    }
+
+
+
+    public static void set(Long userId, boolean guest, String sessionId, String tenantId) {
+
         USER_ID.set(userId);
 
         GUEST.set(guest);
@@ -58,11 +75,21 @@ public final class UserContext {
 
         API_TOKEN_SCOPES.remove();
 
+        TENANT_ID.set(TenantIds.normalizeOrDefault(tenantId));
+
     }
 
 
 
     public static void setApiToken(Long userId, String tokenId, Set<String> scopes) {
+
+        setApiToken(userId, tokenId, scopes, TenantIds.DEFAULT);
+
+    }
+
+
+
+    public static void setApiToken(Long userId, String tokenId, Set<String> scopes, String tenantId) {
 
         USER_ID.set(userId);
 
@@ -71,6 +98,8 @@ public final class UserContext {
         SESSION_ID.set(API_TOKEN_SESSION_PREFIX + tokenId);
 
         API_TOKEN_SCOPES.set(scopes == null ? Set.of() : Set.copyOf(scopes));
+
+        TENANT_ID.set(TenantIds.normalizeOrDefault(tenantId));
 
     }
 
@@ -116,7 +145,9 @@ public final class UserContext {
 
                 getSessionId(),
 
-                scopes == null ? null : Set.copyOf(scopes)
+                scopes == null ? null : Set.copyOf(scopes),
+
+                getTenantId()
 
         );
 
@@ -193,6 +224,24 @@ public final class UserContext {
 
 
 
+    public static String getTenantId() {
+
+        return TenantIds.normalizeOrDefault(TENANT_ID.get());
+
+    }
+
+
+
+    public static String requireTenantId() {
+
+        requireUserId();
+
+        return getTenantId();
+
+    }
+
+
+
     public static void clear() {
 
         USER_ID.remove();
@@ -202,6 +251,8 @@ public final class UserContext {
         SESSION_ID.remove();
 
         API_TOKEN_SCOPES.remove();
+
+        TENANT_ID.remove();
 
     }
 
@@ -225,7 +276,9 @@ public final class UserContext {
 
                     extractApiTokenId(snapshot.sessionId()),
 
-                    snapshot.apiTokenScopes() != null ? snapshot.apiTokenScopes() : Set.of()
+                    snapshot.apiTokenScopes() != null ? snapshot.apiTokenScopes() : Set.of(),
+
+                    snapshot.tenantId()
 
             );
 
@@ -233,7 +286,7 @@ public final class UserContext {
 
         }
 
-        set(snapshot.userId(), snapshot.guest(), snapshot.sessionId());
+        set(snapshot.userId(), snapshot.guest(), snapshot.sessionId(), snapshot.tenantId());
 
     }
 
@@ -260,5 +313,3 @@ public final class UserContext {
     }
 
 }
-
-

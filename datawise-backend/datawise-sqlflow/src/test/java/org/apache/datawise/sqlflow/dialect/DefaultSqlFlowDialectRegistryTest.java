@@ -20,6 +20,8 @@ class DefaultSqlFlowDialectRegistryTest {
         assertEquals(SqlFlowDialect.POSTGRESQL, registry.resolve(DbType.POSTGRESQL.id()));
         assertEquals(SqlFlowDialect.MSSQL, registry.resolve(DbType.SQLSERVER.id()));
         assertEquals(SqlFlowDialect.HIVE, registry.resolve(DbType.HIVE.id()));
+        assertEquals(SqlFlowDialect.GENERIC, registry.resolve(DbType.TRINO.id()));
+        assertEquals(SqlFlowDialect.HIVE, registry.resolve(DbType.FLINK.id()));
     }
 
     @Test

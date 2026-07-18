@@ -8,6 +8,8 @@ import type {
     TableMigrationPreflightResult,
     TableMigrationRequest,
     TableMigrationResult,
+    TableMigrationRowDiffRequest,
+    TableMigrationRowDiffResult,
     MigrationApi,
 } from '@/shared/api/types'
 
@@ -19,6 +21,8 @@ export function createHttpMigrationApi(): MigrationApi {
             postJson<TableMigrationBatchResult>(API_PATHS.migration.tablesBatch, request),
         preflight: (request: TableMigrationPreflightRequest) =>
             postJson<TableMigrationPreflightResult>(API_PATHS.migration.preflight, request),
+        rowDiff: (request: TableMigrationRowDiffRequest) =>
+            postJson<TableMigrationRowDiffResult>(API_PATHS.migration.rowDiff, request),
         getJob: (jobId: string) =>
             getJson<MigrationJobView>(API_PATHS.migration.job(jobId)),
         listJobs: () =>

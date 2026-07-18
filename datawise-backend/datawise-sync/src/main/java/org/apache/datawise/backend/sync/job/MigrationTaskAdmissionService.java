@@ -1,6 +1,8 @@
 package org.apache.datawise.backend.sync.job;
 
 import org.apache.datawise.backend.domain.TableMigrationBatchRequest;
+import org.apache.datawise.backend.domain.TenantConcurrencyKeys;
+import org.apache.datawise.backend.domain.TenantIds;
 import org.apache.datawise.taskconcurrency.api.TaskConcurrencyController;
 import org.apache.datawise.taskconcurrency.config.TaskConcurrencyProperties;
 import org.apache.datawise.taskconcurrency.model.TaskAdmissionRequest;
@@ -12,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Enqueues migration jobs into the task-concurrency pool and ensures per-user tenant policies exist.
+ * Enqueues migration jobs into the task-concurrency pool and ensures per-product-tenant policies exist.
  */
 @Component
 public class MigrationTaskAdmissionService {
@@ -73,11 +75,12 @@ public class MigrationTaskAdmissionService {
 
     public void enqueue(
             long userId,
+            String productTenantId,
             String jobId,
             TableMigrationBatchRequest request,
             TaskConcurrencyController controller) {
-        int tenantId = toTenantId(userId);
-        ensureTenantPolicy(controller, tenantId);
+        int slotTenantId = toSlotTenantId(productTenantId);
+        ensureTenantPolicy(controller, slotTenantId);
         int priority = resolvePriority(request);
         if (admissionLogEnabled && log.isInfoEnabled()) {
             int tableCount = request != null && request.tables() != null ? request.tables().size() : 0;
@@ -85,9 +88,11 @@ public class MigrationTaskAdmissionService {
             Integer throttleMs = request != null ? request.throttleMs() : null;
             boolean resume = request != null && request.resumeJobId() != null && !request.resumeJobId().isBlank();
             log.info(
-                    "migration.task.admit jobId={} tenantId={} priority={} tables={} batchSize={} throttleMs={} resume={}",
+                    "migration.task.admit jobId={} userId={} productTenantId={} slotTenantId={} priority={} tables={} batchSize={} throttleMs={} resume={}",
                     jobId,
-                    tenantId,
+                    userId,
+                    TenantIds.normalizeOrDefault(productTenantId),
+                    slotTenantId,
                     priority,
                     tableCount,
                     batchSize,
@@ -97,11 +102,27 @@ public class MigrationTaskAdmissionService {
         }
         controller.enqueue(TaskAdmissionRequest.builder()
                 .taskId(jobId)
-                .tenantId(tenantId)
+                .tenantId(slotTenantId)
                 .priority(priority)
                 .build());
     }
 
+    /** @deprecated 使用 {@link #enqueue(long, String, String, TableMigrationBatchRequest, TaskConcurrencyController)} */
+    @Deprecated
+    public void enqueue(
+            long userId,
+            String jobId,
+            TableMigrationBatchRequest request,
+            TaskConcurrencyController controller) {
+        enqueue(userId, TenantIds.DEFAULT, jobId, request, controller);
+    }
+
+    static int toSlotTenantId(String productTenantId) {
+        return TenantConcurrencyKeys.toSlotKey(productTenantId);
+    }
+
+    /** @deprecated 历史按 userId 作为 slot；保留供旧测试对照。 */
+    @Deprecated
     static int toTenantId(long userId) {
         if (userId <= 0L || userId > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("userId out of task-concurrency tenant range: " + userId);

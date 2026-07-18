@@ -1,8 +1,12 @@
 package org.apache.datawise.backend.service;
 
 import org.apache.datawise.backend.common.UnauthorizedException;
+import org.apache.datawise.backend.config.TenancyProperties;
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
+import org.apache.datawise.backend.configstore.TenantStore;
+import org.apache.datawise.backend.configstore.FileTenantStore;
 import org.apache.datawise.backend.configstore.UserStore;
+import org.apache.datawise.backend.configstore.FileUserStore;
 import org.apache.datawise.backend.model.UserEntity;
 import org.apache.datawise.backend.security.UserContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,8 +32,10 @@ class UserAdminPolicyTest {
     @BeforeEach
     void setUp() {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(tempDir);
-        userStore = new UserStore(configDirectory, new ObjectMapper());
-        policy = new UserAdminPolicy(userStore, new UserAccessPolicy());
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        userStore = new FileUserStore(configDirectory, objectMapper);
+        TenantStore tenantStore = new FileTenantStore(configDirectory, objectMapper);
+        policy = new UserAdminPolicy(userStore, new UserAccessPolicy(), tenantStore, new TenancyProperties());
 
         UserEntity admin = user("admin", 1L);
         UserEntity demo = user("demo", 2L);

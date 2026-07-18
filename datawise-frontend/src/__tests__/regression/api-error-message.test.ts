@@ -26,12 +26,27 @@ describe('api-error-message', () => {
             resolveDisplayApiErrorMessage(new Error('ADMIN_REQUIRED'), translate),
             'tr:auth.adminRequired',
         )
+        assert.equal(
+            resolveDisplayApiErrorMessage(new Error('TENANT_LAST_ADMIN'), translate),
+            'tr:auth.errors.TENANT_LAST_ADMIN',
+        )
+        assert.equal(
+            resolveDisplayApiErrorMessage(new Error('ROLE_KEY_INVALID'), translate),
+            'tr:auth.errors.ROLE_KEY_INVALID',
+        )
     })
 
     it('falls back to raw message for unknown codes', () => {
         assert.equal(
             resolveDisplayApiErrorMessage(new Error('CONNECTION_ACCESS_DENIED'), translate),
             'CONNECTION_ACCESS_DENIED',
+        )
+    })
+
+    it('maps legacy unknown-role prefix', () => {
+        assert.equal(
+            resolveDisplayApiErrorMessage(new Error('unknown role: ops'), translate),
+            'tr:auth.errors.TENANT_ROLE_UNKNOWN',
         )
     })
 

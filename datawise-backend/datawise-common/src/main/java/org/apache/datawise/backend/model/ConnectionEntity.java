@@ -9,6 +9,9 @@ public class ConnectionEntity {
 
     private Long userId;
 
+    /** 所属租户；缺失时按 default 处理。 */
+    private String tenantId;
+
     private String groupId;
 
     private String name;
@@ -80,6 +83,14 @@ public class ConnectionEntity {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getGroupId() {

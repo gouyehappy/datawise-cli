@@ -16,6 +16,7 @@ public record TableMigrationBatchRequest(
         Integer throttleMs,
         Boolean truncateTarget,
         String jobId,
-        String resumeJobId
+        String resumeJobId,
+        String conflictStrategy
 ) {
 }

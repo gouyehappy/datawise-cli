@@ -9,6 +9,9 @@ public class ConnectionGroupEntity {
 
     private Long userId;
 
+    /** 所属租户；缺失时按 default 处理。 */
+    private String tenantId;
+
     private String label;
 
     private String parentId;
@@ -36,6 +39,14 @@ public class ConnectionGroupEntity {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getLabel() {

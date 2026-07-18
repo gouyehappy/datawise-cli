@@ -40,6 +40,7 @@ public final class MigrationRequestFingerprint {
                 String.valueOf(request.batchSize()),
                 String.valueOf(request.throttleMs()),
                 String.valueOf(request.truncateTarget()),
+                normalize(request.conflictStrategy()),
                 tables
         );
         return sha256Hex(payload);

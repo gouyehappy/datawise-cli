@@ -40,11 +40,20 @@ public class DatasourceController {
 
     @GetMapping("/market")
     public ApiResponse<Map<String, Object>> listConnectorMarket() {
-        return ApiResponse.ok(Map.of(
-                "connectors", datasourceCatalogService.listMarket(),
-                "loadedPluginJars", datasourceCatalogService.loadedPluginJarNames(),
-                "pluginLoadFailures", datasourceCatalogService.pluginLoadFailures()
-        ));
+        var manifest = datasourceCatalogService.pluginManifest().orElse(null);
+        Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("connectors", datasourceCatalogService.listMarket());
+        payload.put("loadedPluginJars", datasourceCatalogService.loadedPluginJarNames());
+        payload.put("pluginLoadFailures", datasourceCatalogService.pluginLoadFailures());
+        if (manifest != null) {
+            payload.put("manifest", Map.of(
+                    "schemaVersion", manifest.schemaVersion(),
+                    "updatedAt", manifest.updatedAt() != null ? manifest.updatedAt() : "",
+                    "channel", manifest.channel() != null ? manifest.channel() : "",
+                    "pluginCount", manifest.plugins().size()
+            ));
+        }
+        return ApiResponse.ok(payload);
     }
 
     @PostMapping("/drivers/resolve")

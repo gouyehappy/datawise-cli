@@ -36,6 +36,27 @@ datawise:
     secrets:
       # 启动时将 connections.xml / app.xml 中明文密钥批量加密
       migrate-on-startup: true
+  storage:
+    # file = JSON/XML under config/（默认）；jdbc = 身份元数据进库（用户/会话/租户/Token）
+    backend: file
+    datasource:
+      jdbc-url: jdbc:h2:mem:datawise_metadata;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+      username: sa
+      password: ""
+      driver-class-name: org.h2.Driver
+  tenancy:
+    # single = 本地/私有化隐式 default 租户；multi = SaaS 多租户
+    mode: multi
+    default-tenant-id: default
+    allow-tenant-create: false
+    # multi 时填写平台超管 userId；留空则回退为首个注册用户
+    platform-admin-user-ids: []
+    # 每租户连接数硬顶；0 = 不限制
+    max-connections-per-tenant: 0
+    # 是否开放公开注册（本地账号）
+    allow-registration: false
+    # 每租户每日 AI 调用上限；0 = 不限制
+    max-ai-calls-per-tenant-per-day: 0
   auth:
     session:
       # 登录 token 默认有效 1 小时；可在设置页覆盖 config/auth-session.json
@@ -67,6 +88,8 @@ datawise:
     plugins-dir: plugins
     # AppCDS 训练可设 false，避免把插件 ClassLoader 类打进 jsa 导致运行时刷屏
     load-plugins: true
+    # When true, reject plugin JARs whose SHA-256 does not match config/plugins/manifest.json
+    require-manifest-integrity: false
   query:
     # 服务端默认最大返回行数；0 表示不限制（客户端可在设置中进一步收紧）
     max-result-rows: 0

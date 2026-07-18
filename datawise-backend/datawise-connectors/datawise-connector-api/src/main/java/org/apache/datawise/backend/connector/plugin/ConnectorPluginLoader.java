@@ -7,6 +7,8 @@ import org.apache.datawise.backend.connector.spi.ConnectorPluginContext;
 import org.apache.datawise.backend.connector.spi.DataSourceConnectorProvider;
 import org.apache.datawise.backend.connector.spi.SqlExecutionHook;
 import org.apache.datawise.backend.domain.ConnectorPluginLoadFailure;
+import org.apache.datawise.backend.domain.ConnectorPluginManifest;
+import org.apache.datawise.backend.domain.ConnectorPluginManifestEntry;
 import org.apache.datawise.backend.common.support.ConfigDirectoryLocator;
 import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.slf4j.Logger;
@@ -27,7 +29,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
@@ -42,33 +47,70 @@ public class ConnectorPluginLoader {
 
     private final Path pluginsDir;
     private final boolean loadPlugins;
+    private final boolean requireManifestIntegrity;
     private final ClassLoader applicationClassLoader;
     private final List<LoadedPlugin> loadedPlugins = new ArrayList<>();
     private final List<SqlExecutionHook> loadedSqlExecutionHooks = new ArrayList<>();
     private final List<ConnectorPluginLoadFailure> failedPlugins = new ArrayList<>();
+    private volatile ConnectorPluginManifest cachedManifest;
 
     /** Programmatic / test construction (plugins enabled). */
     public ConnectorPluginLoader(String configDir, String pluginsDirName) throws IOException {
-        this(configDir, pluginsDirName, true);
+        this(configDir, pluginsDirName, true, false);
     }
 
     @Autowired
     public ConnectorPluginLoader(
             @Value("${datawise.config.dir:config}") String configDir,
             @Value("${datawise.connectors.plugins-dir:plugins}") String pluginsDirName,
-            @Value("${datawise.connectors.load-plugins:true}") boolean loadPlugins
+            @Value("${datawise.connectors.load-plugins:true}") boolean loadPlugins,
+            @Value("${datawise.connectors.require-manifest-integrity:false}") boolean requireManifestIntegrity
     ) throws IOException {
         Path configRoot = ConfigDirectoryLocator.resolve(configDir);
         String dirName = pluginsDirName != null && !pluginsDirName.isBlank() ? pluginsDirName.trim() : "plugins";
         this.pluginsDir = configRoot.resolve(dirName).toAbsolutePath().normalize();
         this.loadPlugins = loadPlugins;
+        this.requireManifestIntegrity = requireManifestIntegrity;
         this.applicationClassLoader = ConnectorPluginLoader.class.getClassLoader();
         Files.createDirectories(pluginsDir);
-        log.info("Connector plugins directory: {} (loadPlugins={})", pluginsDir, loadPlugins);
+        log.info(
+                "Connector plugins directory: {} (loadPlugins={}, requireManifestIntegrity={})",
+                pluginsDir,
+                loadPlugins,
+                requireManifestIntegrity
+        );
     }
 
     public Path pluginsDirectory() {
         return pluginsDir;
+    }
+
+    public Optional<ConnectorPluginManifest> manifest() {
+        ConnectorPluginManifest current = cachedManifest;
+        if (current != null) {
+            return Optional.of(current);
+        }
+        Optional<ConnectorPluginManifest> loaded = ConnectorPluginManifestSupport.readManifest(pluginsDir);
+        loaded.ifPresent(value -> cachedManifest = value);
+        return loaded;
+    }
+
+    /** Reloads {@code manifest.json} from disk (marketplace refresh). */
+    public Optional<ConnectorPluginManifest> reloadManifest() {
+        cachedManifest = null;
+        return manifest();
+    }
+
+    /** Maps connector id → JAR file name for plugins loaded from disk. */
+    public Map<String, String> loadedJarByConnectorId() {
+        Map<String, String> map = new LinkedHashMap<>();
+        for (LoadedPlugin plugin : loadedPlugins) {
+            String jarName = plugin.jarPath().getFileName().toString();
+            for (String connectorId : plugin.connectorIds()) {
+                map.putIfAbsent(connectorId, jarName);
+            }
+        }
+        return Map.copyOf(map);
     }
 
     public List<String> loadedPluginJarNames() {
@@ -93,6 +135,7 @@ public class ConnectorPluginLoader {
         closeLoadedPlugins();
         failedPlugins.clear();
         loadedSqlExecutionHooks.clear();
+        cachedManifest = null;
         List<DataSourceConnector> connectors = new ArrayList<>();
         ConnectorDialectContributions contributions = ConnectorDialectContributions.EMPTY;
         if (!loadPlugins) {
@@ -100,8 +143,9 @@ public class ConnectorPluginLoader {
             log.info("Connector plugin loading disabled (datawise.connectors.load-plugins=false)");
             return connectors;
         }
+        Optional<ConnectorPluginManifest> manifest = manifest();
         for (Path jarPath : listPluginJars()) {
-            contributions = loadJar(jarPath, context, connectors, contributions);
+            contributions = loadJar(jarPath, context, connectors, contributions, manifest);
         }
         contributionHolder.setContributions(contributions);
         if (!connectors.isEmpty()) {
@@ -127,9 +171,13 @@ public class ConnectorPluginLoader {
             Path jarPath,
             ConnectorPluginContext context,
             List<DataSourceConnector> connectors,
-            ConnectorDialectContributions accumulated
+            ConnectorDialectContributions accumulated,
+            Optional<ConnectorPluginManifest> manifest
     ) {
         String jarName = jarPath.getFileName().toString();
+        if (!verifyJarIntegrity(jarPath, jarName, manifest)) {
+            return accumulated;
+        }
         URLClassLoader pluginClassLoader = null;
         try {
             pluginClassLoader = new URLClassLoader(
@@ -180,9 +228,10 @@ public class ConnectorPluginLoader {
                 closeQuietly(pluginClassLoader);
                 return accumulated;
             }
+            List<String> connectorIds = jarConnectors.stream().map(DataSourceConnector::id).toList();
             connectors.addAll(jarConnectors);
             loadedSqlExecutionHooks.addAll(jarHooks);
-            loadedPlugins.add(new LoadedPlugin(jarPath, pluginClassLoader));
+            loadedPlugins.add(new LoadedPlugin(jarPath, pluginClassLoader, connectorIds));
             jarConnectors.forEach(connector ->
                     log.info("Registered connector plugin {} from {}", connector.id(), jarName));
             jarHooks.forEach(hook ->
@@ -194,6 +243,45 @@ public class ConnectorPluginLoader {
             ExceptionLogging.warn(log, "Failed to load connector plugin " + jarName, ex);
             recordFailure(jarName, ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
             return accumulated;
+        }
+    }
+
+    private boolean verifyJarIntegrity(
+            Path jarPath,
+            String jarName,
+            Optional<ConnectorPluginManifest> manifest
+    ) {
+        if (manifest.isEmpty()) {
+            return true;
+        }
+        Optional<ConnectorPluginManifestEntry> entry = ConnectorPluginManifestSupport.findByJar(manifest.get(), jarName);
+        if (entry.isEmpty()) {
+            return true;
+        }
+        String expectedSha = entry.get().sha256();
+        if (expectedSha == null || expectedSha.isBlank()) {
+            return true;
+        }
+        try {
+            if (ConnectorPluginManifestSupport.matchesSha256(jarPath, expectedSha)) {
+                log.info("Connector plugin {} SHA-256 verified against manifest", jarName);
+                return true;
+            }
+            String reason = "INTEGRITY_MISMATCH";
+            if (requireManifestIntegrity) {
+                log.error("Rejecting connector plugin {} due to SHA-256 mismatch with manifest", jarName);
+                recordFailure(jarName, reason);
+                return false;
+            }
+            log.warn("Connector plugin {} SHA-256 does not match manifest (continuing; set datawise.connectors.require-manifest-integrity=true to enforce)", jarName);
+            return true;
+        } catch (IOException ex) {
+            ExceptionLogging.warn(log, "Failed to verify connector plugin integrity " + jarName, ex);
+            if (requireManifestIntegrity) {
+                recordFailure(jarName, "INTEGRITY_CHECK_FAILED");
+                return false;
+            }
+            return true;
         }
     }
 
@@ -297,6 +385,6 @@ public class ConnectorPluginLoader {
         return false;
     }
 
-    private record LoadedPlugin(Path jarPath, URLClassLoader classLoader) {
+    private record LoadedPlugin(Path jarPath, URLClassLoader classLoader, List<String> connectorIds) {
     }
 }

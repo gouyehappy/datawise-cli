@@ -40,6 +40,8 @@ class TeamAuditServiceTest {
         assertEquals(1, logsB.size());
         assertEquals("terminal.pty.open", logsA.get(0).getAction());
         assertTrue(logsA.get(0).getDetail().contains("sessionId=s-1"));
+        assertEquals("default", logsA.get(0).getTenantId());
+        assertEquals("default", logsB.get(0).getTenantId());
     }
 
     @Test

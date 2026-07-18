@@ -22,6 +22,17 @@ export const teamsApi = {
         api.teams.updateSettings(teamId, requireInviteApproval),
     fetchAuditLogs: (teamId: string, query?: TeamAuditLogQuery) =>
         api.teams.fetchAuditLogs(teamId, query),
+    exportAuditLogs: (
+        teamId: string,
+        options: {
+            format: 'csv' | 'json'
+            actorUserId?: number
+            since?: string
+            until?: string
+            includeFullSql?: boolean
+            fileName?: string
+        },
+    ) => api.teams.exportAuditLogs(teamId, options),
     updateSharedConnections: (
         teamId: string,
         connectionIds: string[],

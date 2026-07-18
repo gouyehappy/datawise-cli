@@ -7,6 +7,7 @@ import type {SelectOption} from '@/core/components/select.types'
 import {DwIcon} from '@/core/icons'
 import MigrationWizardSteps from '@/features/workspace/components/migration/MigrationWizardSteps.vue'
 import VisualQueryCanvas from '@/features/workspace/components/VisualQueryCanvas.vue'
+import VisualQueryFieldBoard from '@/features/workspace/components/VisualQueryFieldBoard.vue'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {
     ensureDatabaseTablesLoaded,
@@ -16,7 +17,11 @@ import {
     buildVisualQuerySql,
     createEmptyVisualJoin,
     createEmptyVisualQueryState,
+    moveSelectedColumnKey,
+    removeSelectedColumnKey,
     suggestTableAlias,
+    upsertSelectedColumnKey,
+    visualColumnKey,
     type VisualJoinType,
     type VisualQueryBuilderState,
 } from '@/features/workspace/services/visual-query-builder.service'
@@ -32,6 +37,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:open': [value: boolean]
   apply: [sql: string, mode: 'replace' | 'insert']
+  'text-to-sql': [prompt: string]
 }>()
 
 const {t} = useI18n()
@@ -48,6 +54,7 @@ const selectedColumnKeys = ref<string[]>([])
 const loadingTables = ref(false)
 const loadingColumns = ref(false)
 const tableFilter = ref('')
+const textToSqlPrompt = ref('')
 
 const JOIN_TYPES: VisualJoinType[] = ['INNER', 'LEFT', 'RIGHT', 'CROSS']
 const MAX_JOINS = 8
@@ -234,6 +241,7 @@ function resetState() {
   fromColumns.value = []
   joinColumnsByIndex.value = {}
   tableFilter.value = ''
+  textToSqlPrompt.value = ''
   joinViewMode.value = 'canvas'
 }
 
@@ -336,21 +344,48 @@ function pickTable(table: string) {
 }
 
 function toggleColumn(alias: string, column: string) {
-  const key = `${alias}.${column}`
+  const key = visualColumnKey(alias, column)
   if (selectedColumnKeys.value.includes(key)) {
-    selectedColumnKeys.value = selectedColumnKeys.value.filter((item) => item !== key)
+    selectedColumnKeys.value = removeSelectedColumnKey(selectedColumnKeys.value, key)
   } else {
-    selectedColumnKeys.value = [...selectedColumnKeys.value, key]
+    selectedColumnKeys.value = upsertSelectedColumnKey(selectedColumnKeys.value, key)
   }
 }
 
 function isColumnSelected(alias: string, column: string) {
-  return selectedColumnKeys.value.includes(`${alias}.${column}`)
+  return selectedColumnKeys.value.includes(visualColumnKey(alias, column))
+}
+
+function onColumnDragStart(event: DragEvent, alias: string, column: string) {
+  const key = visualColumnKey(alias, column)
+  event.dataTransfer?.setData('text/vqb-column', key)
+  event.dataTransfer?.setData('text/plain', key)
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy'
+}
+
+function onFieldBoardReorder(fromIndex: number, toIndex: number) {
+  selectedColumnKeys.value = moveSelectedColumnKey(selectedColumnKeys.value, fromIndex, toIndex)
+}
+
+function onFieldBoardDropKey(key: string, toIndex: number) {
+  selectedColumnKeys.value = upsertSelectedColumnKey(selectedColumnKeys.value, key, toIndex)
+}
+
+function onFieldBoardRemove(key: string) {
+  selectedColumnKeys.value = removeSelectedColumnKey(selectedColumnKeys.value, key)
+}
+
+function submitTextToSql() {
+  const prompt = textToSqlPrompt.value.trim()
+  if (!prompt) return
+  emit('text-to-sql', prompt)
+  textToSqlPrompt.value = ''
+  close()
 }
 
 function selectAllFromColumns() {
   const alias = state.value.fromAlias || suggestTableAlias(state.value.fromTable)
-  const fromKeys = fromColumns.value.map((column) => `${alias}.${column}`)
+  const fromKeys = fromColumns.value.map((column) => visualColumnKey(alias, column))
   const keepJoin = selectedColumnKeys.value.filter((key) => !key.startsWith(`${alias}.`))
   selectedColumnKeys.value = [...fromKeys, ...keepJoin]
 }
@@ -359,7 +394,7 @@ function selectAllJoinColumns(index: number) {
   const join = state.value.joins[index]
   if (!join?.alias) return
   const joinKeys = (joinColumnsByIndex.value[index] ?? []).map(
-      (column) => `${join.alias}.${column}`,
+      (column) => visualColumnKey(join.alias, column),
   )
   const keepOthers = selectedColumnKeys.value.filter(
       (key) => !key.startsWith(`${join.alias}.`),
@@ -579,57 +614,72 @@ const scopeLabel = computed(() => {
               </div>
             </header>
 
-            <div class="vqb__col-group">
-              <div class="vqb__col-group-title">
-                {{ t('console.visualQuery.fromColumns', {table: state.fromTable, alias: state.fromAlias}) }}
-              </div>
-              <div class="vqb__columns" :class="{ 'is-loading': loadingColumns }">
-                <label
-                    v-for="column in fromColumns"
-                    :key="`from-${column}`"
-                    class="vqb__column"
-                    :class="{ 'is-checked': isColumnSelected(state.fromAlias, column) }"
-                >
-                  <input
-                      type="checkbox"
-                      :checked="isColumnSelected(state.fromAlias, column)"
-                      @change="toggleColumn(state.fromAlias, column)"
-                  >
-                  <span>{{ column }}</span>
-                </label>
-              </div>
-            </div>
-
-            <div
-                v-for="(join, index) in state.joins"
-                :key="`join-cols-${index}-${join.alias}`"
-                class="vqb__col-group"
-            >
-              <template v-if="join.table && join.alias">
-                <div class="vqb__col-group-title">
-                  <span>
-                    {{ t('console.visualQuery.joinColumns', {table: join.table, alias: join.alias}) }}
-                  </span>
-                  <button type="button" class="vqb__link" @click="selectAllJoinColumns(index)">
-                    {{ t('console.visualQuery.selectAll') }}
-                  </button>
-                </div>
-                <div class="vqb__columns">
-                  <label
-                      v-for="column in (joinColumnsByIndex[index] ?? [])"
-                      :key="`join-${index}-${column}`"
-                      class="vqb__column"
-                      :class="{ 'is-checked': isColumnSelected(join.alias, column) }"
-                  >
-                    <input
-                        type="checkbox"
-                        :checked="isColumnSelected(join.alias, column)"
-                        @change="toggleColumn(join.alias, column)"
+            <div class="vqb__columns-layout">
+              <div class="vqb__columns-source">
+                <div class="vqb__col-group">
+                  <div class="vqb__col-group-title">
+                    {{ t('console.visualQuery.fromColumns', {table: state.fromTable, alias: state.fromAlias}) }}
+                  </div>
+                  <div class="vqb__columns" :class="{ 'is-loading': loadingColumns }">
+                    <label
+                        v-for="column in fromColumns"
+                        :key="`from-${column}`"
+                        class="vqb__column"
+                        :class="{ 'is-checked': isColumnSelected(state.fromAlias, column) }"
+                        draggable="true"
+                        @dragstart="onColumnDragStart($event, state.fromAlias, column)"
                     >
-                    <span>{{ column }}</span>
-                  </label>
+                      <input
+                          type="checkbox"
+                          :checked="isColumnSelected(state.fromAlias, column)"
+                          @change="toggleColumn(state.fromAlias, column)"
+                      >
+                      <span>{{ column }}</span>
+                    </label>
+                  </div>
                 </div>
-              </template>
+
+                <div
+                    v-for="(join, index) in state.joins"
+                    :key="`join-cols-${index}-${join.alias}`"
+                    class="vqb__col-group"
+                >
+                  <template v-if="join.table && join.alias">
+                    <div class="vqb__col-group-title">
+                      <span>
+                        {{ t('console.visualQuery.joinColumns', {table: join.table, alias: join.alias}) }}
+                      </span>
+                      <button type="button" class="vqb__link" @click="selectAllJoinColumns(index)">
+                        {{ t('console.visualQuery.selectAll') }}
+                      </button>
+                    </div>
+                    <div class="vqb__columns">
+                      <label
+                          v-for="column in (joinColumnsByIndex[index] ?? [])"
+                          :key="`join-${index}-${column}`"
+                          class="vqb__column"
+                          :class="{ 'is-checked': isColumnSelected(join.alias, column) }"
+                          draggable="true"
+                          @dragstart="onColumnDragStart($event, join.alias, column)"
+                      >
+                        <input
+                            type="checkbox"
+                            :checked="isColumnSelected(join.alias, column)"
+                            @change="toggleColumn(join.alias, column)"
+                        >
+                        <span>{{ column }}</span>
+                      </label>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <VisualQueryFieldBoard
+                  :keys="selectedColumnKeys"
+                  @reorder="onFieldBoardReorder"
+                  @drop-key="onFieldBoardDropKey"
+                  @remove="onFieldBoardRemove"
+              />
             </div>
           </section>
 
@@ -823,6 +873,29 @@ const scopeLabel = computed(() => {
               <span v-if="canApply" class="modal-preview-section__meta">{{ t('console.visualQuery.livePreview') }}</span>
             </header>
             <pre class="modal-code-block modal-code-block--preview vqb__preview">{{ previewSql || t('console.visualQuery.previewEmpty') }}</pre>
+          </div>
+
+          <div class="modal-preview-section vqb__side-block vqb__side-block--text">
+            <header class="modal-preview-section__head">
+              <span>{{ t('console.visualQuery.textToSqlTitle') }}</span>
+            </header>
+            <p class="vqb__text-hint">{{ t('console.visualQuery.textToSqlHint') }}</p>
+            <textarea
+                v-model="textToSqlPrompt"
+                class="dw-input vqb__text-input"
+                rows="3"
+                :placeholder="t('console.visualQuery.textToSqlPlaceholder')"
+                @keydown.enter.exact.prevent="submitTextToSql"
+            />
+            <DwButton
+                variant="secondary"
+                type="button"
+                size="sm"
+                :disabled="!textToSqlPrompt.trim()"
+                @click="submitTextToSql"
+            >
+              {{ t('console.visualQuery.textToSqlSubmit') }}
+            </DwButton>
           </div>
         </aside>
       </div>
@@ -1034,6 +1107,20 @@ const scopeLabel = computed(() => {
   color: var(--dw-text-secondary);
 }
 
+.vqb__columns-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(200px, 0.9fr);
+  gap: var(--dw-space-4);
+  align-items: start;
+}
+
+.vqb__columns-source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-4);
+  min-width: 0;
+}
+
 .vqb__columns {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
@@ -1054,7 +1141,7 @@ const scopeLabel = computed(() => {
   border-radius: var(--dw-radius-xs);
   font-size: var(--dw-text-sm);
   color: var(--dw-text);
-  cursor: pointer;
+  cursor: grab;
 }
 
 .vqb__column.is-checked {
@@ -1194,6 +1281,25 @@ const scopeLabel = computed(() => {
   min-height: 0;
 }
 
+.vqb__side-block--text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+}
+
+.vqb__text-hint {
+  margin: 0;
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-muted);
+  line-height: var(--dw-leading);
+}
+
+.vqb__text-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
 .vqb__checklist {
   margin: 0;
   padding-left: var(--dw-space-5);
@@ -1226,6 +1332,10 @@ const scopeLabel = computed(() => {
 
 @media (max-width: 860px) {
   .vqb__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .vqb__columns-layout {
     grid-template-columns: 1fr;
   }
 

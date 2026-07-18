@@ -521,6 +521,37 @@
     font-family: var(--dw-font-mono);
 }
 
+.connector-card__version {
+    display: inline-block;
+    margin-top: var(--dw-space-1);
+    margin-left: var(--dw-space-2);
+    font-size: var(--dw-text-xs);
+    color: var(--dw-text-secondary);
+    font-family: var(--dw-font-mono);
+}
+
+.connector-card__integrity {
+    margin-top: var(--dw-space-2);
+    font-size: var(--dw-text-xs);
+    color: var(--dw-text-muted);
+}
+
+.connector-card__integrity--verified {
+    color: var(--dw-success);
+}
+
+.connector-card__integrity--mismatch {
+    color: var(--dw-danger);
+}
+
+.connector-card__integrity--missing {
+    color: var(--dw-warning);
+}
+
+.connector-card__integrity--unsigned {
+    color: var(--dw-text-secondary);
+}
+
 .connector-card__badge {
     flex-shrink: 0;
     padding: var(--dw-space-1) var(--dw-space-4);

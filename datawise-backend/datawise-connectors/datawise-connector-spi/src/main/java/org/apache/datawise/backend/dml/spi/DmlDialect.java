@@ -36,6 +36,24 @@ public interface DmlDialect {
             List<Map<String, Object>> rows
     );
 
+    /**
+     * Multi-row upsert by primary / unique key.
+     * {@code conflictStrategy}: {@code OVERWRITE}, {@code SKIP}, or {@code FAIL}.
+     * Default implementations throw unless the dialect overrides.
+     */
+    default String buildMultiUpsert(
+            String database,
+            String tableName,
+            List<Map<String, Object>> columns,
+            List<Map<String, Object>> rows,
+            List<String> keyColumns,
+            String conflictStrategy
+    ) {
+        throw new UnsupportedOperationException(
+                "Upsert is not supported by dialect " + dialectId()
+        );
+    }
+
     String buildUpdate(
             String database,
             String tableName,

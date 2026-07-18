@@ -54,6 +54,7 @@ export type PlatformCatalogFormPayload =
     expression: string
     description: string
     unit: string
+    owner: string
     upstreamMetrics: string
     changeNote: string
 }
@@ -103,6 +104,7 @@ export async function savePlatformCatalogItem(
                 expression: nextExpression,
                 description: payload.description.trim() || undefined,
                 unit: payload.unit.trim() || undefined,
+                owner: payload.owner.trim() || undefined,
                 upstreamMetrics: payload.upstreamMetrics
                     .split(',')
                     .map((item) => item.trim())

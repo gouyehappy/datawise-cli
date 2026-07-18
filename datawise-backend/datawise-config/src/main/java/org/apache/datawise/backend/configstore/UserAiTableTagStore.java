@@ -14,7 +14,7 @@ public class UserAiTableTagStore {
 
     private final ConfigDirectoryService configDirectory;
     private final ObjectMapper objectMapper;
-    private final ConcurrentHashMap<Long, JsonListFile<AiTableTagEntry>> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JsonListFile<AiTableTagEntry>> cache = new ConcurrentHashMap<>();
 
     public UserAiTableTagStore(ConfigDirectoryService configDirectory, ObjectMapper objectMapper) {
         this.configDirectory = configDirectory;
@@ -88,10 +88,10 @@ public class UserAiTableTagStore {
     }
 
     private JsonListFile<AiTableTagEntry> fileFor(long userId) {
-        return cache.computeIfAbsent(userId, uid -> new JsonListFile<>(
+        return cache.computeIfAbsent(TenantScopedConfigSupport.cacheKey(userId), ignored -> new JsonListFile<>(
                 configDirectory,
                 objectMapper,
-                ConfigPaths.userAiTableTags(uid),
+                TenantScopedConfigSupport.ensureUserTenantFile(configDirectory, userId, "ai-table-tags.json"),
                 new TypeReference<>() {
                 }
         ));

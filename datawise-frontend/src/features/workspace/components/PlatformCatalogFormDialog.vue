@@ -56,6 +56,7 @@ const semanticForm = reactive({
     expression: '',
     description: '',
     unit: '',
+    owner: '',
     upstreamMetrics: '',
     changeNote: '',
 })
@@ -79,6 +80,15 @@ const taskForm = reactive({
     queryId: '',
     payloadJson: '{}',
     enabled: true,
+    digest: false,
+    dqAssertion: 'empty_result',
+    dqExpected: '0',
+    dqColumn: '',
+    httpUrl: '',
+    httpMethod: 'POST',
+    httpBodyJson: '{}',
+    httpHeadersJson: '{}',
+    httpTimeoutMs: '10000',
 })
 const canvasOptions = ref<AnalysisCanvasSummary[]>([])
 const canvasOptionsLoading = ref(false)
@@ -126,17 +136,45 @@ const taskCanvasSelectOptions = computed<SelectOption[]>(() =>
 )
 
 const showTaskPayloadEditor = computed(() =>
-    props.feature === 'scheduled_tasks' && taskForm.type !== 'canvas',
+    props.feature === 'scheduled_tasks'
+    && taskForm.type !== 'canvas'
+    && taskForm.type !== 'data_quality'
+    && taskForm.type !== 'http_trigger',
 )
 
 const showSqlSourceFields = computed(() =>
     props.feature === 'scheduled_tasks' && taskForm.type === 'sql',
 )
 
+const showDataQualityFields = computed(() =>
+    props.feature === 'scheduled_tasks' && taskForm.type === 'data_quality',
+)
+
+const showHttpTriggerFields = computed(() =>
+    props.feature === 'scheduled_tasks' && taskForm.type === 'http_trigger',
+)
+
 const taskTypeOptions = computed<SelectOption[]>(() => [
     {value: 'sql', label: t('workspace.platformCatalog.form.taskType.sql')},
     {value: 'canvas', label: t('workspace.platformCatalog.form.taskType.canvas')},
     {value: 'schema_drift', label: t('workspace.platformCatalog.form.taskType.schema_drift')},
+    {value: 'data_quality', label: t('workspace.platformCatalog.form.taskType.data_quality')},
+    {value: 'http_trigger', label: t('workspace.platformCatalog.form.taskType.http_trigger')},
+])
+
+const httpMethodOptions = computed<SelectOption[]>(() => [
+    {value: 'POST', label: 'POST'},
+    {value: 'PUT', label: 'PUT'},
+    {value: 'PATCH', label: 'PATCH'},
+    {value: 'GET', label: 'GET'},
+])
+
+const dqAssertionOptions = computed<SelectOption[]>(() => [
+    {value: 'empty_result', label: t('workspace.platformCatalog.form.dqAssertion.empty_result')},
+    {value: 'row_count_eq', label: t('workspace.platformCatalog.form.dqAssertion.row_count_eq')},
+    {value: 'row_count_lte', label: t('workspace.platformCatalog.form.dqAssertion.row_count_lte')},
+    {value: 'scalar_eq', label: t('workspace.platformCatalog.form.dqAssertion.scalar_eq')},
+    {value: 'scalar_lte', label: t('workspace.platformCatalog.form.dqAssertion.scalar_lte')},
 ])
 
 const sqlSourceOptions = computed<SelectOption[]>(() => [
@@ -261,6 +299,12 @@ const canSave = computed(() => {
                 }
                 return Boolean(taskForm.sql.trim() || taskForm.payloadJson.trim())
             }
+            if (taskForm.type === 'data_quality') {
+                return Boolean(taskForm.sql.trim() && taskForm.dqAssertion.trim())
+            }
+            if (taskForm.type === 'http_trigger') {
+                return Boolean(taskForm.httpUrl.trim())
+            }
             return true
         default:
             return false
@@ -273,6 +317,7 @@ function resetForms() {
     semanticForm.expression = ''
     semanticForm.description = ''
     semanticForm.unit = ''
+    semanticForm.owner = ''
     semanticForm.upstreamMetrics = ''
     semanticForm.changeNote = ''
     canvasForm.title = ''
@@ -295,6 +340,15 @@ function resetForms() {
     taskForm.queryId = ''
     taskForm.payloadJson = '{}'
     taskForm.enabled = true
+    taskForm.digest = false
+    taskForm.dqAssertion = 'empty_result'
+    taskForm.dqExpected = '0'
+    taskForm.dqColumn = ''
+    taskForm.httpUrl = ''
+    taskForm.httpMethod = 'POST'
+    taskForm.httpBodyJson = '{}'
+    taskForm.httpHeadersJson = '{}'
+    taskForm.httpTimeoutMs = '10000'
     canvasOptions.value = []
     sqlFileOptions.value = []
     sharedQueryOptions.value = []
@@ -322,6 +376,7 @@ function applyScheduleDraft() {
             sqlFile: taskForm.sqlFile,
             teamId: taskForm.teamId,
             queryId: taskForm.queryId,
+            digest: taskForm.digest,
         })
     } catch {
         // keep defaults until user fills required fields
@@ -386,7 +441,10 @@ function buildPayload(): PlatformCatalogFormPayload | null {
         case 'scheduled_tasks': {
             let payloadJson = taskForm.payloadJson.trim() || undefined
             if (taskForm.type === 'canvas') {
-                payloadJson = JSON.stringify({canvasId: taskForm.canvasId.trim()})
+                payloadJson = JSON.stringify({
+                    canvasId: taskForm.canvasId.trim(),
+                    ...(taskForm.digest ? {digest: true} : {}),
+                })
             } else if (taskForm.type === 'sql') {
                 try {
                     payloadJson = buildScheduledSqlPayloadJson({
@@ -397,12 +455,63 @@ function buildPayload(): PlatformCatalogFormPayload | null {
                         sqlFile: taskForm.sqlFile,
                         teamId: taskForm.teamId,
                         queryId: taskForm.queryId,
+                        digest: taskForm.digest,
                     })
                 } catch (e) {
                     error.value = e instanceof Error
                         ? e.message
                         : t('workspace.platformCatalog.form.validation.required')
                     return null
+                }
+            } else if (taskForm.type === 'data_quality') {
+                payloadJson = JSON.stringify({
+                    connectionId: props.tab.connectionId ?? '',
+                    database: props.tab.database ?? '',
+                    sql: taskForm.sql.trim(),
+                    assertion: taskForm.dqAssertion.trim() || 'empty_result',
+                    expected: taskForm.dqExpected.trim() || '0',
+                    ...(taskForm.dqColumn.trim() ? {column: taskForm.dqColumn.trim()} : {}),
+                })
+            } else if (taskForm.type === 'http_trigger') {
+                let bodyJson: unknown = {}
+                let headers: Record<string, string> = {}
+                try {
+                    bodyJson = taskForm.httpBodyJson.trim()
+                        ? JSON.parse(taskForm.httpBodyJson.trim())
+                        : {}
+                } catch {
+                    error.value = t('workspace.platformCatalog.form.validation.httpBodyJson')
+                    return null
+                }
+                try {
+                    const parsed = taskForm.httpHeadersJson.trim()
+                        ? JSON.parse(taskForm.httpHeadersJson.trim())
+                        : {}
+                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                        headers = parsed as Record<string, string>
+                    } else {
+                        error.value = t('workspace.platformCatalog.form.validation.httpHeadersJson')
+                        return null
+                    }
+                } catch {
+                    error.value = t('workspace.platformCatalog.form.validation.httpHeadersJson')
+                    return null
+                }
+                const timeoutMs = Number.parseInt(taskForm.httpTimeoutMs.trim() || '10000', 10)
+                payloadJson = JSON.stringify({
+                    url: taskForm.httpUrl.trim(),
+                    method: taskForm.httpMethod.trim() || 'POST',
+                    headers,
+                    bodyJson,
+                    timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
+                })
+            } else if (taskForm.digest && payloadJson) {
+                try {
+                    const parsed = JSON.parse(payloadJson) as Record<string, unknown>
+                    parsed.digest = true
+                    payloadJson = JSON.stringify(parsed)
+                } catch {
+                    // keep raw payloadJson
                 }
             }
             return {
@@ -491,6 +600,17 @@ async function submit() {
             <FormField :label="t('platform.metrics.unit')">
               <template #default="{ id }">
                 <input :id="id" v-model="semanticForm.unit" class="dw-input" type="text">
+              </template>
+            </FormField>
+            <FormField :label="t('platform.metrics.owner')">
+              <template #default="{ id }">
+                <input
+                    :id="id"
+                    v-model="semanticForm.owner"
+                    class="dw-input"
+                    type="text"
+                    :placeholder="t('workspace.platformCatalog.form.hint.owner')"
+                >
               </template>
             </FormField>
           </div>
@@ -692,6 +812,14 @@ async function submit() {
         </fieldset>
 
         <SettingsSwitch v-model="taskForm.enabled" :label="t('platform.common.enabled')"/>
+        <SettingsSwitch
+            v-if="taskForm.type === 'sql' || taskForm.type === 'canvas'"
+            v-model="taskForm.digest"
+            :label="t('platform.tasks.digest')"
+        />
+        <p v-if="taskForm.type === 'sql' || taskForm.type === 'canvas'" class="modal-hint">
+          {{ t('platform.tasks.digestHint') }}
+        </p>
 
         <fieldset v-if="taskForm.type === 'canvas'" class="modal-fieldset">
           <legend>{{ t('workspace.platformCatalog.form.section.target') }}</legend>
@@ -708,6 +836,114 @@ async function submit() {
           <p v-if="!canvasOptionsLoading && !taskCanvasSelectOptions.length" class="modal-hint">
             {{ t('platform.canvas.empty') }}
           </p>
+        </fieldset>
+
+        <fieldset v-if="showDataQualityFields" class="modal-fieldset">
+          <legend>{{ t('workspace.platformCatalog.form.section.dataQuality') }}</legend>
+          <p class="modal-hint">{{ t('workspace.platformCatalog.form.hint.dataQuality') }}</p>
+          <FormField :label="t('workspace.platformCatalog.form.sqlLabel')">
+            <template #default="{ id }">
+              <textarea
+                  :id="id"
+                  v-model="taskForm.sql"
+                  class="modal-textarea modal-textarea--mono"
+                  rows="5"
+                  spellcheck="false"
+                  :placeholder="t('workspace.platformCatalog.form.hint.dqSql')"
+              />
+            </template>
+          </FormField>
+          <div class="modal-form-grid">
+            <label class="modal-field">
+              <span>{{ t('workspace.platformCatalog.form.dqAssertionLabel') }}</span>
+              <DwSelect v-model="taskForm.dqAssertion" size="sm" :options="dqAssertionOptions"/>
+            </label>
+            <FormField :label="t('workspace.platformCatalog.form.dqExpectedLabel')">
+              <template #default="{ id }">
+                <input
+                    :id="id"
+                    v-model="taskForm.dqExpected"
+                    class="dw-input modal-input--mono"
+                    type="text"
+                    :disabled="taskForm.dqAssertion === 'empty_result'"
+                >
+              </template>
+            </FormField>
+          </div>
+          <FormField
+              v-if="taskForm.dqAssertion === 'scalar_eq' || taskForm.dqAssertion === 'scalar_lte'"
+              :label="t('workspace.platformCatalog.form.dqColumnLabel')"
+          >
+            <template #default="{ id }">
+              <input
+                  :id="id"
+                  v-model="taskForm.dqColumn"
+                  class="dw-input"
+                  type="text"
+                  :placeholder="t('workspace.platformCatalog.form.hint.dqColumn')"
+              >
+            </template>
+          </FormField>
+        </fieldset>
+
+        <fieldset v-if="showHttpTriggerFields" class="modal-fieldset">
+          <legend>{{ t('workspace.platformCatalog.form.section.httpTrigger') }}</legend>
+          <p class="modal-hint">{{ t('workspace.platformCatalog.form.hint.httpTrigger') }}</p>
+          <FormField :label="t('workspace.platformCatalog.form.httpUrlLabel')">
+            <template #default="{ id }">
+              <input
+                  :id="id"
+                  v-model="taskForm.httpUrl"
+                  class="dw-input modal-input--mono"
+                  type="url"
+                  :placeholder="t('workspace.platformCatalog.form.hint.httpUrl')"
+              >
+            </template>
+          </FormField>
+          <div class="modal-form-grid">
+            <label class="modal-field">
+              <span>{{ t('workspace.platformCatalog.form.httpMethodLabel') }}</span>
+              <DwSelect v-model="taskForm.httpMethod" size="sm" :options="httpMethodOptions"/>
+            </label>
+            <FormField :label="t('workspace.platformCatalog.form.httpTimeoutLabel')">
+              <template #default="{ id }">
+                <input
+                    :id="id"
+                    v-model="taskForm.httpTimeoutMs"
+                    class="dw-input modal-input--mono"
+                    type="text"
+                    inputmode="numeric"
+                >
+              </template>
+            </FormField>
+          </div>
+          <FormField :label="t('workspace.platformCatalog.form.httpHeadersLabel')">
+            <template #default="{ id }">
+              <textarea
+                  :id="id"
+                  v-model="taskForm.httpHeadersJson"
+                  class="modal-textarea modal-textarea--mono"
+                  rows="3"
+                  spellcheck="false"
+                  :placeholder="t('workspace.platformCatalog.form.hint.httpHeaders')"
+              />
+            </template>
+          </FormField>
+          <FormField
+              v-if="taskForm.httpMethod !== 'GET'"
+              :label="t('workspace.platformCatalog.form.httpBodyLabel')"
+          >
+            <template #default="{ id }">
+              <textarea
+                  :id="id"
+                  v-model="taskForm.httpBodyJson"
+                  class="modal-textarea modal-textarea--mono"
+                  rows="4"
+                  spellcheck="false"
+                  :placeholder="t('workspace.platformCatalog.form.hint.httpBody')"
+              />
+            </template>
+          </FormField>
         </fieldset>
 
         <fieldset v-if="showSqlSourceFields" class="modal-fieldset">

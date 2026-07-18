@@ -1,8 +1,8 @@
 export default {
     title: 'Command palette',
-    placeholder: 'Navigation, objects, SQL… (> commands · # knowledge)',
+    placeholder: 'Navigation, objects, SQL… (> commands · # knowledge · org discovery from 2+ chars)',
     empty: 'No matching navigation, objects, knowledge entries, or commands',
-    noIndexedObjects: 'No searchable objects in the explorer tree yet. Expand a connection to load schema.',
+    noIndexedObjects: 'No searchable objects in the explorer tree yet. Expand a connection to load schema, or type to search the org schema cache and metrics.',
     commandModeHint: 'Command mode: pick an action below',
     knowledgeModeHint: 'Knowledge mode: open SQL in console or copy content',
     commandLabel: 'Command',
@@ -14,5 +14,7 @@ export default {
         column: 'Column',
         procedure: 'Procedure',
         function: 'Function',
+        metric: 'Metric',
     },
+    discoveryBadge: 'org cache',
 }
