@@ -37,7 +37,7 @@
 |---|------|------|------|------------------|
 | G1 | SSO（OIDC / SAML / LDAP） | done（OIDC） | OIDC Authorization Code + PKCE 已落地；SAML/LDAP 仍缺 | 中大型客户过不了安全评审 |
 | G2 | 企业 IdP / 组织同步 | partial | OIDC 组 claim → 租户角色同步 + 缺组时停用 membership / 吊销会话（Settings → Integrations）。缺完整 SCIM / 组织树 / LDAP | 账号生命周期不可运营 |
-| G3 | 外发通知通道 | done（Webhook+飞书/钉钉） | 通用 Webhook + HMAC；飞书/钉钉机器人通道（`channel=feishu|dingtalk`，含官方签名）；邮件仍缺 | 审批、漂移、定时失败停在应用内，形不成运维闭环 |
+| G3 | 外发通知通道 | done（Webhook+飞书/钉钉/邮件） | 通用 Webhook + HMAC；飞书/钉钉机器人；**邮件** `channel=email`（HTTP 邮件网关 / `mailto:` + `DATAWISE_MAIL_WEBHOOK_URL`）。原生 SMTP 客户端仍缺 | 审批、漂移、定时失败可外发闭环 |
 | G4 | 合规审计导出 | done（导出+Webhook） | 服务端 CSV/JSON 导出 + `audit.appended`；完整 SIEM/哈希链仍缺 | 「可证明合规」不足 |
 | G5 | 集中密钥（Vault / KMS） | partial | 主密钥可来自 `DATAWISE_MASTER_KEY`；连接字段支持 `dwsecret:env:` / `dwsecret:file:` / **`dwsecret:vault:path#field`**（Vault KV v2，`VAULT_ADDR`/`VAULT_TOKEN`）；Settings 密钥中心。缺 AWS/Azure KMS | 多机 / 集中部署故事弱 |
 | G6 | Mac / Linux 正式桌面包 | partial | Windows NSIS/便携已稳；macOS Apple Silicon：`dist:desktop:mac` + electron-builder DMG/zip + [DESKTOP_MAC.md](./DESKTOP_MAC.md)；缺签名/公证与 CI 产物；Linux AppImage 脚手架 | 研发侧 macOS 用户门槛高 |

@@ -27,5 +27,20 @@
     ],
     "timeoutMs": 5000,
     "includeSql": false
+  },
+  {
+    "id": "hook-email-example",
+    "name": "Ops email via mail gateway",
+    "enabled": false,
+    "channel": "email",
+    "url": "mailto:ops@example.com",
+    "secret": "",
+    "eventTypes": [
+      "scheduled_task.failed",
+      "prod.approval.pending",
+      "data_quality.failed"
+    ],
+    "timeoutMs": 5000,
+    "includeSql": false
   }
 ]

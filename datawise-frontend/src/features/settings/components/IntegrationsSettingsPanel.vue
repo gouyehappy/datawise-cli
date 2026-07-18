@@ -62,6 +62,7 @@ const channelOptions = computed<SelectOption[]>(() => [
   {value: 'webhook', label: t('settings.integrations.channel.webhook')},
   {value: 'feishu', label: t('settings.integrations.channel.feishu')},
   {value: 'dingtalk', label: t('settings.integrations.channel.dingtalk')},
+  {value: 'email', label: t('settings.integrations.channel.email')},
   {value: 'github_issue', label: t('settings.integrations.channel.github_issue')},
   {value: 'gitlab_issue', label: t('settings.integrations.channel.gitlab_issue')},
 ])
@@ -78,6 +79,8 @@ function urlPlaceholder() {
       return 'https://open.feishu.cn/open-apis/bot/v2/hook/…'
     case 'dingtalk':
       return 'https://oapi.dingtalk.com/robot/send?access_token=…'
+    case 'email':
+      return 'mailto:ops@example.com  or  https://mail-gateway/send'
     case 'github_issue':
       return 'https://api.github.com/repos/{owner}/{repo}/issues'
     case 'gitlab_issue':
@@ -95,6 +98,8 @@ function secretPlaceholder() {
     case 'feishu':
     case 'dingtalk':
       return t('settings.integrations.botSecretPlaceholder')
+    case 'email':
+      return t('settings.integrations.emailSecretPlaceholder')
     default:
       return t('settings.integrations.secretPlaceholder')
   }

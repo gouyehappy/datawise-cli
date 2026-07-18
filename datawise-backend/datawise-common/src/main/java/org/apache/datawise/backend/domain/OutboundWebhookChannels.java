@@ -6,6 +6,13 @@ public final class OutboundWebhookChannels {
     public static final String WEBHOOK = "webhook";
     public static final String FEISHU = "feishu";
     public static final String DINGTALK = "dingtalk";
+    /**
+     * Email via HTTP mail gateway.
+     * <p>
+     * URL may be {@code mailto:ops@acme.com} / bare address (posts to {@code DATAWISE_MAIL_WEBHOOK_URL}),
+     * or an {@code http(s)} gateway URL with recipient in secret / {@code data.emailTo}.
+     */
+    public static final String EMAIL = "email";
     /** Create a GitHub Issue via Issues API (Insight / DQ / task failures → ticket). */
     public static final String GITHUB_ISSUE = "github_issue";
     /** Create a GitLab Issue via Issues API. */
@@ -22,6 +29,7 @@ public final class OutboundWebhookChannels {
         return switch (value) {
             case FEISHU, "lark" -> FEISHU;
             case DINGTALK, "ding" -> DINGTALK;
+            case EMAIL, "mail", "smtp" -> EMAIL;
             case GITHUB_ISSUE, "github", "gh_issue" -> GITHUB_ISSUE;
             case GITLAB_ISSUE, "gitlab", "gl_issue" -> GITLAB_ISSUE;
             case WEBHOOK, "generic", "http" -> WEBHOOK;

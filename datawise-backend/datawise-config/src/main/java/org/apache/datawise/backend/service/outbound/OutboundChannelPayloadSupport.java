@@ -5,20 +5,31 @@ import org.apache.datawise.backend.domain.OutboundWebhookChannels;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
- * Builds channel-specific HTTP bodies (generic webhook, Feishu, DingTalk, GitHub/GitLab issues).
+ * Builds channel-specific HTTP bodies (generic webhook, Feishu, DingTalk, email gateway, GitHub/GitLab issues).
  */
 final class OutboundChannelPayloadSupport {
 
     private static final int MAX_ISSUE_TITLE = 240;
+    static final String MAIL_WEBHOOK_ENV = "DATAWISE_MAIL_WEBHOOK_URL";
+
+    private static volatile Function<String, String> envLookup = System::getenv;
 
     private OutboundChannelPayloadSupport() {
+    }
+
+    /** Package-visible for tests. */
+    static void setEnvLookupForTests(Function<String, String> lookup) {
+        envLookup = lookup != null ? lookup : System::getenv;
     }
 
     static PreparedRequest prepare(
@@ -32,6 +43,7 @@ final class OutboundChannelPayloadSupport {
         return switch (normalized) {
             case OutboundWebhookChannels.FEISHU -> prepareFeishu(url, secret, event);
             case OutboundWebhookChannels.DINGTALK -> prepareDingtalk(url, secret, event);
+            case OutboundWebhookChannels.EMAIL -> prepareEmail(url, secret, event);
             case OutboundWebhookChannels.GITHUB_ISSUE -> prepareGithubIssue(url, secret, event);
             case OutboundWebhookChannels.GITLAB_ISSUE -> prepareGitlabIssue(url, secret, event);
             default -> PreparedRequest.generic(url, genericPayload);
@@ -70,6 +82,142 @@ final class OutboundChannelPayloadSupport {
             signedUrl = appendQuery(signedUrl, "sign", sign);
         }
         return PreparedRequest.of(signedUrl, body, false, Map.of());
+    }
+
+    private static PreparedRequest prepareEmail(String url, String secret, OutboundEvent event) {
+        EmailTarget target = resolveEmailTarget(url, secret, event);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("to", target.to());
+        body.put("subject", issueTitle(event));
+        body.put("text", formatPlainText(event));
+        body.put("source", "datawise");
+        if (event.type() != null && !event.type().isBlank()) {
+            body.put("eventType", event.type());
+        }
+        if (event.id() != null && !event.id().isBlank()) {
+            body.put("deliveryId", event.id());
+        }
+        Map<String, String> headers = new LinkedHashMap<>();
+        if (target.apiKey() != null && !target.apiKey().isBlank()) {
+            headers.put("Authorization", "Bearer " + target.apiKey());
+        }
+        return PreparedRequest.of(target.postUrl(), body, false, headers);
+    }
+
+    static EmailTarget resolveEmailTarget(String url, String secret, OutboundEvent event) {
+        String trimmed = url != null ? url.trim() : "";
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("email channel requires a url (mailto:, recipient, or http gateway)");
+        }
+        String lower = trimmed.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("mailto:")) {
+            String to = trimmed.substring("mailto:".length()).split("[?&]", 2)[0].trim();
+            return new EmailTarget(requireMailWebhookUrl(), requireRecipient(to), apiKeyIfPresent(secret));
+        }
+        if (looksLikeEmail(trimmed) && !lower.startsWith("http://") && !lower.startsWith("https://")) {
+            return new EmailTarget(requireMailWebhookUrl(), trimmed, apiKeyIfPresent(secret));
+        }
+        if (lower.startsWith("http://") || lower.startsWith("https://")) {
+            String to = firstNonBlank(
+                    emailFromSecret(secret),
+                    emailFromEvent(event),
+                    queryParam(trimmed, "to")
+            );
+            return new EmailTarget(trimmed, requireRecipient(to), apiKeyIfNotEmail(secret));
+        }
+        throw new IllegalArgumentException(
+                "email channel url must be mailto:addr, a recipient address, or an http(s) mail gateway"
+        );
+    }
+
+    private static String requireMailWebhookUrl() {
+        String gateway = envLookup.apply(MAIL_WEBHOOK_ENV);
+        if (gateway == null || gateway.isBlank()) {
+            throw new IllegalArgumentException(
+                    "email channel with mailto:/address URL requires " + MAIL_WEBHOOK_ENV
+                            + " (HTTP mail gateway that accepts JSON {to,subject,text})"
+            );
+        }
+        String trimmed = gateway.trim();
+        String lower = trimmed.toLowerCase(Locale.ROOT);
+        if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+            throw new IllegalArgumentException(MAIL_WEBHOOK_ENV + " must be an http(s) URL");
+        }
+        return trimmed;
+    }
+
+    private static String requireRecipient(String to) {
+        if (to == null || to.isBlank() || !looksLikeEmail(to)) {
+            throw new IllegalArgumentException(
+                    "email channel requires a recipient (mailto:, bare address, secret=to@…, or data.emailTo)"
+            );
+        }
+        return to.trim();
+    }
+
+    private static boolean looksLikeEmail(String value) {
+        if (value == null) {
+            return false;
+        }
+        String trimmed = value.trim();
+        int at = trimmed.indexOf('@');
+        return at > 0 && at < trimmed.length() - 1 && !trimmed.contains(" ") && !trimmed.contains("/");
+    }
+
+    private static String emailFromSecret(String secret) {
+        if (secret != null && looksLikeEmail(secret)) {
+            return secret.trim();
+        }
+        return null;
+    }
+
+    private static String apiKeyIfPresent(String secret) {
+        if (secret == null || secret.isBlank() || looksLikeEmail(secret)) {
+            return null;
+        }
+        return secret.trim();
+    }
+
+    private static String apiKeyIfNotEmail(String secret) {
+        return apiKeyIfPresent(secret);
+    }
+
+    private static String emailFromEvent(OutboundEvent event) {
+        if (event == null || event.data() == null) {
+            return null;
+        }
+        Object value = event.data().get("emailTo");
+        if (value == null) {
+            value = event.data().get("to");
+        }
+        return value != null ? String.valueOf(value).trim() : null;
+    }
+
+    private static String queryParam(String url, String key) {
+        int q = url.indexOf('?');
+        if (q < 0 || q >= url.length() - 1) {
+            return null;
+        }
+        String query = url.substring(q + 1);
+        for (String part : query.split("&")) {
+            String[] kv = part.split("=", 2);
+            if (kv.length == 2 && key.equalsIgnoreCase(kv[0].trim())) {
+                return URLDecoder.decode(kv[1].trim(), StandardCharsets.UTF_8);
+            }
+        }
+        return null;
+    }
+
+    private static String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 
     private static PreparedRequest prepareGithubIssue(String url, String secret, OutboundEvent event) {
@@ -238,6 +386,9 @@ final class OutboundChannelPayloadSupport {
             return url + "&" + encodedKey + "=" + encodedValue;
         }
         return url + "?" + encodedKey + "=" + encodedValue;
+    }
+
+    record EmailTarget(String postUrl, String to, String apiKey) {
     }
 
     record PreparedRequest(

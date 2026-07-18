@@ -9,6 +9,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OutboundChannelPayloadSupportTest {
@@ -125,5 +126,78 @@ class OutboundChannelPayloadSupportTest {
         );
         assertEquals("glpat-x", prepared.extraHeaders().get("PRIVATE-TOKEN"));
         assertTrue(prepared.body().containsKey("description"));
+    }
+
+    @Test
+    void emailChannelPostsJsonToHttpGateway() {
+        OutboundEvent event = new OutboundEvent(
+                "evt-5",
+                "scheduled_task.failed",
+                Instant.now(),
+                "Task failed",
+                "boom",
+                Map.of("name", "nightly")
+        );
+        var prepared = OutboundChannelPayloadSupport.prepare(
+                "email",
+                "https://mail.example/send",
+                "ops@acme.com",
+                event,
+                Map.of()
+        );
+        assertFalse(prepared.applyDataWiseSignature());
+        assertEquals("https://mail.example/send", prepared.url());
+        assertEquals("ops@acme.com", prepared.body().get("to"));
+        assertEquals("Task failed: nightly", prepared.body().get("subject"));
+        assertTrue(String.valueOf(prepared.body().get("text")).contains("boom"));
+    }
+
+    @Test
+    void emailMailtoUsesConfiguredGateway() {
+        OutboundChannelPayloadSupport.setEnvLookupForTests(Map.of(
+                OutboundChannelPayloadSupport.MAIL_WEBHOOK_ENV,
+                "https://hooks.example/mail"
+        )::get);
+        try {
+            OutboundEvent event = new OutboundEvent(
+                    "evt-6",
+                    "prod.approval.pending",
+                    Instant.now(),
+                    "Approval needed",
+                    "DDL",
+                    Map.of()
+            );
+            var prepared = OutboundChannelPayloadSupport.prepare(
+                    "email",
+                    "mailto:oncall@acme.com",
+                    "mail-api-key",
+                    event,
+                    Map.of()
+            );
+            assertEquals("https://hooks.example/mail", prepared.url());
+            assertEquals("oncall@acme.com", prepared.body().get("to"));
+            assertEquals("Bearer mail-api-key", prepared.extraHeaders().get("Authorization"));
+        } finally {
+            OutboundChannelPayloadSupport.setEnvLookupForTests(null);
+        }
+    }
+
+    @Test
+    void emailMailtoRequiresGatewayEnv() {
+        OutboundChannelPayloadSupport.setEnvLookupForTests(key -> null);
+        try {
+            OutboundEvent event = new OutboundEvent("evt-7", "outbound.test", Instant.now(), "t", "b", Map.of());
+            assertThrows(IllegalArgumentException.class, () ->
+                    OutboundChannelPayloadSupport.prepare(
+                            "email",
+                            "mailto:ops@acme.com",
+                            null,
+                            event,
+                            Map.of()
+                    )
+            );
+        } finally {
+            OutboundChannelPayloadSupport.setEnvLookupForTests(null);
+        }
     }
 }
