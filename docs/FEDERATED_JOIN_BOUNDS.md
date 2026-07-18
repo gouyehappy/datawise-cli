@@ -17,10 +17,10 @@ Constants live in `FederatedJoinLimits` (`datawise-database`).
 
 When the federated SQL has an outer `WHERE`:
 
-1. Conjuncts that reference **one** table alias only (`o.status = 'active'`, including single-alias **`OR`**, **`IN` / `NOT IN`**, **`IS [NOT] NULL`**, and bare **`NOT`**) are rewritten into that source subquery (`SqlTransformOps.appendWhere`), stripping the alias prefix.
-2. Cross-alias conjuncts (`o.user_id = u.id`) stay as a **residual** filter applied in memory after the join (simple comparisons: `= != <> < <= > >=`, plus `IN` / `NOT IN` with literal lists, plus `IS [NOT] NULL`, plus bare `NOT` over those atoms / groups).
-3. Residual filters also support **top-level OR** (and parenthesized OR groups) of those atoms, e.g. `o.status IN ('a','b') OR u.region = 'CN'` or `o.deleted_at IS NULL OR u.region = 'CN'`. Mixed-alias OR is **not** pushed into source SQL (stays residual).
-4. Unsupported residual forms (functions, column refs inside `IN` lists, nested boolean beyond AND of OR-groups / NOT) fail with a clear error — push those filters into the source subqueries instead.
+1. Conjuncts that reference **one** table alias only (`o.status = 'active'`, including single-alias **`OR`**, **`IN` / `NOT IN`**, **`IS [NOT] NULL`**, **`[NOT] LIKE`**, and bare **`NOT`**) are rewritten into that source subquery (`SqlTransformOps.appendWhere`), stripping the alias prefix.
+2. Cross-alias conjuncts (`o.user_id = u.id`) stay as a **residual** filter applied in memory after the join (simple comparisons: `= != <> < <= > >=`, plus `IN` / `NOT IN` with literal lists, plus `IS [NOT] NULL`, plus `[NOT] LIKE` with a string-literal pattern (`%` / `_`), plus bare `NOT` over those atoms / groups).
+3. Residual filters also support **top-level OR** (and parenthesized OR groups) of those atoms, e.g. `o.name LIKE 'acme%' OR u.region = 'CN'`. Mixed-alias OR is **not** pushed into source SQL (stays residual).
+4. Unsupported residual forms (SQL functions such as `UPPER(...)`, column refs inside `IN` lists, nested boolean beyond AND of OR-groups / NOT) fail with a clear error — push those filters into the source subqueries instead.
 
 Parser also peels trailing `WHERE` / `GROUP BY` / `ORDER BY` / `HAVING` / `LIMIT` off the JOIN chain so `ON` is not polluted by outer clauses.
 
@@ -41,7 +41,7 @@ When a source hits `maxRows` or the join stops early at the output cap, `Execute
 ## Practical guidance
 
 1. Prefer `ON alias.col = other.col` (equality + `AND` only).
-2. Prefer outer `WHERE alias.col = …` (or single-alias `OR` / `IS NULL`) for single-source filters (auto-pushed) or put filters inside each `(subquery) @alias`.
+2. Prefer outer `WHERE alias.col = …` (or single-alias `OR` / `IS NULL` / `LIKE`) for single-source filters (auto-pushed) or put filters inside each `(subquery) @alias`.
 3. Do not rely on federated JOIN for large fact×fact merges — use a warehouse, ETL, or same-connection SQL instead.
 
 ## Related code

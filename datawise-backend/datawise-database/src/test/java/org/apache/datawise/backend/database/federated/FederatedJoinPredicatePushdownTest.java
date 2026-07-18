@@ -246,6 +246,57 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsLikeAndNotLike() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.name", "alpha", "u.region", "CN"),
+                Map.of("o.id", 2, "o.name", "beta", "u.region", "US"),
+                Map.of("o.id", 3, "o.name", "alpine", "u.region", "CN")
+        );
+        List<Map<String, Object>> like = FederatedJoinResidualFilter.apply(rows, "o.name LIKE 'al%'");
+        assertEquals(2, like.size());
+        assertEquals(1, like.get(0).get("o.id"));
+        assertEquals(3, like.get(1).get("o.id"));
+
+        List<Map<String, Object>> notLike = FederatedJoinResidualFilter.apply(rows, "o.name NOT LIKE 'al%'");
+        assertEquals(1, notLike.size());
+        assertEquals(2, notLike.get(0).get("o.id"));
+
+        List<Map<String, Object>> mixed = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.name LIKE 'a_p%' OR u.region = 'US'"
+        );
+        assertEquals(3, mixed.size());
+    }
+
+    @Test
+    void singleAliasLikeIsPushedIntoSourceSubquery() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, name FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name, region FROM users", "o.user_id = u.id")
+                ),
+                "o.name LIKE 'acme%' AND u.region = 'CN'"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        String ordersSql = result.plan().steps().get(0).subQuery().toUpperCase();
+        assertTrue(ordersSql.contains("LIKE"));
+        assertTrue(ordersSql.contains("ACME%"));
+        assertTrue(result.plan().steps().get(1).subQuery().toUpperCase().contains("REGION"));
+        assertNull(result.residualWhere());
+    }
+
+    @Test
+    void likePatternToRegexEscapesRegexMetacharacters() {
+        assertTrue(FederatedJoinResidualFilter.likeMatches("a.b", "a.b"));
+        assertFalse(FederatedJoinResidualFilter.likeMatches("axb", "a.b"));
+        assertTrue(FederatedJoinResidualFilter.likeMatches("axb", "a_b"));
+        assertTrue(FederatedJoinResidualFilter.likeMatches("hello", "%ell%"));
+    }
+
+    @Test
     void singleAliasNotIsPushedIntoSourceSubquery() {
         FederatedJoinPlan plan = new FederatedJoinPlan(
                 List.of("o.id", "u.name"),

@@ -11,7 +11,8 @@ import java.util.Map;
  * atom or parenthesized group
  * ({@code NOT o.status = 'closed'}, {@code NOT (o.a = 1 OR u.b = 2)}).
  * Each atom is a simple comparison ({@code = != <> < <= > >=}),
- * {@code alias.col IS [NOT] NULL}, or
+ * {@code alias.col IS [NOT] NULL},
+ * {@code alias.col [NOT] LIKE 'pattern'}, or
  * {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
  */
 final class FederatedJoinResidualFilter {
@@ -61,16 +62,99 @@ final class FederatedJoinResidualFilter {
             }
             return inPredicate.negated() != contained;
         }
+        LikePredicate likePredicate = parseLikePredicate(atom);
+        if (likePredicate != null) {
+            Object value = resolve(row, likePredicate.left());
+            boolean matched = likeMatches(value, likePredicate.pattern());
+            return likePredicate.negated() != matched;
+        }
         Comparison comparison = parseComparison(atom);
         if (comparison == null) {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
-                            + "subqueries or use simple comparisons / IS NULL / IN / NOT / OR of those): " + atom
+                            + "subqueries or use simple comparisons / IS NULL / LIKE / IN / NOT / OR of those): "
+                            + atom
             );
         }
         Object left = resolve(row, comparison.left());
         Object right = resolve(row, comparison.right());
         return compare(left, right, comparison.op());
+    }
+
+    /**
+     * Parse {@code left [NOT] LIKE 'pattern'}. Pattern must be a string literal.
+     * Returns null when the atom is not a LIKE form.
+     */
+    static LikePredicate parseLikePredicate(String atom) {
+        if (atom == null || atom.isBlank()) {
+            return null;
+        }
+        String trimmed = atom.trim();
+        int notLikeIdx = findKeyword(trimmed, "not like", 8);
+        int likeIdx = findKeyword(trimmed, "like", 4);
+        boolean negated;
+        int keywordStart;
+        int keywordLen;
+        if (notLikeIdx >= 0) {
+            negated = true;
+            keywordStart = notLikeIdx;
+            keywordLen = 8;
+        } else if (likeIdx >= 0) {
+            negated = false;
+            keywordStart = likeIdx;
+            keywordLen = 4;
+        } else {
+            return null;
+        }
+        String left = trimmed.substring(0, keywordStart).trim();
+        String right = trimmed.substring(keywordStart + keywordLen).trim();
+        if (left.isEmpty() || right.isEmpty() || !isStringLiteral(right)) {
+            return null;
+        }
+        return new LikePredicate(left, negated, unquoteStringLiteral(right));
+    }
+
+    static boolean likeMatches(Object value, String pattern) {
+        if (value == null || pattern == null) {
+            return false;
+        }
+        return toLikeRegex(pattern).matcher(String.valueOf(value)).matches();
+    }
+
+    /** Convert SQL LIKE pattern ({@code %} / {@code _}) to a full-match regex. */
+    static java.util.regex.Pattern toLikeRegex(String pattern) {
+        StringBuilder regex = new StringBuilder("^");
+        for (int i = 0; i < pattern.length(); i++) {
+            char ch = pattern.charAt(i);
+            if (ch == '%') {
+                regex.append(".*");
+            } else if (ch == '_') {
+                regex.append('.');
+            } else if ("\\.[]{}()*+-?^$|".indexOf(ch) >= 0) {
+                regex.append('\\').append(ch);
+            } else {
+                regex.append(ch);
+            }
+        }
+        regex.append('$');
+        return java.util.regex.Pattern.compile(regex.toString(), java.util.regex.Pattern.DOTALL);
+    }
+
+    private static boolean isStringLiteral(String token) {
+        if (token == null || token.length() < 2) {
+            return false;
+        }
+        return (token.startsWith("'") && token.endsWith("'"))
+                || (token.startsWith("\"") && token.endsWith("\""));
+    }
+
+    private static String unquoteStringLiteral(String token) {
+        String body = token.substring(1, token.length() - 1);
+        char quote = token.charAt(0);
+        if (quote == '\'') {
+            return body.replace("''", "'");
+        }
+        return body.replace("\"\"", "\"");
     }
 
     /**
@@ -424,5 +508,8 @@ final class FederatedJoinResidualFilter {
     }
 
     record NullCheck(String column, boolean negated) {
+    }
+
+    record LikePredicate(String left, boolean negated, String pattern) {
     }
 }
