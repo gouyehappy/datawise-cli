@@ -17,6 +17,8 @@ public class SemanticMetricEntry {
     private String unit;
     /** Optional owner / steward for org discovery (free-form display name). */
     private String owner;
+    /** Free-form tags for org discovery facets (normalized on write). */
+    private List<String> tags = new ArrayList<>();
     private List<String> relatedTables = new ArrayList<>();
     private List<String> upstreamMetrics = new ArrayList<>();
     private Integer definitionVersion;
@@ -86,6 +88,14 @@ public class SemanticMetricEntry {
 
     public void setOwner(String owner) {
         this.owner = owner;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? new ArrayList<>(tags) : new ArrayList<>();
     }
 
     public List<String> getRelatedTables() {

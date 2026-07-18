@@ -49,6 +49,7 @@ export default {
         expression: 'Expression',
         unit: 'Unit',
         owner: 'Owner',
+        tags: 'Tags',
         upstreamMetrics: 'Upstream metrics',
         changeNote: 'Change note',
         autoGenerate: 'Auto-generate',

@@ -7,10 +7,12 @@ import {
     filterDiscoveryHitsByFacets,
     normalizeRelatedTableName,
     pickLineageJumpTarget,
+    resolveDataCatalogFacetOptions,
     resolveLineageImpactSource,
     listRelatedTableChoices,
     needsRelatedTablePicker,
     nextDiscoveryOffset,
+    toDiscoverySearchFilters,
     toggleFacetValue,
 } from '@/features/discovery/services/data-catalog.service'
 import type {DiscoveryHit} from '@/features/platform/types/platform.types'
@@ -149,26 +151,73 @@ describe('data-catalog.service', () => {
         assert.equal(resolveLineageImpactSource(metric, 'missing'), null)
     })
 
-    it('buildDataCatalogFacetOptions counts kinds/connections/owners', () => {
-        const options = buildDataCatalogFacetOptions(hits)
+    it('buildDataCatalogFacetOptions counts kinds/connections/owners/tags', () => {
+        const tagged: DiscoveryHit[] = [
+            ...hits,
+            {
+                ...hits[0],
+                id: 'n3',
+                name: 'payments',
+                tags: ['pii', 'finance'],
+            },
+        ]
+        const options = buildDataCatalogFacetOptions(tagged)
         assert.deepEqual(options.kinds.map((item) => item.value), ['table', 'view', 'metric'])
         assert.equal(options.connections.length, 2)
         assert.equal(options.owners.length, 1)
         assert.equal(options.owners[0].value, 'alice')
+        assert.equal(options.tags.length, 2)
+        assert.ok(options.tags.some((item) => item.value === 'pii'))
     })
 
-    it('filterDiscoveryHitsByFacets applies AND across facet groups', () => {
-        const filtered = filterDiscoveryHitsByFacets(hits, {
+    it('filterDiscoveryHitsByFacets applies AND across facet groups including tags', () => {
+        const taggedHits: DiscoveryHit[] = [
+            {...hits[0], tags: ['pii']},
+            hits[1],
+            {...hits[2], tags: ['kpi']},
+        ]
+        const filtered = filterDiscoveryHitsByFacets(taggedHits, {
             kinds: ['metric'],
             connectionIds: ['c2'],
             owners: ['alice'],
+            tags: ['kpi'],
         })
         assert.equal(filtered.length, 1)
         assert.equal(filtered[0].name, 'gmv')
         assert.equal(
-            filterDiscoveryHitsByFacets(hits, {kinds: ['table'], connectionIds: ['c2'], owners: []}).length,
+            filterDiscoveryHitsByFacets(taggedHits, {
+                kinds: ['table'],
+                connectionIds: ['c2'],
+                owners: [],
+                tags: [],
+            }).length,
             0,
         )
+    })
+
+    it('toDiscoverySearchFilters omits empty facet groups', () => {
+        assert.equal(
+            toDiscoverySearchFilters({kinds: [], connectionIds: [], owners: [], tags: []}),
+            undefined,
+        )
+        assert.deepEqual(
+            toDiscoverySearchFilters({kinds: ['table'], connectionIds: [], owners: [], tags: ['pii']}),
+            {kinds: ['table'], connectionIds: undefined, owners: undefined, tags: ['pii']},
+        )
+    })
+
+    it('resolveDataCatalogFacetOptions prefers server facets', () => {
+        const resolved = resolveDataCatalogFacetOptions(
+            {
+                kinds: [{value: 'table', label: 'table', count: 9}],
+                connections: [],
+                owners: [],
+                tags: [{value: 'pii', label: 'pii', count: 3}],
+            },
+            hits,
+        )
+        assert.equal(resolved.kinds[0].count, 9)
+        assert.equal(resolved.tags[0].value, 'pii')
     })
 
     it('toggleFacetValue adds and removes', () => {

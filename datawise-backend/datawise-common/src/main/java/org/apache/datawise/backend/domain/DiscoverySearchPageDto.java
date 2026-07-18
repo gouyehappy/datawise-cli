@@ -10,6 +10,17 @@ public record DiscoverySearchPageDto(
         int total,
         int offset,
         int limit,
-        boolean hasMore
+        boolean hasMore,
+        DiscoveryFacetsDto facets
 ) {
+    /** Backward-compatible constructor without facets. */
+    public DiscoverySearchPageDto(
+            List<DiscoveryHitDto> hits,
+            int total,
+            int offset,
+            int limit,
+            boolean hasMore
+    ) {
+        this(hits, total, offset, limit, hasMore, DiscoveryFacetsDto.empty());
+    }
 }

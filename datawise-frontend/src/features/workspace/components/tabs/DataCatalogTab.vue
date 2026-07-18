@@ -9,20 +9,20 @@ import type {DwDataGridColumn, DwDataGridLabels} from '@/core/components/dw-data
 import type {WorkspaceTab} from '@/core/types'
 import {platformApi} from '@/api'
 import {lineageApi} from '@/api/modules/lineage'
-import type {DiscoveryHit} from '@/features/platform/types/platform.types'
+import type {DiscoveryFacets, DiscoveryHit} from '@/features/platform/types/platform.types'
 import type {LineageImpactItem} from '@/features/lineage/types/lineage.types'
 import {
-    buildDataCatalogFacetOptions,
     canJumpLineage,
     DATA_CATALOG_PAGE_SIZE,
     discoveryHitRowKey,
-    filterDiscoveryHitsByFacets,
     hasActiveDataCatalogFacets,
     listRelatedTableChoices,
     needsRelatedTablePicker,
     nextDiscoveryOffset,
     pickLineageJumpTarget,
+    resolveDataCatalogFacetOptions,
     resolveLineageImpactSource,
+    toDiscoverySearchFilters,
     toggleFacetValue,
     type DataCatalogFacets,
     type DiscoveryFacetKind,
@@ -52,7 +52,9 @@ const facets = reactive<DataCatalogFacets>({
     kinds: [],
     connectionIds: [],
     owners: [],
+    tags: [],
 })
+const serverFacets = ref<DiscoveryFacets | null>(null)
 const selectedKeys = ref<string[]>([])
 const lineageOpen = ref(false)
 const lineageLoading = ref(false)
@@ -65,14 +67,19 @@ const relatedTableCandidates = ref<RelatedTableChoice[]>([])
 let searchSeq = 0
 let activeQuery = ''
 
-const facetOptions = computed(() => buildDataCatalogFacetOptions(hits.value))
-const filteredHits = computed(() => filterDiscoveryHitsByFacets(hits.value, facets))
+const facetOptions = computed(() => resolveDataCatalogFacetOptions(serverFacets.value, hits.value))
 const facetsActive = computed(() => hasActiveDataCatalogFacets(facets))
-const showFacets = computed(() => hits.value.length > 0)
-const showLoadMore = computed(() => hasMore.value && !facetsActive.value)
+const showFacets = computed(() =>
+    facetOptions.value.kinds.length > 0
+    || facetOptions.value.connections.length > 0
+    || facetOptions.value.owners.length > 0
+    || facetOptions.value.tags.length > 0
+    || facetsActive.value,
+)
+const showLoadMore = computed(() => hasMore.value)
 
 const rows = computed(() =>
-    filteredHits.value.map((hit) => ({
+    hits.value.map((hit) => ({
         id: discoveryHitRowKey(hit),
         kind: hit.kind,
         name: hit.name,
@@ -80,6 +87,7 @@ const rows = computed(() =>
         connectionLabel: hit.connectionLabel,
         database: hit.database,
         owner: hit.owner ?? '',
+        tags: (hit.tags ?? []).join(', '),
         subtitle: hit.subtitle ?? '',
         score: hit.score,
         _hit: hit,
@@ -93,6 +101,7 @@ const columns = computed<DwDataGridColumn<(typeof rows.value)[number]>[]>(() => 
     {key: 'connectionLabel', label: t('discovery.columns.connection')},
     {key: 'database', label: t('discovery.columns.database')},
     {key: 'owner', label: t('discovery.columns.owner')},
+    {key: 'tags', label: t('discovery.columns.tags')},
     {key: 'subtitle', label: t('discovery.columns.subtitle')},
     {key: 'score', label: t('discovery.columns.score'), align: 'right'},
 ])
@@ -120,26 +129,37 @@ function resetFacets() {
     facets.kinds = []
     facets.connectionIds = []
     facets.owners = []
+    facets.tags = []
 }
 
 function toggleKind(kind: DiscoveryFacetKind) {
     facets.kinds = toggleFacetValue(facets.kinds, kind)
     selectedKeys.value = []
+    void fetchPage(0, false)
 }
 
 function toggleConnection(connectionId: string) {
     facets.connectionIds = toggleFacetValue(facets.connectionIds, connectionId)
     selectedKeys.value = []
+    void fetchPage(0, false)
 }
 
 function toggleOwner(owner: string) {
     facets.owners = toggleFacetValue(facets.owners, owner)
     selectedKeys.value = []
+    void fetchPage(0, false)
+}
+
+function toggleTag(tag: string) {
+    facets.tags = toggleFacetValue(facets.tags, tag)
+    selectedKeys.value = []
+    void fetchPage(0, false)
 }
 
 function clearFacets() {
     resetFacets()
     selectedKeys.value = []
+    void fetchPage(0, false)
 }
 
 function kindLabel(kind: string) {
@@ -147,60 +167,64 @@ function kindLabel(kind: string) {
     return t(key) !== key ? t(key) : kind
 }
 
-async function runSearch(raw: string) {
-    const q = raw.trim()
-    const browse = q.length < 2
+async function fetchPage(offset: number, append: boolean) {
     const seq = ++searchSeq
-    activeQuery = browse ? '' : q
-    loading.value = true
-    loadingMore.value = false
-    error.value = ''
-    try {
-        const page = await platformApi.searchDiscovery(activeQuery, DATA_CATALOG_PAGE_SIZE, 0)
-        if (seq !== searchSeq) return
-        hits.value = page.hits
-        totalHits.value = page.total
-        hasMore.value = page.hasMore
-        resetFacets()
-        selectedKeys.value = []
-    } catch (err) {
-        if (seq !== searchSeq) return
-        error.value = err instanceof Error ? err.message : String(err)
-        hits.value = []
-        totalHits.value = 0
-        hasMore.value = false
-        resetFacets()
-    } finally {
-        if (seq === searchSeq) loading.value = false
+    if (append) {
+        loadingMore.value = true
+    } else {
+        loading.value = true
+        loadingMore.value = false
     }
-}
-
-async function loadMore() {
-    if (!hasMore.value || loading.value || loadingMore.value || facetsActive.value) return
-    const seq = searchSeq
-    loadingMore.value = true
     error.value = ''
     try {
         const page = await platformApi.searchDiscovery(
             activeQuery,
             DATA_CATALOG_PAGE_SIZE,
-            hits.value.length,
+            offset,
+            toDiscoverySearchFilters(facets),
         )
         if (seq !== searchSeq) return
-        const next = nextDiscoveryOffset({
+        hits.value = append ? [...hits.value, ...page.hits] : page.hits
+        totalHits.value = page.total
+        hasMore.value = nextDiscoveryOffset({
             offset: page.offset,
             hits: page.hits,
             hasMore: page.hasMore,
-        })
-        hits.value = [...hits.value, ...page.hits]
-        totalHits.value = page.total
-        hasMore.value = next != null
+        }) != null
+        if (page.facets) {
+            serverFacets.value = page.facets
+        }
+        if (!append) {
+            selectedKeys.value = []
+        }
     } catch (err) {
         if (seq !== searchSeq) return
         error.value = err instanceof Error ? err.message : String(err)
+        if (!append) {
+            hits.value = []
+            totalHits.value = 0
+            hasMore.value = false
+            serverFacets.value = null
+        }
     } finally {
-        if (seq === searchSeq) loadingMore.value = false
+        if (seq === searchSeq) {
+            loading.value = false
+            loadingMore.value = false
+        }
     }
+}
+
+async function runSearch(raw: string) {
+    const q = raw.trim()
+    const browse = q.length < 2
+    activeQuery = browse ? '' : q
+    resetFacets()
+    await fetchPage(0, false)
+}
+
+async function loadMore() {
+    if (!hasMore.value || loading.value || loadingMore.value) return
+    await fetchPage(hits.value.length, true)
 }
 
 watch(debouncedQuery, (value) => {
@@ -358,6 +382,20 @@ function chooseLineageTarget(item: LineageImpactItem) {
             class="data-catalog__chip"
             :class="{ 'is-active': facets.owners.includes(option.value) }"
             @click="toggleOwner(option.value)"
+        >
+          {{ option.label }}
+          <span class="data-catalog__chip-count">{{ option.count }}</span>
+        </button>
+      </div>
+      <div v-if="facetOptions.tags.length" class="data-catalog__facet-row">
+        <span class="data-catalog__facet-label">{{ t('discovery.facets.tag') }}</span>
+        <button
+            v-for="option in facetOptions.tags"
+            :key="'tag:' + option.value"
+            type="button"
+            class="data-catalog__chip"
+            :class="{ 'is-active': facets.tags.includes(option.value) }"
+            @click="toggleTag(option.value)"
         >
           {{ option.label }}
           <span class="data-catalog__chip-count">{{ option.count }}</span>

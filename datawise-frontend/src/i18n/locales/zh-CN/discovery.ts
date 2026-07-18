@@ -29,6 +29,7 @@ export default {
         kind: '类型',
         connection: '连接',
         owner: '责任人',
+        tag: '标签',
         clear: '清除筛选',
     },
     columns: {
@@ -38,6 +39,7 @@ export default {
         connection: '连接',
         database: '数据库',
         owner: '责任人',
+        tags: '标签',
         subtitle: '说明',
         score: '相关度',
     },

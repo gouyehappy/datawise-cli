@@ -17,6 +17,8 @@ public record DiscoveryHitDto(
         String subtitle,
         int score,
         /** Populated for metrics — related physical tables for lineage jump. */
-        List<String> relatedTables
+        List<String> relatedTables,
+        /** Metric tags and/or hashtags parsed from table/view comments ({@code #pii}). */
+        List<String> tags
 ) {
 }

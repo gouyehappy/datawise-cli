@@ -16,16 +16,27 @@ Requires `workbench.explorer.search` + `workbench.tab.new`.
 ```http
 GET /api/discovery/search?q=orders&limit=40&offset=0
 GET /api/discovery/search?limit=40&offset=40
+GET /api/discovery/search?tag=pii&kind=table&owner=alice&connectionId=conn-1
 ```
+
+Optional facet filters (comma-separated or repeated query params):
+
+| Param | Notes |
+|-------|--------|
+| `kind` | `table` · `view` · `metric` |
+| `connectionId` | Connection id |
+| `owner` | Metric owner (case-insensitive) |
+| `tag` | Metric tags or table/view comment hashtags (`#pii` → `pii`) |
 
 Returns a page object:
 
 | Field | Notes |
 |-------|--------|
-| `hits` | `DiscoveryHit[]` for this page |
-| `total` | Full match count before paging |
+| `hits` | `DiscoveryHit[]` for this page (after facet filters) |
+| `total` | Match count after facet filters, before paging |
 | `offset` / `limit` | Requested window (`limit` default 40, max 100) |
 | `hasMore` | `offset + hits.length < total` |
+| `facets` | Server facet buckets (`kinds` / `connections` / `owners` / `tags`) |
 
 Each hit:
 
@@ -34,22 +45,24 @@ Each hit:
 | `kind` | `table` · `view` · `metric` |
 | `connectionId` / `database` | Scope for open / lineage |
 | `owner` | Optional metric owner |
+| `tags` | Metric tags and/or hashtags parsed from table/view comments |
 | `relatedTables` | Metric-only: related physical tables (used for lineage jump) |
 | `score` | Ranking hint (browse mode uses a flat score) |
 
-Empty / blank `q` **browses** the org catalog (schema-cache tables/views + semantic metrics), sorted by qualified name. Non-empty `q` ranks by token match. The data catalog tab loads pages of 40 and offers **Load more** until `hasMore` is false (hidden while client-side facets are active). The command palette still requests a single small page.
+Empty / blank `q` **browses** the org catalog (schema-cache tables/views + semantic metrics), sorted by qualified name. Non-empty `q` ranks by token match (including tags). The data catalog tab loads pages of 40 and offers **Load more** until `hasMore` is false — including while server facets are active. The command palette still requests a single small page.
 
 ## Faceted browse
 
-After a search returns hits, the **Data catalog** tab shows client-side facet chips:
+The **Data catalog** tab uses **server-side** facet chips. Facet options and counts come from the search response (`facets`); each dimension’s counts are computed from hits that match the other selected filters. Selections within a facet are OR’d; facet groups are AND’d.
 
 | Facet | Source |
 |-------|--------|
 | Kind | `table` / `view` / `metric` |
 | Connection | Distinct `connectionId` (+ label) |
 | Owner | Non-empty metric `owner` values |
+| Tag | Metric `tags` + hashtags in table/view comments (`#pii`) |
 
-Selections within a facet are OR’d; facet groups are AND’d. Clearing filters restores the full loaded hit set. Facets apply to **loaded** pages only; use Load more before filtering a large catalog when needed.
+Metric tags are edited on the semantic metric form (comma-separated). Table/view tags are taken from hashtags in the schema-cache comment text.
 
 ## Lineage jump
 
@@ -73,5 +86,3 @@ For a selected **metric** with non-empty `relatedTables`:
 
 - Column-level catalog cards
 - Deeper metric → defining SQL / model lineage (beyond related physical tables)
-- Tag facets (no tag field on discovery hits yet)
-- Server-side facet filters (facets today apply to loaded pages only)

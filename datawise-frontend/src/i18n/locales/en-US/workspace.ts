@@ -281,6 +281,7 @@ export default {
             hint: {
                 expression: 'e.g. COUNT(DISTINCT user_id) or SUM(amount)',
                 owner: 'Metric steward (name or account) for org discovery search',
+                tags: 'Comma-separated tags for catalog facets, e.g. kpi, finance',
                 upstreamMetrics: 'Comma-separated metric names, e.g. gross_revenue, order_count',
                 changeNote: 'What changed in this metric definition (optional)',
                 tablePattern: 'SQL LIKE pattern; % matches all tables',
@@ -406,6 +407,7 @@ export default {
                 description: 'Description',
                 unit: 'Unit',
                 owner: 'Owner',
+                tags: 'Tags',
                 relatedTables: 'Related tables',
                 upstreamMetrics: 'Upstream metrics',
                 definitionVersion: 'Definition v',

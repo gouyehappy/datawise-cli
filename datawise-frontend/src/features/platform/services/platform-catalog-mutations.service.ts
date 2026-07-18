@@ -56,6 +56,7 @@ export type PlatformCatalogFormPayload =
     description: string
     unit: string
     owner: string
+    tags: string
     upstreamMetrics: string
     changeNote: string
 }
@@ -114,6 +115,10 @@ export async function savePlatformCatalogItem(
                 description: payload.description.trim() || undefined,
                 unit: payload.unit.trim() || undefined,
                 owner: payload.owner.trim() || undefined,
+                tags: payload.tags
+                    .split(',')
+                    .map((item) => item.trim())
+                    .filter(Boolean),
                 upstreamMetrics: payload.upstreamMetrics
                     .split(',')
                     .map((item) => item.trim())

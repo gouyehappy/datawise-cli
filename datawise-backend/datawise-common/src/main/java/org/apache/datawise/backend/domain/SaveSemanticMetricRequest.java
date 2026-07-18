@@ -13,6 +13,7 @@ public record SaveSemanticMetricRequest(
         List<String> relatedTables,
         List<String> upstreamMetrics,
         String changeNote,
-        String owner
+        String owner,
+        List<String> tags
 ) {
 }

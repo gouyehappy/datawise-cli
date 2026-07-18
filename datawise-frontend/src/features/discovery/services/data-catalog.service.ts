@@ -1,4 +1,8 @@
-import type {DiscoveryHit} from '@/features/platform/types/platform.types'
+import type {
+    DiscoveryFacets,
+    DiscoveryHit,
+    DiscoverySearchFilters,
+} from '@/features/platform/types/platform.types'
 import type {LineageImpactItem} from '@/features/lineage/types/lineage.types'
 
 /** Prefer a single unambiguous downstream model for one-click lineage jump. */
@@ -118,6 +122,7 @@ export interface DataCatalogFacets {
     kinds: DiscoveryFacetKind[]
     connectionIds: string[]
     owners: string[]
+    tags: string[]
 }
 
 export interface DataCatalogFacetOption {
@@ -130,12 +135,57 @@ export const EMPTY_DATA_CATALOG_FACETS: DataCatalogFacets = {
     kinds: [],
     connectionIds: [],
     owners: [],
+    tags: [],
+}
+
+export const EMPTY_SERVER_FACET_OPTIONS: {
+    kinds: DataCatalogFacetOption[]
+    connections: DataCatalogFacetOption[]
+    owners: DataCatalogFacetOption[]
+    tags: DataCatalogFacetOption[]
+} = {
+    kinds: [],
+    connections: [],
+    owners: [],
+    tags: [],
 }
 
 export function hasActiveDataCatalogFacets(facets: DataCatalogFacets): boolean {
     return facets.kinds.length > 0
         || facets.connectionIds.length > 0
         || facets.owners.length > 0
+        || facets.tags.length > 0
+}
+
+export function toDiscoverySearchFilters(facets: DataCatalogFacets): DiscoverySearchFilters | undefined {
+    if (!hasActiveDataCatalogFacets(facets)) return undefined
+    return {
+        kinds: facets.kinds.length ? [...facets.kinds] : undefined,
+        connectionIds: facets.connectionIds.length ? [...facets.connectionIds] : undefined,
+        owners: facets.owners.length ? [...facets.owners] : undefined,
+        tags: facets.tags.length ? [...facets.tags] : undefined,
+    }
+}
+
+/** Prefer server facet buckets; fall back to counting loaded hits. */
+export function resolveDataCatalogFacetOptions(
+    serverFacets: DiscoveryFacets | null | undefined,
+    hits: readonly DiscoveryHit[],
+): {
+    kinds: DataCatalogFacetOption[]
+    connections: DataCatalogFacetOption[]
+    owners: DataCatalogFacetOption[]
+    tags: DataCatalogFacetOption[]
+} {
+    if (serverFacets) {
+        return {
+            kinds: [...(serverFacets.kinds ?? [])],
+            connections: [...(serverFacets.connections ?? [])],
+            owners: [...(serverFacets.owners ?? [])],
+            tags: [...(serverFacets.tags ?? [])],
+        }
+    }
+    return buildDataCatalogFacetOptions(hits)
 }
 
 /** Build facet chip options from the current hit set (counts reflect unfiltered hits). */
@@ -143,10 +193,12 @@ export function buildDataCatalogFacetOptions(hits: readonly DiscoveryHit[]): {
     kinds: DataCatalogFacetOption[]
     connections: DataCatalogFacetOption[]
     owners: DataCatalogFacetOption[]
+    tags: DataCatalogFacetOption[]
 } {
     const kindCounts = new Map<string, number>()
     const connectionCounts = new Map<string, {label: string; count: number}>()
     const ownerCounts = new Map<string, number>()
+    const tagCounts = new Map<string, number>()
 
     for (const hit of hits) {
         kindCounts.set(hit.kind, (kindCounts.get(hit.kind) ?? 0) + 1)
@@ -162,6 +214,11 @@ export function buildDataCatalogFacetOptions(hits: readonly DiscoveryHit[]): {
         if (owner) {
             ownerCounts.set(owner, (ownerCounts.get(owner) ?? 0) + 1)
         }
+        for (const tag of hit.tags ?? []) {
+            const normalized = tag.trim().toLowerCase()
+            if (!normalized) continue
+            tagCounts.set(normalized, (tagCounts.get(normalized) ?? 0) + 1)
+        }
     }
 
     const kindOrder: DiscoveryFacetKind[] = ['table', 'view', 'metric']
@@ -175,6 +232,9 @@ export function buildDataCatalogFacetOptions(hits: readonly DiscoveryHit[]): {
         owners: [...ownerCounts.entries()]
             .map(([value, count]) => ({value, label: value, count}))
             .sort((a, b) => a.label.localeCompare(b.label) || b.count - a.count),
+        tags: [...tagCounts.entries()]
+            .map(([value, count]) => ({value, label: value, count}))
+            .sort((a, b) => a.label.localeCompare(b.label) || b.count - a.count),
     }
 }
 
@@ -185,7 +245,8 @@ export function filterDiscoveryHitsByFacets(
     const kinds = new Set(facets.kinds)
     const connections = new Set(facets.connectionIds)
     const owners = new Set(facets.owners.map((item) => item.trim()).filter(Boolean))
-    if (!kinds.size && !connections.size && !owners.size) {
+    const tags = new Set(facets.tags.map((item) => item.trim().toLowerCase()).filter(Boolean))
+    if (!kinds.size && !connections.size && !owners.size && !tags.size) {
         return [...hits]
     }
     return hits.filter((hit) => {
@@ -194,6 +255,10 @@ export function filterDiscoveryHitsByFacets(
         if (owners.size) {
             const owner = hit.owner?.trim() ?? ''
             if (!owner || !owners.has(owner)) return false
+        }
+        if (tags.size) {
+            const hitTags = (hit.tags ?? []).map((item) => item.trim().toLowerCase()).filter(Boolean)
+            if (!hitTags.some((tag) => tags.has(tag))) return false
         }
         return true
     })

@@ -49,6 +49,7 @@ export default {
         expression: '表达式',
         unit: '单位',
         owner: '责任人',
+        tags: '标签',
         upstreamMetrics: '上游指标',
         changeNote: '变更说明',
         autoGenerate: '自动生成',

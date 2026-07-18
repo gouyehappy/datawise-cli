@@ -29,6 +29,7 @@ export default {
         kind: 'Kind',
         connection: 'Connection',
         owner: 'Owner',
+        tag: 'Tag',
         clear: 'Clear filters',
     },
     columns: {
@@ -38,6 +39,7 @@ export default {
         connection: 'Connection',
         database: 'Database',
         owner: 'Owner',
+        tags: 'Tags',
         subtitle: 'Detail',
         score: 'Score',
     },

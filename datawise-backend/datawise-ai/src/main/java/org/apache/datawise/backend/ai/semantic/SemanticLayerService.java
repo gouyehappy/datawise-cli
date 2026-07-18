@@ -68,6 +68,7 @@ public class SemanticLayerService {
         entry.setDescription(trimOrNull(request.description()));
         entry.setUnit(trimOrNull(request.unit()));
         entry.setOwner(trimOrNull(request.owner()));
+        entry.setTags(normalizeTags(request.tags()));
         entry.setRelatedTables(request.relatedTables() != null ? request.relatedTables() : List.of());
         entry.setUpstreamMetrics(request.upstreamMetrics() != null ? request.upstreamMetrics() : List.of());
         applyDefinitionVersion(entry, previousExpression, trimOrNull(request.changeNote()));
@@ -247,5 +248,26 @@ public class SemanticLayerService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static List<String> normalizeTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        for (String tag : tags) {
+            if (tag == null) {
+                continue;
+            }
+            String trimmed = tag.trim();
+            if (trimmed.startsWith("#")) {
+                trimmed = trimmed.substring(1).trim();
+            }
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            out.add(trimmed.toLowerCase(Locale.ROOT));
+        }
+        return List.copyOf(out);
     }
 }

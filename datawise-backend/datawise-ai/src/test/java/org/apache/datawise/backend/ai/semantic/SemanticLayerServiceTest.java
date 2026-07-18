@@ -98,7 +98,8 @@ class SemanticLayerServiceTest {
                 List.of("orders"),
                 List.of("order_amount"),
                 "switch to paid amount",
-                "alice"
+                "alice",
+                List.of("kpi", "finance")
         ));
 
         assertEquals(3, saved.definitionVersion());
@@ -128,6 +129,7 @@ class SemanticLayerServiceTest {
                 List.of("orders"),
                 List.of("order_amount"),
                 "text tweak only",
+                null,
                 null
         ));
 

@@ -78,6 +78,7 @@ const semanticForm = reactive({
     description: '',
     unit: '',
     owner: '',
+    tags: '',
     upstreamMetrics: '',
     changeNote: '',
 })
@@ -583,6 +584,7 @@ function resetForms() {
     semanticForm.description = ''
     semanticForm.unit = ''
     semanticForm.owner = ''
+    semanticForm.tags = ''
     semanticForm.upstreamMetrics = ''
     semanticForm.changeNote = ''
     canvasForm.title = ''
@@ -912,6 +914,17 @@ async function submit() {
                     class="dw-input"
                     type="text"
                     :placeholder="t('workspace.platformCatalog.form.hint.owner')"
+                >
+              </template>
+            </FormField>
+            <FormField :label="t('platform.metrics.tags')">
+              <template #default="{ id }">
+                <input
+                    :id="id"
+                    v-model="semanticForm.tags"
+                    class="dw-input"
+                    type="text"
+                    :placeholder="t('workspace.platformCatalog.form.hint.tags')"
                 >
               </template>
             </FormField>

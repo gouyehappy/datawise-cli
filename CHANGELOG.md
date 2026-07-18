@@ -60,6 +60,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G13 deepen: data catalog **metric lineage jump** via `relatedTables` → view-model impact (first related table). See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G13 deepen: data catalog **related-table picker** when a metric lists several `relatedTables` before lineage jump. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G13 deepen: discovery **pagination** (`offset` + `hasMore` / total) + data catalog **Load more**. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
+- Wave D G13 deepen: **server-side facets** (`kind` / `connectionId` / `owner` / `tag`) + hit **tags** (metric tags + comment `#hashtags`); Load more works with facets. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G15 deepen: **user-saved data-quality rule templates** (local library + Save/Delete in Add form). See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G15 deepen: multi-env gate **pair rules by name** (`pairByName`, default on) with unpaired failures + `pairs[]` in the response. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G15 deepen: **tenant-shared data-quality rule templates** (`GET/PUT/DELETE /api/platform/data-quality/templates`, file `tenants/{id}/data-quality-templates.json`) alongside local templates in the Add form. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).

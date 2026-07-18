@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/discovery")
 public class DiscoveryController {
@@ -22,8 +24,14 @@ public class DiscoveryController {
     public ApiResponse<DiscoverySearchPageDto> search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer limit,
-            @RequestParam(required = false) Integer offset
+            @RequestParam(required = false) Integer offset,
+            @RequestParam(required = false) List<String> kind,
+            @RequestParam(required = false) List<String> connectionId,
+            @RequestParam(required = false) List<String> owner,
+            @RequestParam(required = false) List<String> tag
     ) {
-        return ApiResponse.ok(discoverySearchService.search(q, limit, offset));
+        return ApiResponse.ok(discoverySearchService.search(
+                q, limit, offset, kind, connectionId, owner, tag
+        ));
     }
 }

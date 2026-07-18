@@ -1723,7 +1723,12 @@ export interface PlatformApi {
 
     autoGenerateSemanticMetrics(request: AutoGenerateSemanticMetricsRequest): Promise<SemanticMetric[]>
 
-    searchDiscovery(q?: string | null, limit?: number, offset?: number): Promise<DiscoverySearchPage>
+    searchDiscovery(
+        q?: string | null,
+        limit?: number,
+        offset?: number,
+        filters?: import('@/features/platform/types/platform.types').DiscoverySearchFilters,
+    ): Promise<DiscoverySearchPage>
 
     reviewSql(request: SqlReviewRequest): Promise<SqlReviewResult>
 

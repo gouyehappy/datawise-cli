@@ -281,6 +281,7 @@ export default {
             hint: {
                 expression: '例如 COUNT(DISTINCT user_id) 或 SUM(amount)',
                 owner: '口径责任人（姓名或账号，便于组织发现搜索）',
+                tags: '逗号分隔标签，用于目录分面，例如 kpi, finance',
                 upstreamMetrics: '逗号分隔指标名称，例如 gross_revenue, order_count',
                 changeNote: '描述本次口径调整内容（可选）',
                 tablePattern: 'SQL LIKE 模式，% 表示全部表',
@@ -406,6 +407,7 @@ export default {
                 description: '描述',
                 unit: '单位',
                 owner: '责任人',
+                tags: '标签',
                 relatedTables: '关联表',
                 upstreamMetrics: '上游指标',
                 definitionVersion: '口径版本',

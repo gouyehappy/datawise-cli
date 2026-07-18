@@ -144,6 +144,68 @@ class DiscoverySearchServiceTest {
         assertEquals("orders", second.hits().get(0).name());
     }
 
+    @Test
+    void searchReturnsTagsAndServerFacetFilters() {
+        ConnectionEntity connection = new ConnectionEntity();
+        connection.setId("conn-1");
+        connection.setName("Shop DB");
+        connection.setDbType("mysql");
+
+        when(visibility.visibleCatalogForCurrentUser())
+                .thenReturn(new ConnectionVisibilityService.VisibleCatalog(List.of(), List.of(connection)));
+
+        TreeNode database = node("db-shop", "shop", "database");
+        TreeNode table = node("tbl-orders", "orders", "table");
+        table.setComment("customer orders #pii #finance");
+        TreeNode view = node("vw-customers", "customers_v", "view");
+        view.setComment("public view");
+        database.setChildren(List.of(table, view));
+        when(schemaCacheStore.load("conn-1")).thenReturn(List.of(database));
+
+        SemanticMetricEntry metric = new SemanticMetricEntry();
+        metric.setId("metric-gmv");
+        metric.setConnectionId("conn-1");
+        metric.setDatabase("shop");
+        metric.setName("gmv");
+        metric.setOwner("alice");
+        metric.setTags(List.of("KPI", "finance"));
+        when(metricStore.listAll()).thenReturn(List.of(metric));
+
+        var browsed = service.search("", 20, 0);
+        assertEquals(3, browsed.total());
+        assertFalse(browsed.facets().tags().isEmpty());
+        assertTrue(browsed.facets().tags().stream().anyMatch(item -> "finance".equals(item.value())));
+
+        DiscoveryHitDto orders = browsed.hits().stream()
+                .filter(hit -> "orders".equals(hit.name()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(List.of("pii", "finance"), orders.tags());
+
+        DiscoveryHitDto gmv = browsed.hits().stream()
+                .filter(hit -> "gmv".equals(hit.name()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(List.of("kpi", "finance"), gmv.tags());
+
+        var byTag = service.search("", 20, 0, null, null, null, List.of("pii"));
+        assertEquals(1, byTag.total());
+        assertEquals("orders", byTag.hits().get(0).name());
+        assertTrue(byTag.hasMore() == false);
+
+        var byKind = service.search("", 20, 0, List.of("metric"), null, null, null);
+        assertEquals(1, byKind.total());
+        assertEquals("gmv", byKind.hits().get(0).name());
+        assertTrue(byKind.facets().kinds().stream().anyMatch(item -> "table".equals(item.value()) && item.count() == 1));
+
+        var byOwner = service.search("", 20, 0, null, null, List.of("alice"), null);
+        assertEquals(1, byOwner.total());
+        assertEquals("gmv", byOwner.hits().get(0).name());
+
+        assertEquals(1, service.search("pii", 20).hits().size());
+        assertEquals("orders", service.search("pii", 20).hits().get(0).name());
+    }
+
     private static TreeNode node(String id, String label, String type) {
         TreeNode node = new TreeNode();
         node.setId(id);

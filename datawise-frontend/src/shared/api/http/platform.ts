@@ -77,11 +77,15 @@ export function createHttpPlatformApi(): PlatformApi {
         autoGenerateSemanticMetrics: (request) =>
             postJson<SemanticMetric[]>(paths.semanticMetricsAutoGenerate, request),
 
-        searchDiscovery: (q, limit, offset) =>
+        searchDiscovery: (q, limit, offset, filters) =>
             getJson<DiscoverySearchPage>(paths.discoverySearch, {
                 q: q ?? '',
-                ...(limit != null ? {limit} : {}),
-                ...(offset != null ? {offset} : {}),
+                ...(limit != null ? {limit: String(limit)} : {}),
+                ...(offset != null ? {offset: String(offset)} : {}),
+                ...(filters?.kinds?.length ? {kind: filters.kinds.join(',')} : {}),
+                ...(filters?.connectionIds?.length ? {connectionId: filters.connectionIds.join(',')} : {}),
+                ...(filters?.owners?.length ? {owner: filters.owners.join(',')} : {}),
+                ...(filters?.tags?.length ? {tag: filters.tags.join(',')} : {}),
             }),
 
         reviewSql: (request) =>
