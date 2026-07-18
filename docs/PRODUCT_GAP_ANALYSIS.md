@@ -70,7 +70,7 @@
 | # | 能力 | 状态 | 现状 | 补强目标 |
 |---|------|------|------|----------|
 | S1 | 按主键 / 唯一键的**数据增量同步** | partial | 结构同步已闭环；数据迁移 `PK_UPSERT` + 冲突策略（MySQL/PG）+ 生产目标审批门控；**行级 Diff 预览** `POST /api/migration/row-diff`（采样 insert/update/unchanged）。缺全量扫描、可中断进度 UX 加深 | Compare → 勾选 → 冲突策略 → 进度可中断 → 可走审批 |
-| S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限（默认 1k / 硬顶 10k）+ 笛卡尔积拒绝 + hasMore；**Grace hash 落盘**（构建侧 >512）；**外层 WHERE 谓词下推** + **残差 OR**（跨别名 OR 内存过滤）；见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md)。仍缺复杂表达式 / OR 下推进源 SQL / IN/NOT | 限流 / 溢出策略 / 文档化边界；可选下推或分批 |
+| S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限（默认 1k / 硬顶 10k）+ 笛卡尔积拒绝 + hasMore；**Grace hash 落盘**；**外层 WHERE 下推** + 残差 **OR / IN / NOT IN**；见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md)。仍缺 OR 下推进源 SQL / 函数 / 裸 NOT | 限流 / 溢出策略 / 文档化边界；可选下推或分批 |
 | S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：`LakehouseLineageParser` 规范化 + 硬特性软剥离/表级回退（`_table_deps`）；Trino/Presto 仍 COMPLETE；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite 语义分析 / sidecar 仍缺 | 关键方言到可用 `complete/partial`，失败诚实降级 |
 | S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL 并排；画布上字段自由布局仍浅 | 画布级字段自由布局 / 更强与 AI 联动 |
 | S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列（AlterColumn DDL 预览/执行/控制台审批）；列级仍非画布内联编辑 | 图上内联改列 / 批量 DDL 编排 |
@@ -135,6 +135,7 @@
 |------|------|
 | 2026-07-17 | 初稿：产品高度缺口分析；拆分 missing / partial；给出 Wave A～D 近期顺序 |
 | 2026-07-17 | G12：Phase 0–2 + JDBC 元数据落地；状态改为 `partial`（计费/对象存储仍开） |
+| 2026-07-18、S2 残差 IN | 联邦 JOIN 残差 WHERE 支持 IN / NOT IN 字面量列表 |
 | 2026-07-18、S2 残差 OR | 联邦 JOIN 残差 WHERE 支持跨别名 OR |
 | 2026-07-18、G15 多环境门禁 | DQ gate 支持 reference 对照连接 + scopes 汇总 |
 | 2026-07-18、G15 规则模板 | 数据质量内置规则模板预填创建表单 |

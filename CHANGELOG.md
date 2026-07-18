@@ -53,6 +53,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G15 deepen: built-in **data-quality rule templates** (no violations / duplicates / nulls / row-count cap / failed-count threshold) prefill the Add rule form. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G15 deepen: **multi-env release gate** — `referenceConnectionId` / `referenceDatabase` on `POST /api/platform/data-quality/gate` with per-scope `scopes[]`; catalog UI picker. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave B S2 deepen: federated residual WHERE supports **top-level / parenthesized OR** of simple comparisons across aliases (still not pushed into source SQL). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
+- Wave B S2 deepen: federated residual WHERE supports **`IN` / `NOT IN`** with literal lists (combinable with OR). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
 
 ### Still open

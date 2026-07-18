@@ -107,4 +107,42 @@ class FederatedJoinPredicatePushdownTest {
                 FederatedJoinPredicatePushdown.splitOr("(o.status = 'active' OR u.region = 'CN')")
         );
     }
+
+    @Test
+    void residualFilterSupportsInAndNotIn() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.status", "active", "u.region", "US"),
+                Map.of("o.id", 2, "o.status", "pending", "u.region", "CN"),
+                Map.of("o.id", 3, "o.status", "closed", "u.region", "US")
+        );
+        List<Map<String, Object>> inFiltered = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.status IN ('active', 'pending')"
+        );
+        assertEquals(2, inFiltered.size());
+        assertEquals(1, inFiltered.get(0).get("o.id"));
+        assertEquals(2, inFiltered.get(1).get("o.id"));
+
+        List<Map<String, Object>> notInFiltered = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.status NOT IN ('closed')"
+        );
+        assertEquals(2, notInFiltered.size());
+    }
+
+    @Test
+    void residualFilterSupportsInCombinedWithOr() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.status", "closed", "u.region", "US"),
+                Map.of("o.id", 2, "o.status", "closed", "u.region", "CN"),
+                Map.of("o.id", 3, "o.status", "active", "u.region", "US")
+        );
+        List<Map<String, Object>> filtered = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.status IN ('active') OR u.region = 'CN'"
+        );
+        assertEquals(2, filtered.size());
+        assertEquals(2, filtered.get(0).get("o.id"));
+        assertEquals(3, filtered.get(1).get("o.id"));
+    }
 }

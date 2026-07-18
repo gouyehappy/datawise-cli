@@ -18,9 +18,9 @@ Constants live in `FederatedJoinLimits` (`datawise-database`).
 When the federated SQL has an outer `WHERE`:
 
 1. Conjuncts that reference **one** table alias only (`o.status = 'active'`) are rewritten into that source subquery (`SqlTransformOps.appendWhere`), stripping the alias prefix.
-2. Cross-alias conjuncts (`o.user_id = u.id`) stay as a **residual** filter applied in memory after the join (simple comparisons: `= != <> < <= > >=`).
-3. Residual filters also support **top-level OR** (and parenthesized OR groups) of those simple comparisons, e.g. `o.status = 'active' OR u.region = 'CN'`. Mixed-alias OR is **not** pushed into source SQL (stays residual).
-4. Unsupported residual forms (`IN`, functions, `NOT`, nested boolean beyond AND of OR-groups) fail with a clear error — push those filters into the source subqueries instead.
+2. Cross-alias conjuncts (`o.user_id = u.id`) stay as a **residual** filter applied in memory after the join (simple comparisons: `= != <> < <= > >=`, plus `IN` / `NOT IN` with literal lists).
+3. Residual filters also support **top-level OR** (and parenthesized OR groups) of those atoms, e.g. `o.status IN ('a','b') OR u.region = 'CN'`. Mixed-alias OR is **not** pushed into source SQL (stays residual).
+4. Unsupported residual forms (functions, bare `NOT`, column refs inside `IN` lists, nested boolean beyond AND of OR-groups) fail with a clear error — push those filters into the source subqueries instead.
 
 Parser also peels trailing `WHERE` / `GROUP BY` / `ORDER BY` / `HAVING` / `LIMIT` off the JOIN chain so `ON` is not polluted by outer clauses.
 

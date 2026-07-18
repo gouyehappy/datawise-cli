@@ -1,15 +1,16 @@
 package org.apache.datawise.backend.database.federated;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 /**
  * Best-effort in-memory evaluation of residual outer WHERE after federated JOIN.
- * Supports AND of simple comparisons, and OR within a conjunct
+ * Supports AND of atoms, and OR within a conjunct
  * ({@code a.x = 1 OR b.y = 2}, optionally parenthesized).
- * Each atom is {@code alias.col OP literal} or {@code alias.col OP other.col}
- * where OP is {@code = != <> < <= > >=}.
+ * Each atom is a simple comparison ({@code = != <> < <= > >=}) or
+ * {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
  */
 final class FederatedJoinResidualFilter {
 
@@ -36,16 +37,144 @@ final class FederatedJoinResidualFilter {
     }
 
     private static boolean matchesAtom(Map<String, Object> row, String atom) {
+        InPredicate inPredicate = parseInPredicate(atom);
+        if (inPredicate != null) {
+            Object value = resolve(row, inPredicate.left());
+            boolean contained = false;
+            for (Object candidate : inPredicate.values()) {
+                if (eq(value, candidate)) {
+                    contained = true;
+                    break;
+                }
+            }
+            return inPredicate.negated() != contained;
+        }
         Comparison comparison = parseComparison(atom);
         if (comparison == null) {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
-                            + "subqueries or use simple comparisons / OR of comparisons): " + atom
+                            + "subqueries or use simple comparisons / IN / OR of those): " + atom
             );
         }
         Object left = resolve(row, comparison.left());
         Object right = resolve(row, comparison.right());
         return compare(left, right, comparison.op());
+    }
+
+    /**
+     * Parse {@code left [NOT] IN (lit, …)}. Returns null when the atom is not an IN form;
+     * throws when it looks like IN but the list is not all literals.
+     */
+    static InPredicate parseInPredicate(String atom) {
+        if (atom == null || atom.isBlank()) {
+            return null;
+        }
+        String trimmed = atom.trim();
+        int notInIdx = findKeyword(trimmed, "not in", 6);
+        int inIdx = findKeyword(trimmed, "in", 2);
+        boolean negated;
+        int keywordStart;
+        int keywordLen;
+        if (notInIdx >= 0) {
+            negated = true;
+            keywordStart = notInIdx;
+            keywordLen = 6;
+        } else if (inIdx >= 0) {
+            negated = false;
+            keywordStart = inIdx;
+            keywordLen = 2;
+        } else {
+            return null;
+        }
+        String left = trimmed.substring(0, keywordStart).trim();
+        String rest = trimmed.substring(keywordStart + keywordLen).trim();
+        if (left.isEmpty() || !rest.startsWith("(") || !rest.endsWith(")") || !parensFullyWrap(rest)) {
+            return null;
+        }
+        String listBody = rest.substring(1, rest.length() - 1).trim();
+        List<Object> values = parseLiteralList(listBody);
+        if (values == null) {
+            throw new IllegalArgumentException(
+                    "Unsupported federated residual IN list (literals only): " + atom
+            );
+        }
+        return new InPredicate(left, negated, values);
+    }
+
+    private static int findKeyword(String text, String keyword, int keywordLength) {
+        int depth = 0;
+        boolean inSingle = false;
+        boolean inDouble = false;
+        for (int i = 0; i <= text.length() - keywordLength; i++) {
+            char ch = text.charAt(i);
+            if (ch == '\'' && !inDouble) {
+                inSingle = !inSingle;
+            } else if (ch == '"' && !inSingle) {
+                inDouble = !inDouble;
+            } else if (!inSingle && !inDouble) {
+                if (ch == '(') {
+                    depth++;
+                } else if (ch == ')') {
+                    depth = Math.max(0, depth - 1);
+                } else if (depth == 0 && text.regionMatches(true, i, keyword, 0, keywordLength)) {
+                    boolean leftOk = i == 0 || !isIdentChar(text.charAt(i - 1));
+                    boolean rightOk = i + keywordLength >= text.length()
+                            || !isIdentChar(text.charAt(i + keywordLength));
+                    if (leftOk && rightOk) {
+                        return i;
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isIdentChar(char ch) {
+        return Character.isLetterOrDigit(ch) || ch == '_';
+    }
+
+    /** Comma-split literal list; null if any token is not a literal. */
+    static List<Object> parseLiteralList(String listBody) {
+        if (listBody == null || listBody.isBlank()) {
+            return List.of();
+        }
+        List<Object> values = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inSingle = false;
+        boolean inDouble = false;
+        for (int i = 0; i < listBody.length(); i++) {
+            char ch = listBody.charAt(i);
+            if (ch == '\'' && !inDouble) {
+                inSingle = !inSingle;
+                current.append(ch);
+            } else if (ch == '"' && !inSingle) {
+                inDouble = !inDouble;
+                current.append(ch);
+            } else if (ch == ',' && !inSingle && !inDouble) {
+                if (!addLiteralToken(values, current)) {
+                    return null;
+                }
+                current = new StringBuilder();
+            } else {
+                current.append(ch);
+            }
+        }
+        if (!addLiteralToken(values, current)) {
+            return null;
+        }
+        return values;
+    }
+
+    private static boolean addLiteralToken(List<Object> values, StringBuilder current) {
+        String token = current.toString().trim();
+        if (token.isEmpty()) {
+            return true;
+        }
+        if (!isLiteral(token)) {
+            return false;
+        }
+        values.add(literalValue(token));
+        return true;
     }
 
     /** Unwrap one or more layers of fully wrapping parentheses. */
@@ -229,5 +358,8 @@ final class FederatedJoinResidualFilter {
     }
 
     private record Comparison(String left, String op, String right) {
+    }
+
+    record InPredicate(String left, boolean negated, List<Object> values) {
     }
 }
