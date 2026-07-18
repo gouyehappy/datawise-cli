@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Best-effort in-memory evaluation of residual outer WHERE after federated JOIN.
@@ -13,11 +14,19 @@ import java.util.Map;
  * Each atom is a simple comparison ({@code = != <> < <= > >=}),
  * {@code alias.col IS [NOT] NULL},
  * {@code alias.col [NOT] LIKE 'pattern'},
- * {@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM} in comparisons / LIKE,
+ * expression functions ({@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM}/
+ * {@code LENGTH}/{@code CHAR_LENGTH}/{@code ABS}/{@code COALESCE}/{@code NULLIF}/
+ * {@code CONCAT}/{@code SUBSTR}/{@code SUBSTRING}/{@code ||}) in comparisons / LIKE / BETWEEN,
  * {@code alias.col [NOT] BETWEEN low AND high},
  * or {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
  */
 final class FederatedJoinResidualFilter {
+
+    private static final Set<String> SUPPORTED_FUNCTIONS = Set.of(
+            "upper", "lower", "trim", "ltrim", "rtrim",
+            "length", "char_length", "abs",
+            "coalesce", "nullif", "concat", "substr", "substring"
+    );
 
     private FederatedJoinResidualFilter() {
     }
@@ -81,7 +90,8 @@ final class FederatedJoinResidualFilter {
         if (comparison == null) {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
-                            + "subqueries or use simple comparisons / IS NULL / LIKE / BETWEEN / UPPER|LOWER|TRIM / IN / NOT / OR "
+                            + "subqueries or use simple comparisons / IS NULL / LIKE / BETWEEN / "
+                            + "LENGTH|ABS|COALESCE|CONCAT|SUBSTR / UPPER|LOWER|TRIM / IN / NOT / OR "
                             + "of those): "
                             + atom
             );
@@ -515,23 +525,15 @@ final class FederatedJoinResidualFilter {
 
     private static Object resolve(Map<String, Object> row, String token) {
         String trimmed = token.trim();
-        FunctionCall call = parseUnaryStringFunction(trimmed);
+        FunctionCall call = parseFunctionCall(trimmed);
         if (call != null) {
-            Object inner = resolve(row, call.argument());
-            if (inner == null) {
-                return null;
-            }
-            String text = String.valueOf(inner);
-            return switch (call.name()) {
-                case "upper" -> text.toUpperCase(Locale.ROOT);
-                case "lower" -> text.toLowerCase(Locale.ROOT);
-                case "trim" -> text.trim();
-                case "ltrim" -> ltrim(text);
-                case "rtrim" -> rtrim(text);
-                default -> throw new IllegalArgumentException(
-                        "Unsupported federated residual function: " + call.name()
-                );
-            };
+            return applyFunction(row, call);
+        }
+        int concatIdx = findOperator(trimmed, "||");
+        if (concatIdx >= 0) {
+            Object left = resolve(row, trimmed.substring(0, concatIdx).trim());
+            Object right = resolve(row, trimmed.substring(concatIdx + 2).trim());
+            return concatValues(left, right);
         }
         if (isLiteral(trimmed)) {
             return literalValue(trimmed);
@@ -551,12 +553,164 @@ final class FederatedJoinResidualFilter {
         return null;
     }
 
+    private static Object applyFunction(Map<String, Object> row, FunctionCall call) {
+        List<String> args = call.arguments();
+        return switch (call.name()) {
+            case "upper" -> {
+                requireArity(call, 1);
+                yield mapString(resolve(row, args.get(0)), s -> s.toUpperCase(Locale.ROOT));
+            }
+            case "lower" -> {
+                requireArity(call, 1);
+                yield mapString(resolve(row, args.get(0)), s -> s.toLowerCase(Locale.ROOT));
+            }
+            case "trim" -> {
+                requireArity(call, 1);
+                yield mapString(resolve(row, args.get(0)), String::trim);
+            }
+            case "ltrim" -> {
+                requireArity(call, 1);
+                yield mapString(resolve(row, args.get(0)), FederatedJoinResidualFilter::ltrim);
+            }
+            case "rtrim" -> {
+                requireArity(call, 1);
+                yield mapString(resolve(row, args.get(0)), FederatedJoinResidualFilter::rtrim);
+            }
+            case "length", "char_length" -> {
+                requireArity(call, 1);
+                Object inner = resolve(row, args.get(0));
+                yield inner == null ? null : (long) String.valueOf(inner).length();
+            }
+            case "abs" -> {
+                requireArity(call, 1);
+                yield absValue(resolve(row, args.get(0)));
+            }
+            case "coalesce" -> {
+                if (args.size() < 2) {
+                    throw new IllegalArgumentException("COALESCE requires at least 2 arguments");
+                }
+                Object found = null;
+                for (String arg : args) {
+                    Object value = resolve(row, arg);
+                    if (value != null) {
+                        found = value;
+                        break;
+                    }
+                }
+                yield found;
+            }
+            case "nullif" -> {
+                requireArity(call, 2);
+                Object left = resolve(row, args.get(0));
+                Object right = resolve(row, args.get(1));
+                yield eq(left, right) ? null : left;
+            }
+            case "concat" -> {
+                if (args.isEmpty()) {
+                    throw new IllegalArgumentException("CONCAT requires at least 1 argument");
+                }
+                StringBuilder out = new StringBuilder();
+                for (String arg : args) {
+                    out.append(nullToEmpty(resolve(row, arg)));
+                }
+                yield out.toString();
+            }
+            case "substr", "substring" -> {
+                if (args.size() < 2 || args.size() > 3) {
+                    throw new IllegalArgumentException(
+                            "SUBSTR/SUBSTRING requires 2 or 3 arguments (expr, start[, length])"
+                    );
+                }
+                yield substringValue(
+                        resolve(row, args.get(0)),
+                        resolve(row, args.get(1)),
+                        args.size() == 3 ? resolve(row, args.get(2)) : null
+                );
+            }
+            default -> throw new IllegalArgumentException(
+                    "Unsupported federated residual function: " + call.name()
+            );
+        };
+    }
+
+    private static void requireArity(FunctionCall call, int expected) {
+        if (call.arguments().size() != expected) {
+            throw new IllegalArgumentException(
+                    call.name().toUpperCase(Locale.ROOT) + " requires " + expected + " argument(s)"
+            );
+        }
+    }
+
+    private static Object mapString(Object inner, java.util.function.Function<String, String> mapper) {
+        if (inner == null) {
+            return null;
+        }
+        return mapper.apply(String.valueOf(inner));
+    }
+
+    private static Object absValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (!(value instanceof Number number)) {
+            throw new IllegalArgumentException("ABS requires a numeric argument: " + value);
+        }
+        if (value instanceof Double || value instanceof Float) {
+            return Math.abs(number.doubleValue());
+        }
+        return Math.abs(number.longValue());
+    }
+
+    private static String nullToEmpty(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private static Object concatValues(Object left, Object right) {
+        return nullToEmpty(left) + nullToEmpty(right);
+    }
+
+    /** SQL-style 1-based {@code SUBSTR}; {@code start < 1} clamps to 1. */
+    static Object substringValue(Object source, Object startObj, Object lengthObj) {
+        if (source == null || startObj == null) {
+            return null;
+        }
+        String text = String.valueOf(source);
+        int start = toInt(startObj, "SUBSTR start");
+        if (start < 1) {
+            start = 1;
+        }
+        if (start > text.length()) {
+            return "";
+        }
+        int from = start - 1;
+        if (lengthObj == null) {
+            return text.substring(from);
+        }
+        int length = toInt(lengthObj, "SUBSTR length");
+        if (length <= 0) {
+            return "";
+        }
+        int to = Math.min(text.length(), from + length);
+        return text.substring(from, to);
+    }
+
+    private static int toInt(Object value, String label) {
+        if (!(value instanceof Number number)) {
+            try {
+                return (int) Double.parseDouble(String.valueOf(value));
+            } catch (NumberFormatException ex) {
+                throw new IllegalArgumentException(label + " must be numeric: " + value);
+            }
+        }
+        return number.intValue();
+    }
+
     /**
-     * Parse {@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM}(arg)
-     * (parens must fully wrap the argument). Returns null when the token is not a supported
-     * unary string function. {@code TRIM} is whitespace-both only (no {@code BOTH/LEADING FROM}).
+     * Parse a supported residual function call {@code NAME(arg[, …])} (parens must fully wrap
+     * the argument list). Returns null when the token is not a function shape.
+     * Unknown function names throw.
      */
-    static FunctionCall parseUnaryStringFunction(String token) {
+    static FunctionCall parseFunctionCall(String token) {
         if (token == null || token.isBlank()) {
             return null;
         }
@@ -566,22 +720,98 @@ final class FederatedJoinResidualFilter {
             return null;
         }
         String name = trimmed.substring(0, open).trim().toLowerCase(Locale.ROOT);
-        if (!"upper".equals(name)
-                && !"lower".equals(name)
-                && !"trim".equals(name)
-                && !"ltrim".equals(name)
-                && !"rtrim".equals(name)) {
+        if (name.isEmpty() || !isIdentStart(name.charAt(0))) {
             return null;
+        }
+        for (int i = 1; i < name.length(); i++) {
+            if (!isIdentChar(name.charAt(i))) {
+                return null;
+            }
         }
         String wrapped = trimmed.substring(open);
         if (!parensFullyWrap(wrapped)) {
             return null;
         }
-        String arg = wrapped.substring(1, wrapped.length() - 1).trim();
-        if (arg.isEmpty()) {
+        String body = wrapped.substring(1, wrapped.length() - 1).trim();
+        List<String> args = splitFunctionArgs(body);
+        if (!SUPPORTED_FUNCTIONS.contains(name)) {
+            throw new IllegalArgumentException(
+                    "Unsupported federated residual function: " + name
+                            + " (supported: " + String.join(", ", SUPPORTED_FUNCTIONS.stream().sorted().toList()) + ")"
+            );
+        }
+        if (args.isEmpty() && !"concat".equals(name)) {
             return null;
         }
-        return new FunctionCall(name, arg);
+        return new FunctionCall(name, args);
+    }
+
+    /** @deprecated use {@link #parseFunctionCall(String)}; kept for unary string call sites. */
+    static FunctionCall parseUnaryStringFunction(String token) {
+        FunctionCall call = parseFunctionCall(token);
+        if (call == null || call.arguments().size() != 1) {
+            return null;
+        }
+        String name = call.name();
+        if (!"upper".equals(name)
+                && !"lower".equals(name)
+                && !"trim".equals(name)
+                && !"ltrim".equals(name)
+                && !"rtrim".equals(name)
+                && !"length".equals(name)
+                && !"char_length".equals(name)
+                && !"abs".equals(name)) {
+            return null;
+        }
+        return call;
+    }
+
+    static List<String> splitFunctionArgs(String body) {
+        List<String> args = new ArrayList<>();
+        if (body == null || body.isBlank()) {
+            return args;
+        }
+        StringBuilder current = new StringBuilder();
+        int depth = 0;
+        boolean inSingle = false;
+        boolean inDouble = false;
+        for (int i = 0; i < body.length(); i++) {
+            char ch = body.charAt(i);
+            if (ch == '\'' && !inDouble) {
+                inSingle = !inSingle;
+                current.append(ch);
+            } else if (ch == '"' && !inSingle) {
+                inDouble = !inDouble;
+                current.append(ch);
+            } else if (!inSingle && !inDouble) {
+                if (ch == '(') {
+                    depth++;
+                    current.append(ch);
+                } else if (ch == ')') {
+                    depth = Math.max(0, depth - 1);
+                    current.append(ch);
+                } else if (ch == ',' && depth == 0) {
+                    String part = current.toString().trim();
+                    if (!part.isEmpty()) {
+                        args.add(part);
+                    }
+                    current = new StringBuilder();
+                } else {
+                    current.append(ch);
+                }
+            } else {
+                current.append(ch);
+            }
+        }
+        String last = current.toString().trim();
+        if (!last.isEmpty()) {
+            args.add(last);
+        }
+        return args;
+    }
+
+    private static boolean isIdentStart(char ch) {
+        return Character.isLetter(ch) || ch == '_';
     }
 
     /** Leading whitespace strip matching {@link String#trim()} (chars {@code <= ' '}). */
@@ -704,6 +934,10 @@ final class FederatedJoinResidualFilter {
     record StringLiteralTake(String value, String remainder) {
     }
 
-    record FunctionCall(String name, String argument) {
+    record FunctionCall(String name, List<String> arguments) {
+        /** Convenience for single-arg unary calls. */
+        String argument() {
+            return arguments.isEmpty() ? "" : arguments.get(0);
+        }
     }
 }

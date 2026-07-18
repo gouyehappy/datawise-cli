@@ -17,10 +17,25 @@ Constants live in `FederatedJoinLimits` (`datawise-database`).
 
 When the federated SQL has an outer `WHERE`:
 
-1. Conjuncts that reference **one** table alias only (`o.status = 'active'`, including single-alias **`OR`**, **`IN` / `NOT IN`**, **`IS [NOT] NULL`**, **`[NOT] LIKE`**, **`[NOT] BETWEEN`**, **`UPPER` / `LOWER`**, **`TRIM` / `LTRIM` / `RTRIM`**, and bare **`NOT`**) are rewritten into that source subquery (`SqlTransformOps.appendWhere`), stripping the alias prefix.
-2. Cross-alias conjuncts (`o.user_id = u.id`) stay as a **residual** filter applied in memory after the join (simple comparisons: `= != <> < <= > >=`, plus `IN` / `NOT IN` with literal lists, plus `IS [NOT] NULL`, plus `[NOT] LIKE` with a string-literal pattern (`%` / `_`, optional **`ESCAPE 'x'`**), plus inclusive **`[NOT] BETWEEN low AND high`**, plus unary **`UPPER` / `LOWER` / `TRIM` / `LTRIM` / `RTRIM`** on either side of a comparison or LIKE, plus bare `NOT` over those atoms / groups).
-3. Residual filters also support **top-level OR** (and parenthesized OR groups) of those atoms, e.g. `o.amount BETWEEN 1 AND 10 OR LOWER(u.region) = 'cn'`. Mixed-alias OR is **not** pushed into source SQL (stays residual). Top-level `AND` splitting leaves `BETWEEN … AND …` bounds intact.
-4. Unsupported residual forms (other SQL functions, `TRIM(BOTH FROM …)`, column refs inside `IN` lists, nested boolean beyond AND of OR-groups / NOT) fail with a clear error — push those filters into the source subqueries instead.
+1. Conjuncts that reference **one** table alias only (`o.status = 'active'`, including single-alias **`OR`**, **`IN` / `NOT IN`**, **`IS [NOT] NULL`**, **`[NOT] LIKE`**, **`[NOT] BETWEEN`**, residual expression functions below, and bare **`NOT`**) are rewritten into that source subquery (`SqlTransformOps.appendWhere`), stripping the alias prefix.
+2. Cross-alias conjuncts (`o.user_id = u.id`) stay as a **residual** filter applied in memory after the join (simple comparisons: `= != <> < <= > >=`, plus `IN` / `NOT IN` with literal lists, plus `IS [NOT] NULL`, plus `[NOT] LIKE` with a string-literal pattern (`%` / `_`, optional **`ESCAPE 'x'`**), plus inclusive **`[NOT] BETWEEN low AND high`**, plus residual expression functions on either side, plus bare `NOT` over those atoms / groups).
+3. Residual filters also support **top-level OR** (and parenthesized OR groups) of those atoms. Mixed-alias OR is **not** pushed into source SQL (stays residual). Top-level `AND` splitting leaves `BETWEEN … AND …` bounds intact.
+
+### Residual expression functions (closed catalog)
+
+| Function / op | Notes |
+|---------------|--------|
+| `UPPER` / `LOWER` / `TRIM` / `LTRIM` / `RTRIM` | Unary string; `TRIM` is whitespace-both only (no `BOTH/LEADING FROM`) |
+| `LENGTH` / `CHAR_LENGTH` | Character length → number |
+| `ABS` | Numeric absolute value |
+| `COALESCE(a, b, …)` | First non-null (≥2 args) |
+| `NULLIF(a, b)` | Null when equal |
+| `CONCAT(a, …)` / `\|\|` | Null args treated as empty string |
+| `SUBSTR` / `SUBSTRING(expr, start[, length])` | 1-based start; `start < 1` clamps to 1 |
+
+Nesting is supported (`LENGTH(TRIM(COALESCE(o.name, '')))`). Unknown function names fail with a clear error.
+
+4. Unsupported residual forms (`TRIM(BOTH FROM …)`, `SUBSTRING … FROM … FOR …`, column refs inside `IN` lists, nested boolean beyond AND of OR-groups / NOT) fail with a clear error — push those filters into the source subqueries instead.
 
 Parser also peels trailing `WHERE` / `GROUP BY` / `ORDER BY` / `HAVING` / `LIMIT` off the JOIN chain so `ON` is not polluted by outer clauses.
 

@@ -446,6 +446,82 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsLengthAbsCoalesceConcatSubstr() {
+        Map<String, Object> row1 = new java.util.HashMap<>();
+        row1.put("o.id", 1);
+        row1.put("o.name", "  ab  ");
+        row1.put("o.amount", -5);
+        row1.put("o.nick", null);
+        row1.put("u.code", "xy");
+        Map<String, Object> row2 = new java.util.HashMap<>();
+        row2.put("o.id", 2);
+        row2.put("o.name", "hello");
+        row2.put("o.amount", 12);
+        row2.put("o.nick", "n2");
+        row2.put("u.code", "zz");
+        List<Map<String, Object>> rows = List.of(row1, row2);
+
+        List<Map<String, Object>> byLen = FederatedJoinResidualFilter.apply(
+                rows,
+                "LENGTH(TRIM(o.name)) = 2"
+        );
+        assertEquals(1, byLen.size());
+        assertEquals(1, byLen.get(0).get("o.id"));
+
+        List<Map<String, Object>> byAbs = FederatedJoinResidualFilter.apply(
+                rows,
+                "ABS(o.amount) = 5"
+        );
+        assertEquals(1, byAbs.size());
+
+        List<Map<String, Object>> byCoalesce = FederatedJoinResidualFilter.apply(
+                rows,
+                "COALESCE(o.nick, u.code) = 'xy'"
+        );
+        assertEquals(1, byCoalesce.size());
+        assertEquals(1, byCoalesce.get(0).get("o.id"));
+
+        List<Map<String, Object>> byNullif = FederatedJoinResidualFilter.apply(
+                rows,
+                "NULLIF(u.code, 'zz') IS NULL"
+        );
+        assertEquals(1, byNullif.size());
+        assertEquals(2, byNullif.get(0).get("o.id"));
+
+        List<Map<String, Object>> byConcat = FederatedJoinResidualFilter.apply(
+                rows,
+                "CONCAT(u.code, '-', 'x') = 'xy-x' OR u.code || '1' = 'zz1'"
+        );
+        assertEquals(2, byConcat.size());
+
+        List<Map<String, Object>> bySubstr = FederatedJoinResidualFilter.apply(
+                rows,
+                "SUBSTR(o.name, 1, 2) = 'he'"
+        );
+        assertEquals(1, bySubstr.size());
+        assertEquals(2, bySubstr.get(0).get("o.id"));
+    }
+
+    @Test
+    void singleAliasLengthIsPushedIntoSourceSubquery() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, name FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name FROM users", "o.user_id = u.id")
+                ),
+                "LENGTH(o.name) > 3 AND ABS(o.id) >= 1"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        String ordersSql = result.plan().steps().get(0).subQuery().toUpperCase();
+        assertTrue(ordersSql.contains("LENGTH"));
+        assertTrue(ordersSql.contains("ABS"));
+        assertNull(result.residualWhere());
+    }
+
+    @Test
     void residualFilterSupportsLikeEscape() {
         List<Map<String, Object>> rows = List.of(
                 Map.of("o.id", 1, "o.name", "a%b"),
