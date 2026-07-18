@@ -5,7 +5,9 @@ import {
     canJumpLineage,
     discoveryHitRowKey,
     filterDiscoveryHitsByFacets,
+    normalizeRelatedTableName,
     pickLineageJumpTarget,
+    resolveLineageImpactSource,
     toggleFacetValue,
 } from '@/features/discovery/services/data-catalog.service'
 import type {DiscoveryHit} from '@/features/platform/types/platform.types'
@@ -71,11 +73,53 @@ describe('data-catalog.service', () => {
         )
     })
 
-    it('canJumpLineage only for table/view with scope', () => {
+    it('canJumpLineage for table/view and metrics with relatedTables', () => {
         assert.equal(canJumpLineage(tableHit), true)
         assert.equal(canJumpLineage({...tableHit, kind: 'metric'}), false)
+        assert.equal(canJumpLineage({
+            ...tableHit,
+            kind: 'metric',
+            name: 'gmv',
+            relatedTables: ['orders'],
+        }), true)
         assert.equal(canJumpLineage({...tableHit, connectionId: ''}), false)
         assert.ok(discoveryHitRowKey(tableHit).includes('orders'))
+    })
+
+    it('resolveLineageImpactSource uses first related table for metrics', () => {
+        assert.deepEqual(resolveLineageImpactSource(tableHit), {
+            connectionId: 'c1',
+            database: 'app',
+            name: 'orders',
+        })
+        assert.equal(resolveLineageImpactSource({
+            kind: 'metric',
+            id: 'm1',
+            name: 'gmv',
+            qualifiedLabel: 'shop.gmv',
+            connectionId: 'c2',
+            connectionLabel: 'staging',
+            database: 'shop',
+            score: 1,
+            relatedTables: [],
+        }), null)
+        assert.deepEqual(resolveLineageImpactSource({
+            kind: 'metric',
+            id: 'm1',
+            name: 'gmv',
+            qualifiedLabel: 'shop.gmv',
+            connectionId: 'c2',
+            connectionLabel: 'staging',
+            database: 'shop',
+            score: 1,
+            relatedTables: ['shop.orders', 'payments'],
+        }), {
+            connectionId: 'c2',
+            database: 'shop',
+            name: 'orders',
+        })
+        assert.equal(normalizeRelatedTableName('shop.orders', 'shop'), 'orders')
+        assert.equal(normalizeRelatedTableName('public.orders', 'shop'), 'orders')
     })
 
     it('buildDataCatalogFacetOptions counts kinds/connections/owners', () => {

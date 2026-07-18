@@ -55,18 +55,21 @@ class DiscoverySearchServiceTest {
         metric.setName("gmv");
         metric.setDescription("gross merchandise value");
         metric.setOwner("alice");
+        metric.setRelatedTables(List.of("orders", "shop.payments"));
         when(metricStore.listAll()).thenReturn(List.of(metric));
 
         List<DiscoveryHitDto> byTable = service.search("orders", 20);
         assertEquals(1, byTable.size());
         assertEquals("table", byTable.get(0).kind());
         assertEquals("orders", byTable.get(0).name());
+        assertTrue(byTable.get(0).relatedTables().isEmpty());
 
         List<DiscoveryHitDto> byOwner = service.search("alice", 20);
         assertEquals(1, byOwner.size());
         assertEquals("metric", byOwner.get(0).kind());
         assertEquals("alice", byOwner.get(0).owner());
         assertTrue(byOwner.get(0).subtitle() != null && byOwner.get(0).subtitle().contains("alice"));
+        assertEquals(List.of("orders", "shop.payments"), byOwner.get(0).relatedTables());
     }
 
     @Test

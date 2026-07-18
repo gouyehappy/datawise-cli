@@ -11,6 +11,7 @@ export default {
     open: 'Open',
     openLineage: 'Open lineage',
     lineageEmpty: 'No downstream view models found for this object',
+    lineageMetricNoTables: 'This metric has no related tables — set relatedTables on the metric to enable lineage.',
     lineagePickTitle: 'Choose a view model',
     lineagePickHint: 'Multiple downstream models reference this object. Pick one to open lineage.',
     lineageStale: 'stale',

@@ -18,6 +18,7 @@ import {
     filterDiscoveryHitsByFacets,
     hasActiveDataCatalogFacets,
     pickLineageJumpTarget,
+    resolveLineageImpactSource,
     toggleFacetValue,
     type DataCatalogFacets,
     type DiscoveryFacetKind,
@@ -172,21 +173,28 @@ async function openSelected() {
 }
 
 async function openLineageForHit(hit: DiscoveryHit) {
-    if (!canJumpLineage(hit)) return
+    const source = resolveLineageImpactSource(hit)
+    if (!source) {
+        if (hit.kind === 'metric') {
+            layout.showWarningToast(t('discovery.lineageMetricNoTables'))
+        }
+        return
+    }
     lineageLoading.value = true
     lineageSource.value = hit
     try {
         const impact = await lineageApi.getImpact({
-            connectionId: hit.connectionId,
-            instanceName: hit.database,
-            name: hit.name,
+            connectionId: source.connectionId,
+            instanceName: source.database,
+            name: source.name,
         })
-        const auto = pickLineageJumpTarget(impact.downstream, hit.name)
+        const preferred = hit.kind === 'metric' ? source.name : hit.name
+        const auto = pickLineageJumpTarget(impact.downstream, preferred)
         if (auto) {
             workspace.openViewModelLineage({
                 viewModelName: auto.modelName,
-                connectionId: hit.connectionId,
-                database: hit.database,
+                connectionId: source.connectionId,
+                database: source.database,
             })
             return
         }
@@ -212,11 +220,12 @@ async function openLineageSelected() {
 function chooseLineageTarget(item: LineageImpactItem) {
     const hit = lineageSource.value
     if (!hit) return
+    const source = resolveLineageImpactSource(hit)
     lineageOpen.value = false
     workspace.openViewModelLineage({
         viewModelName: item.modelName,
-        connectionId: hit.connectionId,
-        database: hit.database,
+        connectionId: source?.connectionId ?? hit.connectionId,
+        database: source?.database ?? hit.database,
     })
 }
 </script>

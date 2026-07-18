@@ -178,7 +178,8 @@ public class DiscoverySearchService {
                 database,
                 null,
                 trimOrNull(node.getComment()),
-                score
+                score,
+                List.of()
         );
     }
 
@@ -224,6 +225,12 @@ public class DiscoverySearchService {
                     ? "owner: " + metric.getOwner()
                     : subtitle + " · owner: " + metric.getOwner();
         }
+        List<String> related = metric.getRelatedTables() == null
+                ? List.of()
+                : metric.getRelatedTables().stream()
+                        .filter(item -> item != null && !item.isBlank())
+                        .map(String::trim)
+                        .toList();
         return new DiscoveryHitDto(
                 "metric",
                 metric.getId(),
@@ -234,7 +241,8 @@ public class DiscoverySearchService {
                 database,
                 trimOrNull(metric.getOwner()),
                 trimOrNull(subtitle),
-                score
+                score,
+                related
         );
     }
 

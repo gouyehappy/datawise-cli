@@ -25,6 +25,7 @@ Returns `DiscoveryHit[]`:
 | `kind` | `table` · `view` · `metric` |
 | `connectionId` / `database` | Scope for open / lineage |
 | `owner` | Optional metric owner |
+| `relatedTables` | Metric-only: related physical tables (used for lineage jump) |
 | `score` | Ranking hint (browse mode uses a flat score) |
 
 Empty / blank `q` **browses** the org catalog (schema-cache tables/views + semantic metrics), sorted by qualified name, still capped by `limit` (default 40, max 100). Non-empty `q` ranks by token match.
@@ -52,11 +53,18 @@ For a selected **table** or **view**:
 3. If several → pick dialog
 4. If none → warning toast
 
+For a selected **metric** with non-empty `relatedTables`:
+
+1. Use the metric’s `connectionId` / `database` and the **first** related table name (qualified prefixes matching the database are stripped)
+2. Same impact → lineage flow as tables/views
+3. If `relatedTables` is empty → warning toast (configure related tables on the metric)
+
 **Open** reuses the same activation path as global object search (locate tree + table tab, or semantic metrics catalog for metrics).
 
 ## Still open
 
 - Column-level catalog cards
-- Jump lineage for metrics → defining SQL / models
+- Deeper metric → defining SQL / model lineage (beyond first related table)
 - Tag facets (no tag field on discovery hits yet)
 - Paginated browse beyond the search limit cap
+- Related-table picker when a metric lists several tables

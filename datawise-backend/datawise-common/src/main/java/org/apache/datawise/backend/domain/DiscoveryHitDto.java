@@ -1,5 +1,7 @@
 package org.apache.datawise.backend.domain;
 
+import java.util.List;
+
 /**
  * Org-level discovery hit: cached tables/views across visible connections, or semantic metrics.
  */
@@ -13,6 +15,8 @@ public record DiscoveryHitDto(
         String database,
         String owner,
         String subtitle,
-        int score
+        int score,
+        /** Populated for metrics — related physical tables for lineage jump. */
+        List<String> relatedTables
 ) {
 }

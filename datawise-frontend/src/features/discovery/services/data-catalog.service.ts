@@ -20,10 +20,49 @@ export function discoveryHitRowKey(hit: DiscoveryHit): string {
     return `${hit.kind}|${hit.connectionId}|${hit.database}|${hit.id}|${hit.name}`
 }
 
+export interface LineageImpactSource {
+    connectionId: string
+    database: string
+    name: string
+}
+
+/** Resolve the physical object used for view-model impact / lineage jump. */
+export function resolveLineageImpactSource(hit: DiscoveryHit | null | undefined): LineageImpactSource | null {
+    if (!hit) return null
+    const connectionId = hit.connectionId?.trim()
+    const database = hit.database?.trim()
+    if (!connectionId || !database) return null
+
+    if (hit.kind === 'table' || hit.kind === 'view') {
+        const name = hit.name?.trim()
+        return name ? {connectionId, database, name} : null
+    }
+
+    if (hit.kind === 'metric') {
+        const raw = (hit.relatedTables ?? []).map((item) => item.trim()).find(Boolean)
+        if (!raw) return null
+        const name = normalizeRelatedTableName(raw, database)
+        return name ? {connectionId, database, name} : null
+    }
+
+    return null
+}
+
+/** Strip db/schema prefix when relatedTables stores qualified names. */
+export function normalizeRelatedTableName(raw: string, database: string): string {
+    const trimmed = raw.trim()
+    if (!trimmed) return ''
+    const parts = trimmed.split('.').map((part) => part.trim()).filter(Boolean)
+    if (parts.length <= 1) return parts[0] ?? ''
+    const db = database.trim().toLowerCase()
+    if (parts[0].toLowerCase() === db) {
+        return parts.slice(1).join('.')
+    }
+    return parts[parts.length - 1]
+}
+
 export function canJumpLineage(hit: DiscoveryHit | null | undefined): boolean {
-    if (!hit) return false
-    return (hit.kind === 'table' || hit.kind === 'view')
-        && Boolean(hit.connectionId?.trim() && hit.database?.trim() && hit.name?.trim())
+    return resolveLineageImpactSource(hit) != null
 }
 
 export type DiscoveryFacetKind = DiscoveryHit['kind']

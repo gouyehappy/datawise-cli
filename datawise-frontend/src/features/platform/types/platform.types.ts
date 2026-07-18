@@ -113,6 +113,8 @@ export interface DiscoveryHit {
     owner?: string | null
     subtitle?: string | null
     score: number
+    /** Metric-only: related physical tables for lineage jump. */
+    relatedTables?: string[] | null
 }
 
 export interface SqlReviewRequest {
