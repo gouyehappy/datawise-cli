@@ -52,7 +52,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Object storage backend; remaining file-only assets (plugins JARs, some desktop caches) as needed.
 - Full billing / invoicing (hard quotas only today); per-user/team AI billing.
 - Row-level data ACL.
-- Live embedded dashboards / Feishu·DingTalk channels; Mac signing/notarization + CI release assets.
+- Live embedded dashboards; native SMTP (email uses HTTP mail gateway today); Mac signing/notarization + CI release assets.
 
 ## Unreleased — Enterprise access (Wave A)
 
