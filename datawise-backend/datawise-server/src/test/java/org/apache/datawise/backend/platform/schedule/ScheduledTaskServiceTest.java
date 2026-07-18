@@ -6,9 +6,12 @@ import org.apache.datawise.backend.configstore.ScheduledTaskStore;
 import org.apache.datawise.backend.database.drift.SchemaDriftService;
 import org.apache.datawise.backend.database.sql.SqlReviewService;
 import org.apache.datawise.backend.database.sql.SqlService;
+import org.apache.datawise.backend.domain.DataQualityGateRequest;
+import org.apache.datawise.backend.domain.DataQualityGateResultDto;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
 import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.domain.RerunAnalysisCanvasRequest;
+import org.apache.datawise.backend.domain.SaveScheduledTaskRequest;
 import org.apache.datawise.backend.domain.ScheduledTaskDto;
 import org.apache.datawise.backend.domain.SqlReviewRequest;
 import org.apache.datawise.backend.domain.SqlReviewResultDto;
@@ -27,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -223,6 +228,72 @@ class ScheduledTaskServiceTest {
 
         verify(outboundNotifySupport).scheduledTask(eq(true), eq("Nightly SQL"), eq("sql"), any(), eq(9L));
         verify(outboundNotifySupport, times(0)).insightDigest(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void saveDataQualityAllowsBlankCronForGateOnly() {
+        when(taskStore.upsert(any(ScheduledTaskEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ScheduledTaskDto saved = service.save(new SaveScheduledTaskRequest(
+                null,
+                "Gate only",
+                ScheduledTaskEntry.TYPE_DATA_QUALITY,
+                "",
+                "{\"connectionId\":\"c1\",\"database\":\"db\",\"sql\":\"SELECT 1 WHERE 1=0\",\"assertion\":\"empty_result\",\"blocking\":true}",
+                true
+        ));
+
+        assertNull(saved.cronExpression());
+        assertEquals(ScheduledTaskEntry.TYPE_DATA_QUALITY, saved.type());
+    }
+
+    @Test
+    void evaluateDataQualityGateFailsWhenBlockingRuleFails() {
+        ScheduledTaskEntry blocking = new ScheduledTaskEntry();
+        blocking.setId("dq-block");
+        blocking.setName("No negatives");
+        blocking.setType(ScheduledTaskEntry.TYPE_DATA_QUALITY);
+        blocking.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        blocking.setPayloadJson(
+                "{\"connectionId\":\"conn-1\",\"database\":\"app\",\"sql\":\"SELECT id FROM orders WHERE amount < 0\","
+                        + "\"assertion\":\"empty_result\",\"blocking\":true}"
+        );
+        ScheduledTaskEntry nonBlocking = new ScheduledTaskEntry();
+        nonBlocking.setId("dq-soft");
+        nonBlocking.setName("Soft check");
+        nonBlocking.setType(ScheduledTaskEntry.TYPE_DATA_QUALITY);
+        nonBlocking.setCreatedAt(Instant.parse("2026-01-02T00:00:00Z"));
+        nonBlocking.setPayloadJson(
+                "{\"connectionId\":\"conn-1\",\"database\":\"app\",\"sql\":\"SELECT 1 WHERE 1=0\","
+                        + "\"assertion\":\"empty_result\",\"blocking\":false}"
+        );
+        when(taskStore.listAll()).thenReturn(List.of(blocking, nonBlocking));
+        when(taskStore.findById("dq-block")).thenReturn(blocking);
+        when(sqlReviewService.review(any(SqlReviewRequest.class)))
+                .thenReturn(new SqlReviewResultDto(true, false, List.of()));
+        when(sqlService.execute(any(ExecuteSqlRequest.class))).thenReturn(new ExecuteSqlResult(
+                "SELECT id FROM orders WHERE amount < 0",
+                1,
+                3L,
+                List.of(Map.of("name", "id")),
+                List.of(Map.of("id", 9)),
+                null,
+                null,
+                null,
+                false,
+                null,
+                null
+        ));
+
+        DataQualityGateResultDto gate = service.evaluateDataQualityGate(
+                new DataQualityGateRequest(null, "conn-1", "app", true)
+        );
+
+        assertFalse(gate.passed());
+        assertEquals(1, gate.total());
+        assertEquals(1, gate.failed());
+        assertEquals("dq-block", gate.results().get(0).ruleId());
+        assertTrue(gate.results().get(0).blocking());
     }
 
     @Test

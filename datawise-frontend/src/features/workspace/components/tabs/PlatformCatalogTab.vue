@@ -47,6 +47,7 @@ const isSemanticMetrics = computed(() => feature.value === 'semantic_metrics')
 const isAnalysisCanvas = computed(() => feature.value === 'analysis_canvas')
 const isSchemaDrift = computed(() => feature.value === 'schema_drift')
 const isScheduledTasks = computed(() => feature.value === 'scheduled_tasks')
+const isDataQuality = computed(() => feature.value === 'data_quality')
 const isFederatedViews = computed(() => feature.value === 'federated_views')
 
 const singleSelectedId = computed(() =>
@@ -187,6 +188,37 @@ async function runScheduledTask() {
   }
 }
 
+async function runDataQualityGate() {
+  if (runningAction.value) return
+  const connectionId = props.tab.connectionId?.trim()
+  const database = props.tab.database?.trim()
+  runningAction.value = true
+  try {
+    const selected = selectedKeys.value.filter(Boolean)
+    const result = await platformApi.evaluateDataQualityGate({
+      ruleIds: selected.length ? selected : undefined,
+      connectionId,
+      database,
+      // when nothing selected, default blocking-only suite for this scope
+      blockingOnly: selected.length ? false : true,
+    })
+    if (result.passed) {
+      layout.showSuccessToast(
+        t('platform.dq.gatePassed', {total: result.total}),
+      )
+    } else {
+      layout.showErrorToast(
+        t('platform.dq.gateFailed', {failed: result.failed, total: result.total}),
+      )
+    }
+    await reload()
+  } catch (err) {
+    layout.showErrorToast(err instanceof Error ? err.message : String(err))
+  } finally {
+    runningAction.value = false
+  }
+}
+
 async function executeFederatedView() {
   const id = singleSelectedId.value
   if (!id || runningAction.value) return
@@ -264,13 +296,22 @@ function runReleaseAction(action: ReleaseHighlightAction) {
         {{ t('platform.common.run') }}
       </button>
       <button
-          v-if="isScheduledTasks"
+          v-if="isScheduledTasks || isDataQuality"
           type="button"
           :disabled="loading || !canRunAction"
           @click="runScheduledTask"
       >
         <DwIcon name="run" size="sm" :stroke-width="1.35"/>
         {{ t('platform.common.run') }}
+      </button>
+      <button
+          v-if="isDataQuality"
+          type="button"
+          :disabled="loading || runningAction"
+          @click="runDataQualityGate"
+      >
+        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.dq.runGate') }}
       </button>
       <button
           v-if="isFederatedViews"

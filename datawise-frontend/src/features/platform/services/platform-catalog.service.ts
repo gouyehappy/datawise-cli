@@ -75,8 +75,39 @@ export async function loadPlatformCatalogRows(
                 lastRunStatus: item.lastRunStatus ?? '',
             }))
         }
+        case 'data_quality': {
+            const items = await platformApi.listDataQualityRules(connectionId, database)
+            return items.map((item) => {
+                const payload = parseDqPayload(item.payloadJson)
+                return {
+                    id: item.id,
+                    name: item.name,
+                    assertion: payload.assertion,
+                    blocking: payload.blocking,
+                    cronExpression: item.cronExpression ?? '',
+                    enabled: item.enabled,
+                    lastRunAt: item.lastRunAt ?? '',
+                    lastRunStatus: item.lastRunStatus ?? '',
+                }
+            })
+        }
         default:
             return []
+    }
+}
+
+function parseDqPayload(payloadJson?: string | null): {assertion: string; blocking: boolean} {
+    if (!payloadJson?.trim()) {
+        return {assertion: 'empty_result', blocking: false}
+    }
+    try {
+        const parsed = JSON.parse(payloadJson) as Record<string, unknown>
+        return {
+            assertion: typeof parsed.assertion === 'string' ? parsed.assertion : 'empty_result',
+            blocking: parsed.blocking === true,
+        }
+    } catch {
+        return {assertion: 'empty_result', blocking: false}
     }
 }
 
@@ -132,6 +163,16 @@ export function buildPlatformCatalogColumns(
             return [
                 col('name'),
                 col('type', {mono: true}),
+                col('cronExpression', {mono: true}),
+                col('enabled', {format: (row) => (row.enabled ? translate('common.yes') : translate('common.no'))}),
+                col('lastRunAt', {mono: true}),
+                col('lastRunStatus'),
+            ]
+        case 'data_quality':
+            return [
+                col('name'),
+                col('assertion', {mono: true}),
+                col('blocking', {format: (row) => (row.blocking ? translate('common.yes') : translate('common.no'))}),
                 col('cronExpression', {mono: true}),
                 col('enabled', {format: (row) => (row.enabled ? translate('common.yes') : translate('common.no'))}),
                 col('lastRunAt', {mono: true}),

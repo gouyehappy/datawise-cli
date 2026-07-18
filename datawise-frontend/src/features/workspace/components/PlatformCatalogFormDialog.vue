@@ -84,6 +84,7 @@ const taskForm = reactive({
     dqAssertion: 'empty_result',
     dqExpected: '0',
     dqColumn: '',
+    dqBlocking: false,
     httpUrl: '',
     httpMethod: 'POST',
     httpBodyJson: '{}',
@@ -103,6 +104,8 @@ const dialogTitle = computed(() => {
             return t('platform.drift.formTitle')
         case 'scheduled_tasks':
             return t('platform.tasks.formTitle')
+        case 'data_quality':
+            return t('platform.dq.formTitle')
         default:
             return t('workspace.platformCatalog.add')
     }
@@ -117,7 +120,9 @@ const dialogWidth = computed(() =>
 )
 
 const showScopeBanner = computed(() =>
-    props.feature === 'semantic_metrics' || props.feature === 'schema_drift',
+    props.feature === 'semantic_metrics'
+    || props.feature === 'schema_drift'
+    || props.feature === 'data_quality',
 )
 
 const scopeConnectionLabel = computed(() => {
@@ -147,8 +152,11 @@ const showSqlSourceFields = computed(() =>
 )
 
 const showDataQualityFields = computed(() =>
-    props.feature === 'scheduled_tasks' && taskForm.type === 'data_quality',
+    (props.feature === 'scheduled_tasks' && taskForm.type === 'data_quality')
+    || props.feature === 'data_quality',
 )
+
+const isDataQualityCatalog = computed(() => props.feature === 'data_quality')
 
 const showHttpTriggerFields = computed(() =>
     props.feature === 'scheduled_tasks' && taskForm.type === 'http_trigger',
@@ -306,6 +314,14 @@ const canSave = computed(() => {
                 return Boolean(taskForm.httpUrl.trim())
             }
             return true
+        case 'data_quality':
+            return Boolean(
+                taskForm.name.trim()
+                && taskForm.sql.trim()
+                && taskForm.dqAssertion.trim()
+                && props.tab.connectionId
+                && props.tab.database,
+            )
         default:
             return false
     }
@@ -344,6 +360,7 @@ function resetForms() {
     taskForm.dqAssertion = 'empty_result'
     taskForm.dqExpected = '0'
     taskForm.dqColumn = ''
+    taskForm.dqBlocking = false
     taskForm.httpUrl = ''
     taskForm.httpMethod = 'POST'
     taskForm.httpBodyJson = '{}'
@@ -388,6 +405,10 @@ watch(
     async (isOpen) => {
         if (!isOpen) return
         resetForms()
+        if (props.feature === 'data_quality') {
+            taskForm.type = 'data_quality'
+            taskForm.cronExpression = ''
+        }
         if (props.feature === 'scheduled_tasks') {
             applyScheduleDraft()
             canvasOptionsLoading.value = true
@@ -471,6 +492,7 @@ function buildPayload(): PlatformCatalogFormPayload | null {
                     assertion: taskForm.dqAssertion.trim() || 'empty_result',
                     expected: taskForm.dqExpected.trim() || '0',
                     ...(taskForm.dqColumn.trim() ? {column: taskForm.dqColumn.trim()} : {}),
+                    ...(taskForm.dqBlocking ? {blocking: true} : {}),
                 })
             } else if (taskForm.type === 'http_trigger') {
                 let bodyJson: unknown = {}
@@ -518,6 +540,29 @@ function buildPayload(): PlatformCatalogFormPayload | null {
                 ...taskForm,
                 feature: 'scheduled_tasks',
                 payloadJson: payloadJson ?? '{}',
+            }
+        }
+        case 'data_quality': {
+            if (!taskForm.sql.trim()) {
+                error.value = t('workspace.platformCatalog.form.validation.required')
+                return null
+            }
+            const payloadJson = JSON.stringify({
+                connectionId: props.tab.connectionId ?? '',
+                database: props.tab.database ?? '',
+                sql: taskForm.sql.trim(),
+                assertion: taskForm.dqAssertion.trim() || 'empty_result',
+                expected: taskForm.dqExpected.trim() || '0',
+                ...(taskForm.dqColumn.trim() ? {column: taskForm.dqColumn.trim()} : {}),
+                ...(taskForm.dqBlocking ? {blocking: true} : {}),
+            })
+            return {
+                feature: 'data_quality' as const,
+                name: taskForm.name,
+                type: 'data_quality',
+                cronExpression: taskForm.cronExpression,
+                payloadJson,
+                enabled: taskForm.enabled,
             }
         }
         default:
@@ -771,7 +816,7 @@ async function submit() {
         <SettingsSwitch v-model="driftForm.enabled" :label="t('platform.common.enabled')"/>
       </template>
 
-      <template v-else-if="feature === 'scheduled_tasks'">
+      <template v-else-if="feature === 'scheduled_tasks' || feature === 'data_quality'">
         <fieldset class="modal-fieldset">
           <legend>{{ t('workspace.platformCatalog.form.section.basic') }}</legend>
           <FormField :label="t('platform.common.name')">
@@ -791,7 +836,7 @@ async function submit() {
         <fieldset class="modal-fieldset">
           <legend>{{ t('workspace.platformCatalog.form.section.schedule') }}</legend>
           <div class="modal-form-grid">
-            <label class="modal-field">
+            <label v-if="!isDataQualityCatalog" class="modal-field">
               <span>{{ t('platform.tasks.type') }}</span>
               <DwSelect v-model="taskForm.type" size="sm" :options="taskTypeOptions"/>
             </label>
@@ -803,12 +848,18 @@ async function submit() {
                     class="dw-input modal-input--mono"
                     type="text"
                     spellcheck="false"
-                    :placeholder="t('workspace.platformCatalog.form.hint.cron')"
+                    :placeholder="isDataQualityCatalog
+                      ? t('workspace.platformCatalog.form.hint.dqCron')
+                      : t('workspace.platformCatalog.form.hint.cron')"
                 >
               </template>
             </FormField>
           </div>
-          <p class="modal-hint">{{ t('workspace.platformCatalog.form.hint.cron') }}</p>
+          <p class="modal-hint">
+            {{ isDataQualityCatalog
+              ? t('workspace.platformCatalog.form.hint.dqCron')
+              : t('workspace.platformCatalog.form.hint.cron') }}
+          </p>
         </fieldset>
 
         <SettingsSwitch v-model="taskForm.enabled" :label="t('platform.common.enabled')"/>
@@ -870,6 +921,11 @@ async function submit() {
               </template>
             </FormField>
           </div>
+          <SettingsSwitch
+              v-model="taskForm.dqBlocking"
+              :label="t('workspace.platformCatalog.form.dqBlockingLabel')"
+          />
+          <p class="modal-hint">{{ t('workspace.platformCatalog.form.hint.dqBlocking') }}</p>
           <FormField
               v-if="taskForm.dqAssertion === 'scalar_eq' || taskForm.dqAssertion === 'scalar_lte'"
               :label="t('workspace.platformCatalog.form.dqColumnLabel')"

@@ -59,7 +59,7 @@
 | G12 | 多租户 / 托管 SaaS | partial | Dual-mode 已落地（`tenancy.mode=single|multi`）：租户隔离、RBAC、OIDC 映射、配额硬顶、成员邀请；见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。缺完整计费/发票与对象存储 | 托管商业化与计费仍弱 |
 | G13 | 组织级数据发现 | partial | 命令面板跨库搜表（schema 缓存）+ 搜语义指标/责任人（`GET /api/discovery/search`）；指标可选 `owner`。缺统一数据目录 UI / 血缘跳转 | 语义层有了，发现体验仍弱 |
 | G14 | 编排生态对接 | partial | 定时任务 `http_trigger` 出站调用 Airflow/dbt/Flink REST + `POST /api/platform/orchestration/trigger` 入站跑任务 + `orchestration.*` Webhook；见 [ORCHESTRATION.md](./ORCHESTRATION.md)。缺 DAG 状态回写 UI / 原生算子 | Yarn 可看，闭环不足 |
-| G15 | 可调度数据质量规则 | partial | 定时任务类型 `data_quality`：只读 SQL 断言（空结果 / 行数 / 标量）+ `data_quality.failed` Webhook；缺规则目录 UI / 发版阻断门禁 | 质量治理难产品化 |
+| G15 | 可调度数据质量规则 | partial | 定时任务 `data_quality` + Explorer **数据质量**目录 + `blocking` + `POST /api/platform/data-quality/gate` 发版门禁；见 [DATA_QUALITY.md](./DATA_QUALITY.md)。缺规则模板库 / 多环境对照门禁 | 质量治理难产品化 |
 
 ---
 
@@ -135,4 +135,5 @@
 |------|------|
 | 2026-07-17 | 初稿：产品高度缺口分析；拆分 missing / partial；给出 Wave A～D 近期顺序 |
 | 2026-07-17 | G12：Phase 0–2 + JDBC 元数据落地；状态改为 `partial`（计费/对象存储仍开） |
+| 2026-07-18、G15 目录/门禁 | 数据质量规则目录 UI + release gate API（blocking 套件） |
 | 2026-07-17、G5 Vault | Wave D/C/B 切片：G13/G2/G15/G14、G3 飞书钉钉、G10 Issue、S1 行级 Diff、S2 Grace hash 落盘+谓词下推、S3 硬特性软剥离+表级血缘 |

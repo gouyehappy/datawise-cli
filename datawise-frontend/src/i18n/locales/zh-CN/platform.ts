@@ -129,6 +129,12 @@ export default {
         digestHint: '成功后额外发送 insight.digest（含截断行或画布摘要）。需在集成设置中订阅该事件。',
         lastRun: '上次运行',
     },
+    dq: {
+        formTitle: '新建数据质量规则',
+        runGate: '运行发版门禁',
+        gatePassed: '发版门禁通过（{total} 条规则）',
+        gateFailed: '发版门禁失败：{failed}/{total} 条未通过',
+    },
     sqlReview: {
         title: 'SQL 审查发现',
         requiresApproval: '需要审批',

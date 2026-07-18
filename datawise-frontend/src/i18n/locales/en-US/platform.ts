@@ -129,6 +129,12 @@ export default {
         digestHint: 'On success, also emit insight.digest (truncated rows or canvas summary). Subscribe to the event under Integrations.',
         lastRun: 'Last run',
     },
+    dq: {
+        formTitle: 'New data quality rule',
+        runGate: 'Run release gate',
+        gatePassed: 'Release gate passed ({total} rules)',
+        gateFailed: 'Release gate failed: {failed}/{total} rules did not pass',
+    },
     sqlReview: {
         title: 'SQL review findings',
         requiresApproval: 'Requires approval',

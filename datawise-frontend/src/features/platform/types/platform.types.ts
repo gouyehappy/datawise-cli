@@ -5,6 +5,7 @@ export type PlatformFeatureId =
     | 'analysis_canvas'
     | 'federated_views'
     | 'schema_drift'
+    | 'data_quality'
     | 'scheduled_tasks'
 
 export interface AiCanvasParameter {
@@ -255,6 +256,29 @@ export interface SaveScheduledTaskRequest {
     cronExpression?: string | null
     payloadJson?: string | null
     enabled?: boolean | null
+}
+
+export interface DataQualityGateRequest {
+    ruleIds?: string[] | null
+    connectionId?: string | null
+    database?: string | null
+    blockingOnly?: boolean | null
+}
+
+export interface DataQualityRuleRun {
+    ruleId: string
+    name: string
+    blocking: boolean
+    status?: string | null
+    message?: string | null
+    ranAt?: string | null
+}
+
+export interface DataQualityGateResult {
+    passed: boolean
+    total: number
+    failed: number
+    results: DataQualityRuleRun[]
 }
 
 export interface QueryLibraryVersion {

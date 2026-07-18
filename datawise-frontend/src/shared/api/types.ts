@@ -52,6 +52,8 @@ import type {
     SaveAnalysisCanvasRequest,
     SaveFederatedViewRequest,
     SaveQueryLibraryVersionRequest,
+    DataQualityGateRequest,
+    DataQualityGateResult,
     SaveScheduledTaskRequest,
     SaveSchemaDriftMonitorRequest,
     SaveSemanticMetricRequest,
@@ -1744,6 +1746,10 @@ export interface PlatformApi {
     deleteScheduledTask(id: string): Promise<void>
 
     runScheduledTask(id: string): Promise<ScheduledTask>
+
+    listDataQualityRules(connectionId?: string, database?: string): Promise<ScheduledTask[]>
+
+    evaluateDataQualityGate(request: DataQualityGateRequest): Promise<DataQualityGateResult>
 
     listQueryLibraryVersions(teamId: string, queryId: string): Promise<QueryLibraryVersion[]>
 

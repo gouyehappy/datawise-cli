@@ -259,6 +259,7 @@ export default {
                 analysis_canvas: '保存分析提示词与 SQL，便于重复执行。',
                 federated_views: '组合多个数据源 SQL 的虚拟视图。',
                 schema_drift: '监控源库与目标库之间的结构差异。',
+                data_quality: '维护当前库的数据质量规则目录；可调度，也可作为发版门禁。',
                 scheduled_tasks: '按计划自动执行 SQL 或平台任务。',
             },
             section: {
@@ -292,6 +293,8 @@ export default {
                 dataQuality: '只读 SELECT 断言：结果为空 / 行数 / 标量阈值。失败会触发 scheduled_task.failed 与 data_quality.failed Webhook。',
                 dqSql: '例如 SELECT id FROM orders WHERE amount < 0',
                 dqColumn: '标量列名（可空，默认取第一列）',
+                dqBlocking: '勾选后纳入「发版门禁」默认套件（POST /api/platform/data-quality/gate）。',
+                dqCron: '可留空：仅手动运行 / 发版门禁；填写 Cron 则按计划调度。',
                 httpTrigger: '调用 Airflow / dbt Cloud / Flink REST（或任意 HTTP 端点）。成功发 orchestration.triggered，失败发 orchestration.failed。',
                 httpUrl: 'https://airflow.example/api/v1/dags/my_dag/dagRuns',
                 httpHeaders: '{"Authorization":"Bearer …"}',
@@ -328,6 +331,7 @@ export default {
             dqAssertionLabel: '断言',
             dqExpectedLabel: '期望值',
             dqColumnLabel: '标量列',
+            dqBlockingLabel: '发版阻断（blocking）',
             httpUrlLabel: 'URL',
             httpMethodLabel: '方法',
             httpTimeoutLabel: '超时（毫秒）',
@@ -356,6 +360,7 @@ export default {
             analysis_canvas: '分析画布 · {database}',
             federated_views: '联邦视图 · {database}',
             schema_drift: 'Schema 漂移 · {database}',
+            data_quality: '数据质量 · {database}',
             scheduled_tasks: '定时任务 · {database}',
         },
         columns: {
@@ -395,6 +400,15 @@ export default {
             scheduled_tasks: {
                 name: '名称',
                 type: '类型',
+                cronExpression: 'Cron',
+                enabled: '启用',
+                lastRunAt: '上次运行',
+                lastRunStatus: '状态',
+            },
+            data_quality: {
+                name: '名称',
+                assertion: '断言',
+                blocking: '发版阻断',
                 cronExpression: 'Cron',
                 enabled: '启用',
                 lastRunAt: '上次运行',

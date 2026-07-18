@@ -10,6 +10,9 @@ import org.apache.datawise.backend.configstore.ScheduledTaskStore;
 import org.apache.datawise.backend.database.drift.SchemaDriftService;
 import org.apache.datawise.backend.database.sql.SqlReviewService;
 import org.apache.datawise.backend.database.sql.SqlService;
+import org.apache.datawise.backend.domain.DataQualityGateRequest;
+import org.apache.datawise.backend.domain.DataQualityGateResultDto;
+import org.apache.datawise.backend.domain.DataQualityRuleRunDto;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
 import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.domain.PushNotificationRequest;
@@ -39,9 +42,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class ScheduledTaskService {
@@ -103,10 +109,15 @@ public class ScheduledTaskService {
         if (request.name() == null || request.name().isBlank()) {
             throw new IllegalArgumentException("name is required");
         }
-        if (request.cronExpression() == null || request.cronExpression().isBlank()) {
-            throw new IllegalArgumentException("cronExpression is required");
+        String type = request.type() != null ? request.type().trim() : ScheduledTaskEntry.TYPE_SQL;
+        String cron = request.cronExpression() != null ? request.cronExpression().trim() : "";
+        boolean gateOnlyDq = ScheduledTaskEntry.TYPE_DATA_QUALITY.equals(type) && cron.isEmpty();
+        if (!gateOnlyDq) {
+            if (cron.isEmpty()) {
+                throw new IllegalArgumentException("cronExpression is required");
+            }
+            validateCron(cron);
         }
-        validateCron(request.cronExpression());
 
         ScheduledTaskEntry entry = request.id() != null && !request.id().isBlank()
                 ? requireEntry(request.id())
@@ -116,14 +127,72 @@ public class ScheduledTaskService {
             entry.setCreatedAt(Instant.now());
         }
         entry.setName(request.name().trim());
-        entry.setType(request.type() != null ? request.type().trim() : ScheduledTaskEntry.TYPE_SQL);
-        entry.setCronExpression(request.cronExpression().trim());
+        entry.setType(type);
+        entry.setCronExpression(gateOnlyDq ? null : cron);
         entry.setPayloadJson(trimOrNull(request.payloadJson()));
         if (request.enabled() != null) {
             entry.setEnabled(request.enabled());
         }
         taskStore.upsert(entry);
         return toDto(entry);
+    }
+
+    /** Catalog view: {@code data_quality} tasks, optionally scoped by connection/database in payload. */
+    public List<ScheduledTaskDto> listDataQualityRules(String connectionId, String database) {
+        return taskStore.listAll().stream()
+                .filter(entry -> ScheduledTaskEntry.TYPE_DATA_QUALITY.equals(entry.getType()))
+                .filter(entry -> matchesDqScope(entry, connectionId, database))
+                .sorted(Comparator.comparing(ScheduledTaskEntry::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::toDto)
+                .toList();
+    }
+
+    /**
+     * Release gate: run matching DQ rules and return aggregate pass/fail.
+     * Each rule still updates last-run status and emits outbound webhooks.
+     */
+    public DataQualityGateResultDto evaluateDataQualityGate(DataQualityGateRequest request) {
+        boolean blockingOnly = request.blockingOnly() == null || Boolean.TRUE.equals(request.blockingOnly());
+        Set<String> ids = new HashSet<>();
+        if (request.ruleIds() != null) {
+            for (String id : request.ruleIds()) {
+                if (id != null && !id.isBlank()) {
+                    ids.add(id.trim());
+                }
+            }
+        }
+        List<ScheduledTaskEntry> rules = taskStore.listAll().stream()
+                .filter(entry -> ScheduledTaskEntry.TYPE_DATA_QUALITY.equals(entry.getType()))
+                .filter(entry -> matchesDqScope(entry, request.connectionId(), request.database()))
+                .filter(entry -> {
+                    if (!ids.isEmpty()) {
+                        return ids.contains(entry.getId());
+                    }
+                    return !blockingOnly || isBlockingRule(entry);
+                })
+                .sorted(Comparator.comparing(ScheduledTaskEntry::getName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+
+        List<DataQualityRuleRunDto> results = new ArrayList<>();
+        int failed = 0;
+        for (ScheduledTaskEntry entry : rules) {
+            executeTask(entry);
+            taskStore.upsert(entry);
+            boolean ok = "ok".equalsIgnoreCase(entry.getLastRunStatus());
+            if (!ok) {
+                failed++;
+            }
+            results.add(new DataQualityRuleRunDto(
+                    entry.getId(),
+                    entry.getName(),
+                    isBlockingRule(entry),
+                    entry.getLastRunStatus(),
+                    entry.getLastRunMessage(),
+                    entry.getLastRunAt()
+            ));
+        }
+        return new DataQualityGateResultDto(failed == 0, results.size(), failed, results);
     }
 
     public void delete(String id) {
@@ -476,6 +545,9 @@ public class ScheduledTaskService {
     }
 
     private static boolean isDue(ScheduledTaskEntry entry, Instant now) {
+        if (entry.getCronExpression() == null || entry.getCronExpression().isBlank()) {
+            return false;
+        }
         try {
             CronExpression cron = CronExpression.parse(entry.getCronExpression());
             Instant base = entry.getLastRunAt() != null ? entry.getLastRunAt() : entry.getCreatedAt();
@@ -484,6 +556,47 @@ public class ScheduledTaskService {
             }
             Instant next = cron.next(base);
             return next != null && !next.isAfter(now);
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    private boolean matchesDqScope(ScheduledTaskEntry entry, String connectionId, String database) {
+        if ((connectionId == null || connectionId.isBlank()) && (database == null || database.isBlank())) {
+            return true;
+        }
+        try {
+            JsonNode payload = parsePayload(entry.getPayloadJson());
+            if (connectionId != null && !connectionId.isBlank()) {
+                String actual = payload.path("connectionId").asText("").trim();
+                if (!connectionId.trim().equals(actual)) {
+                    return false;
+                }
+            }
+            if (database != null && !database.isBlank()) {
+                String actual = payload.path("database").asText("").trim();
+                if (!database.trim().equalsIgnoreCase(actual)) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    private boolean isBlockingRule(ScheduledTaskEntry entry) {
+        try {
+            JsonNode payload = parsePayload(entry.getPayloadJson());
+            if (!payload.has("blocking") || payload.get("blocking").isNull()) {
+                return false;
+            }
+            JsonNode node = payload.get("blocking");
+            if (node.isBoolean()) {
+                return node.asBoolean(false);
+            }
+            String text = node.asText("").trim().toLowerCase(Locale.ROOT);
+            return "true".equals(text) || "1".equals(text) || "yes".equals(text);
         } catch (Exception ex) {
             return false;
         }

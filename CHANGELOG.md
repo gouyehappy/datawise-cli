@@ -46,6 +46,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G5 deepen: HashiCorp Vault KV secret references — `dwsecret:vault:path#field` via `VAULT_ADDR`/`VAULT_TOKEN`; see [docs/SECRETS.md](./docs/SECRETS.md).
 - Wave D G11 / S6 deepen: connector marketplace one-click install — admin `POST /api/datasources/market/install` downloads `downloadUrl` into `config/plugins` with SHA-256 verify (restart still required to load).
 - Wave A G3 deepen: outbound `channel=email` — POST `{to,subject,text}` to an HTTP mail gateway (`mailto:` / address needs `DATAWISE_MAIL_WEBHOOK_URL`).
+- Wave D G15 deepen: data-quality rules catalog (Explorer → AI → Data quality) + `blocking` flag + `POST /api/platform/data-quality/gate` release suite; gate-only rules may omit Cron. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
 
 ### Still open

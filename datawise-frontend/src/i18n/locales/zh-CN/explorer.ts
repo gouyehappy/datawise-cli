@@ -48,6 +48,7 @@ export default {
         analysis_canvas: '分析画布',
         federated_views: '联邦视图',
         schema_drift: 'Schema 漂移',
+        data_quality: '数据质量',
         scheduled_tasks: '定时任务',
     },
     folderNamePrompt: '请输入目录名称',

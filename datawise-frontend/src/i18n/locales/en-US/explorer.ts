@@ -48,6 +48,7 @@ export default {
         analysis_canvas: 'Analysis canvas',
         federated_views: 'Federated views',
         schema_drift: 'Schema drift',
+        data_quality: 'Data quality',
         scheduled_tasks: 'Scheduled tasks',
     },
     folderNamePrompt: 'Folder name',

@@ -15,6 +15,7 @@ public class AiPlatformExplorerService {
             "analysis_canvas",
             "federated_views",
             "schema_drift",
+            "data_quality",
             "scheduled_tasks"
     );
 

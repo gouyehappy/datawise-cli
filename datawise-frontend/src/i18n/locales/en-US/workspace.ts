@@ -259,6 +259,7 @@ export default {
                 analysis_canvas: 'Save prompts and SQL for repeatable analysis runs.',
                 federated_views: 'Virtual view combining SQL across data sources.',
                 schema_drift: 'Monitor structural differences between source and target.',
+                data_quality: 'Catalog SQL assertion rules for this database; schedule them or use as a release gate.',
                 scheduled_tasks: 'Run SQL or platform jobs on a schedule.',
             },
             section: {
@@ -292,6 +293,8 @@ export default {
                 dataQuality: 'Read-only SELECT assertion: empty result / row count / scalar threshold. Failures emit scheduled_task.failed and data_quality.failed webhooks.',
                 dqSql: 'e.g. SELECT id FROM orders WHERE amount < 0',
                 dqColumn: 'Scalar column name (optional; defaults to first column)',
+                dqBlocking: 'Include in the default release-gate suite (POST /api/platform/data-quality/gate).',
+                dqCron: 'Leave blank for manual / gate-only runs; set a Cron to schedule.',
                 httpTrigger: 'Call Airflow / dbt Cloud / Flink REST (or any HTTP endpoint). Success emits orchestration.triggered; failures emit orchestration.failed.',
                 httpUrl: 'https://airflow.example/api/v1/dags/my_dag/dagRuns',
                 httpHeaders: '{"Authorization":"Bearer …"}',
@@ -328,6 +331,7 @@ export default {
             dqAssertionLabel: 'Assertion',
             dqExpectedLabel: 'Expected',
             dqColumnLabel: 'Scalar column',
+            dqBlockingLabel: 'Release blocking',
             httpUrlLabel: 'URL',
             httpMethodLabel: 'Method',
             httpTimeoutLabel: 'Timeout (ms)',
@@ -356,6 +360,7 @@ export default {
             analysis_canvas: 'Analysis canvas · {database}',
             federated_views: 'Federated views · {database}',
             schema_drift: 'Schema drift · {database}',
+            data_quality: 'Data quality · {database}',
             scheduled_tasks: 'Scheduled tasks · {database}',
         },
         columns: {
@@ -395,6 +400,15 @@ export default {
             scheduled_tasks: {
                 name: 'Name',
                 type: 'Type',
+                cronExpression: 'Cron',
+                enabled: 'Enabled',
+                lastRunAt: 'Last run',
+                lastRunStatus: 'Status',
+            },
+            data_quality: {
+                name: 'Name',
+                assertion: 'Assertion',
+                blocking: 'Blocking',
                 cronExpression: 'Cron',
                 enabled: 'Enabled',
                 lastRunAt: 'Last run',

@@ -16,6 +16,8 @@ import type {
     SaveAnalysisCanvasRequest,
     SaveFederatedViewRequest,
     SaveQueryLibraryVersionRequest,
+    DataQualityGateRequest,
+    DataQualityGateResult,
     SaveScheduledTaskRequest,
     SaveSchemaDriftMonitorRequest,
     SaveSemanticMetricRequest,
@@ -122,6 +124,19 @@ export function createHttpPlatformApi(): PlatformApi {
 
         runScheduledTask: (id) =>
             postJson<ScheduledTask>(paths.scheduledTaskRun(id), {}),
+
+        listDataQualityRules: (connectionId, database) => {
+            const params = new URLSearchParams()
+            if (connectionId?.trim()) params.set('connectionId', connectionId.trim())
+            if (database?.trim()) params.set('database', database.trim())
+            const query = params.toString()
+            return getJson<ScheduledTask[]>(
+                query ? `${paths.dataQualityRules}?${query}` : paths.dataQualityRules,
+            )
+        },
+
+        evaluateDataQualityGate: (request: DataQualityGateRequest) =>
+            postJson<DataQualityGateResult>(paths.dataQualityGate, request ?? {}),
 
         listQueryLibraryVersions: (teamId, queryId) =>
             getJson<QueryLibraryVersion[]>(paths.queryLibraryVersions(teamId, queryId)),

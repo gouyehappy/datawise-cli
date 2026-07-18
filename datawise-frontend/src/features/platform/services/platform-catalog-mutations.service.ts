@@ -41,6 +41,7 @@ async function deletePlatformCatalogItem(feature: PlatformFeatureId, id: string)
             await platformApi.deleteSchemaDriftMonitor(id)
             break
         case 'scheduled_tasks':
+        case 'data_quality':
             await platformApi.deleteScheduledTask(id)
             break
     }
@@ -70,6 +71,14 @@ export type PlatformCatalogFormPayload =
 }
     | {
     feature: 'scheduled_tasks'
+    name: string
+    type: string
+    cronExpression: string
+    payloadJson: string
+    enabled: boolean
+}
+    | {
+    feature: 'data_quality'
     name: string
     type: string
     cronExpression: string
@@ -155,6 +164,7 @@ export async function savePlatformCatalogItem(
             return {}
         }
         case 'scheduled_tasks':
+        case 'data_quality':
             if (!payload.name.trim() || !payload.type.trim()) return {}
             await platformApi.saveScheduledTask({
                 name: payload.name.trim(),

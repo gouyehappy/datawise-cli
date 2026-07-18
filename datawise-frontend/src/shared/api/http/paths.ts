@@ -407,6 +407,8 @@ export const API_PATHS = {
         scheduledTasks: '/api/platform/scheduled-tasks',
         scheduledTaskRun: (id: string) =>
             `/api/platform/scheduled-tasks/${encodeURIComponent(id)}/run`,
+        dataQualityRules: '/api/platform/data-quality/rules',
+        dataQualityGate: '/api/platform/data-quality/gate',
         orchestrationTrigger: '/api/platform/orchestration/trigger',
         insightActions: '/api/platform/insight-actions',
         outboundWebhooks: '/api/platform/outbound-webhooks',

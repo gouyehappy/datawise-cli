@@ -95,6 +95,7 @@ node scripts/pre-commit-check.mjs
 | [WAVE_A_BACKLOG.md](./WAVE_A_BACKLOG.md) | Wave A 企业准入可执行 backlog（Webhook / OIDC / 审计导出） |
 | [WAVE_A_INTEGRATIONS.md](./WAVE_A_INTEGRATIONS.md) | Wave A 对接说明（Webhook 验签、OIDC、审计导出） |
 | [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md) | 多租户 + 角色权限（SaaS / 本地 dual-mode）数据模型与迁移清单 |
+| [DATA_QUALITY.md](./DATA_QUALITY.md) | 数据质量规则目录与发版门禁 API |
 | [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md) | 对标 Chat2DB/DBeaver/Navicat 等的客户端可调整点（含竞品优势与对本系统帮助） |
 | [VIEW_MODEL_LINEAGE_DESIGN.md](./VIEW_MODEL_LINEAGE_DESIGN.md) | ViewModel 字段级血缘详细设计方案（v2） |
 
