@@ -454,6 +454,7 @@ export default {
         runStatusPaused: 'Paused',
         resumeMigration: 'Resume migration',
         pauseMigration: 'Pause migration',
+        pauseRequested: 'Pause requested — finishing the current batch, then you can resume from checkpoint.',
         resumeFromCheckpoint: 'Resume from checkpoint',
         resumeFromCheckpointHint: 'Continues job {jobId}… using server checkpoints; completed tables are skipped.',
         restartFreshMigration: 'Restart as new job',

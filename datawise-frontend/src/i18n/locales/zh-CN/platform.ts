@@ -59,7 +59,7 @@ export default {
         sourceCount: '{count} 个数据源',
         execute: '执行',
         executeDone: '执行完成，{rows} 行',
-        executeTruncated: '执行完成，返回 {rows} 行（已达上限，结果可能不完整）',
+        executeTruncated: '执行完成，返回 {rows} 行（已在 {limit} 行截断，结果不完整 — 请收紧条件或提高 maxRows，硬顶 10 000）',
         boundsHint: '联邦 JOIN：每源与结果默认最多 1000 行（硬顶 10000）。等值 JOIN 构建侧超过 512 行会分桶落盘。外层 WHERE 单别名条件会下推到源 SQL；跨别名条件在内存过滤。无 ON 的笛卡尔积过大将被拒绝。详见 FEDERATED_JOIN_BOUNDS。',
         sourcesJson: '数据源 JSON',
         generatePrompt: '自然语言描述',

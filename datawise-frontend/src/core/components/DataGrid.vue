@@ -124,6 +124,13 @@ const props = withDefaults(
       cursorLoading?: boolean
       /** 滑动窗口丢弃的最早行数，用于行号顺延 */
       cursorTrimmedRows?: number
+      /**
+       * Result hit a hard row cap with no server cursor (e.g. federated JOIN).
+       * Shows a truncation hint instead of Load more.
+       */
+      truncatedAtCap?: boolean
+      /** Effective row cap when truncatedAtCap (pageSize / maxRows). */
+      truncatedCapRows?: number
       /** 生产环境性能模式已收紧行数策略 */
       productionPerfActive?: boolean
       showDmlActions?: boolean
@@ -147,6 +154,8 @@ const props = withDefaults(
       suggestExportMask: false,
       showExport: true,
       enableRowDocumentView: false,
+      truncatedAtCap: false,
+      truncatedCapRows: undefined,
     },
 )
 
@@ -1152,8 +1161,15 @@ function dismissColumnStats() {
         <span v-if="productionPerfActive" class="loaded-rows-hint">
           {{ t('dataGrid.productionPerfActive') }}
         </span>
+        <span v-if="truncatedAtCap" class="loaded-rows-hint loaded-rows-hint--warn" role="status">
+          {{
+            truncatedCapRows
+              ? t('dataGrid.truncatedAtCapWithLimit', {count: gridRows.length, limit: truncatedCapRows})
+              : t('dataGrid.truncatedAtCap', {count: gridRows.length})
+          }}
+        </span>
         <button
-            v-if="hasMore"
+            v-if="hasMore && !truncatedAtCap"
             class="dw-text-btn dw-text-btn--accent"
             type="button"
             :disabled="cursorLoading"
@@ -2194,6 +2210,11 @@ tbody tr.is-zebra.is-selected .index-col {
   font-size: var(--dw-text-xs);
   line-height: var(--dw-leading-snug);
   text-align: right;
+}
+
+.loaded-rows-hint--warn {
+  max-width: 360px;
+  font-weight: 600;
 }
 
 .data-cell {

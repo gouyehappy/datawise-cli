@@ -23,6 +23,7 @@ import type {ExplainPlanNode} from '@/features/workspace/types/explain-plan'
 import {getResultTabMenu} from '@/features/workspace/constants/tab-context-menu'
 import {resolveQueryResultRefreshRequest} from '@/features/workspace/services/query-result-refresh.service'
 import type {QueryResultRefreshRequest} from '@/features/workspace/services/query-result-refresh.service'
+import {isResultTruncatedAtCap} from '@/features/workspace/services/query-result-truncation'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {useGridViewState} from '@/features/workspace/composables/useGridViewState'
@@ -481,6 +482,18 @@ const gridHasMore = computed(() => {
   return Boolean(activeResult.value?.hasMore && activeResult.value?.cursorId)
 })
 
+/** Federated JOIN (and similar) set hasMore without a cursor — cannot Load more. */
+const gridTruncatedAtCap = computed(() => {
+  if (props.resultHasMore != null) return false
+  return isResultTruncatedAtCap(activeResult.value)
+})
+
+const gridTruncatedCapRows = computed(() => {
+  if (!gridTruncatedAtCap.value) return undefined
+  const result = activeResult.value
+  return result?.pageSize ?? (result?.total ? result.total : undefined)
+})
+
 const gridCursorLoading = computed(() => props.cursorLoading ?? false)
 
 const gridCursorTrimmedRows = computed(
@@ -875,6 +888,8 @@ watch(
           :enable-row-document-view="enableRowDocumentView"
           full-toolbar
           :has-more="gridHasMore"
+          :truncated-at-cap="gridTruncatedAtCap"
+          :truncated-cap-rows="gridTruncatedCapRows"
           :cursor-loading="gridCursorLoading"
           :cursor-trimmed-rows="gridCursorTrimmedRows"
           :production-perf-active="props.productionPerfActive"

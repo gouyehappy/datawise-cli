@@ -59,7 +59,7 @@ export default {
         sourceCount: '{count} sources',
         execute: 'Execute',
         executeDone: 'Executed, {rows} rows',
-        executeTruncated: 'Executed, {rows} rows (hit the row cap; result may be incomplete)',
+        executeTruncated: 'Executed, {rows} rows (truncated at {limit}; incomplete — tighten filters or raise maxRows, hard cap 10 000)',
         boundsHint: 'Federated JOINs: default 1,000 rows per source/result (hard cap 10,000). Equality JOINs spill the hash build side to disk above 512 rows. Outer WHERE single-alias filters are pushed into source SQL; cross-alias residuals filter in memory. Oversized cross joins without ON are rejected. See docs/FEDERATED_JOIN_BOUNDS.md.',
         sourcesJson: 'Sources JSON',
         generatePrompt: 'Natural language description',

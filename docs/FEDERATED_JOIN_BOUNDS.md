@@ -51,6 +51,8 @@ Probe rows stay in memory (already capped by `maxRows` / hard cap). Spill reduce
 
 ## Truncation signal
 
+The SQL console result grid shows a **truncation hint** when `hasMore` is true but there is **no** `cursorId` (federated JOIN cannot page further). Prefer tighter `WHERE` / source filters, or raise request `maxRows` up to the hard cap.
+
 When a source hits `maxRows` or the join stops early at the output cap, `ExecuteSqlResult.hasMore` is `true` and `pageSize` carries the effective `maxRows`. The UI should treat this as a partial result, not a full join.
 
 ## Practical guidance

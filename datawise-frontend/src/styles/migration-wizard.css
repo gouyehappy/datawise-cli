@@ -53,6 +53,41 @@
   color: var(--dw-text-secondary);
 }
 
+.table-migration__running-head {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  flex-wrap: wrap;
+}
+
+.migration-progress-card__pause {
+  margin-left: auto;
+}
+
+.migration-progress-card__pause-alert {
+  margin: var(--dw-space-2) 0 0;
+}
+
+.migration-progress-card__overall {
+  font-weight: 600;
+}
+
+.migration-progress-card__pause {
+  margin-left: auto;
+}
+
+.migration-progress-card .table-migration__running-meta {
+  margin-left: 0;
+}
+
+.migration-progress-card__pause-alert {
+  margin: var(--dw-space-2) 0 0;
+}
+
+.migration-progress-card__overall {
+  font-weight: 600;
+}
+
 .migration-progress-card__bar {
   margin-top: var(--dw-space-5);
 }

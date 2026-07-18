@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {DwButton, ProgressBar, StatusPill} from '@/core/components'
+import {DwButton, DwInlineAlert, ProgressBar, StatusPill} from '@/core/components'
 import {resolveLogLevelVariant, statusVariantClass} from '@/core/utils/status-variant'
 import {useMigrationWizard} from '@/features/workspace/composables/useMigrationWizardInject'
 import {
@@ -110,14 +110,42 @@ onUnmounted(() => {
       <div class="table-migration__running-head">
         <span class="table-migration__spinner" aria-hidden="true"/>
         <strong>{{ t('explorer.tableMigrationWizard.migrating') }}</strong>
+        <DwButton
+            v-if="w.canPauseMigration"
+            class="migration-progress-card__pause"
+            variant="secondary"
+            size="sm"
+            :disabled="w.pausing"
+            :loading="w.pausing"
+            @click="w.pauseActiveMigration"
+        >
+          {{ t('explorer.tableMigrationWizard.pauseMigration') }}
+        </DwButton>
         <span class="table-migration__running-meta">{{ w.progressPercent }}%</span>
       </div>
+
+      <DwInlineAlert
+          v-if="w.pausing"
+          density="banner"
+          variant="warning"
+          class="migration-progress-card__pause-alert"
+          :message="t('explorer.tableMigrationWizard.pauseRequested')"
+      />
 
       <div class="migration-progress-card__bar">
         <ProgressBar :value="w.progressPercent"/>
       </div>
 
       <div class="migration-progress-card__labels">
+        <p class="table-migration__running-text migration-progress-card__overall">
+          {{
+            t('explorer.tableMigrationWizard.progressOverall', {
+              percent: w.progressPercent,
+              completed: w.progress.completed,
+              total: w.progress.total,
+            })
+          }}
+        </p>
         <p class="table-migration__running-text">{{ progressCaption }}</p>
         <p v-if="w.progressDetailLabel" class="table-migration__running-text migration-progress-card__detail">
           {{ w.progressDetailLabel }}

@@ -323,11 +323,12 @@ async function executeFederatedView() {
   const id = singleSelectedId.value
   if (!id || runningAction.value) return
   runningAction.value = true
+  const maxRows = 1000
   try {
-    const result = await platformApi.executeFederatedView({viewId: id, maxRows: 1000})
+    const result = await platformApi.executeFederatedView({viewId: id, maxRows})
     const rows = result.rowCount ?? 0
     if (result.hasMore) {
-      layout.showWarningToast(t('platform.federated.executeTruncated', {rows}))
+      layout.showWarningToast(t('platform.federated.executeTruncated', {rows, limit: maxRows}))
     } else {
       layout.showSuccessToast(t('platform.federated.executeDone', {rows}))
     }

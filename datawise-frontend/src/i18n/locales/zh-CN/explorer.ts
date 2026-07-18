@@ -456,6 +456,7 @@ export default {
         runStatusPaused: '已暂停',
         resumeMigration: '断点续传',
         pauseMigration: '暂停迁移',
+        pauseRequested: '已请求暂停 — 正在结束当前批次，随后可从断点续传。',
         resumeFromCheckpoint: '断点续传',
         resumeFromCheckpointHint: '沿用任务 {jobId}… 的服务端断点，跳过已完成表并从上次批次继续。',
         restartFreshMigration: '新建任务重迁',

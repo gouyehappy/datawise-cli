@@ -84,7 +84,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
     const productionApprovalSql = ref('')
 
     const running = computed(() => migrationTasks.isRunning)
-    const canPauseMigration = computed(() => Boolean(activeJobId.value && running.value && !pausing.value))
+    const canPauseMigration = computed(() => Boolean(activeJobId.value && running.value))
     const progress = computed<TableMigrationRunProgress | null>(() => migrationTasks.activeProgress)
     const migrationResults = computed<TableMigrationResult[]>(() => {
         if (migrationTasks.activeRun) return migrationTasks.activeRun.results
@@ -725,15 +725,15 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
     }
 
     async function pauseActiveMigration() {
-        if (!canPauseMigration.value || !activeJobId.value) return
+        if (!canPauseMigration.value || !activeJobId.value || pausing.value) return
         pausing.value = true
         try {
             await pauseMigrationJob(activeJobId.value)
+            // Keep pausing=true until the run settles in startMigration / resume finally.
         } catch (error) {
+            pausing.value = false
             const message = error instanceof Error ? error.message : String(error)
             layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
-        } finally {
-            pausing.value = false
         }
     }
 
@@ -800,6 +800,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
             const message = error instanceof Error ? error.message : String(error)
             layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
         } finally {
+            pausing.value = false
             activeJobId.value = null
             resuming.value = false
             wizardStep.value = 'complete'
@@ -998,6 +999,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
                 migrationTasks.abortRun()
             }
         } finally {
+            pausing.value = false
             activeJobId.value = null
             if (migrationTasks.isRunning) {
                 migrationTasks.abortRun()
