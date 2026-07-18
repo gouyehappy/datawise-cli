@@ -2,6 +2,7 @@ import {describe, it} from 'node:test'
 import assert from 'node:assert/strict'
 import {
     buildConnectorInstallGuide,
+    canRemoteInstallConnector,
     filterConnectorMarketEntries,
     formatConnectorIntegrityLabel,
     summarizeConnectorMarket,
@@ -59,5 +60,11 @@ describe('connector-market.service', () => {
         assert.equal(formatConnectorIntegrityLabel('verified', t, te), 'plugin.connectorMarket.integrity.verified')
         assert.equal(formatConnectorIntegrityLabel('none', t, te), null)
         assert.equal(formatConnectorIntegrityLabel('bundled', t, te), 'plugin.connectorMarket.integrity.bundled')
+    })
+
+    it('allows remote install only for admin + pending + downloadUrl', () => {
+        assert.equal(canRemoteInstallConnector(sampleEntries[1]!, true), true)
+        assert.equal(canRemoteInstallConnector(sampleEntries[1]!, false), false)
+        assert.equal(canRemoteInstallConnector(sampleEntries[0]!, true), false)
     })
 })

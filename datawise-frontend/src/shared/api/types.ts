@@ -1459,6 +1459,14 @@ export interface DatasourcesApi {
     }>
 
     resolveDriver(request: JdbcDriverResolveRequest): Promise<JdbcDriverResolveResult>
+
+    installFromMarket(connectorId: string): Promise<{
+        connectorId: string
+        jarName: string
+        integrityStatus: string
+        restartRequired: boolean
+        message: string
+    }>
 }
 
 // ── Plugins & teams ─────────────────────────────────────────────────────────

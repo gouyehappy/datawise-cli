@@ -1,10 +1,13 @@
 package org.apache.datawise.backend.controller.system;
 
 import org.apache.datawise.backend.common.ApiResponse;
+import org.apache.datawise.backend.domain.InstallConnectorPluginRequest;
+import org.apache.datawise.backend.domain.InstallConnectorPluginResultDto;
 import org.apache.datawise.backend.domain.JdbcDriverResolveRequest;
 import org.apache.datawise.backend.domain.JdbcDriverResolveResult;
 import org.apache.datawise.backend.database.connection.DatasourceCatalogService;
 import org.apache.datawise.backend.database.connection.JdbcDriverService;
+import org.apache.datawise.backend.service.UserAdminPolicy;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,13 +23,16 @@ public class DatasourceController {
 
     private final DatasourceCatalogService datasourceCatalogService;
     private final JdbcDriverService jdbcDriverService;
+    private final UserAdminPolicy userAdminPolicy;
 
     public DatasourceController(
             DatasourceCatalogService datasourceCatalogService,
-            JdbcDriverService jdbcDriverService
+            JdbcDriverService jdbcDriverService,
+            UserAdminPolicy userAdminPolicy
     ) {
         this.datasourceCatalogService = datasourceCatalogService;
         this.jdbcDriverService = jdbcDriverService;
+        this.userAdminPolicy = userAdminPolicy;
     }
 
     @GetMapping
@@ -54,6 +60,15 @@ public class DatasourceController {
             ));
         }
         return ApiResponse.ok(payload);
+    }
+
+    @PostMapping("/market/install")
+    public ApiResponse<InstallConnectorPluginResultDto> installConnectorPlugin(
+            @RequestBody InstallConnectorPluginRequest request
+    ) {
+        userAdminPolicy.requireAdminUser();
+        String connectorId = request != null ? request.connectorId() : null;
+        return ApiResponse.ok(datasourceCatalogService.installRemotePlugin(connectorId));
     }
 
     @PostMapping("/drivers/resolve")

@@ -7,10 +7,12 @@ import {DB_TYPE_ICON_SIZE} from '@/features/connection/constants/db-type-icon-si
 import type {ConnectorMarketEntry} from '@/features/datasource/types/datasource.types'
 import {
     buildConnectorInstallGuide,
+    canRemoteInstallConnector,
     CONNECTOR_PLUGIN_DIR,
     formatConnectorCapabilityLabel,
     formatConnectorIntegrityLabel,
 } from '@/features/datasource/services/connector-market.service'
+import {datasourcesApi} from '@/api/modules/datasources'
 import {connectorMarketAccentVars} from '@/features/datasource/services/connector-market-theme.service'
 import type {DbType} from '@/core/types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -32,12 +34,18 @@ const props = withDefaults(defineProps<{
     standalone: false,
 })
 
+const emit = defineEmits<{
+    installed: []
+}>()
+
 const {t, te} = useI18n()
 const layout = useLayoutStore()
 const workspace = useWorkspaceStore()
 const auth = useAuthStore()
 const copied = ref(false)
+const installing = ref(false)
 const canCreateConnection = computed(() => canMutateConnectionCatalog(auth.isGuest))
+const canRemoteInstall = computed(() => canRemoteInstallConnector(props.entry, auth.isAdmin))
 
 const capLimit = props.standalone ? (props.lead ? 6 : 5) : 4
 
@@ -67,6 +75,22 @@ const integrityClass = computed(() => {
     if (status === 'unsigned') return 'connector-card__integrity--unsigned'
     return ''
 })
+
+async function installRemote(event: Event) {
+    event.stopPropagation()
+    if (!canRemoteInstall.value || installing.value) return
+    installing.value = true
+    try {
+        const result = await datasourcesApi.installFromMarket(props.entry.id)
+        layout.showSuccessToast(result.message || t('plugin.connectorMarket.installSuccess'))
+        emit('installed')
+    } catch (error) {
+        const message = error instanceof Error ? error.message : t('plugin.connectorMarket.installFailed')
+        layout.showErrorToast(message)
+    } finally {
+        installing.value = false
+    }
+}
 
 async function copyInstallGuide(event: Event) {
     event.stopPropagation()
@@ -186,6 +210,15 @@ function openNewConnection(event?: Event) {
       </div>
 
       <div v-else class="connector-card__footer-actions">
+        <button
+            v-if="canRemoteInstall"
+            class="connector-card__link"
+            type="button"
+            :disabled="installing"
+            @click="installRemote"
+        >
+          {{ installing ? t('plugin.connectorMarket.installing') : t('plugin.connectorMarket.installRemote') }}
+        </button>
         <button class="connector-card__link" type="button" @click="copyInstallGuide">
           {{ copied ? t('plugin.connectorMarket.copied') : t('plugin.connectorMarket.copyInstall') }}
         </button>

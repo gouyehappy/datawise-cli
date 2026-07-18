@@ -37,5 +37,8 @@ export function createHttpDatasourcesApi(): DatasourcesApi {
 
         resolveDriver: async (request) =>
             postJson<JdbcDriverResolveResult>(API_PATHS.datasources.resolveDriver, request),
+
+        installFromMarket: async (connectorId) =>
+            postJson(API_PATHS.datasources.marketInstall, {connectorId}),
     }
 }

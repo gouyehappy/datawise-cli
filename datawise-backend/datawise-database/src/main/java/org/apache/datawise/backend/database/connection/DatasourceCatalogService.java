@@ -7,14 +7,19 @@ import org.apache.datawise.backend.connector.DataSourceConnector;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
 import org.apache.datawise.backend.connector.plugin.ConnectorPluginManifestSupport;
 import org.apache.datawise.backend.connector.support.ConnectorCapabilityCatalog;
+import org.apache.datawise.backend.connector.plugin.ConnectorPluginRemoteInstallSupport;
 import org.apache.datawise.backend.domain.ConnectorMarketEntryDto;
+import org.apache.datawise.backend.domain.ConnectorPluginIntegrityStatus;
 import org.apache.datawise.backend.domain.ConnectorPluginLoadFailure;
 import org.apache.datawise.backend.domain.ConnectorPluginManifest;
 import org.apache.datawise.backend.domain.ConnectorPluginManifestEntry;
 import org.apache.datawise.backend.domain.DatasourceDefinitionDto;
+import org.apache.datawise.backend.domain.InstallConnectorPluginResultDto;
 import org.apache.datawise.backend.ops.DatabaseOpsRegistry;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -103,6 +108,55 @@ public class DatasourceCatalogService {
 
     public Optional<ConnectorPluginManifest> pluginManifest() {
         return connectorFacade.catalog().reloadPluginManifest();
+    }
+
+    /**
+     * Downloads a marketplace connector JAR from its manifest {@code downloadUrl} into {@code config/plugins}.
+     * The backend must be restarted (or plugins reloaded) before the connector becomes available.
+     */
+    public InstallConnectorPluginResultDto installRemotePlugin(String connectorId) {
+        if (connectorId == null || connectorId.isBlank()) {
+            throw new IllegalArgumentException("connectorId is required");
+        }
+        ConnectorPluginManifest manifest = connectorFacade.catalog().pluginManifest()
+                .or(() -> connectorFacade.catalog().reloadPluginManifest())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No config/plugins/manifest.json — add a manifest with downloadUrl before remote install"
+                ));
+        ConnectorPluginManifestEntry entry = ConnectorPluginManifestSupport.findById(manifest, connectorId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Connector not listed in manifest.json: " + connectorId
+                ));
+        if (entry.downloadUrl() == null || entry.downloadUrl().isBlank()) {
+            throw new IllegalArgumentException(
+                    "Manifest entry for " + connectorId + " has no downloadUrl"
+            );
+        }
+        Path pluginsDir = connectorFacade.catalog().pluginsDirectory();
+        try {
+            Path installed = ConnectorPluginRemoteInstallSupport.install(
+                    entry.downloadUrl(),
+                    pluginsDir,
+                    entry.jar(),
+                    entry.sha256()
+            );
+            connectorFacade.catalog().reloadPluginManifest();
+            String integrity = entry.sha256() != null && !entry.sha256().isBlank()
+                    ? ConnectorPluginIntegrityStatus.VERIFIED
+                    : ConnectorPluginIntegrityStatus.UNSIGNED;
+            return new InstallConnectorPluginResultDto(
+                    entry.id(),
+                    installed.getFileName().toString(),
+                    integrity,
+                    true,
+                    "Plugin JAR installed under config/plugins. Restart the backend to load the connector."
+            );
+        } catch (IOException ex) {
+            throw new IllegalStateException(
+                    "Failed to download connector plugin " + connectorId + ": " + ex.getMessage(),
+                    ex
+            );
+        }
     }
 
     public Optional<DatasourceDefinitionDto> findById(String id) {

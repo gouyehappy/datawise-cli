@@ -62,11 +62,19 @@ export function buildConnectorInstallGuide(entry: ConnectorMarketEntry): string 
     }
     if (entry.downloadUrl) {
         lines.push(`Download URL: ${entry.downloadUrl}`)
+        lines.push('Admins can also use one-click Install from marketplace (downloads into config/plugins/).')
     }
     if (entry.installHint) {
         lines.push('', entry.installHint)
     }
     return lines.join('\n')
+}
+
+export function canRemoteInstallConnector(
+    entry: ConnectorMarketEntry,
+    isAdmin: boolean,
+): boolean {
+    return Boolean(isAdmin && !entry.available && entry.downloadUrl?.trim())
 }
 
 export function formatConnectorIntegrityLabel(

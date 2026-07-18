@@ -267,6 +267,7 @@ function focusPending() {
               :index="index"
               :lead="index === 0 && standalone"
               :standalone="standalone"
+              @installed="loadMarket"
           />
         </div>
       </section>
@@ -285,6 +286,7 @@ function focusPending() {
               :index="index + primaryEntries.length"
               dense
               :standalone="standalone"
+              @installed="loadMarket"
           />
         </div>
       </section>
