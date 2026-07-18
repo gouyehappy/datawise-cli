@@ -10,7 +10,8 @@ import java.util.Map;
  * Supports AND of atoms, OR within a conjunct, and bare {@code NOT} over a supported
  * atom or parenthesized group
  * ({@code NOT o.status = 'closed'}, {@code NOT (o.a = 1 OR u.b = 2)}).
- * Each atom is a simple comparison ({@code = != <> < <= > >=}) or
+ * Each atom is a simple comparison ({@code = != <> < <= > >=}),
+ * {@code alias.col IS [NOT] NULL}, or
  * {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
  */
 final class FederatedJoinResidualFilter {
@@ -42,6 +43,12 @@ final class FederatedJoinResidualFilter {
         if (notInner != null) {
             return !matchesConjunct(row, notInner);
         }
+        NullCheck nullCheck = parseNullCheck(atom);
+        if (nullCheck != null) {
+            Object value = resolve(row, nullCheck.column());
+            boolean isNull = value == null;
+            return nullCheck.negated() != isNull;
+        }
         InPredicate inPredicate = parseInPredicate(atom);
         if (inPredicate != null) {
             Object value = resolve(row, inPredicate.left());
@@ -58,12 +65,40 @@ final class FederatedJoinResidualFilter {
         if (comparison == null) {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
-                            + "subqueries or use simple comparisons / IN / NOT / OR of those): " + atom
+                            + "subqueries or use simple comparisons / IS NULL / IN / NOT / OR of those): " + atom
             );
         }
         Object left = resolve(row, comparison.left());
         Object right = resolve(row, comparison.right());
         return compare(left, right, comparison.op());
+    }
+
+    /**
+     * Parse {@code left IS [NOT] NULL}. Returns null when the atom is not a null-check form.
+     */
+    static NullCheck parseNullCheck(String atom) {
+        if (atom == null || atom.isBlank()) {
+            return null;
+        }
+        String trimmed = atom.trim();
+        int notNullIdx = findKeyword(trimmed, "is not null", 11);
+        if (notNullIdx >= 0) {
+            String left = trimmed.substring(0, notNullIdx).trim();
+            String rest = trimmed.substring(notNullIdx + 11).trim();
+            if (!left.isEmpty() && rest.isEmpty()) {
+                return new NullCheck(left, true);
+            }
+            return null;
+        }
+        int nullIdx = findKeyword(trimmed, "is null", 7);
+        if (nullIdx >= 0) {
+            String left = trimmed.substring(0, nullIdx).trim();
+            String rest = trimmed.substring(nullIdx + 7).trim();
+            if (!left.isEmpty() && rest.isEmpty()) {
+                return new NullCheck(left, false);
+            }
+        }
+        return null;
     }
 
     /**
@@ -386,5 +421,8 @@ final class FederatedJoinResidualFilter {
     }
 
     record InPredicate(String left, boolean negated, List<Object> values) {
+    }
+
+    record NullCheck(String column, boolean negated) {
     }
 }

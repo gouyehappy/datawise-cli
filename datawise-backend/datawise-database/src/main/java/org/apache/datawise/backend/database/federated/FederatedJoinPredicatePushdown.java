@@ -15,7 +15,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Pushes single-table-alias conjuncts from the outer WHERE into each source subquery.
+ * Pushes single-table-alias conjuncts from the outer WHERE into each source subquery
+ * (including single-alias {@code OR} / {@code IS [NOT] NULL} / {@code IN} forms).
  * Cross-alias (or unqualified) predicates — including OR groups that touch multiple aliases —
  * remain as residual filters for in-memory evaluation.
  */

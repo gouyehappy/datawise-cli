@@ -178,6 +178,74 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void singleAliasOrIsPushedIntoSourceSubquery() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, status FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name, region FROM users", "o.user_id = u.id")
+                ),
+                "o.status = 'active' OR o.status = 'pending'"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        String ordersSql = result.plan().steps().get(0).subQuery().toUpperCase();
+        assertTrue(ordersSql.contains("STATUS"));
+        assertTrue(ordersSql.contains(" OR "));
+        assertTrue(ordersSql.contains("ACTIVE"));
+        assertTrue(ordersSql.contains("PENDING"));
+        assertFalse(result.plan().steps().get(0).subQuery().contains("o."));
+        assertNull(result.residualWhere());
+    }
+
+    @Test
+    void singleAliasIsNullIsPushedIntoSourceSubquery() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, deleted_at FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name FROM users", "o.user_id = u.id")
+                ),
+                "o.deleted_at IS NULL AND u.name IS NOT NULL"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        assertTrue(result.plan().steps().get(0).subQuery().toUpperCase().contains("IS NULL"));
+        assertTrue(result.plan().steps().get(1).subQuery().toUpperCase().contains("IS NOT NULL"));
+        assertNull(result.residualWhere());
+    }
+
+    @Test
+    void residualFilterSupportsIsNullAcrossAliases() {
+        Map<String, Object> withNull = new java.util.HashMap<>();
+        withNull.put("o.id", 1);
+        withNull.put("o.deleted_at", null);
+        withNull.put("u.region", "CN");
+        Map<String, Object> withValue = Map.of("o.id", 2, "o.deleted_at", "2026-01-01", "u.region", "US");
+        List<Map<String, Object>> filtered = FederatedJoinResidualFilter.apply(
+                List.of(withNull, withValue),
+                "o.deleted_at IS NULL OR u.region = 'US'"
+        );
+        assertEquals(2, filtered.size());
+
+        List<Map<String, Object>> onlyNull = FederatedJoinResidualFilter.apply(
+                List.of(withNull, withValue),
+                "o.deleted_at IS NULL"
+        );
+        assertEquals(1, onlyNull.size());
+        assertEquals(1, onlyNull.get(0).get("o.id"));
+
+        List<Map<String, Object>> notNull = FederatedJoinResidualFilter.apply(
+                List.of(withNull, withValue),
+                "o.deleted_at IS NOT NULL"
+        );
+        assertEquals(1, notNull.size());
+        assertEquals(2, notNull.get(0).get("o.id"));
+    }
+
+    @Test
     void singleAliasNotIsPushedIntoSourceSubquery() {
         FederatedJoinPlan plan = new FederatedJoinPlan(
                 List.of("o.id", "u.name"),
