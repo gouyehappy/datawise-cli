@@ -26,6 +26,20 @@ DataWise models data-quality checks as scheduled tasks of type `data_quality` (r
 
 Cron may be **blank** for gate-only / manual rules (they never fire on the scheduler).
 
+## Rule templates
+
+When creating a rule (Explorer → AI → **Data quality** → Add), pick a built-in **Template** to prefill name, SQL, assertion, expected, and blocking. Replace `{table}` / `{column}` before saving.
+
+| Id | Assertion | Blocking (default) |
+|----|-----------|--------------------|
+| `no_violations` | empty_result | yes |
+| `no_duplicates` | empty_result | yes |
+| `no_nulls` | empty_result | yes |
+| `max_violation_rows` | row_count_lte | yes |
+| `failed_count_threshold` | scalar_lte | no |
+
+Templates are frontend presets only (no backend catalog). User-saved templates and multi-env gate compare remain open.
+
 ## Catalog UI
 
 Explorer → AI → **Data quality** opens the catalog for the current connection/database. Actions:

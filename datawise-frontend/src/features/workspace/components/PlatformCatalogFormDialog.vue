@@ -26,6 +26,12 @@ import {
     buildScheduledSqlPayloadJson,
     type ScheduledSqlSource,
 } from '@/features/platform/services/scheduled-sql-payload.service'
+import {
+    applyDataQualityRuleTemplate,
+    DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID,
+    DATA_QUALITY_RULE_TEMPLATES,
+    findDataQualityRuleTemplate,
+} from '@/features/platform/constants/data-quality-rule-templates'
 
 const props = defineProps<{
     open: boolean
@@ -94,6 +100,7 @@ const taskForm = reactive({
 })
 const canvasOptions = ref<AnalysisCanvasSummary[]>([])
 const canvasOptionsLoading = ref(false)
+const dqTemplateId = ref(DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID)
 
 const dialogTitle = computed(() => {
     switch (props.feature) {
@@ -185,6 +192,40 @@ const dqAssertionOptions = computed<SelectOption[]>(() => [
     {value: 'scalar_eq', label: t('workspace.platformCatalog.form.dqAssertion.scalar_eq')},
     {value: 'scalar_lte', label: t('workspace.platformCatalog.form.dqAssertion.scalar_lte')},
 ])
+
+const dqTemplateOptions = computed<SelectOption[]>(() => [
+    {
+        value: DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID,
+        label: t('workspace.platformCatalog.form.dqTemplate.custom'),
+    },
+    ...DATA_QUALITY_RULE_TEMPLATES.map((item) => ({
+        value: item.id,
+        label: t(`workspace.platformCatalog.form.dqTemplate.items.${item.nameKey}`),
+    })),
+])
+
+const dqTemplateHint = computed(() => {
+    const tpl = findDataQualityRuleTemplate(dqTemplateId.value)
+    if (!tpl) return t('workspace.platformCatalog.form.hint.dqTemplate')
+    return t(`workspace.platformCatalog.form.dqTemplate.items.${tpl.descriptionKey}`)
+})
+
+function applySelectedDqTemplate(id: string) {
+    const tpl = findDataQualityRuleTemplate(id)
+    if (!tpl) return
+    const fields = applyDataQualityRuleTemplate(tpl, (nameKey) =>
+        t(`workspace.platformCatalog.form.dqTemplate.items.${nameKey}`),
+    )
+    taskForm.name = fields.name
+    taskForm.sql = fields.sql
+    taskForm.dqAssertion = fields.dqAssertion
+    taskForm.dqExpected = fields.dqExpected
+    taskForm.dqColumn = fields.dqColumn
+    taskForm.dqBlocking = fields.dqBlocking
+    if (fields.cronExpression != null) {
+        taskForm.cronExpression = fields.cronExpression
+    }
+}
 
 const sqlSourceOptions = computed<SelectOption[]>(() => [
     {value: 'inline', label: t('workspace.platformCatalog.form.sqlSource.inline')},
@@ -362,6 +403,7 @@ function resetForms() {
     taskForm.dqExpected = '0'
     taskForm.dqColumn = ''
     taskForm.dqBlocking = false
+    dqTemplateId.value = DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID
     taskForm.httpUrl = ''
     taskForm.httpMethod = 'POST'
     taskForm.httpBodyJson = '{}'
@@ -894,6 +936,16 @@ async function submit() {
         <fieldset v-if="showDataQualityFields" class="modal-fieldset">
           <legend>{{ t('workspace.platformCatalog.form.section.dataQuality') }}</legend>
           <p class="modal-hint">{{ t('workspace.platformCatalog.form.hint.dataQuality') }}</p>
+          <label class="modal-field">
+            <span>{{ t('workspace.platformCatalog.form.dqTemplateLabel') }}</span>
+            <DwSelect
+                v-model="dqTemplateId"
+                size="sm"
+                :options="dqTemplateOptions"
+                @update:model-value="applySelectedDqTemplate"
+            />
+          </label>
+          <p class="modal-hint">{{ dqTemplateHint }}</p>
           <FormField :label="t('workspace.platformCatalog.form.sqlLabel')">
             <template #default="{ id }">
               <textarea
