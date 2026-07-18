@@ -336,6 +336,59 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsTrimFunctions() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.name", "  alice  ", "u.code", " cn"),
+                Map.of("o.id", 2, "o.name", "bob", "u.code", "us "),
+                Map.of("o.id", 3, "o.name", "  carol", "u.code", " jp ")
+        );
+        List<Map<String, Object>> trimEq = FederatedJoinResidualFilter.apply(
+                rows,
+                "TRIM(o.name) = 'alice'"
+        );
+        assertEquals(1, trimEq.size());
+        assertEquals(1, trimEq.get(0).get("o.id"));
+
+        List<Map<String, Object>> ltrim = FederatedJoinResidualFilter.apply(
+                rows,
+                "LTRIM(u.code) = 'cn'"
+        );
+        assertEquals(1, ltrim.size());
+        assertEquals(1, ltrim.get(0).get("o.id"));
+
+        List<Map<String, Object>> rtrim = FederatedJoinResidualFilter.apply(
+                rows,
+                "RTRIM(u.code) = 'us'"
+        );
+        assertEquals(1, rtrim.size());
+        assertEquals(2, rtrim.get(0).get("o.id"));
+
+        List<Map<String, Object>> mixed = FederatedJoinResidualFilter.apply(
+                rows,
+                "TRIM(o.name) = 'bob' OR TRIM(u.code) = 'jp'"
+        );
+        assertEquals(2, mixed.size());
+    }
+
+    @Test
+    void singleAliasTrimIsPushedIntoSourceSubquery() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, name FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name, code FROM users", "o.user_id = u.id")
+                ),
+                "TRIM(o.name) = 'alice' AND LTRIM(u.code) = 'cn'"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        assertTrue(result.plan().steps().get(0).subQuery().toUpperCase().contains("TRIM"));
+        assertTrue(result.plan().steps().get(1).subQuery().toUpperCase().contains("LTRIM"));
+        assertNull(result.residualWhere());
+    }
+
+    @Test
     void residualFilterSupportsLikeEscape() {
         List<Map<String, Object>> rows = List.of(
                 Map.of("o.id", 1, "o.name", "a%b"),

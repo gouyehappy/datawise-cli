@@ -66,6 +66,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave B S2 deepen: federated WHERE **single-alias OR** pushdown (documented + tested) and residual **`IS [NOT] NULL`**. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual / pushdown **`[NOT] LIKE`** with literal `%` / `_` patterns. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual / pushdown unary **`UPPER` / `LOWER`** on comparisons and LIKE. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
+- Wave B S2 deepen: federated residual / pushdown **`TRIM` / `LTRIM` / `RTRIM`** (whitespace-both / leading / trailing). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated **`LIKE … ESCAPE`** (literal escape char for `%` / `_`). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
 

@@ -13,7 +13,7 @@ import java.util.Map;
  * Each atom is a simple comparison ({@code = != <> < <= > >=}),
  * {@code alias.col IS [NOT] NULL},
  * {@code alias.col [NOT] LIKE 'pattern'},
- * {@code UPPER(alias.col)} / {@code LOWER(alias.col)} in comparisons / LIKE,
+ * {@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM} in comparisons / LIKE,
  * or {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
  */
 final class FederatedJoinResidualFilter {
@@ -73,7 +73,7 @@ final class FederatedJoinResidualFilter {
         if (comparison == null) {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
-                            + "subqueries or use simple comparisons / IS NULL / LIKE / UPPER|LOWER / IN / NOT / OR "
+                            + "subqueries or use simple comparisons / IS NULL / LIKE / UPPER|LOWER|TRIM / IN / NOT / OR "
                             + "of those): "
                             + atom
             );
@@ -463,6 +463,9 @@ final class FederatedJoinResidualFilter {
             return switch (call.name()) {
                 case "upper" -> text.toUpperCase(Locale.ROOT);
                 case "lower" -> text.toLowerCase(Locale.ROOT);
+                case "trim" -> text.trim();
+                case "ltrim" -> ltrim(text);
+                case "rtrim" -> rtrim(text);
                 default -> throw new IllegalArgumentException(
                         "Unsupported federated residual function: " + call.name()
                 );
@@ -487,8 +490,9 @@ final class FederatedJoinResidualFilter {
     }
 
     /**
-     * Parse {@code UPPER(arg)} / {@code LOWER(arg)} (parens must fully wrap the argument).
-     * Returns null when the token is not a supported unary string function.
+     * Parse {@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM}(arg)
+     * (parens must fully wrap the argument). Returns null when the token is not a supported
+     * unary string function. {@code TRIM} is whitespace-both only (no {@code BOTH/LEADING FROM}).
      */
     static FunctionCall parseUnaryStringFunction(String token) {
         if (token == null || token.isBlank()) {
@@ -500,7 +504,11 @@ final class FederatedJoinResidualFilter {
             return null;
         }
         String name = trimmed.substring(0, open).trim().toLowerCase(Locale.ROOT);
-        if (!"upper".equals(name) && !"lower".equals(name)) {
+        if (!"upper".equals(name)
+                && !"lower".equals(name)
+                && !"trim".equals(name)
+                && !"ltrim".equals(name)
+                && !"rtrim".equals(name)) {
             return null;
         }
         String wrapped = trimmed.substring(open);
@@ -512,6 +520,24 @@ final class FederatedJoinResidualFilter {
             return null;
         }
         return new FunctionCall(name, arg);
+    }
+
+    /** Leading whitespace strip matching {@link String#trim()} (chars {@code <= ' '}). */
+    static String ltrim(String text) {
+        int i = 0;
+        while (i < text.length() && text.charAt(i) <= ' ') {
+            i++;
+        }
+        return text.substring(i);
+    }
+
+    /** Trailing whitespace strip matching {@link String#trim()} (chars {@code <= ' '}). */
+    static String rtrim(String text) {
+        int i = text.length();
+        while (i > 0 && text.charAt(i - 1) <= ' ') {
+            i--;
+        }
+        return text.substring(0, i);
     }
 
     private static boolean isLiteral(String token) {
