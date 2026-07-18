@@ -12,6 +12,10 @@ public record ScheduledTaskDto(
         Instant lastRunAt,
         String lastRunStatus,
         String lastRunMessage,
-        Instant createdAt
+        Instant createdAt,
+        String orchestrationState,
+        String orchestrationRef,
+        Instant orchestrationCheckedAt,
+        String orchestrationDetail
 ) {
 }

@@ -1,6 +1,8 @@
 package org.apache.datawise.backend.controller.platform;
 
 import org.apache.datawise.backend.common.ApiResponse;
+import org.apache.datawise.backend.domain.OrchestrationStatusDto;
+import org.apache.datawise.backend.domain.OrchestrationStatusRequest;
 import org.apache.datawise.backend.domain.OrchestrationTriggerRequest;
 import org.apache.datawise.backend.domain.ScheduledTaskDto;
 import org.apache.datawise.backend.platform.schedule.ScheduledTaskService;
@@ -10,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Inbound hooks for external orchestrators to run DataWise scheduled tasks.
+ * Inbound hooks for external orchestrators and outbound DAG/job status polling.
  */
 @RestController
 @RequestMapping("/api/platform/orchestration")
@@ -32,5 +34,17 @@ public class OrchestrationController {
             throw new IllegalArgumentException("taskId is required");
         }
         return ApiResponse.ok(scheduledTaskService.runNow(request.taskId().trim()));
+    }
+
+    /**
+     * Poll remote DAG/job status for an {@code http_trigger} task
+     * ({@code statusUrl} / {@code statusUrlTemplate} in payload).
+     */
+    @PostMapping("/status")
+    public ApiResponse<OrchestrationStatusDto> status(@RequestBody OrchestrationStatusRequest request) {
+        if (request == null || request.taskId() == null || request.taskId().isBlank()) {
+            throw new IllegalArgumentException("taskId is required");
+        }
+        return ApiResponse.ok(scheduledTaskService.pollOrchestrationStatus(request.taskId().trim()));
     }
 }

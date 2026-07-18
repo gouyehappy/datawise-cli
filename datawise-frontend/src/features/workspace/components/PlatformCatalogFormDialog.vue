@@ -90,6 +90,7 @@ const taskForm = reactive({
     httpBodyJson: '{}',
     httpHeadersJson: '{}',
     httpTimeoutMs: '10000',
+    httpStatusUrlTemplate: '',
 })
 const canvasOptions = ref<AnalysisCanvasSummary[]>([])
 const canvasOptionsLoading = ref(false)
@@ -366,6 +367,7 @@ function resetForms() {
     taskForm.httpBodyJson = '{}'
     taskForm.httpHeadersJson = '{}'
     taskForm.httpTimeoutMs = '10000'
+    taskForm.httpStatusUrlTemplate = ''
     canvasOptions.value = []
     sqlFileOptions.value = []
     sharedQueryOptions.value = []
@@ -1000,6 +1002,19 @@ async function submit() {
               />
             </template>
           </FormField>
+          <FormField :label="t('workspace.platformCatalog.form.httpStatusUrlLabel')">
+            <template #default="{ id }">
+              <input
+                  :id="id"
+                  v-model="taskForm.httpStatusUrlTemplate"
+                  class="dw-input modal-input--mono"
+                  type="text"
+                  spellcheck="false"
+                  :placeholder="t('workspace.platformCatalog.form.hint.httpStatusUrl')"
+              >
+            </template>
+          </FormField>
+          <p class="modal-hint">{{ t('workspace.platformCatalog.form.hint.httpStatusUrl') }}</p>
         </fieldset>
 
         <fieldset v-if="showSqlSourceFields" class="modal-fieldset">

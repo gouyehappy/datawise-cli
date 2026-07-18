@@ -73,6 +73,8 @@ export async function loadPlatformCatalogRows(
                 enabled: item.enabled,
                 lastRunAt: item.lastRunAt ?? '',
                 lastRunStatus: item.lastRunStatus ?? '',
+                orchestrationState: item.orchestrationState ?? '',
+                orchestrationRef: item.orchestrationRef ?? '',
             }))
         }
         case 'data_quality': {
@@ -167,6 +169,8 @@ export function buildPlatformCatalogColumns(
                 col('enabled', {format: (row) => (row.enabled ? translate('common.yes') : translate('common.no'))}),
                 col('lastRunAt', {mono: true}),
                 col('lastRunStatus'),
+                col('orchestrationState', {mono: true}),
+                col('orchestrationRef', {mono: true}),
             ]
         case 'data_quality':
             return [

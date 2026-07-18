@@ -48,6 +48,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave A G3 deepen: outbound `channel=email` — POST `{to,subject,text}` to an HTTP mail gateway (`mailto:` / address needs `DATAWISE_MAIL_WEBHOOK_URL`).
 - Wave D G15 deepen: data-quality rules catalog (Explorer → AI → Data quality) + `blocking` flag + `POST /api/platform/data-quality/gate` release suite; gate-only rules may omit Cron. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G11 / S6 deepen: connector plugin hot-reload — `POST /api/datasources/plugins/reload` (admin); marketplace install auto-reloads so restart is usually unnecessary (Windows JAR lock may still require restart). See [docs/CONNECTOR_PLUGINS.md](./docs/CONNECTOR_PLUGINS.md).
+- Wave D G14 deepen: orchestration DAG status write-back — `http_trigger` `statusUrl` / `statusUrlTemplate`, auto-poll after trigger, `POST /api/platform/orchestration/status`, scheduled-task catalog columns + UI action. See [docs/ORCHESTRATION.md](./docs/ORCHESTRATION.md).
 - Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
 
 ### Still open

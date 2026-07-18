@@ -128,6 +128,8 @@ export default {
         digest: 'Push result digest to webhook',
         digestHint: 'On success, also emit insight.digest (truncated rows or canvas summary). Subscribe to the event under Integrations.',
         lastRun: 'Last run',
+        orchestrationStatus: 'Check orchestration status',
+        orchestrationStatusDone: 'Orchestration state: {state} (ref={ref})',
     },
     dq: {
         formTitle: 'New data quality rule',

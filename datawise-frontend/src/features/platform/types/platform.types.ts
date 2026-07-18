@@ -247,6 +247,21 @@ export interface ScheduledTask {
     lastRunStatus?: string | null
     lastRunMessage?: string | null
     createdAt?: string | null
+    orchestrationState?: string | null
+    orchestrationRef?: string | null
+    orchestrationCheckedAt?: string | null
+    orchestrationDetail?: string | null
+}
+
+export interface OrchestrationStatusResult {
+    taskId: string
+    taskName: string
+    state: string
+    ref?: string | null
+    detail?: string | null
+    statusUrl?: string | null
+    httpStatus: number
+    checkedAt?: string | null
 }
 
 export interface SaveScheduledTaskRequest {

@@ -128,6 +128,8 @@ export default {
         digest: '推送结果摘要到 Webhook',
         digestHint: '成功后额外发送 insight.digest（含截断行或画布摘要）。需在集成设置中订阅该事件。',
         lastRun: '上次运行',
+        orchestrationStatus: '查询编排状态',
+        orchestrationStatusDone: '编排状态：{state}（ref={ref}）',
     },
     dq: {
         formTitle: '新建数据质量规则',

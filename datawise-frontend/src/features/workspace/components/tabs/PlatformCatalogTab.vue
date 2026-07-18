@@ -188,6 +188,33 @@ async function runScheduledTask() {
   }
 }
 
+const selectedIsHttpTrigger = computed(() => {
+  const id = singleSelectedId.value
+  if (!id) return false
+  const row = rows.value.find((item) => item.id === id)
+  return row?.type === 'http_trigger'
+})
+
+async function pollOrchestrationStatus() {
+  const id = singleSelectedId.value
+  if (!id || runningAction.value || !selectedIsHttpTrigger.value) return
+  runningAction.value = true
+  try {
+    const status = await platformApi.pollOrchestrationStatus(id)
+    layout.showSuccessToast(
+      t('platform.tasks.orchestrationStatusDone', {
+        state: status.state || '—',
+        ref: status.ref || '—',
+      }),
+    )
+    await reload()
+  } catch (err) {
+    layout.showErrorToast(err instanceof Error ? err.message : String(err))
+  } finally {
+    runningAction.value = false
+  }
+}
+
 async function runDataQualityGate() {
   if (runningAction.value) return
   const connectionId = props.tab.connectionId?.trim()
@@ -303,6 +330,15 @@ function runReleaseAction(action: ReleaseHighlightAction) {
       >
         <DwIcon name="run" size="sm" :stroke-width="1.35"/>
         {{ t('platform.common.run') }}
+      </button>
+      <button
+          v-if="isScheduledTasks && selectedIsHttpTrigger"
+          type="button"
+          :disabled="loading || !canRunAction"
+          @click="pollOrchestrationStatus"
+      >
+        <DwIcon name="refresh" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.tasks.orchestrationStatus') }}
       </button>
       <button
           v-if="isDataQuality"

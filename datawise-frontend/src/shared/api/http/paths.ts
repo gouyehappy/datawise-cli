@@ -411,6 +411,7 @@ export const API_PATHS = {
         dataQualityRules: '/api/platform/data-quality/rules',
         dataQualityGate: '/api/platform/data-quality/gate',
         orchestrationTrigger: '/api/platform/orchestration/trigger',
+        orchestrationStatus: '/api/platform/orchestration/status',
         insightActions: '/api/platform/insight-actions',
         outboundWebhooks: '/api/platform/outbound-webhooks',
         outboundWebhookTest: (id: string) =>

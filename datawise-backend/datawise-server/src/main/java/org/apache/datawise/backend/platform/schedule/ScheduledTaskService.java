@@ -15,6 +15,7 @@ import org.apache.datawise.backend.domain.DataQualityGateResultDto;
 import org.apache.datawise.backend.domain.DataQualityRuleRunDto;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
 import org.apache.datawise.backend.domain.ExecuteSqlResult;
+import org.apache.datawise.backend.domain.OrchestrationStatusDto;
 import org.apache.datawise.backend.domain.PushNotificationRequest;
 import org.apache.datawise.backend.domain.RerunAnalysisCanvasRequest;
 import org.apache.datawise.backend.domain.SaveScheduledTaskRequest;
@@ -205,6 +206,56 @@ public class ScheduledTaskService {
         executeTask(entry);
         taskStore.upsert(entry);
         return toDto(entry);
+    }
+
+    /**
+     * Poll remote DAG/job status for an {@code http_trigger} task using {@code statusUrl}
+     * or {@code statusUrlTemplate} from the payload (same auth headers as the trigger).
+     */
+    public OrchestrationStatusDto pollOrchestrationStatus(String taskId) {
+        if (taskId == null || taskId.isBlank()) {
+            throw new IllegalArgumentException("taskId is required");
+        }
+        ScheduledTaskEntry entry = requireEntry(taskId.trim());
+        if (!ScheduledTaskEntry.TYPE_HTTP_TRIGGER.equals(entry.getType())) {
+            throw new IllegalArgumentException("task is not http_trigger: " + entry.getType());
+        }
+        try {
+            JsonNode payload = parsePayload(entry.getPayloadJson());
+            OrchestrationHttpSupport.Result result = OrchestrationHttpSupport.fetchStatus(
+                    payload,
+                    entry.getOrchestrationRef(),
+                    objectMapper,
+                    httpClient
+            );
+            String ref = OrchestrationHttpSupport.extractRef(result.body(), objectMapper);
+            if (ref != null && !ref.isBlank()) {
+                entry.setOrchestrationRef(ref);
+            }
+            String state = OrchestrationHttpSupport.extractState(result.body(), objectMapper, payload);
+            Instant checked = Instant.now();
+            entry.setOrchestrationState(state != null ? state : "unknown");
+            entry.setOrchestrationCheckedAt(checked);
+            entry.setOrchestrationDetail(result.bodyPreview());
+            taskStore.upsert(entry);
+            return new OrchestrationStatusDto(
+                    entry.getId(),
+                    entry.getName(),
+                    entry.getOrchestrationState(),
+                    entry.getOrchestrationRef(),
+                    entry.getOrchestrationDetail(),
+                    result.url(),
+                    result.statusCode(),
+                    checked
+            );
+        } catch (IllegalArgumentException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new IllegalArgumentException(
+                    ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName(),
+                    ex
+            );
+        }
     }
 
     public void runDueTasks() {
@@ -531,17 +582,64 @@ public class ScheduledTaskService {
     private TaskRunOutcome runHttpTriggerTask(ScheduledTaskEntry entry) throws Exception {
         JsonNode payload = parsePayload(entry.getPayloadJson());
         OrchestrationHttpSupport.Result result = OrchestrationHttpSupport.execute(payload, objectMapper, httpClient);
+        String ref = OrchestrationHttpSupport.extractRef(result.body(), objectMapper);
+        String state = OrchestrationHttpSupport.extractState(result.body(), objectMapper, payload);
+        Instant checked = Instant.now();
+        if (ref != null && !ref.isBlank()) {
+            entry.setOrchestrationRef(ref);
+        }
+        if (state != null && !state.isBlank()) {
+            entry.setOrchestrationState(state);
+            entry.setOrchestrationCheckedAt(checked);
+            entry.setOrchestrationDetail(result.bodyPreview());
+        }
+        // Auto-poll when status URL is configured and we have a ref (or absolute statusUrl).
+        boolean canPoll = (payload.has("statusUrl") && !payload.path("statusUrl").asText("").isBlank())
+                || ((payload.has("statusUrlTemplate") && !payload.path("statusUrlTemplate").asText("").isBlank())
+                && entry.getOrchestrationRef() != null && !entry.getOrchestrationRef().isBlank());
+        if (canPoll) {
+            try {
+                OrchestrationHttpSupport.Result status = OrchestrationHttpSupport.fetchStatus(
+                        payload,
+                        entry.getOrchestrationRef(),
+                        objectMapper,
+                        httpClient
+                );
+                String polledRef = OrchestrationHttpSupport.extractRef(status.body(), objectMapper);
+                if (polledRef != null && !polledRef.isBlank()) {
+                    entry.setOrchestrationRef(polledRef);
+                }
+                String polledState = OrchestrationHttpSupport.extractState(status.body(), objectMapper, payload);
+                entry.setOrchestrationState(polledState != null ? polledState : "unknown");
+                entry.setOrchestrationCheckedAt(Instant.now());
+                entry.setOrchestrationDetail(status.bodyPreview());
+            } catch (Exception ex) {
+                // Trigger succeeded; status poll is best-effort (surface in detail).
+                entry.setOrchestrationDetail(
+                        "trigger ok; status poll failed: "
+                                + (ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName())
+                );
+                entry.setOrchestrationCheckedAt(Instant.now());
+            }
+        }
         Map<String, Object> digest = new LinkedHashMap<>();
         digest.put("method", result.method());
         digest.put("url", result.url());
         digest.put("statusCode", result.statusCode());
+        if (entry.getOrchestrationRef() != null) {
+            digest.put("orchestrationRef", entry.getOrchestrationRef());
+        }
+        if (entry.getOrchestrationState() != null) {
+            digest.put("orchestrationState", entry.getOrchestrationState());
+        }
         if (result.bodyPreview() != null && !result.bodyPreview().isBlank()) {
             digest.put("responsePreview", result.bodyPreview());
         }
-        return new TaskRunOutcome(
-                "HTTP " + result.statusCode() + " " + result.method() + " " + result.url(),
-                digest
-        );
+        String message = "HTTP " + result.statusCode() + " " + result.method() + " " + result.url();
+        if (entry.getOrchestrationState() != null && !entry.getOrchestrationState().isBlank()) {
+            message += " · state=" + entry.getOrchestrationState();
+        }
+        return new TaskRunOutcome(message, digest);
     }
 
     private static boolean isDue(ScheduledTaskEntry entry, Instant now) {
@@ -647,7 +745,11 @@ public class ScheduledTaskService {
                 entry.getLastRunAt(),
                 entry.getLastRunStatus(),
                 entry.getLastRunMessage(),
-                entry.getCreatedAt()
+                entry.getCreatedAt(),
+                entry.getOrchestrationState(),
+                entry.getOrchestrationRef(),
+                entry.getOrchestrationCheckedAt(),
+                entry.getOrchestrationDetail()
         );
     }
 

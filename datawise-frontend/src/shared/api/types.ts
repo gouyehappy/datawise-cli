@@ -54,6 +54,7 @@ import type {
     SaveQueryLibraryVersionRequest,
     DataQualityGateRequest,
     DataQualityGateResult,
+    OrchestrationStatusResult,
     SaveScheduledTaskRequest,
     SaveSchemaDriftMonitorRequest,
     SaveSemanticMetricRequest,
@@ -1756,6 +1757,8 @@ export interface PlatformApi {
     listDataQualityRules(connectionId?: string, database?: string): Promise<ScheduledTask[]>
 
     evaluateDataQualityGate(request: DataQualityGateRequest): Promise<DataQualityGateResult>
+
+    pollOrchestrationStatus(taskId: string): Promise<OrchestrationStatusResult>
 
     listQueryLibraryVersions(teamId: string, queryId: string): Promise<QueryLibraryVersion[]>
 

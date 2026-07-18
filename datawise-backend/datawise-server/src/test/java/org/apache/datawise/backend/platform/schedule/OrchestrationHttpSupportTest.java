@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -38,9 +39,20 @@ class OrchestrationHttpSupportTest {
         server.createContext("/hook", exchange -> {
             lastMethod.set(exchange.getRequestMethod());
             lastBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
-            byte[] response = "{\"ok\":true}".getBytes(StandardCharsets.UTF_8);
+            byte[] response = "{\"ok\":true,\"dag_run_id\":\"run-1\",\"state\":\"queued\"}"
+                    .getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(statusToReturn.get(), response.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response);
+            }
+        });
+        server.createContext("/status/", exchange -> {
+            lastMethod.set(exchange.getRequestMethod());
+            byte[] response = "{\"dag_run_id\":\"run-1\",\"state\":\"success\"}"
+                    .getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response);
             }
@@ -94,5 +106,41 @@ class OrchestrationHttpSupportTest {
                 IllegalArgumentException.class,
                 () -> OrchestrationHttpSupport.execute(payload, objectMapper, httpClient)
         );
+    }
+
+    @Test
+    void extractsRefAndStateFromAirflowStyleJson() {
+        String body = "{\"dag_run_id\":\"manual__1\",\"state\":\"running\"}";
+        assertEquals("manual__1", OrchestrationHttpSupport.extractRef(body, objectMapper));
+        assertEquals("running", OrchestrationHttpSupport.extractState(body, objectMapper, null));
+        assertNull(OrchestrationHttpSupport.extractRef("not-json", objectMapper));
+    }
+
+    @Test
+    void resolveStatusUrlUsesTemplatePlaceholders() {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put(
+                "statusUrlTemplate",
+                "https://airflow.example/api/v1/dags/x/dagRuns/{dag_run_id}"
+        );
+        assertEquals(
+                "https://airflow.example/api/v1/dags/x/dagRuns/run-9",
+                OrchestrationHttpSupport.resolveStatusUrl(payload, "run-9")
+        );
+    }
+
+    @Test
+    void fetchStatusGetsRemoteState() throws Exception {
+        String statusBase = "http://127.0.0.1:" + server.getAddress().getPort() + "/status/{dag_run_id}";
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("statusUrlTemplate", statusBase);
+
+        OrchestrationHttpSupport.Result result =
+                OrchestrationHttpSupport.fetchStatus(payload, "run-1", objectMapper, httpClient);
+
+        assertEquals("GET", lastMethod.get());
+        assertEquals(200, result.statusCode());
+        assertEquals("success", OrchestrationHttpSupport.extractState(result.body(), objectMapper, payload));
+        assertEquals("run-1", OrchestrationHttpSupport.extractRef(result.body(), objectMapper));
     }
 }

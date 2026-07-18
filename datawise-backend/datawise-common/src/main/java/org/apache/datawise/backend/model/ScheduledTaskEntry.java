@@ -24,6 +24,12 @@ public class ScheduledTaskEntry {
     private Instant lastRunAt;
     private String lastRunStatus;
     private String lastRunMessage;
+    /** Last polled remote DAG/job state for {@link #TYPE_HTTP_TRIGGER} (e.g. success / running / failed). */
+    private String orchestrationState;
+    /** Remote run id / dag_run_id captured from trigger response or status poll. */
+    private String orchestrationRef;
+    private Instant orchestrationCheckedAt;
+    private String orchestrationDetail;
     private Instant createdAt;
 
     public String getId() {
@@ -96,6 +102,38 @@ public class ScheduledTaskEntry {
 
     public void setLastRunMessage(String lastRunMessage) {
         this.lastRunMessage = lastRunMessage;
+    }
+
+    public String getOrchestrationState() {
+        return orchestrationState;
+    }
+
+    public void setOrchestrationState(String orchestrationState) {
+        this.orchestrationState = orchestrationState;
+    }
+
+    public String getOrchestrationRef() {
+        return orchestrationRef;
+    }
+
+    public void setOrchestrationRef(String orchestrationRef) {
+        this.orchestrationRef = orchestrationRef;
+    }
+
+    public Instant getOrchestrationCheckedAt() {
+        return orchestrationCheckedAt;
+    }
+
+    public void setOrchestrationCheckedAt(Instant orchestrationCheckedAt) {
+        this.orchestrationCheckedAt = orchestrationCheckedAt;
+    }
+
+    public String getOrchestrationDetail() {
+        return orchestrationDetail;
+    }
+
+    public void setOrchestrationDetail(String orchestrationDetail) {
+        this.orchestrationDetail = orchestrationDetail;
     }
 
     public Instant getCreatedAt() {

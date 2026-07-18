@@ -18,6 +18,7 @@ import type {
     SaveQueryLibraryVersionRequest,
     DataQualityGateRequest,
     DataQualityGateResult,
+    OrchestrationStatusResult,
     SaveScheduledTaskRequest,
     SaveSchemaDriftMonitorRequest,
     SaveSemanticMetricRequest,
@@ -137,6 +138,9 @@ export function createHttpPlatformApi(): PlatformApi {
 
         evaluateDataQualityGate: (request: DataQualityGateRequest) =>
             postJson<DataQualityGateResult>(paths.dataQualityGate, request ?? {}),
+
+        pollOrchestrationStatus: (taskId: string) =>
+            postJson<OrchestrationStatusResult>(paths.orchestrationStatus, {taskId}),
 
         listQueryLibraryVersions: (teamId, queryId) =>
             getJson<QueryLibraryVersion[]>(paths.queryLibraryVersions(teamId, queryId)),
