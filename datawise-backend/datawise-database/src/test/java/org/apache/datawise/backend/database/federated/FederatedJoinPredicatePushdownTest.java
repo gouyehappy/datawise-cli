@@ -289,6 +289,53 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsUpperLowerFunctions() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.status", "Active", "u.region", "cn"),
+                Map.of("o.id", 2, "o.status", "closed", "u.region", "US"),
+                Map.of("o.id", 3, "o.status", "ACTIVE", "u.region", "jp")
+        );
+        List<Map<String, Object>> upperEq = FederatedJoinResidualFilter.apply(
+                rows,
+                "UPPER(o.status) = 'ACTIVE'"
+        );
+        assertEquals(2, upperEq.size());
+        assertEquals(1, upperEq.get(0).get("o.id"));
+        assertEquals(3, upperEq.get(1).get("o.id"));
+
+        List<Map<String, Object>> lowerLike = FederatedJoinResidualFilter.apply(
+                rows,
+                "LOWER(u.region) LIKE 'c%'"
+        );
+        assertEquals(1, lowerLike.size());
+        assertEquals(1, lowerLike.get(0).get("o.id"));
+
+        List<Map<String, Object>> mixed = FederatedJoinResidualFilter.apply(
+                rows,
+                "UPPER(o.status) = UPPER('active') OR LOWER(u.region) = 'us'"
+        );
+        assertEquals(3, mixed.size());
+    }
+
+    @Test
+    void singleAliasUpperIsPushedIntoSourceSubquery() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, status FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name, region FROM users", "o.user_id = u.id")
+                ),
+                "UPPER(o.status) = 'ACTIVE' AND LOWER(u.region) = 'cn'"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        assertTrue(result.plan().steps().get(0).subQuery().toUpperCase().contains("UPPER"));
+        assertTrue(result.plan().steps().get(1).subQuery().toUpperCase().contains("LOWER"));
+        assertNull(result.residualWhere());
+    }
+
+    @Test
     void likePatternToRegexEscapesRegexMetacharacters() {
         assertTrue(FederatedJoinResidualFilter.likeMatches("a.b", "a.b"));
         assertFalse(FederatedJoinResidualFilter.likeMatches("axb", "a.b"));

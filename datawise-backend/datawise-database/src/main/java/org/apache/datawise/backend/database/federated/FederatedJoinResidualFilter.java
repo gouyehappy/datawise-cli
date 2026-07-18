@@ -12,8 +12,9 @@ import java.util.Map;
  * ({@code NOT o.status = 'closed'}, {@code NOT (o.a = 1 OR u.b = 2)}).
  * Each atom is a simple comparison ({@code = != <> < <= > >=}),
  * {@code alias.col IS [NOT] NULL},
- * {@code alias.col [NOT] LIKE 'pattern'}, or
- * {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
+ * {@code alias.col [NOT] LIKE 'pattern'},
+ * {@code UPPER(alias.col)} / {@code LOWER(alias.col)} in comparisons / LIKE,
+ * or {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
  */
 final class FederatedJoinResidualFilter {
 
@@ -72,7 +73,8 @@ final class FederatedJoinResidualFilter {
         if (comparison == null) {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
-                            + "subqueries or use simple comparisons / IS NULL / LIKE / IN / NOT / OR of those): "
+                            + "subqueries or use simple comparisons / IS NULL / LIKE / UPPER|LOWER / IN / NOT / OR "
+                            + "of those): "
                             + atom
             );
         }
@@ -399,6 +401,21 @@ final class FederatedJoinResidualFilter {
 
     private static Object resolve(Map<String, Object> row, String token) {
         String trimmed = token.trim();
+        FunctionCall call = parseUnaryStringFunction(trimmed);
+        if (call != null) {
+            Object inner = resolve(row, call.argument());
+            if (inner == null) {
+                return null;
+            }
+            String text = String.valueOf(inner);
+            return switch (call.name()) {
+                case "upper" -> text.toUpperCase(Locale.ROOT);
+                case "lower" -> text.toLowerCase(Locale.ROOT);
+                default -> throw new IllegalArgumentException(
+                        "Unsupported federated residual function: " + call.name()
+                );
+            };
+        }
         if (isLiteral(trimmed)) {
             return literalValue(trimmed);
         }
@@ -415,6 +432,34 @@ final class FederatedJoinResidualFilter {
             }
         }
         return null;
+    }
+
+    /**
+     * Parse {@code UPPER(arg)} / {@code LOWER(arg)} (parens must fully wrap the argument).
+     * Returns null when the token is not a supported unary string function.
+     */
+    static FunctionCall parseUnaryStringFunction(String token) {
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+        String trimmed = token.trim();
+        int open = trimmed.indexOf('(');
+        if (open <= 0 || !trimmed.endsWith(")")) {
+            return null;
+        }
+        String name = trimmed.substring(0, open).trim().toLowerCase(Locale.ROOT);
+        if (!"upper".equals(name) && !"lower".equals(name)) {
+            return null;
+        }
+        String wrapped = trimmed.substring(open);
+        if (!parensFullyWrap(wrapped)) {
+            return null;
+        }
+        String arg = wrapped.substring(1, wrapped.length() - 1).trim();
+        if (arg.isEmpty()) {
+            return null;
+        }
+        return new FunctionCall(name, arg);
     }
 
     private static boolean isLiteral(String token) {
@@ -511,5 +556,8 @@ final class FederatedJoinResidualFilter {
     }
 
     record LikePredicate(String left, boolean negated, String pattern) {
+    }
+
+    record FunctionCall(String name, String argument) {
     }
 }
