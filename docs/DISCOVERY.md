@@ -28,6 +28,18 @@ Returns `DiscoveryHit[]`:
 
 Hits feed both the palette and the catalog grid.
 
+## Faceted browse
+
+After a search returns hits, the **Data catalog** tab shows client-side facet chips:
+
+| Facet | Source |
+|-------|--------|
+| Kind | `table` / `view` / `metric` |
+| Connection | Distinct `connectionId` (+ label) |
+| Owner | Non-empty metric `owner` values |
+
+Selections within a facet are OR’d; facet groups are AND’d. Clearing filters restores the full hit set. Browse-without-query is still out of scope (API requires `q`).
+
 ## Lineage jump
 
 For a selected **table** or **view**:
@@ -41,6 +53,7 @@ For a selected **table** or **view**:
 
 ## Still open
 
-- Faceted browse (by connection / owner / tag) without a query
+- Browse without a query (server-side facet index / empty-q listing)
 - Column-level catalog cards
 - Jump lineage for metrics → defining SQL / models
+- Tag facets (no tag field on discovery hits yet)
