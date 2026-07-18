@@ -51,6 +51,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G14 deepen: orchestration DAG status write-back — `http_trigger` `statusUrl` / `statusUrlTemplate`, auto-poll after trigger, `POST /api/platform/orchestration/status`, scheduled-task catalog columns + UI action. See [docs/ORCHESTRATION.md](./docs/ORCHESTRATION.md).
 - Wave D G13 deepen: unified **Data catalog** workspace tab (command palette) over `GET /api/discovery/search` + lineage jump via view-model impact for tables/views. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G15 deepen: built-in **data-quality rule templates** (no violations / duplicates / nulls / row-count cap / failed-count threshold) prefill the Add rule form. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
+- Wave D G15 deepen: **multi-env release gate** — `referenceConnectionId` / `referenceDatabase` on `POST /api/platform/data-quality/gate` with per-scope `scopes[]`; catalog UI picker. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
 
 ### Still open

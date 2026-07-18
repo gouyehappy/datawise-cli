@@ -59,7 +59,7 @@
 | G12 | 多租户 / 托管 SaaS | partial | Dual-mode 已落地（`tenancy.mode=single|multi`）：租户隔离、RBAC、OIDC 映射、配额硬顶、成员邀请；见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。缺完整计费/发票与对象存储 | 托管商业化与计费仍弱 |
 | G13 | 组织级数据发现 | partial | 命令面板跨库搜表（schema 缓存）+ 搜语义指标/责任人（GET /api/discovery/search）；**数据目录 Tab**（命令面板「打开数据目录」）+ 表/视图 **血缘跳转**（impact → view_model_lineage）；见 [DISCOVERY.md](./DISCOVERY.md)。缺分面浏览 / 指标血缘 | 语义层有了，发现体验仍弱 |
 | G14 | 编排生态对接 | partial | 定时任务 http_trigger + 入站 trigger + orchestration.* Webhook + **DAG 状态回写**（statusUrlTemplate / POST /api/platform/orchestration/status + 定时任务目录列）；见 [ORCHESTRATION.md](./ORCHESTRATION.md)。缺原生算子 / 多引擎状态适配器 | Yarn 可看，闭环不足 |
-| G15 | 可调度数据质量规则 | partial | 定时任务 data_quality + Explorer **数据质量**目录 + locking + POST /api/platform/data-quality/gate + **内置规则模板**（创建表单预填）；见 [DATA_QUALITY.md](./DATA_QUALITY.md)。缺用户自定义模板库 / 多环境对照门禁 | 质量治理难产品化 |
+| G15 | 可调度数据质量规则 | partial | 定时任务 data_quality + Explorer **数据质量**目录 + locking + gate API + **内置规则模板** + **多环境对照门禁**（referenceConnectionId + scopes）；见 [DATA_QUALITY.md](./DATA_QUALITY.md)。缺用户自定义模板库 / 规则跨环境自动配对 | 质量治理难产品化 |
 
 ---
 
@@ -135,6 +135,7 @@
 |------|------|
 | 2026-07-17 | 初稿：产品高度缺口分析；拆分 missing / partial；给出 Wave A～D 近期顺序 |
 | 2026-07-17 | G12：Phase 0–2 + JDBC 元数据落地；状态改为 `partial`（计费/对象存储仍开） |
+| 2026-07-18、G15 多环境门禁 | DQ gate 支持 reference 对照连接 + scopes 汇总 |
 | 2026-07-18、G15 规则模板 | 数据质量内置规则模板预填创建表单 |
 | 2026-07-18、G13 目录/血缘 | 统一数据目录 Tab + 表/视图血缘跳转（impact） |
 | 2026-07-18、G14 DAG 状态 | http_trigger 状态回写 API + 定时任务 UI |

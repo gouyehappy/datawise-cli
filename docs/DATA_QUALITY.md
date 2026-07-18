@@ -89,6 +89,30 @@ Defaults when `ruleIds` is empty: `blockingOnly=true` (only rules with `"blockin
 
 Each rule still updates last-run status and emits `data_quality.ok|failed` / `scheduled_task.*` webhooks.
 
+## Multi-env gate
+
+Optional second scope compares **primary** vs **reference** environments in one call:
+
+```json
+{
+  "connectionId": "conn-prod",
+  "database": "app",
+  "blockingOnly": true,
+  "referenceConnectionId": "conn-staging",
+  "referenceDatabase": "app"
+}
+```
+
+| Field | Notes |
+|-------|--------|
+| `referenceConnectionId` | Required for multi-env; must differ from primary when databases match |
+| `referenceDatabase` | Optional; defaults to primary `database` |
+| `ruleIds` | Applied only to the **primary** scope; reference always uses its own blocking suite |
+
+Response adds `scopes[]` (primary then reference). Aggregate `passed` requires both scopes to pass; `total`/`failed` are sums. `results` remains the primary-scope runs for backward compatibility.
+
+UI: Data quality catalog → **Run multi-env gate** (pick a reference connection by env badge).
+
 ## CI example
 
 ```bash

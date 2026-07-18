@@ -43,7 +43,7 @@ public class DataQualityController {
     @PostMapping("/gate")
     public ApiResponse<DataQualityGateResultDto> evaluateGate(@RequestBody(required = false) DataQualityGateRequest request) {
         return ApiResponse.ok(scheduledTaskService.evaluateDataQualityGate(
-                request != null ? request : new DataQualityGateRequest(null, null, null, null)
+                request != null ? request : new DataQualityGateRequest(null, null, null, null, null, null)
         ));
     }
 }

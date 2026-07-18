@@ -286,7 +286,7 @@ class ScheduledTaskServiceTest {
         ));
 
         DataQualityGateResultDto gate = service.evaluateDataQualityGate(
-                new DataQualityGateRequest(null, "conn-1", "app", true)
+                new DataQualityGateRequest(null, "conn-1", "app", true, null, null)
         );
 
         assertFalse(gate.passed());
@@ -294,6 +294,64 @@ class ScheduledTaskServiceTest {
         assertEquals(1, gate.failed());
         assertEquals("dq-block", gate.results().get(0).ruleId());
         assertTrue(gate.results().get(0).blocking());
+        assertNull(gate.scopes());
+    }
+
+    @Test
+    void evaluateDataQualityGateMultiEnvRequiresBothScopes() {
+        ScheduledTaskEntry primary = new ScheduledTaskEntry();
+        primary.setId("dq-prod");
+        primary.setName("Prod check");
+        primary.setType(ScheduledTaskEntry.TYPE_DATA_QUALITY);
+        primary.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        primary.setPayloadJson(
+                "{\"connectionId\":\"conn-prod\",\"database\":\"app\",\"sql\":\"SELECT 1 WHERE 1=0\","
+                        + "\"assertion\":\"empty_result\",\"blocking\":true}"
+        );
+        ScheduledTaskEntry staging = new ScheduledTaskEntry();
+        staging.setId("dq-stg");
+        staging.setName("Staging check");
+        staging.setType(ScheduledTaskEntry.TYPE_DATA_QUALITY);
+        staging.setCreatedAt(Instant.parse("2026-01-02T00:00:00Z"));
+        staging.setPayloadJson(
+                "{\"connectionId\":\"conn-stg\",\"database\":\"app\",\"sql\":\"SELECT id FROM t WHERE bad=1\","
+                        + "\"assertion\":\"empty_result\",\"blocking\":true}"
+        );
+        when(taskStore.listAll()).thenReturn(List.of(primary, staging));
+        when(taskStore.findById("dq-prod")).thenReturn(primary);
+        when(taskStore.findById("dq-stg")).thenReturn(staging);
+        when(sqlReviewService.review(any(SqlReviewRequest.class)))
+                .thenReturn(new SqlReviewResultDto(true, false, List.of()));
+        when(sqlService.execute(any(ExecuteSqlRequest.class))).thenAnswer(invocation -> {
+            ExecuteSqlRequest req = invocation.getArgument(0);
+            boolean fail = req.sql() != null && req.sql().contains("bad=1");
+            return new ExecuteSqlResult(
+                    req.sql(),
+                    fail ? 1 : 0,
+                    3L,
+                    List.of(Map.of("name", "id")),
+                    fail ? List.of(Map.of("id", 1)) : List.of(),
+                    null,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null
+            );
+        });
+
+        DataQualityGateResultDto gate = service.evaluateDataQualityGate(
+                new DataQualityGateRequest(null, "conn-prod", "app", true, "conn-stg", "app")
+        );
+
+        assertFalse(gate.passed());
+        assertEquals(2, gate.total());
+        assertEquals(1, gate.failed());
+        assertEquals(2, gate.scopes().size());
+        assertTrue(gate.scopes().get(0).passed());
+        assertEquals("conn-prod", gate.scopes().get(0).connectionId());
+        assertFalse(gate.scopes().get(1).passed());
+        assertEquals("conn-stg", gate.scopes().get(1).connectionId());
     }
 
     @Test

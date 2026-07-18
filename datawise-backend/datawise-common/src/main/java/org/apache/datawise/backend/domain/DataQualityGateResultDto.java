@@ -6,6 +6,8 @@ public record DataQualityGateResultDto(
         boolean passed,
         int total,
         int failed,
-        List<DataQualityRuleRunDto> results
+        List<DataQualityRuleRunDto> results,
+        /** Present when a reference (multi-env) scope was evaluated; otherwise null. */
+        List<DataQualityGateScopeResultDto> scopes
 ) {
 }

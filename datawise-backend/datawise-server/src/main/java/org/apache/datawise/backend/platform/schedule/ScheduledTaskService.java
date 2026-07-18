@@ -12,6 +12,7 @@ import org.apache.datawise.backend.database.sql.SqlReviewService;
 import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.domain.DataQualityGateRequest;
 import org.apache.datawise.backend.domain.DataQualityGateResultDto;
+import org.apache.datawise.backend.domain.DataQualityGateScopeResultDto;
 import org.apache.datawise.backend.domain.DataQualityRuleRunDto;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
 import org.apache.datawise.backend.domain.ExecuteSqlResult;
@@ -152,12 +153,75 @@ public class ScheduledTaskService {
     /**
      * Release gate: run matching DQ rules and return aggregate pass/fail.
      * Each rule still updates last-run status and emits outbound webhooks.
+     * <p>
+     * When {@code referenceConnectionId} is set, also evaluates a blocking-only suite
+     * on that scope (rule IDs apply only to the primary scope). Aggregate {@code passed}
+     * requires both scopes to pass; {@code scopes} carries the per-env breakdown.
      */
     public DataQualityGateResultDto evaluateDataQualityGate(DataQualityGateRequest request) {
-        boolean blockingOnly = request.blockingOnly() == null || Boolean.TRUE.equals(request.blockingOnly());
+        DataQualityGateRequest req = request != null
+                ? request
+                : new DataQualityGateRequest(null, null, null, null, null, null);
+        boolean blockingOnly = req.blockingOnly() == null || Boolean.TRUE.equals(req.blockingOnly());
+
+        DataQualityGateScopeResultDto primary = evaluateDataQualityScope(
+                req.connectionId(),
+                req.database(),
+                req.ruleIds(),
+                blockingOnly
+        );
+
+        String referenceConnectionId = blankToNull(req.referenceConnectionId());
+        if (referenceConnectionId == null) {
+            return new DataQualityGateResultDto(
+                    primary.passed(),
+                    primary.total(),
+                    primary.failed(),
+                    primary.results(),
+                    null
+            );
+        }
+
+        String primaryConnectionId = blankToNull(req.connectionId());
+        String primaryDatabase = blankToNull(req.database());
+        String referenceDatabase = blankToNull(req.referenceDatabase());
+        if (referenceDatabase == null) {
+            referenceDatabase = primaryDatabase;
+        }
+        if (referenceConnectionId.equals(primaryConnectionId)
+                && java.util.Objects.equals(nullToEmpty(referenceDatabase), nullToEmpty(primaryDatabase))) {
+            throw new IllegalArgumentException("reference scope must differ from primary connection/database");
+        }
+
+        // Reference env always uses its own blocking suite (rule IDs are primary-scoped).
+        DataQualityGateScopeResultDto reference = evaluateDataQualityScope(
+                referenceConnectionId,
+                referenceDatabase,
+                null,
+                true
+        );
+
+        int total = primary.total() + reference.total();
+        int failed = primary.failed() + reference.failed();
+        boolean passed = primary.passed() && reference.passed();
+        return new DataQualityGateResultDto(
+                passed,
+                total,
+                failed,
+                primary.results(),
+                List.of(primary, reference)
+        );
+    }
+
+    private DataQualityGateScopeResultDto evaluateDataQualityScope(
+            String connectionId,
+            String database,
+            List<String> ruleIds,
+            boolean blockingOnly
+    ) {
         Set<String> ids = new HashSet<>();
-        if (request.ruleIds() != null) {
-            for (String id : request.ruleIds()) {
+        if (ruleIds != null) {
+            for (String id : ruleIds) {
                 if (id != null && !id.isBlank()) {
                     ids.add(id.trim());
                 }
@@ -165,7 +229,7 @@ public class ScheduledTaskService {
         }
         List<ScheduledTaskEntry> rules = taskStore.listAll().stream()
                 .filter(entry -> ScheduledTaskEntry.TYPE_DATA_QUALITY.equals(entry.getType()))
-                .filter(entry -> matchesDqScope(entry, request.connectionId(), request.database()))
+                .filter(entry -> matchesDqScope(entry, connectionId, database))
                 .filter(entry -> {
                     if (!ids.isEmpty()) {
                         return ids.contains(entry.getId());
@@ -193,7 +257,26 @@ public class ScheduledTaskService {
                     entry.getLastRunAt()
             ));
         }
-        return new DataQualityGateResultDto(failed == 0, results.size(), failed, results);
+        return new DataQualityGateScopeResultDto(
+                blankToNull(connectionId),
+                blankToNull(database),
+                failed == 0,
+                results.size(),
+                failed,
+                results
+        );
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     public void delete(String id) {

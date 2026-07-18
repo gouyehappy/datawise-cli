@@ -2,9 +2,11 @@
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DwDataGrid from '@/core/components/DwDataGrid.vue'
-import {ConfirmDialog} from '@/core/components'
+import {AppModal, ConfirmDialog, FormField, ModalActions} from '@/core/components'
+import DwSelect from '@/core/components/DwSelect.vue'
 import {DwIcon} from '@/core/icons'
 import type {DwDataGridLabels} from '@/core/components/dw-data-grid.types'
+import type {SelectOption} from '@/core/components/select.types'
 import type {WorkspaceTab} from '@/core/types'
 import {platformApi} from '@/api'
 import {buildPlatformCatalogColumns} from '@/features/platform/services/platform-catalog.service'
@@ -13,6 +15,10 @@ import {
     deletePlatformCatalogItems,
     platformCatalogRowLabel,
 } from '@/features/platform/services/platform-catalog-mutations.service'
+import {
+    listDataQualityReferenceConnections,
+    summarizeMultiEnvGate,
+} from '@/features/platform/services/data-quality-multi-env-gate.service'
 import AnalysisCanvasRerunDialog from '@/features/platform/components/AnalysisCanvasRerunDialog.vue'
 import SchemaDriftReportDialog from '@/features/platform/components/SchemaDriftReportDialog.vue'
 import type {SchemaDriftReport} from '@/features/platform/types/platform.types'
@@ -22,12 +28,14 @@ import PlatformCatalogFormDialog from '@/features/workspace/components/PlatformC
 import {usePlatformCatalog} from '@/features/workspace/composables/usePlatformCatalog'
 import ReleaseHighlightsCards from '@/features/layout/components/ReleaseHighlightsCards.vue'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
+import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import type {ReleaseHighlightAction} from '@/features/layout/services/release-highlights.service'
 
 const props = defineProps<{ tab: WorkspaceTab }>()
 const {t} = useI18n()
 const layout = useLayoutStore()
 const workspace = useWorkspaceStore()
+const explorer = useExplorerStore()
 
 const {rows, loading, error, reload} = usePlatformCatalog(props.tab)
 const selectedKeys = ref<string[]>([])
@@ -38,6 +46,9 @@ const deleting = ref(false)
 const autoGenerating = ref(false)
 const runningAction = ref(false)
 const canvasRerunOpen = ref(false)
+const multiEnvOpen = ref(false)
+const multiEnvConnectionId = ref('')
+const multiEnvDatabase = ref('')
 const canvasRerunId = ref<string | null>(null)
 const driftReportOpen = ref(false)
 const driftReport = ref<SchemaDriftReport | null>(null)
@@ -246,6 +257,61 @@ async function runDataQualityGate() {
   }
 }
 
+const multiEnvConnectionOptions = computed<SelectOption[]>(() =>
+  listDataQualityReferenceConnections(explorer.tree, props.tab.connectionId, t).map((item) => ({
+    value: item.value,
+    label: item.label,
+  })),
+)
+
+function openMultiEnvGateDialog() {
+  multiEnvConnectionId.value = multiEnvConnectionOptions.value[0]?.value ?? ''
+  multiEnvDatabase.value = props.tab.database?.trim() ?? ''
+  multiEnvOpen.value = true
+}
+
+async function confirmMultiEnvGate() {
+  if (runningAction.value) return
+  const connectionId = props.tab.connectionId?.trim()
+  const database = props.tab.database?.trim()
+  const referenceConnectionId = multiEnvConnectionId.value.trim()
+  if (!referenceConnectionId) {
+    layout.showWarningToast(t('platform.dq.multiEnvNeedReference'))
+    return
+  }
+  multiEnvOpen.value = false
+  runningAction.value = true
+  try {
+    const selected = selectedKeys.value.filter(Boolean)
+    const result = await platformApi.evaluateDataQualityGate({
+      ruleIds: selected.length ? selected : undefined,
+      connectionId,
+      database,
+      blockingOnly: selected.length ? false : true,
+      referenceConnectionId,
+      referenceDatabase: multiEnvDatabase.value.trim() || database,
+    })
+    const summary = summarizeMultiEnvGate(result, (scope, index) => {
+      const fallback = index === 0
+        ? t('platform.dq.multiEnvPrimary')
+        : t('platform.dq.multiEnvReferenceScope')
+      const node = scope.connectionId ? explorer.findNode(scope.connectionId) : null
+      return node?.label || scope.connectionId || fallback
+    })
+    const detail = summary.summaryParts.join(' · ')
+    if (summary.passed) {
+      layout.showSuccessToast(t('platform.dq.multiEnvPassed', {detail}))
+    } else {
+      layout.showErrorToast(t('platform.dq.multiEnvFailed', {detail}))
+    }
+    await reload()
+  } catch (err) {
+    layout.showErrorToast(err instanceof Error ? err.message : String(err))
+  } finally {
+    runningAction.value = false
+  }
+}
+
 async function executeFederatedView() {
   const id = singleSelectedId.value
   if (!id || runningAction.value) return
@@ -350,6 +416,15 @@ function runReleaseAction(action: ReleaseHighlightAction) {
         {{ t('platform.dq.runGate') }}
       </button>
       <button
+          v-if="isDataQuality"
+          type="button"
+          :disabled="loading || runningAction || !multiEnvConnectionOptions.length"
+          @click="openMultiEnvGateDialog"
+      >
+        <DwIcon name="tab-cross-env-compare" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.dq.runMultiEnvGate') }}
+      </button>
+      <button
           v-if="isFederatedViews"
           type="button"
           :disabled="loading || !canRunAction"
@@ -402,4 +477,49 @@ function runReleaseAction(action: ReleaseHighlightAction) {
       v-model:open="driftReportOpen"
       :report="driftReport"
   />
+
+  <AppModal
+      :open="multiEnvOpen"
+      :title="t('platform.dq.multiEnvTitle')"
+      width="440px"
+      @close="multiEnvOpen = false"
+  >
+    <p class="modal-hint">{{ t('platform.dq.multiEnvHint') }}</p>
+    <label class="modal-field">
+      <span>{{ t('platform.dq.multiEnvReference') }}</span>
+      <DwSelect
+          v-model="multiEnvConnectionId"
+          size="sm"
+          :options="multiEnvConnectionOptions"
+          :disabled="!multiEnvConnectionOptions.length"
+      />
+    </label>
+    <FormField :label="t('platform.dq.multiEnvDatabase')">
+      <template #default="{ id }">
+        <input
+            :id="id"
+            v-model="multiEnvDatabase"
+            class="dw-input"
+            type="text"
+            :placeholder="t('platform.dq.multiEnvDatabaseHint')"
+        >
+      </template>
+    </FormField>
+    <p class="modal-hint">{{ t('platform.dq.multiEnvDatabaseHint') }}</p>
+    <template #footer>
+      <ModalActions>
+        <button type="button" class="dw-btn" @click="multiEnvOpen = false">
+          {{ t('common.cancel') }}
+        </button>
+        <button
+            type="button"
+            class="dw-btn dw-btn--primary"
+            :disabled="!multiEnvConnectionId || runningAction"
+            @click="confirmMultiEnvGate"
+        >
+          {{ t('platform.dq.runMultiEnvGate') }}
+        </button>
+      </ModalActions>
+    </template>
+  </AppModal>
 </template>

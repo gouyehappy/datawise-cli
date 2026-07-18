@@ -278,6 +278,8 @@ export interface DataQualityGateRequest {
     connectionId?: string | null
     database?: string | null
     blockingOnly?: boolean | null
+    referenceConnectionId?: string | null
+    referenceDatabase?: string | null
 }
 
 export interface DataQualityRuleRun {
@@ -289,11 +291,21 @@ export interface DataQualityRuleRun {
     ranAt?: string | null
 }
 
+export interface DataQualityGateScopeResult {
+    connectionId?: string | null
+    database?: string | null
+    passed: boolean
+    total: number
+    failed: number
+    results: DataQualityRuleRun[]
+}
+
 export interface DataQualityGateResult {
     passed: boolean
     total: number
     failed: number
     results: DataQualityRuleRun[]
+    scopes?: DataQualityGateScopeResult[] | null
 }
 
 export interface QueryLibraryVersion {
