@@ -336,6 +336,50 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsLikeEscape() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.name", "a%b"),
+                Map.of("o.id", 2, "o.name", "axb"),
+                Map.of("o.id", 3, "o.name", "a_b")
+        );
+        List<Map<String, Object>> escapedPercent = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.name LIKE 'a\\%b' ESCAPE '\\'"
+        );
+        assertEquals(1, escapedPercent.size());
+        assertEquals(1, escapedPercent.get(0).get("o.id"));
+
+        List<Map<String, Object>> escapedUnderscore = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.name LIKE 'a\\_b' ESCAPE '\\'"
+        );
+        assertEquals(1, escapedUnderscore.size());
+        assertEquals(3, escapedUnderscore.get(0).get("o.id"));
+
+        assertTrue(FederatedJoinResidualFilter.likeMatches("100%", "100\\%", '\\'));
+        assertFalse(FederatedJoinResidualFilter.likeMatches("1000", "100\\%", '\\'));
+    }
+
+    @Test
+    void singleAliasLikeEscapeIsPushedIntoSourceSubquery() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, name FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name FROM users", "o.user_id = u.id")
+                ),
+                "o.name LIKE 'acme\\_%' ESCAPE '\\'"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        String ordersSql = result.plan().steps().get(0).subQuery().toUpperCase();
+        assertTrue(ordersSql.contains("LIKE"));
+        assertTrue(ordersSql.contains("ESCAPE"));
+        assertNull(result.residualWhere());
+    }
+
+    @Test
     void likePatternToRegexEscapesRegexMetacharacters() {
         assertTrue(FederatedJoinResidualFilter.likeMatches("a.b", "a.b"));
         assertFalse(FederatedJoinResidualFilter.likeMatches("axb", "a.b"));

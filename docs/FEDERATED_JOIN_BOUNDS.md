@@ -18,7 +18,7 @@ Constants live in `FederatedJoinLimits` (`datawise-database`).
 When the federated SQL has an outer `WHERE`:
 
 1. Conjuncts that reference **one** table alias only (`o.status = 'active'`, including single-alias **`OR`**, **`IN` / `NOT IN`**, **`IS [NOT] NULL`**, **`[NOT] LIKE`**, **`UPPER` / `LOWER`**, and bare **`NOT`**) are rewritten into that source subquery (`SqlTransformOps.appendWhere`), stripping the alias prefix.
-2. Cross-alias conjuncts (`o.user_id = u.id`) stay as a **residual** filter applied in memory after the join (simple comparisons: `= != <> < <= > >=`, plus `IN` / `NOT IN` with literal lists, plus `IS [NOT] NULL`, plus `[NOT] LIKE` with a string-literal pattern (`%` / `_`), plus unary **`UPPER(expr)` / `LOWER(expr)`** on either side of a comparison or LIKE, plus bare `NOT` over those atoms / groups).
+2. Cross-alias conjuncts (`o.user_id = u.id`) stay as a **residual** filter applied in memory after the join (simple comparisons: `= != <> < <= > >=`, plus `IN` / `NOT IN` with literal lists, plus `IS [NOT] NULL`, plus `[NOT] LIKE` with a string-literal pattern (`%` / `_`, optional **`ESCAPE 'x'`**), plus unary **`UPPER(expr)` / `LOWER(expr)`** on either side of a comparison or LIKE, plus bare `NOT` over those atoms / groups).
 3. Residual filters also support **top-level OR** (and parenthesized OR groups) of those atoms, e.g. `UPPER(o.status) = 'ACTIVE' OR LOWER(u.region) = 'cn'`. Mixed-alias OR is **not** pushed into source SQL (stays residual).
 4. Unsupported residual forms (other SQL functions, column refs inside `IN` lists, nested boolean beyond AND of OR-groups / NOT) fail with a clear error — push those filters into the source subqueries instead.
 

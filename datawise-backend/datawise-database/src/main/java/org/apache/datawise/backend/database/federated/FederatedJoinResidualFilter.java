@@ -66,7 +66,7 @@ final class FederatedJoinResidualFilter {
         LikePredicate likePredicate = parseLikePredicate(atom);
         if (likePredicate != null) {
             Object value = resolve(row, likePredicate.left());
-            boolean matched = likeMatches(value, likePredicate.pattern());
+            boolean matched = likeMatches(value, likePredicate.pattern(), likePredicate.escape());
             return likePredicate.negated() != matched;
         }
         Comparison comparison = parseComparison(atom);
@@ -84,8 +84,8 @@ final class FederatedJoinResidualFilter {
     }
 
     /**
-     * Parse {@code left [NOT] LIKE 'pattern'}. Pattern must be a string literal.
-     * Returns null when the atom is not a LIKE form.
+     * Parse {@code left [NOT] LIKE 'pattern' [ESCAPE 'x']}. Pattern (and escape) must be
+     * string literals. Returns null when the atom is not a LIKE form.
      */
     static LikePredicate parseLikePredicate(String atom) {
         if (atom == null || atom.isBlank()) {
@@ -109,37 +109,80 @@ final class FederatedJoinResidualFilter {
             return null;
         }
         String left = trimmed.substring(0, keywordStart).trim();
-        String right = trimmed.substring(keywordStart + keywordLen).trim();
-        if (left.isEmpty() || right.isEmpty() || !isStringLiteral(right)) {
+        String afterLike = trimmed.substring(keywordStart + keywordLen).trim();
+        if (left.isEmpty() || afterLike.isEmpty()) {
             return null;
         }
-        return new LikePredicate(left, negated, unquoteStringLiteral(right));
+        StringLiteralTake patternLit = takeLeadingStringLiteral(afterLike);
+        if (patternLit == null) {
+            return null;
+        }
+        String rest = patternLit.remainder().trim();
+        Character escape = null;
+        if (!rest.isEmpty()) {
+            if (findKeyword(rest, "escape", 6) != 0) {
+                return null;
+            }
+            String afterEscape = rest.substring(6).trim();
+            StringLiteralTake escapeLit = takeLeadingStringLiteral(afterEscape);
+            if (escapeLit == null || !escapeLit.remainder().trim().isEmpty()) {
+                return null;
+            }
+            if (escapeLit.value().length() != 1) {
+                throw new IllegalArgumentException(
+                        "Federated residual LIKE ESCAPE must be a single character: " + atom
+                );
+            }
+            escape = escapeLit.value().charAt(0);
+        }
+        return new LikePredicate(left, negated, patternLit.value(), escape);
     }
 
     static boolean likeMatches(Object value, String pattern) {
+        return likeMatches(value, pattern, null);
+    }
+
+    static boolean likeMatches(Object value, String pattern, Character escape) {
         if (value == null || pattern == null) {
             return false;
         }
-        return toLikeRegex(pattern).matcher(String.valueOf(value)).matches();
+        return toLikeRegex(pattern, escape).matcher(String.valueOf(value)).matches();
     }
 
-    /** Convert SQL LIKE pattern ({@code %} / {@code _}) to a full-match regex. */
+    /** Convert SQL LIKE pattern ({@code %} / {@code _}, optional ESCAPE) to a full-match regex. */
     static java.util.regex.Pattern toLikeRegex(String pattern) {
+        return toLikeRegex(pattern, null);
+    }
+
+    static java.util.regex.Pattern toLikeRegex(String pattern, Character escape) {
         StringBuilder regex = new StringBuilder("^");
         for (int i = 0; i < pattern.length(); i++) {
             char ch = pattern.charAt(i);
+            if (escape != null && ch == escape) {
+                if (i + 1 >= pattern.length()) {
+                    appendRegexLiteral(regex, ch);
+                    continue;
+                }
+                appendRegexLiteral(regex, pattern.charAt(++i));
+                continue;
+            }
             if (ch == '%') {
                 regex.append(".*");
             } else if (ch == '_') {
                 regex.append('.');
-            } else if ("\\.[]{}()*+-?^$|".indexOf(ch) >= 0) {
-                regex.append('\\').append(ch);
             } else {
-                regex.append(ch);
+                appendRegexLiteral(regex, ch);
             }
         }
         regex.append('$');
         return java.util.regex.Pattern.compile(regex.toString(), java.util.regex.Pattern.DOTALL);
+    }
+
+    private static void appendRegexLiteral(StringBuilder regex, char ch) {
+        if ("\\.[]{}()*+-?^$|".indexOf(ch) >= 0) {
+            regex.append('\\');
+        }
+        regex.append(ch);
     }
 
     private static boolean isStringLiteral(String token) {
@@ -157,6 +200,32 @@ final class FederatedJoinResidualFilter {
             return body.replace("''", "'");
         }
         return body.replace("\"\"", "\"");
+    }
+
+    /** Consume a leading SQL string literal; return value + remainder, or null. */
+    static StringLiteralTake takeLeadingStringLiteral(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String trimmed = text.trim();
+        char quote = trimmed.charAt(0);
+        if (quote != '\'' && quote != '"') {
+            return null;
+        }
+        StringBuilder body = new StringBuilder();
+        for (int i = 1; i < trimmed.length(); i++) {
+            char ch = trimmed.charAt(i);
+            if (ch == quote) {
+                if (i + 1 < trimmed.length() && trimmed.charAt(i + 1) == quote) {
+                    body.append(quote);
+                    i++;
+                    continue;
+                }
+                return new StringLiteralTake(body.toString(), trimmed.substring(i + 1));
+            }
+            body.append(ch);
+        }
+        return null;
     }
 
     /**
@@ -555,7 +624,10 @@ final class FederatedJoinResidualFilter {
     record NullCheck(String column, boolean negated) {
     }
 
-    record LikePredicate(String left, boolean negated, String pattern) {
+    record LikePredicate(String left, boolean negated, String pattern, Character escape) {
+    }
+
+    record StringLiteralTake(String value, String remainder) {
     }
 
     record FunctionCall(String name, String argument) {
