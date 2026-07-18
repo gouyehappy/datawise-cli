@@ -193,8 +193,8 @@ async function refreshDiscovery(q: string) {
         return
     }
     try {
-        const hits = await platformApi.searchDiscovery(trimmed, 30)
-        discoveryEntries.value = discoveryHitsToSearchEntries(hits)
+        const page = await platformApi.searchDiscovery(trimmed, 30)
+        discoveryEntries.value = discoveryHitsToSearchEntries(page.hits)
     } catch {
         discoveryEntries.value = []
     }

@@ -10,6 +10,7 @@ import {
     resolveLineageImpactSource,
     listRelatedTableChoices,
     needsRelatedTablePicker,
+    nextDiscoveryOffset,
     toggleFacetValue,
 } from '@/features/discovery/services/data-catalog.service'
 import type {DiscoveryHit} from '@/features/platform/types/platform.types'
@@ -173,5 +174,10 @@ describe('data-catalog.service', () => {
     it('toggleFacetValue adds and removes', () => {
         assert.deepEqual(toggleFacetValue(['table'], 'view'), ['table', 'view'])
         assert.deepEqual(toggleFacetValue(['table', 'view'], 'table'), ['view'])
+    })
+
+    it('nextDiscoveryOffset advances while hasMore', () => {
+        assert.equal(nextDiscoveryOffset({offset: 0, hits: [1, 2], hasMore: true}), 2)
+        assert.equal(nextDiscoveryOffset({offset: 40, hits: [1], hasMore: false}), null)
     })
 })

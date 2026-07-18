@@ -204,3 +204,15 @@ export function toggleFacetValue<T extends string>(selected: readonly T[], value
         ? selected.filter((item) => item !== value)
         : [...selected, value]
 }
+
+/** Next offset for Load more, or null when the page is complete. */
+export function nextDiscoveryOffset(page: {
+    offset: number
+    hits: readonly unknown[]
+    hasMore: boolean
+}): number | null {
+    if (!page.hasMore) return null
+    return page.offset + page.hits.length
+}
+
+export const DATA_CATALOG_PAGE_SIZE = 40

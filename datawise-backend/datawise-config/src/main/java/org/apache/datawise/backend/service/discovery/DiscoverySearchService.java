@@ -3,6 +3,7 @@ package org.apache.datawise.backend.service.discovery;
 import org.apache.datawise.backend.configstore.SchemaCacheStore;
 import org.apache.datawise.backend.configstore.SemanticMetricStore;
 import org.apache.datawise.backend.domain.DiscoveryHitDto;
+import org.apache.datawise.backend.domain.DiscoverySearchPageDto;
 import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.model.SemanticMetricEntry;
@@ -39,9 +40,14 @@ public class DiscoverySearchService {
         this.metricStore = metricStore;
     }
 
-    public List<DiscoveryHitDto> search(String query, Integer limit) {
+    public DiscoverySearchPageDto search(String query, Integer limit) {
+        return search(query, limit, null);
+    }
+
+    public DiscoverySearchPageDto search(String query, Integer limit, Integer offset) {
         String normalized = query != null ? query.trim() : "";
         int cap = limit == null || limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, MAX_LIMIT);
+        int skip = offset == null || offset < 0 ? 0 : offset;
         List<String> tokens = tokenize(normalized);
         // Empty query = browse catalog (schema cache + metrics), not "no results".
         boolean browse = tokens.isEmpty();
@@ -80,10 +86,14 @@ public class DiscoverySearchService {
                 : Comparator.comparingInt(DiscoveryHitDto::score).reversed()
                         .thenComparing(DiscoveryHitDto::qualifiedLabel, String.CASE_INSENSITIVE_ORDER);
 
-        return hits.stream()
-                .sorted(order)
+        List<DiscoveryHitDto> sorted = hits.stream().sorted(order).toList();
+        int total = sorted.size();
+        List<DiscoveryHitDto> page = sorted.stream()
+                .skip(skip)
                 .limit(cap)
                 .toList();
+        boolean hasMore = skip + page.size() < total;
+        return new DiscoverySearchPageDto(page, total, skip, cap, hasMore);
     }
 
     private boolean isMetricVisible(SemanticMetricEntry metric, ConnectionVisibilityService.VisibleCatalog catalog) {

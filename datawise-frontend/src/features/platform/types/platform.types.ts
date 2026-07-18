@@ -117,6 +117,15 @@ export interface DiscoveryHit {
     relatedTables?: string[] | null
 }
 
+/** Paginated discovery search / browse response. */
+export interface DiscoverySearchPage {
+    hits: DiscoveryHit[]
+    total: number
+    offset: number
+    limit: number
+    hasMore: boolean
+}
+
 export interface SqlReviewRequest {
     sql: string
     connectionId?: string | null

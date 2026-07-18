@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -58,13 +59,13 @@ class DiscoverySearchServiceTest {
         metric.setRelatedTables(List.of("orders", "shop.payments"));
         when(metricStore.listAll()).thenReturn(List.of(metric));
 
-        List<DiscoveryHitDto> byTable = service.search("orders", 20);
+        List<DiscoveryHitDto> byTable = service.search("orders", 20).hits();
         assertEquals(1, byTable.size());
         assertEquals("table", byTable.get(0).kind());
         assertEquals("orders", byTable.get(0).name());
         assertTrue(byTable.get(0).relatedTables().isEmpty());
 
-        List<DiscoveryHitDto> byOwner = service.search("alice", 20);
+        List<DiscoveryHitDto> byOwner = service.search("alice", 20).hits();
         assertEquals(1, byOwner.size());
         assertEquals("metric", byOwner.get(0).kind());
         assertEquals("alice", byOwner.get(0).owner());
@@ -96,11 +97,51 @@ class DiscoverySearchServiceTest {
         metric.setOwner("alice");
         when(metricStore.listAll()).thenReturn(List.of(metric));
 
-        List<DiscoveryHitDto> browsed = service.search("  ", 20);
+        List<DiscoveryHitDto> browsed = service.search("  ", 20).hits();
         assertEquals(3, browsed.size());
         assertEquals("customers_v", browsed.get(0).name());
         assertEquals("gmv", browsed.get(1).name());
         assertEquals("orders", browsed.get(2).name());
+    }
+
+    @Test
+    void searchSupportsOffsetPagination() {
+        ConnectionEntity connection = new ConnectionEntity();
+        connection.setId("conn-1");
+        connection.setName("Shop DB");
+        connection.setDbType("mysql");
+
+        when(visibility.visibleCatalogForCurrentUser())
+                .thenReturn(new ConnectionVisibilityService.VisibleCatalog(List.of(), List.of(connection)));
+
+        TreeNode database = node("db-shop", "shop", "database");
+        TreeNode table = node("tbl-orders", "orders", "table");
+        TreeNode view = node("vw-customers", "customers_v", "view");
+        database.setChildren(List.of(table, view));
+        when(schemaCacheStore.load("conn-1")).thenReturn(List.of(database));
+
+        SemanticMetricEntry metric = new SemanticMetricEntry();
+        metric.setId("metric-gmv");
+        metric.setConnectionId("conn-1");
+        metric.setDatabase("shop");
+        metric.setName("gmv");
+        when(metricStore.listAll()).thenReturn(List.of(metric));
+
+        var first = service.search("", 2, 0);
+        assertEquals(3, first.total());
+        assertEquals(2, first.hits().size());
+        assertEquals(0, first.offset());
+        assertEquals(2, first.limit());
+        assertTrue(first.hasMore());
+        assertEquals("customers_v", first.hits().get(0).name());
+        assertEquals("gmv", first.hits().get(1).name());
+
+        var second = service.search("", 2, 2);
+        assertEquals(3, second.total());
+        assertEquals(1, second.hits().size());
+        assertEquals(2, second.offset());
+        assertFalse(second.hasMore());
+        assertEquals("orders", second.hits().get(0).name());
     }
 
     private static TreeNode node(String id, String label, String type) {

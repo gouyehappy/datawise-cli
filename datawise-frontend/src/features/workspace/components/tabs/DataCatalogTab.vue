@@ -14,11 +14,13 @@ import type {LineageImpactItem} from '@/features/lineage/types/lineage.types'
 import {
     buildDataCatalogFacetOptions,
     canJumpLineage,
+    DATA_CATALOG_PAGE_SIZE,
     discoveryHitRowKey,
     filterDiscoveryHitsByFacets,
     hasActiveDataCatalogFacets,
     listRelatedTableChoices,
     needsRelatedTablePicker,
+    nextDiscoveryOffset,
     pickLineageJumpTarget,
     resolveLineageImpactSource,
     toggleFacetValue,
@@ -43,6 +45,9 @@ const debouncedQuery = useDebouncedRef(query, 220)
 const loading = ref(false)
 const error = ref('')
 const hits = ref<DiscoveryHit[]>([])
+const totalHits = ref(0)
+const hasMore = ref(false)
+const loadingMore = ref(false)
 const facets = reactive<DataCatalogFacets>({
     kinds: [],
     connectionIds: [],
@@ -58,11 +63,13 @@ const relatedTableOpen = ref(false)
 const relatedTableCandidates = ref<RelatedTableChoice[]>([])
 
 let searchSeq = 0
+let activeQuery = ''
 
 const facetOptions = computed(() => buildDataCatalogFacetOptions(hits.value))
 const filteredHits = computed(() => filterDiscoveryHitsByFacets(hits.value, facets))
 const facetsActive = computed(() => hasActiveDataCatalogFacets(facets))
 const showFacets = computed(() => hits.value.length > 0)
+const showLoadMore = computed(() => hasMore.value && !facetsActive.value)
 
 const rows = computed(() =>
     filteredHits.value.map((hit) => ({
@@ -144,21 +151,55 @@ async function runSearch(raw: string) {
     const q = raw.trim()
     const browse = q.length < 2
     const seq = ++searchSeq
+    activeQuery = browse ? '' : q
     loading.value = true
+    loadingMore.value = false
     error.value = ''
     try {
-        const result = await platformApi.searchDiscovery(browse ? '' : q, 80)
+        const page = await platformApi.searchDiscovery(activeQuery, DATA_CATALOG_PAGE_SIZE, 0)
         if (seq !== searchSeq) return
-        hits.value = result
+        hits.value = page.hits
+        totalHits.value = page.total
+        hasMore.value = page.hasMore
         resetFacets()
         selectedKeys.value = []
     } catch (err) {
         if (seq !== searchSeq) return
         error.value = err instanceof Error ? err.message : String(err)
         hits.value = []
+        totalHits.value = 0
+        hasMore.value = false
         resetFacets()
     } finally {
         if (seq === searchSeq) loading.value = false
+    }
+}
+
+async function loadMore() {
+    if (!hasMore.value || loading.value || loadingMore.value || facetsActive.value) return
+    const seq = searchSeq
+    loadingMore.value = true
+    error.value = ''
+    try {
+        const page = await platformApi.searchDiscovery(
+            activeQuery,
+            DATA_CATALOG_PAGE_SIZE,
+            hits.value.length,
+        )
+        if (seq !== searchSeq) return
+        const next = nextDiscoveryOffset({
+            offset: page.offset,
+            hits: page.hits,
+            hasMore: page.hasMore,
+        })
+        hits.value = [...hits.value, ...page.hits]
+        totalHits.value = page.total
+        hasMore.value = next != null
+    } catch (err) {
+        if (seq !== searchSeq) return
+        error.value = err instanceof Error ? err.message : String(err)
+    } finally {
+        if (seq === searchSeq) loadingMore.value = false
     }
 }
 
@@ -263,6 +304,12 @@ function chooseLineageTarget(item: LineageImpactItem) {
         <p class="data-catalog__sub">{{ t('discovery.subtitle') }}</p>
         <p v-if="debouncedQuery.trim().length < 2 && hits.length" class="data-catalog__browse">
           {{ t('discovery.browseHint') }}
+          <span v-if="totalHits > 0" class="data-catalog__count">
+            {{ t('discovery.loadedCount', {loaded: hits.length, total: totalHits}) }}
+          </span>
+        </p>
+        <p v-else-if="hits.length && totalHits > hits.length" class="data-catalog__browse">
+          {{ t('discovery.loadedCount', {loaded: hits.length, total: totalHits}) }}
         </p>
       </div>
       <div class="data-catalog__search">
@@ -349,6 +396,17 @@ function chooseLineageTarget(item: LineageImpactItem) {
       </template>
     </DwDataGrid>
 
+    <div v-if="showLoadMore" class="data-catalog__more">
+      <button
+          type="button"
+          class="dw-btn"
+          :disabled="loading || loadingMore"
+          @click="loadMore"
+      >
+        {{ loadingMore ? t('discovery.loadingMore') : t('discovery.loadMore') }}
+      </button>
+    </div>
+
     <AppModal
         :open="relatedTableOpen"
         :title="t('discovery.relatedTablePickTitle')"
@@ -433,6 +491,16 @@ function chooseLineageTarget(item: LineageImpactItem) {
   margin: 6px 0 0;
   color: var(--dw-text-muted, #6b7280);
   font-size: 0.8rem;
+}
+
+.data-catalog__count {
+  margin-left: 0.35rem;
+}
+
+.data-catalog__more {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 8px;
 }
 
 .data-catalog__search {

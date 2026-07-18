@@ -3,7 +3,7 @@ import type {
     AnalysisCanvasDetail,
     AnalysisCanvasSummary,
     AutoGenerateSemanticMetricsRequest,
-    DiscoveryHit,
+    DiscoverySearchPage,
     ExecuteFederatedViewRequest,
     FederatedViewDetail,
     FederatedViewExecuteResult,
@@ -75,10 +75,11 @@ export function createHttpPlatformApi(): PlatformApi {
         autoGenerateSemanticMetrics: (request) =>
             postJson<SemanticMetric[]>(paths.semanticMetricsAutoGenerate, request),
 
-        searchDiscovery: (q, limit) =>
-            getJson<DiscoveryHit[]>(paths.discoverySearch, {
+        searchDiscovery: (q, limit, offset) =>
+            getJson<DiscoverySearchPage>(paths.discoverySearch, {
                 q: q ?? '',
                 ...(limit != null ? {limit} : {}),
+                ...(offset != null ? {offset} : {}),
             }),
 
         reviewSql: (request) =>

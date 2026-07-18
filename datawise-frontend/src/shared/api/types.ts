@@ -41,6 +41,7 @@ import type {
     AnalysisCanvasSummary,
     AutoGenerateSemanticMetricsRequest,
     DiscoveryHit,
+    DiscoverySearchPage,
     ExecuteFederatedViewRequest,
     FederatedViewDetail,
     FederatedViewSummary,
@@ -1720,7 +1721,7 @@ export interface PlatformApi {
 
     autoGenerateSemanticMetrics(request: AutoGenerateSemanticMetricsRequest): Promise<SemanticMetric[]>
 
-    searchDiscovery(q?: string | null, limit?: number): Promise<DiscoveryHit[]>
+    searchDiscovery(q?: string | null, limit?: number, offset?: number): Promise<DiscoverySearchPage>
 
     reviewSql(request: SqlReviewRequest): Promise<SqlReviewResult>
 
