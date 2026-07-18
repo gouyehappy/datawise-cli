@@ -94,6 +94,23 @@ class ConnectorRegistryTest {
     }
 
     @Test
+    void replaceAll_hotReloadsConnectorsAndClearsResolveCache() {
+        ConnectorRegistry registry = new ConnectorRegistry(List.of(
+                new GenericJdbcDataSourceConnector(jdbcConnectorOperations)
+        ));
+        assertEquals("jdbc-generic", registry.resolve("customdb").id());
+
+        DataSourceConnector plugin = stubConnector("jdbc-oracle", Set.of("oracle"));
+        registry.replaceAll(List.of(
+                plugin,
+                new GenericJdbcDataSourceConnector(jdbcConnectorOperations)
+        ));
+
+        assertEquals("jdbc-oracle", registry.resolve("oracle").id());
+        assertEquals("jdbc-generic", registry.resolve("customdb").id());
+    }
+
+    @Test
     void merge_prefersPluginConnectorOverClasspathDuplicate() {
         DataSourceConnector pluginMysql = stubConnector("jdbc-mysql", Set.of("mysql"));
         DataSourceConnector classpathMysql = stubConnector("jdbc-mysql", Set.of("mysql"));

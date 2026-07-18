@@ -14,4 +14,5 @@ export const datasourcesApi = {
     resolveDriver: (mavenCoordinates: string, driverClass: string): Promise<JdbcDriverResolveResult> =>
         api.datasources.resolveDriver({mavenCoordinates, driverClass}),
     installFromMarket: (connectorId: string) => api.datasources.installFromMarket(connectorId),
+    reloadPlugins: () => api.datasources.reloadPlugins(),
 }

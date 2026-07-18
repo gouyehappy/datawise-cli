@@ -308,6 +308,7 @@ export const API_PATHS = {
         list: '/api/datasources',
         market: '/api/datasources/market',
         marketInstall: '/api/datasources/market/install',
+        pluginsReload: '/api/datasources/plugins/reload',
         resolveDriver: '/api/datasources/drivers/resolve',
     },
     health: '/api/health',

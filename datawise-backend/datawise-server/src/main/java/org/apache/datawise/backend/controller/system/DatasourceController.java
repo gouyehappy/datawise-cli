@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.controller.system;
 
 import org.apache.datawise.backend.common.ApiResponse;
+import org.apache.datawise.backend.domain.ConnectorPluginReloadResultDto;
 import org.apache.datawise.backend.domain.InstallConnectorPluginRequest;
 import org.apache.datawise.backend.domain.InstallConnectorPluginResultDto;
 import org.apache.datawise.backend.domain.JdbcDriverResolveRequest;
@@ -69,6 +70,13 @@ public class DatasourceController {
         userAdminPolicy.requireAdminUser();
         String connectorId = request != null ? request.connectorId() : null;
         return ApiResponse.ok(datasourceCatalogService.installRemotePlugin(connectorId));
+    }
+
+    /** Hot-reload connector JARs from {@code config/plugins} without restarting the process. */
+    @PostMapping("/plugins/reload")
+    public ApiResponse<ConnectorPluginReloadResultDto> reloadConnectorPlugins() {
+        userAdminPolicy.requireAdminUser();
+        return ApiResponse.ok(datasourceCatalogService.reloadPlugins());
     }
 
     @PostMapping("/drivers/resolve")

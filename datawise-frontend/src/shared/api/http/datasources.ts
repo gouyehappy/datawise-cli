@@ -40,5 +40,12 @@ export function createHttpDatasourcesApi(): DatasourcesApi {
 
         installFromMarket: async (connectorId) =>
             postJson(API_PATHS.datasources.marketInstall, {connectorId}),
+
+        reloadPlugins: async () =>
+            postJson<{
+                loadedJarCount: number
+                loadedConnectorIds: string[]
+                failures: Array<{jarName: string; reason: string}>
+            }>(API_PATHS.datasources.pluginsReload, {}),
     }
 }

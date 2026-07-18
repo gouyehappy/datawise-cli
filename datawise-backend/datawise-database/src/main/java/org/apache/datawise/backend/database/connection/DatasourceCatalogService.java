@@ -14,6 +14,7 @@ import org.apache.datawise.backend.domain.ConnectorPluginLoadFailure;
 import org.apache.datawise.backend.domain.ConnectorPluginManifest;
 import org.apache.datawise.backend.domain.ConnectorPluginManifestEntry;
 import org.apache.datawise.backend.domain.DatasourceDefinitionDto;
+import org.apache.datawise.backend.domain.ConnectorPluginReloadResultDto;
 import org.apache.datawise.backend.domain.InstallConnectorPluginResultDto;
 import org.apache.datawise.backend.ops.DatabaseOpsRegistry;
 import org.springframework.stereotype.Service;
@@ -89,7 +90,7 @@ public class DatasourceCatalogService {
             );
             String hint = manifestEntry
                     .map(entry -> buildInstallHint(entry))
-                    .orElse("Install connector plugin JAR under config/plugins and restart the backend.");
+                    .orElse("Install connector plugin JAR under config/plugins, then Reload plugins (or restart).");
             market.add(new ConnectorMarketEntryDto(
                     type.id(),
                     type.getDisplayName(),
@@ -111,8 +112,8 @@ public class DatasourceCatalogService {
     }
 
     /**
-     * Downloads a marketplace connector JAR from its manifest {@code downloadUrl} into {@code config/plugins}.
-     * The backend must be restarted (or plugins reloaded) before the connector becomes available.
+     * Downloads a marketplace connector JAR from its manifest {@code downloadUrl} into {@code config/plugins},
+     * then hot-reloads plugins so the connector becomes available without a process restart when possible.
      */
     public InstallConnectorPluginResultDto installRemotePlugin(String connectorId) {
         if (connectorId == null || connectorId.isBlank()) {
@@ -144,18 +145,39 @@ public class DatasourceCatalogService {
             String integrity = entry.sha256() != null && !entry.sha256().isBlank()
                     ? ConnectorPluginIntegrityStatus.VERIFIED
                     : ConnectorPluginIntegrityStatus.UNSIGNED;
+            ConnectorPluginReloadResultDto reload = reloadPlugins();
+            boolean available = findById(entry.id()).isPresent();
+            boolean restartRequired = !available;
+            String message = available
+                    ? "Plugin JAR installed and loaded (hot-reload). Connector is available now."
+                    : "Plugin JAR installed under config/plugins, but hot-reload did not activate it"
+                    + " (jar lock or load failure). Restart the backend. Failures: "
+                    + reload.failures();
             return new InstallConnectorPluginResultDto(
                     entry.id(),
                     installed.getFileName().toString(),
                     integrity,
-                    true,
-                    "Plugin JAR installed under config/plugins. Restart the backend to load the connector."
+                    restartRequired,
+                    message
             );
         } catch (IOException ex) {
             throw new IllegalStateException(
                     "Failed to download connector plugin " + connectorId + ": " + ex.getMessage(),
                     ex
             );
+        }
+    }
+
+    /** Hot-reload {@code config/plugins} into the live connector registry. */
+    public ConnectorPluginReloadResultDto reloadPlugins() {
+        ConnectorPluginReloadResultDto result = connectorFacade.catalog().reloadPlugins();
+        invalidateSnapshot();
+        return result;
+    }
+
+    public void invalidateSnapshot() {
+        synchronized (this) {
+            snapshot = null;
         }
     }
 
@@ -249,7 +271,7 @@ public class DatasourceCatalogService {
         if (entry.jar() != null && !entry.jar().isBlank()) {
             hint.append(" as ").append(entry.jar());
         }
-        hint.append(" and restart the backend.");
+        hint.append(", then use marketplace Reload plugins (or restart).");
         if (entry.version() != null && !entry.version().isBlank()) {
             hint.append(" Manifest version: ").append(entry.version()).append('.');
         }

@@ -17,11 +17,20 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class ConnectorRegistry {
 
-    private final List<DataSourceConnector> connectors;
+    private volatile List<DataSourceConnector> connectors;
     private final ConcurrentMap<String, DataSourceConnector> resolveCache = new ConcurrentHashMap<>();
 
     public ConnectorRegistry(List<DataSourceConnector> connectors) {
         this.connectors = sortConnectors(connectors);
+    }
+
+    /**
+     * Hot-reload support: swap the connector set (e.g. after loading new JARs from {@code config/plugins})
+     * and clear the resolve cache.
+     */
+    public synchronized void replaceAll(List<DataSourceConnector> next) {
+        this.connectors = sortConnectors(next != null ? next : List.of());
+        resolveCache.clear();
     }
 
     /** {@code config/plugins} 优先于 classpath 上同 id 的连接器。 */

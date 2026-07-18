@@ -82,7 +82,11 @@ async function installRemote(event: Event) {
     installing.value = true
     try {
         const result = await datasourcesApi.installFromMarket(props.entry.id)
-        layout.showSuccessToast(result.message || t('plugin.connectorMarket.installSuccess'))
+        if (result.restartRequired) {
+            layout.showWarningToast(result.message || t('plugin.connectorMarket.installSuccessRestart'))
+        } else {
+            layout.showSuccessToast(result.message || t('plugin.connectorMarket.installSuccess'))
+        }
         emit('installed')
     } catch (error) {
         const message = error instanceof Error ? error.message : t('plugin.connectorMarket.installFailed')

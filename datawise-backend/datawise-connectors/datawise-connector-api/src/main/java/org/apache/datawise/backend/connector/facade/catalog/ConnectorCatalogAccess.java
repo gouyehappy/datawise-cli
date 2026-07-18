@@ -4,9 +4,11 @@ import org.apache.datawise.backend.connector.ConnectorRegistry;
 import org.apache.datawise.backend.connector.DataSourceConnector;
 import org.apache.datawise.backend.connector.catalog.SchemaSession;
 import org.apache.datawise.backend.connector.plugin.ConnectorPluginLoader;
+import org.apache.datawise.backend.connector.plugin.ConnectorPluginRuntime;
 import org.apache.datawise.backend.domain.ConnectionTestResult;
 import org.apache.datawise.backend.domain.ConnectorPluginLoadFailure;
 import org.apache.datawise.backend.domain.ConnectorPluginManifest;
+import org.apache.datawise.backend.domain.ConnectorPluginReloadResultDto;
 import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.springframework.stereotype.Component;
@@ -23,10 +25,16 @@ public class ConnectorCatalogAccess {
 
     private final ConnectorRegistry connectorRegistry;
     private final ConnectorPluginLoader pluginLoader;
+    private final ConnectorPluginRuntime pluginRuntime;
 
-    public ConnectorCatalogAccess(ConnectorRegistry connectorRegistry, ConnectorPluginLoader pluginLoader) {
+    public ConnectorCatalogAccess(
+            ConnectorRegistry connectorRegistry,
+            ConnectorPluginLoader pluginLoader,
+            ConnectorPluginRuntime pluginRuntime
+    ) {
         this.connectorRegistry = connectorRegistry;
         this.pluginLoader = pluginLoader;
+        this.pluginRuntime = pluginRuntime;
     }
 
     public DataSourceConnector resolve(ConnectionEntity entity) {
@@ -87,5 +95,10 @@ public class ConnectorCatalogAccess {
 
     public Path pluginsDirectory() {
         return pluginLoader.pluginsDirectory();
+    }
+
+    /** Reloads plugin JARs into the live registry (no process restart). */
+    public ConnectorPluginReloadResultDto reloadPlugins() {
+        return pluginRuntime.reload();
     }
 }

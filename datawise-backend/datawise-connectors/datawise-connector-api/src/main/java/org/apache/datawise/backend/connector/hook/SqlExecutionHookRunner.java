@@ -11,12 +11,17 @@ import java.util.List;
 /** Chains registered {@link SqlExecutionHook} instances before SQL execution. */
 public class SqlExecutionHookRunner {
 
-    private final List<SqlExecutionHook> hooks;
+    private volatile List<SqlExecutionHook> hooks;
 
     public SqlExecutionHookRunner(List<SqlExecutionHook> hooks) {
-        this.hooks = hooks == null
+        replaceHooks(hooks);
+    }
+
+    /** Hot-reload: replace plugin-contributed SQL hooks after plugin reload. */
+    public synchronized void replaceHooks(List<SqlExecutionHook> next) {
+        this.hooks = next == null
                 ? List.of()
-                : hooks.stream()
+                : next.stream()
                 .sorted(Comparator.comparingInt(SqlExecutionHook::priority))
                 .toList();
     }
@@ -27,11 +32,12 @@ public class SqlExecutionHookRunner {
             String database,
             long userId
     ) {
-        if (hooks.isEmpty()) {
+        List<SqlExecutionHook> current = hooks;
+        if (current.isEmpty()) {
             return sql;
         }
         String currentSql = sql;
-        for (SqlExecutionHook hook : hooks) {
+        for (SqlExecutionHook hook : current) {
             SqlExecutionHookResult result = hook.beforeExecute(new SqlExecutionHookContext(
                     hook.id(),
                     currentSql,

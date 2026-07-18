@@ -54,7 +54,7 @@ export function buildConnectorInstallGuide(entry: ConnectorMarketEntry): string 
     }
     lines.push(
         '3. Optionally add/update an entry in config/plugins/manifest.json (version + sha256).',
-        '4. Restart the backend process.',
+        '4. Click Reload plugins in the marketplace (or POST /api/datasources/plugins/reload). Restart only if hot-reload fails (e.g. Windows file lock on an already-loaded JAR).',
         '5. Refresh this marketplace page.',
     )
     if (entry.version) {

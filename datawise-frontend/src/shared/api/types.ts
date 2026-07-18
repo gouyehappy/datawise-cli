@@ -1469,6 +1469,12 @@ export interface DatasourcesApi {
         restartRequired: boolean
         message: string
     }>
+
+    reloadPlugins(): Promise<{
+        loadedJarCount: number
+        loadedConnectorIds: string[]
+        failures: Array<{jarName: string; reason: string}>
+    }>
 }
 
 // ── Plugins & teams ─────────────────────────────────────────────────────────

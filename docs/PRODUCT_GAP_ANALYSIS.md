@@ -55,7 +55,7 @@
 
 | # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
 |---|------|------|------|------------------|
-| G11 | 真·连接器远程市场 | partial | 浏览 / 安装引导 + 本地 `manifest.json`；**管理员一键安装** `POST /api/datasources/market/install`（按 `downloadUrl` 下载 + SHA-256）。缺远程目录托管 / 自动热加载 | 生态难自运转 |
+| G11 | 真·连接器远程市场 | partial | 浏览 / 安装引导 + 本地 `manifest.json`；管理员一键安装 + **热加载** `POST /api/datasources/plugins/reload`（安装后自动 reload）。缺远程目录托管 / 签名通道 | 生态难自运转 |
 | G12 | 多租户 / 托管 SaaS | partial | Dual-mode 已落地（`tenancy.mode=single|multi`）：租户隔离、RBAC、OIDC 映射、配额硬顶、成员邀请；见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。缺完整计费/发票与对象存储 | 托管商业化与计费仍弱 |
 | G13 | 组织级数据发现 | partial | 命令面板跨库搜表（schema 缓存）+ 搜语义指标/责任人（`GET /api/discovery/search`）；指标可选 `owner`。缺统一数据目录 UI / 血缘跳转 | 语义层有了，发现体验仍弱 |
 | G14 | 编排生态对接 | partial | 定时任务 `http_trigger` 出站调用 Airflow/dbt/Flink REST + `POST /api/platform/orchestration/trigger` 入站跑任务 + `orchestration.*` Webhook；见 [ORCHESTRATION.md](./ORCHESTRATION.md)。缺 DAG 状态回写 UI / 原生算子 | Yarn 可看，闭环不足 |
@@ -74,7 +74,7 @@
 | S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：`LakehouseLineageParser` 规范化 + 硬特性软剥离/表级回退（`_table_deps`）；Trino/Presto 仍 COMPLETE；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite 语义分析 / sidecar 仍缺 | 关键方言到可用 `complete/partial`，失败诚实降级 |
 | S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL 并排；画布上字段自由布局仍浅 | 画布级字段自由布局 / 更强与 AI 联动 |
 | S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列（AlterColumn DDL 预览/执行/控制台审批）；列级仍非画布内联编辑 | 图上内联改列 / 批量 DDL 编排 |
-| S6 | 连接器市场深度 | partial | 浏览 catalog + `manifest.json` 版本/SHA-256 + **远程一键安装**；缺热加载与签名通道 | 远程安装 / 签名通道 / 一键升级 |
+| S6 | 连接器市场深度 | partial | 浏览 catalog + `manifest.json` + 远程一键安装 + **热加载**；缺签名通道 / 远程目录托管 | 远程安装 / 签名通道 / 一键升级 |
 
 对标细节仍见 [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)（结构同步数据侧、VQB、ER 等条目）。
 
@@ -135,5 +135,6 @@
 |------|------|
 | 2026-07-17 | 初稿：产品高度缺口分析；拆分 missing / partial；给出 Wave A～D 近期顺序 |
 | 2026-07-17 | G12：Phase 0–2 + JDBC 元数据落地；状态改为 `partial`（计费/对象存储仍开） |
+| 2026-07-18、G11 热加载 | 连接器插件安装后热加载（免重启）+ `POST /api/datasources/plugins/reload` |
 | 2026-07-18、G15 目录/门禁 | 数据质量规则目录 UI + release gate API（blocking 套件） |
 | 2026-07-17、G5 Vault | Wave D/C/B 切片：G13/G2/G15/G14、G3 飞书钉钉、G10 Issue、S1 行级 Diff、S2 Grace hash 落盘+谓词下推、S3 硬特性软剥离+表级血缘 |

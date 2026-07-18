@@ -1,9 +1,12 @@
 package org.apache.datawise.backend.database.connection;
 
+import org.apache.datawise.backend.connector.ConnectorPluginContributionHolder;
 import org.apache.datawise.backend.connector.ConnectorRegistry;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
 import org.apache.datawise.backend.connector.facade.catalog.ConnectorCatalogAccess;
+import org.apache.datawise.backend.connector.hook.SqlExecutionHookRunner;
 import org.apache.datawise.backend.connector.plugin.ConnectorPluginLoader;
+import org.apache.datawise.backend.connector.plugin.ConnectorPluginRuntime;
 import org.apache.datawise.backend.connector.jdbc.GenericJdbcDataSourceConnector;
 import org.apache.datawise.backend.connector.jdbc.JdbcConnectorOperations;
 import org.apache.datawise.backend.connector.jdbc.MysqlDataSourceConnector;
@@ -128,12 +131,20 @@ class DatasourceCatalogServiceTest {
         try {
             Path temp = Files.createTempDirectory("dw-catalog-test");
             ConnectorPluginLoader pluginLoader = new ConnectorPluginLoader(temp.toString(), "plugins");
+            ConnectorPluginRuntime runtime = new ConnectorPluginRuntime(
+                    registry,
+                    pluginLoader,
+                    List.of(),
+                    jdbcOpsStub(),
+                    new ConnectorPluginContributionHolder(),
+                    new SqlExecutionHookRunner(List.of())
+            );
             return new ConnectorFacade(
                     null,
                     null,
                     null,
                     null,
-                    new ConnectorCatalogAccess(registry, pluginLoader),
+                    new ConnectorCatalogAccess(registry, pluginLoader, runtime),
                     null,
                     null,
                     null,
@@ -143,5 +154,9 @@ class DatasourceCatalogServiceTest {
         } catch (IOException ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    private static JdbcConnectorOperations jdbcOpsStub() {
+        return org.mockito.Mockito.mock(JdbcConnectorOperations.class);
     }
 }

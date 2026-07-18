@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import {computed, onMounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
+import {datasourcesApi} from '@/api'
 import DbTypeIcon from '@/core/components/DbTypeIcon.vue'
 import SearchInput from '@/core/components/SearchInput.vue'
 import {EmptyState} from '@/core/components'
@@ -14,6 +15,7 @@ import {
 } from '@/features/datasource/services/connector-market.service'
 import {connectorMarketAccentVars} from '@/features/datasource/services/connector-market-theme.service'
 import type {DbType} from '@/core/types'
+import {useLayoutStore} from '@/features/layout/stores/layout'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 
 type AvailabilityFilter = 'all' | 'ready' | 'pending'
@@ -27,8 +29,10 @@ const props = withDefaults(defineProps<{
 })
 
 const {t} = useI18n()
+const layout = useLayoutStore()
 const pluginStore = usePluginStore()
 const loading = ref(false)
+const reloading = ref(false)
 const error = ref<string | null>(null)
 const search = ref('')
 const availability = ref<AvailabilityFilter>('all')
@@ -98,6 +102,28 @@ function focusPending() {
     availability.value = 'pending'
     search.value = ''
 }
+
+async function reloadPlugins() {
+    if (reloading.value || loading.value) return
+    reloading.value = true
+    try {
+        const result = await datasourcesApi.reloadPlugins()
+        layout.showSuccessToast(t('plugin.connectorMarket.reloadSuccess', {
+            jars: result.loadedJarCount,
+            connectors: result.loadedConnectorIds?.length ?? 0,
+        }))
+        if (result.failures?.length) {
+            layout.showWarningToast(t('plugin.connectorMarket.reloadPartial', {
+                count: result.failures.length,
+            }))
+        }
+        await loadMarket()
+    } catch (err) {
+        layout.showErrorToast(err instanceof Error ? err.message : t('plugin.connectorMarket.reloadFailed'))
+    } finally {
+        reloading.value = false
+    }
+}
 </script>
 
 <template>
@@ -130,7 +156,16 @@ function focusPending() {
           <button
               class="dw-text-btn"
               type="button"
-              :disabled="loading"
+              :disabled="loading || reloading"
+              @click="reloadPlugins()"
+          >
+            <DwIcon name="run" :size="14" :stroke-width="1.8"/>
+            {{ reloading ? t('plugin.connectorMarket.reloading') : t('plugin.connectorMarket.reloadPlugins') }}
+          </button>
+          <button
+              class="dw-text-btn"
+              type="button"
+              :disabled="loading || reloading"
               @click="loadMarket()"
           >
             <DwIcon name="refresh" :size="14" :stroke-width="1.8"/>
