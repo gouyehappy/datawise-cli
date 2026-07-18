@@ -41,14 +41,10 @@ public class DiscoverySearchService {
 
     public List<DiscoveryHitDto> search(String query, Integer limit) {
         String normalized = query != null ? query.trim() : "";
-        if (normalized.isEmpty()) {
-            return List.of();
-        }
         int cap = limit == null || limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, MAX_LIMIT);
         List<String> tokens = tokenize(normalized);
-        if (tokens.isEmpty()) {
-            return List.of();
-        }
+        // Empty query = browse catalog (schema cache + metrics), not "no results".
+        boolean browse = tokens.isEmpty();
 
         ConnectionVisibilityService.VisibleCatalog catalog =
                 connectionVisibilityService.visibleCatalogForCurrentUser();
@@ -61,7 +57,7 @@ public class DiscoverySearchService {
                 continue;
             }
             for (TreeNode root : roots) {
-                walkTables(root, List.of(), connection, tokens, hits, seen);
+                walkTables(root, List.of(), connection, tokens, browse, hits, seen);
             }
         }
 
@@ -69,7 +65,7 @@ public class DiscoverySearchService {
             if (!isMetricVisible(metric, catalog)) {
                 continue;
             }
-            DiscoveryHitDto hit = scoreMetric(metric, connectionLabel(metric, catalog), tokens);
+            DiscoveryHitDto hit = scoreMetric(metric, connectionLabel(metric, catalog), tokens, browse);
             if (hit == null) {
                 continue;
             }
@@ -79,9 +75,13 @@ public class DiscoverySearchService {
             }
         }
 
+        Comparator<DiscoveryHitDto> order = browse
+                ? Comparator.comparing(DiscoveryHitDto::qualifiedLabel, String.CASE_INSENSITIVE_ORDER)
+                : Comparator.comparingInt(DiscoveryHitDto::score).reversed()
+                        .thenComparing(DiscoveryHitDto::qualifiedLabel, String.CASE_INSENSITIVE_ORDER);
+
         return hits.stream()
-                .sorted(Comparator.comparingInt(DiscoveryHitDto::score).reversed()
-                        .thenComparing(DiscoveryHitDto::qualifiedLabel, String.CASE_INSENSITIVE_ORDER))
+                .sorted(order)
                 .limit(cap)
                 .toList();
     }
@@ -111,12 +111,13 @@ public class DiscoverySearchService {
             List<TreeNode> parents,
             ConnectionEntity connection,
             List<String> tokens,
+            boolean browse,
             List<DiscoveryHitDto> hits,
             Set<String> seen
     ) {
         String type = node.getType();
         if ("table".equals(type) || "view".equals(type)) {
-            DiscoveryHitDto hit = scoreTable(node, parents, connection, tokens);
+            DiscoveryHitDto hit = scoreTable(node, parents, connection, tokens, browse);
             if (hit != null) {
                 String key = hit.kind() + "|" + hit.connectionId() + "|" + hit.database() + "|" + hit.name();
                 if (seen.add(key)) {
@@ -131,7 +132,7 @@ public class DiscoverySearchService {
             return;
         }
         for (TreeNode child : children) {
-            walkTables(child, nextParents, connection, tokens, hits, seen);
+            walkTables(child, nextParents, connection, tokens, browse, hits, seen);
         }
     }
 
@@ -139,7 +140,8 @@ public class DiscoverySearchService {
             TreeNode node,
             List<TreeNode> parents,
             ConnectionEntity connection,
-            List<String> tokens
+            List<String> tokens,
+            boolean browse
     ) {
         String database = resolveDatabaseLabel(parents, connection.getDbType());
         String name = node.getLabel() != null ? node.getLabel() : "";
@@ -154,9 +156,14 @@ public class DiscoverySearchService {
                 node.getMeta(),
                 node.getComment()
         );
-        int score = scoreTokens(name, qualified, searchText, tokens);
-        if (score < 0) {
-            return null;
+        int score;
+        if (browse) {
+            score = 1;
+        } else {
+            score = scoreTokens(name, qualified, searchText, tokens);
+            if (score < 0) {
+                return null;
+            }
         }
         String id = node.getId() != null && !node.getId().isBlank()
                 ? node.getId()
@@ -175,7 +182,12 @@ public class DiscoverySearchService {
         );
     }
 
-    private DiscoveryHitDto scoreMetric(SemanticMetricEntry metric, String connectionLabel, List<String> tokens) {
+    private DiscoveryHitDto scoreMetric(
+            SemanticMetricEntry metric,
+            String connectionLabel,
+            List<String> tokens,
+            boolean browse
+    ) {
         String name = metric.getName() != null ? metric.getName() : "";
         String database = metric.getDatabase() != null ? metric.getDatabase() : "";
         String qualified = database.isBlank() ? name : database + "." + name;
@@ -189,15 +201,20 @@ public class DiscoverySearchService {
                 metric.getOwner(),
                 metric.getExpression()
         );
-        int score = scoreTokens(name, qualified, searchText, tokens);
-        if (score < 0) {
-            return null;
-        }
-        if (metric.getOwner() != null && !metric.getOwner().isBlank()) {
-            String ownerLower = metric.getOwner().toLowerCase(Locale.ROOT);
-            for (String token : tokens) {
-                if (ownerLower.contains(token)) {
-                    score += 25;
+        int score;
+        if (browse) {
+            score = 1;
+        } else {
+            score = scoreTokens(name, qualified, searchText, tokens);
+            if (score < 0) {
+                return null;
+            }
+            if (metric.getOwner() != null && !metric.getOwner().isBlank()) {
+                String ownerLower = metric.getOwner().toLowerCase(Locale.ROOT);
+                for (String token : tokens) {
+                    if (ownerLower.contains(token)) {
+                        score += 25;
+                    }
                 }
             }
         }

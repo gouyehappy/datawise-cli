@@ -76,7 +76,10 @@ export function createHttpPlatformApi(): PlatformApi {
             postJson<SemanticMetric[]>(paths.semanticMetricsAutoGenerate, request),
 
         searchDiscovery: (q, limit) =>
-            getJson<DiscoveryHit[]>(paths.discoverySearch, {q, ...(limit != null ? {limit} : {})}),
+            getJson<DiscoveryHit[]>(paths.discoverySearch, {
+                q: q ?? '',
+                ...(limit != null ? {limit} : {}),
+            }),
 
         reviewSql: (request) =>
             postJson<SqlReviewResult>(paths.sqlReview, request),

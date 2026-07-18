@@ -70,8 +70,34 @@ class DiscoverySearchServiceTest {
     }
 
     @Test
-    void emptyQueryReturnsNothing() {
-        assertTrue(service.search("  ", 10).isEmpty());
+    void emptyQueryBrowsesCachedCatalog() {
+        ConnectionEntity connection = new ConnectionEntity();
+        connection.setId("conn-1");
+        connection.setName("Shop DB");
+        connection.setDbType("mysql");
+
+        when(visibility.visibleCatalogForCurrentUser())
+                .thenReturn(new ConnectionVisibilityService.VisibleCatalog(List.of(), List.of(connection)));
+
+        TreeNode database = node("db-shop", "shop", "database");
+        TreeNode table = node("tbl-orders", "orders", "table");
+        TreeNode view = node("vw-customers", "customers_v", "view");
+        database.setChildren(List.of(table, view));
+        when(schemaCacheStore.load("conn-1")).thenReturn(List.of(database));
+
+        SemanticMetricEntry metric = new SemanticMetricEntry();
+        metric.setId("metric-gmv");
+        metric.setConnectionId("conn-1");
+        metric.setDatabase("shop");
+        metric.setName("gmv");
+        metric.setOwner("alice");
+        when(metricStore.listAll()).thenReturn(List.of(metric));
+
+        List<DiscoveryHitDto> browsed = service.search("  ", 20);
+        assertEquals(3, browsed.size());
+        assertEquals("customers_v", browsed.get(0).name());
+        assertEquals("gmv", browsed.get(1).name());
+        assertEquals("orders", browsed.get(2).name());
     }
 
     private static TreeNode node(String id, String label, String type) {

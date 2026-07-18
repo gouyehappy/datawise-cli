@@ -1720,7 +1720,7 @@ export interface PlatformApi {
 
     autoGenerateSemanticMetrics(request: AutoGenerateSemanticMetricsRequest): Promise<SemanticMetric[]>
 
-    searchDiscovery(q: string, limit?: number): Promise<DiscoveryHit[]>
+    searchDiscovery(q?: string | null, limit?: number): Promise<DiscoveryHit[]>
 
     reviewSql(request: SqlReviewRequest): Promise<SqlReviewResult>
 

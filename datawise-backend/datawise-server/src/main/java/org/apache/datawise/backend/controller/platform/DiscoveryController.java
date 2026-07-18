@@ -22,7 +22,7 @@ public class DiscoveryController {
 
     @GetMapping("/search")
     public ApiResponse<List<DiscoveryHitDto>> search(
-            @RequestParam String q,
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer limit
     ) {
         return ApiResponse.ok(discoverySearchService.search(q, limit));

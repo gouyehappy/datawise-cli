@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, reactive, ref, watch} from 'vue'
+import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DwDataGrid from '@/core/components/DwDataGrid.vue'
 import SearchInput from '@/core/components/SearchInput.vue'
@@ -85,7 +85,7 @@ const columns = computed<DwDataGridColumn<(typeof rows.value)[number]>[]>(() => 
 
 const gridLabels = computed<Partial<DwDataGridLabels>>(() => ({
     empty: debouncedQuery.value.trim().length < 2
-        ? t('discovery.emptyHint')
+        ? (hits.value.length ? t('discovery.emptyFacets') : t('discovery.emptyBrowse'))
         : facetsActive.value
             ? t('discovery.emptyFacets')
             : t('discovery.empty'),
@@ -135,17 +135,12 @@ function kindLabel(kind: string) {
 
 async function runSearch(raw: string) {
     const q = raw.trim()
-    if (q.length < 2) {
-        hits.value = []
-        resetFacets()
-        error.value = ''
-        return
-    }
+    const browse = q.length < 2
     const seq = ++searchSeq
     loading.value = true
     error.value = ''
     try {
-        const result = await platformApi.searchDiscovery(q, 80)
+        const result = await platformApi.searchDiscovery(browse ? '' : q, 80)
         if (seq !== searchSeq) return
         hits.value = result
         resetFacets()
@@ -162,6 +157,10 @@ async function runSearch(raw: string) {
 
 watch(debouncedQuery, (value) => {
     void runSearch(value)
+})
+
+onMounted(() => {
+    void runSearch(query.value)
 })
 
 async function openSelected() {
@@ -228,6 +227,9 @@ function chooseLineageTarget(item: LineageImpactItem) {
       <div>
         <h2 class="data-catalog__title">{{ t('discovery.tabTitle') }}</h2>
         <p class="data-catalog__sub">{{ t('discovery.subtitle') }}</p>
+        <p v-if="debouncedQuery.trim().length < 2 && hits.length" class="data-catalog__browse">
+          {{ t('discovery.browseHint') }}
+        </p>
       </div>
       <div class="data-catalog__search">
         <SearchInput
@@ -367,6 +369,12 @@ function chooseLineageTarget(item: LineageImpactItem) {
   margin: 4px 0 0;
   color: var(--dw-text-muted, #6b7280);
   font-size: 0.85rem;
+}
+
+.data-catalog__browse {
+  margin: 6px 0 0;
+  color: var(--dw-text-muted, #6b7280);
+  font-size: 0.8rem;
 }
 
 .data-catalog__search {

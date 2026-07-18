@@ -15,6 +15,7 @@ Requires `workbench.explorer.search` + `workbench.tab.new`.
 
 ```http
 GET /api/discovery/search?q=orders&limit=80
+GET /api/discovery/search?limit=80
 ```
 
 Returns `DiscoveryHit[]`:
@@ -24,7 +25,9 @@ Returns `DiscoveryHit[]`:
 | `kind` | `table` · `view` · `metric` |
 | `connectionId` / `database` | Scope for open / lineage |
 | `owner` | Optional metric owner |
-| `score` | Ranking hint |
+| `score` | Ranking hint (browse mode uses a flat score) |
+
+Empty / blank `q` **browses** the org catalog (schema-cache tables/views + semantic metrics), sorted by qualified name, still capped by `limit` (default 40, max 100). Non-empty `q` ranks by token match.
 
 Hits feed both the palette and the catalog grid.
 
@@ -38,7 +41,7 @@ After a search returns hits, the **Data catalog** tab shows client-side facet ch
 | Connection | Distinct `connectionId` (+ label) |
 | Owner | Non-empty metric `owner` values |
 
-Selections within a facet are OR’d; facet groups are AND’d. Clearing filters restores the full hit set. Browse-without-query is still out of scope (API requires `q`).
+Selections within a facet are OR’d; facet groups are AND’d. Clearing filters restores the full hit set. The catalog tab also **browses without a query** (empty `q` listing) and then applies the same chips.
 
 ## Lineage jump
 
@@ -53,7 +56,7 @@ For a selected **table** or **view**:
 
 ## Still open
 
-- Browse without a query (server-side facet index / empty-q listing)
 - Column-level catalog cards
 - Jump lineage for metrics → defining SQL / models
 - Tag facets (no tag field on discovery hits yet)
+- Paginated browse beyond the search limit cap
