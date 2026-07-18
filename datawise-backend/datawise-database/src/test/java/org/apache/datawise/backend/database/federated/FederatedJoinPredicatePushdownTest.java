@@ -389,6 +389,63 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsBetweenAndNotBetween() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.amount", 5, "u.score", 10),
+                Map.of("o.id", 2, "o.amount", 15, "u.score", 20),
+                Map.of("o.id", 3, "o.amount", 25, "u.score", 5)
+        );
+        List<Map<String, Object>> between = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.amount BETWEEN 10 AND 20"
+        );
+        assertEquals(1, between.size());
+        assertEquals(2, between.get(0).get("o.id"));
+
+        List<Map<String, Object>> notBetween = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.amount NOT BETWEEN 10 AND 20"
+        );
+        assertEquals(2, notBetween.size());
+
+        List<Map<String, Object>> mixed = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.amount BETWEEN 1 AND 10 OR u.score BETWEEN 15 AND 25"
+        );
+        assertEquals(2, mixed.size());
+    }
+
+    @Test
+    void singleAliasBetweenIsPushedIntoSourceSubquery() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, amount FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name, score FROM users", "o.user_id = u.id")
+                ),
+                "o.amount BETWEEN 10 AND 20 AND u.score BETWEEN 1 AND 100"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        String ordersSql = result.plan().steps().get(0).subQuery().toUpperCase();
+        assertTrue(ordersSql.contains("BETWEEN"));
+        assertTrue(ordersSql.contains("AND"));
+        assertTrue(result.plan().steps().get(1).subQuery().toUpperCase().contains("BETWEEN"));
+        assertNull(result.residualWhere());
+    }
+
+    @Test
+    void splitAndKeepsBetweenBoundsTogether() {
+        List<String> parts = FederatedJoinPredicatePushdown.splitAnd(
+                "o.amount BETWEEN 10 AND 20 AND u.region = 'cn'"
+        );
+        assertEquals(2, parts.size());
+        assertEquals("o.amount BETWEEN 10 AND 20", parts.get(0));
+        assertEquals("u.region = 'cn'", parts.get(1));
+    }
+
+    @Test
     void residualFilterSupportsLikeEscape() {
         List<Map<String, Object>> rows = List.of(
                 Map.of("o.id", 1, "o.name", "a%b"),

@@ -14,6 +14,7 @@ import java.util.Map;
  * {@code alias.col IS [NOT] NULL},
  * {@code alias.col [NOT] LIKE 'pattern'},
  * {@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM} in comparisons / LIKE,
+ * {@code alias.col [NOT] BETWEEN low AND high},
  * or {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
  */
 final class FederatedJoinResidualFilter {
@@ -69,11 +70,18 @@ final class FederatedJoinResidualFilter {
             boolean matched = likeMatches(value, likePredicate.pattern(), likePredicate.escape());
             return likePredicate.negated() != matched;
         }
+        BetweenPredicate betweenPredicate = parseBetweenPredicate(atom);
+        if (betweenPredicate != null) {
+            Object value = resolve(row, betweenPredicate.left());
+            Object low = resolve(row, betweenPredicate.low());
+            Object high = resolve(row, betweenPredicate.high());
+            return betweenMatches(value, low, high, betweenPredicate.negated());
+        }
         Comparison comparison = parseComparison(atom);
         if (comparison == null) {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
-                            + "subqueries or use simple comparisons / IS NULL / LIKE / UPPER|LOWER|TRIM / IN / NOT / OR "
+                            + "subqueries or use simple comparisons / IS NULL / LIKE / BETWEEN / UPPER|LOWER|TRIM / IN / NOT / OR "
                             + "of those): "
                             + atom
             );
@@ -136,6 +144,59 @@ final class FederatedJoinResidualFilter {
             escape = escapeLit.value().charAt(0);
         }
         return new LikePredicate(left, negated, patternLit.value(), escape);
+    }
+
+    /**
+     * Parse {@code left [NOT] BETWEEN low AND high}. Bounds may be literals, columns, or
+     * supported unary string functions. Returns null when the atom is not a BETWEEN form.
+     */
+    static BetweenPredicate parseBetweenPredicate(String atom) {
+        if (atom == null || atom.isBlank()) {
+            return null;
+        }
+        String trimmed = atom.trim();
+        int notBetweenIdx = findKeyword(trimmed, "not between", 11);
+        int betweenIdx = findKeyword(trimmed, "between", 7);
+        boolean negated;
+        int keywordStart;
+        int keywordLen;
+        if (notBetweenIdx >= 0) {
+            negated = true;
+            keywordStart = notBetweenIdx;
+            keywordLen = 11;
+        } else if (betweenIdx >= 0) {
+            negated = false;
+            keywordStart = betweenIdx;
+            keywordLen = 7;
+        } else {
+            return null;
+        }
+        String left = trimmed.substring(0, keywordStart).trim();
+        String afterBetween = trimmed.substring(keywordStart + keywordLen).trim();
+        if (left.isEmpty() || afterBetween.isEmpty()) {
+            return null;
+        }
+        int andIdx = findKeyword(afterBetween, "and", 3);
+        if (andIdx < 0) {
+            return null;
+        }
+        String low = afterBetween.substring(0, andIdx).trim();
+        String high = afterBetween.substring(andIdx + 3).trim();
+        if (low.isEmpty() || high.isEmpty()) {
+            return null;
+        }
+        return new BetweenPredicate(left, negated, low, high);
+    }
+
+    /**
+     * Inclusive BETWEEN. Any NULL operand yields false (three-valued SQL unknown → filter out).
+     */
+    static boolean betweenMatches(Object value, Object low, Object high, boolean negated) {
+        if (value == null || low == null || high == null) {
+            return false;
+        }
+        boolean inRange = compareValues(value, low) >= 0 && compareValues(value, high) <= 0;
+        return negated != inRange;
     }
 
     static boolean likeMatches(Object value, String pattern) {
@@ -248,8 +309,9 @@ final class FederatedJoinResidualFilter {
             return null;
         }
         String trimmed = atom.trim();
-        // Keep "NOT IN (...)" for the IN parser (and reject leading-only NOT IN without a left expr).
-        if (findKeyword(trimmed, "not in", 6) == 0) {
+        // Keep "NOT IN (...)" / "NOT BETWEEN" for dedicated parsers.
+        if (findKeyword(trimmed, "not in", 6) == 0
+                || findKeyword(trimmed, "not between", 11) == 0) {
             return null;
         }
         if (findKeyword(trimmed, "not", 3) != 0) {
@@ -634,6 +696,9 @@ final class FederatedJoinResidualFilter {
     }
 
     record LikePredicate(String left, boolean negated, String pattern, Character escape) {
+    }
+
+    record BetweenPredicate(String left, boolean negated, String low, String high) {
     }
 
     record StringLiteralTake(String value, String remainder) {

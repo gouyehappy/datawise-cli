@@ -17,7 +17,8 @@ import java.util.regex.Pattern;
 /**
  * Pushes single-table-alias conjuncts from the outer WHERE into each source subquery
  * (including single-alias {@code OR} / {@code IS [NOT] NULL} / {@code [NOT] LIKE} /
- * {@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM} / {@code IN} forms).
+ * {@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM} /
+ * {@code [NOT] BETWEEN} / {@code IN} forms).
  * Cross-alias (or unqualified) predicates — including OR groups that touch multiple aliases —
  * remain as residual filters for in-memory evaluation.
  */
@@ -112,10 +113,28 @@ final class FederatedJoinPredicatePushdown {
         }
         StringBuilder current = new StringBuilder();
         int depth = 0;
+        boolean pendingBetweenAnd = false;
         for (int i = 0; i < where.length(); ) {
+            if (depth == 0 && matchesKeyword(where, i, "between", 7)) {
+                pendingBetweenAnd = true;
+                for (int j = 0; j < 7; j++) {
+                    current.append(where.charAt(i + j));
+                }
+                i += 7;
+                continue;
+            }
             if (depth == 0 && matchesKeyword(where, i, keyword, keywordLength)) {
+                if ("and".equalsIgnoreCase(keyword) && pendingBetweenAnd) {
+                    pendingBetweenAnd = false;
+                    for (int j = 0; j < keywordLength; j++) {
+                        current.append(where.charAt(i + j));
+                    }
+                    i += keywordLength;
+                    continue;
+                }
                 addPart(parts, current);
                 current = new StringBuilder();
+                pendingBetweenAnd = false;
                 i += keywordLength;
                 while (i < where.length() && Character.isWhitespace(where.charAt(i))) {
                     i++;
