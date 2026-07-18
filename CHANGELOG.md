@@ -58,6 +58,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave B S2 deepen: federated residual WHERE supports bare **`NOT`** over comparisons / IN / parenthesized OR groups. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave D G13 deepen: data catalog **browse without query** — empty `q` on `GET /api/discovery/search` lists cached tables/views/metrics; catalog tab loads on open. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G13 deepen: data catalog **metric lineage jump** via `relatedTables` → view-model impact (first related table). See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
+- Wave D G13 deepen: data catalog **related-table picker** when a metric lists several `relatedTables` before lineage jump. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
 
 ### Still open

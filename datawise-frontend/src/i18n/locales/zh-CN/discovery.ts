@@ -12,6 +12,8 @@ export default {
     openLineage: '打开血缘',
     lineageEmpty: '未找到引用该对象的下游视图模型',
     lineageMetricNoTables: '该指标未配置关联表 — 请在指标上设置 relatedTables 后再跳转血缘。',
+    relatedTablePickTitle: '选择关联表',
+    relatedTablePickHint: '该指标关联了多张表，请选择一张后打开血缘。',
     lineagePickTitle: '选择视图模型',
     lineagePickHint: '多个下游模型引用了该对象，请选择一个打开血缘。',
     lineageStale: '过期',

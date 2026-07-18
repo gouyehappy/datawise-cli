@@ -26,8 +26,47 @@ export interface LineageImpactSource {
     name: string
 }
 
-/** Resolve the physical object used for view-model impact / lineage jump. */
-export function resolveLineageImpactSource(hit: DiscoveryHit | null | undefined): LineageImpactSource | null {
+export interface RelatedTableChoice {
+    /** Original relatedTables entry. */
+    raw: string
+    /** Normalized table name for the impact API. */
+    name: string
+    /** Display label (usually the raw entry). */
+    label: string
+}
+
+/** Unique related-table choices for a metric hit (deduped by normalized name). */
+export function listRelatedTableChoices(hit: DiscoveryHit | null | undefined): RelatedTableChoice[] {
+    if (!hit || hit.kind !== 'metric') return []
+    const database = hit.database?.trim() ?? ''
+    const seen = new Set<string>()
+    const out: RelatedTableChoice[] = []
+    for (const item of hit.relatedTables ?? []) {
+        const raw = item.trim()
+        if (!raw) continue
+        const name = normalizeRelatedTableName(raw, database)
+        if (!name) continue
+        const key = name.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push({raw, name, label: raw})
+    }
+    return out
+}
+
+export function needsRelatedTablePicker(hit: DiscoveryHit | null | undefined): boolean {
+    return listRelatedTableChoices(hit).length > 1
+}
+
+/**
+ * Resolve the physical object used for view-model impact / lineage jump.
+ * For metrics with several relatedTables, pass `relatedTable` (raw or normalized name)
+ * after the user picks one; otherwise the first choice is used.
+ */
+export function resolveLineageImpactSource(
+    hit: DiscoveryHit | null | undefined,
+    relatedTable?: string | null,
+): LineageImpactSource | null {
     if (!hit) return null
     const connectionId = hit.connectionId?.trim()
     const database = hit.database?.trim()
@@ -39,10 +78,18 @@ export function resolveLineageImpactSource(hit: DiscoveryHit | null | undefined)
     }
 
     if (hit.kind === 'metric') {
-        const raw = (hit.relatedTables ?? []).map((item) => item.trim()).find(Boolean)
-        if (!raw) return null
-        const name = normalizeRelatedTableName(raw, database)
-        return name ? {connectionId, database, name} : null
+        const choices = listRelatedTableChoices(hit)
+        if (!choices.length) return null
+        let chosen = choices[0]
+        const want = relatedTable?.trim().toLowerCase()
+        if (want) {
+            const match = choices.find(
+                (item) => item.raw.toLowerCase() === want || item.name.toLowerCase() === want,
+            )
+            if (!match) return null
+            chosen = match
+        }
+        return {connectionId, database, name: chosen.name}
     }
 
     return null

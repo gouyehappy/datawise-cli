@@ -17,11 +17,14 @@ import {
     discoveryHitRowKey,
     filterDiscoveryHitsByFacets,
     hasActiveDataCatalogFacets,
+    listRelatedTableChoices,
+    needsRelatedTablePicker,
     pickLineageJumpTarget,
     resolveLineageImpactSource,
     toggleFacetValue,
     type DataCatalogFacets,
     type DiscoveryFacetKind,
+    type RelatedTableChoice,
 } from '@/features/discovery/services/data-catalog.service'
 import {activateGlobalObjectSearchEntry} from '@/features/explorer/services/global-object-search.actions'
 import {discoveryHitsToSearchEntries} from '@/features/explorer/services/global-object-discovery.service'
@@ -50,6 +53,9 @@ const lineageOpen = ref(false)
 const lineageLoading = ref(false)
 const lineageCandidates = ref<LineageImpactItem[]>([])
 const lineageSource = ref<DiscoveryHit | null>(null)
+const lineageRelatedOverride = ref<string | null>(null)
+const relatedTableOpen = ref(false)
+const relatedTableCandidates = ref<RelatedTableChoice[]>([])
 
 let searchSeq = 0
 
@@ -173,7 +179,26 @@ async function openSelected() {
 }
 
 async function openLineageForHit(hit: DiscoveryHit) {
-    const source = resolveLineageImpactSource(hit)
+    lineageSource.value = hit
+    lineageRelatedOverride.value = null
+    if (needsRelatedTablePicker(hit)) {
+        relatedTableCandidates.value = listRelatedTableChoices(hit)
+        relatedTableOpen.value = true
+        return
+    }
+    await runLineageImpact(hit, null)
+}
+
+async function chooseRelatedTable(choice: RelatedTableChoice) {
+    const hit = lineageSource.value
+    if (!hit) return
+    relatedTableOpen.value = false
+    lineageRelatedOverride.value = choice.raw
+    await runLineageImpact(hit, choice.raw)
+}
+
+async function runLineageImpact(hit: DiscoveryHit, relatedTable: string | null) {
+    const source = resolveLineageImpactSource(hit, relatedTable)
     if (!source) {
         if (hit.kind === 'metric') {
             layout.showWarningToast(t('discovery.lineageMetricNoTables'))
@@ -220,7 +245,7 @@ async function openLineageSelected() {
 function chooseLineageTarget(item: LineageImpactItem) {
     const hit = lineageSource.value
     if (!hit) return
-    const source = resolveLineageImpactSource(hit)
+    const source = resolveLineageImpactSource(hit, lineageRelatedOverride.value)
     lineageOpen.value = false
     workspace.openViewModelLineage({
         viewModelName: item.modelName,
@@ -323,6 +348,30 @@ function chooseLineageTarget(item: LineageImpactItem) {
         </button>
       </template>
     </DwDataGrid>
+
+    <AppModal
+        :open="relatedTableOpen"
+        :title="t('discovery.relatedTablePickTitle')"
+        width="420px"
+        @close="relatedTableOpen = false"
+    >
+      <p class="data-catalog__hint">{{ t('discovery.relatedTablePickHint') }}</p>
+      <ul class="data-catalog__lineage-list">
+        <li v-for="item in relatedTableCandidates" :key="item.raw">
+          <button type="button" class="dw-text-btn" @click="chooseRelatedTable(item)">
+            {{ item.label }}
+            <span v-if="item.label !== item.name" class="data-catalog__stale">→ {{ item.name }}</span>
+          </button>
+        </li>
+      </ul>
+      <template #footer>
+        <ModalActions>
+          <button type="button" class="dw-btn" @click="relatedTableOpen = false">
+            {{ t('common.cancel') }}
+          </button>
+        </ModalActions>
+      </template>
+    </AppModal>
 
     <AppModal
         :open="lineageOpen"

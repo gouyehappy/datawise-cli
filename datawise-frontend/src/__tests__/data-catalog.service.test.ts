@@ -8,6 +8,8 @@ import {
     normalizeRelatedTableName,
     pickLineageJumpTarget,
     resolveLineageImpactSource,
+    listRelatedTableChoices,
+    needsRelatedTablePicker,
     toggleFacetValue,
 } from '@/features/discovery/services/data-catalog.service'
 import type {DiscoveryHit} from '@/features/platform/types/platform.types'
@@ -120,6 +122,30 @@ describe('data-catalog.service', () => {
         })
         assert.equal(normalizeRelatedTableName('shop.orders', 'shop'), 'orders')
         assert.equal(normalizeRelatedTableName('public.orders', 'shop'), 'orders')
+    })
+
+    it('listRelatedTableChoices dedupes and needsRelatedTablePicker gates multi-table metrics', () => {
+        const metric: DiscoveryHit = {
+            kind: 'metric',
+            id: 'm1',
+            name: 'gmv',
+            qualifiedLabel: 'shop.gmv',
+            connectionId: 'c2',
+            connectionLabel: 'staging',
+            database: 'shop',
+            score: 1,
+            relatedTables: ['shop.orders', 'orders', 'payments', ''],
+        }
+        const choices = listRelatedTableChoices(metric)
+        assert.deepEqual(choices.map((item) => item.name), ['orders', 'payments'])
+        assert.equal(needsRelatedTablePicker(metric), true)
+        assert.equal(needsRelatedTablePicker({...metric, relatedTables: ['orders']}), false)
+        assert.deepEqual(resolveLineageImpactSource(metric, 'payments'), {
+            connectionId: 'c2',
+            database: 'shop',
+            name: 'payments',
+        })
+        assert.equal(resolveLineageImpactSource(metric, 'missing'), null)
     })
 
     it('buildDataCatalogFacetOptions counts kinds/connections/owners', () => {

@@ -55,16 +55,16 @@ For a selected **table** or **view**:
 
 For a selected **metric** with non-empty `relatedTables`:
 
-1. Use the metric’s `connectionId` / `database` and the **first** related table name (qualified prefixes matching the database are stripped)
-2. Same impact → lineage flow as tables/views
-3. If `relatedTables` is empty → warning toast (configure related tables on the metric)
+1. If **more than one** distinct related table → pick-table dialog first
+2. Use the metric’s `connectionId` / `database` and the chosen (or only) related table name (qualified prefixes matching the database are stripped)
+3. Same impact → lineage flow as tables/views
+4. If `relatedTables` is empty → warning toast (configure related tables on the metric)
 
 **Open** reuses the same activation path as global object search (locate tree + table tab, or semantic metrics catalog for metrics).
 
 ## Still open
 
 - Column-level catalog cards
-- Deeper metric → defining SQL / model lineage (beyond first related table)
+- Deeper metric → defining SQL / model lineage (beyond related physical tables)
 - Tag facets (no tag field on discovery hits yet)
 - Paginated browse beyond the search limit cap
-- Related-table picker when a metric lists several tables
