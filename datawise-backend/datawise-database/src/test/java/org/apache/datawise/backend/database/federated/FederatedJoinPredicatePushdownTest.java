@@ -145,4 +145,55 @@ class FederatedJoinPredicatePushdownTest {
         assertEquals(2, filtered.get(0).get("o.id"));
         assertEquals(3, filtered.get(1).get("o.id"));
     }
+
+    @Test
+    void residualFilterSupportsBareNot() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.status", "active", "u.region", "US"),
+                Map.of("o.id", 2, "o.status", "closed", "u.region", "CN"),
+                Map.of("o.id", 3, "o.status", "closed", "u.region", "US")
+        );
+        List<Map<String, Object>> filtered = FederatedJoinResidualFilter.apply(
+                rows,
+                "NOT o.status = 'closed'"
+        );
+        assertEquals(1, filtered.size());
+        assertEquals(1, filtered.get(0).get("o.id"));
+    }
+
+    @Test
+    void residualFilterSupportsBareNotOverOrGroup() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.status", "active", "u.region", "US"),
+                Map.of("o.id", 2, "o.status", "closed", "u.region", "CN"),
+                Map.of("o.id", 3, "o.status", "closed", "u.region", "US")
+        );
+        // Negate (active OR CN) → keep only closed+US
+        List<Map<String, Object>> filtered = FederatedJoinResidualFilter.apply(
+                rows,
+                "NOT (o.status = 'active' OR u.region = 'CN')"
+        );
+        assertEquals(1, filtered.size());
+        assertEquals(3, filtered.get(0).get("o.id"));
+    }
+
+    @Test
+    void singleAliasNotIsPushedIntoSourceSubquery() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, status FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name, region FROM users", "o.user_id = u.id")
+                ),
+                "NOT o.status = 'closed' AND u.region = 'CN'"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        String ordersSql = result.plan().steps().get(0).subQuery().toUpperCase();
+        assertTrue(ordersSql.contains("NOT"));
+        assertTrue(ordersSql.contains("STATUS"));
+        assertTrue(result.plan().steps().get(1).subQuery().toUpperCase().contains("REGION"));
+        assertNull(result.residualWhere());
+    }
 }

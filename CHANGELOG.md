@@ -55,6 +55,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave B S2 deepen: federated residual WHERE supports **top-level / parenthesized OR** of simple comparisons across aliases (still not pushed into source SQL). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual WHERE supports **`IN` / `NOT IN`** with literal lists (combinable with OR). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave D G13 deepen: data catalog **faceted browse** chips (kind / connection / owner) over search hits. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
+- Wave B S2 deepen: federated residual WHERE supports bare **`NOT`** over comparisons / IN / parenthesized OR groups. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
 
 ### Still open

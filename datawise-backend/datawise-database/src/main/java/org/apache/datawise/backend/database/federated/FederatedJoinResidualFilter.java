@@ -7,8 +7,9 @@ import java.util.Map;
 
 /**
  * Best-effort in-memory evaluation of residual outer WHERE after federated JOIN.
- * Supports AND of atoms, and OR within a conjunct
- * ({@code a.x = 1 OR b.y = 2}, optionally parenthesized).
+ * Supports AND of atoms, OR within a conjunct, and bare {@code NOT} over a supported
+ * atom or parenthesized group
+ * ({@code NOT o.status = 'closed'}, {@code NOT (o.a = 1 OR u.b = 2)}).
  * Each atom is a simple comparison ({@code = != <> < <= > >=}) or
  * {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
  */
@@ -37,6 +38,10 @@ final class FederatedJoinResidualFilter {
     }
 
     private static boolean matchesAtom(Map<String, Object> row, String atom) {
+        String notInner = stripLeadingNot(atom);
+        if (notInner != null) {
+            return !matchesConjunct(row, notInner);
+        }
         InPredicate inPredicate = parseInPredicate(atom);
         if (inPredicate != null) {
             Object value = resolve(row, inPredicate.left());
@@ -53,12 +58,32 @@ final class FederatedJoinResidualFilter {
         if (comparison == null) {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
-                            + "subqueries or use simple comparisons / IN / OR of those): " + atom
+                            + "subqueries or use simple comparisons / IN / NOT / OR of those): " + atom
             );
         }
         Object left = resolve(row, comparison.left());
         Object right = resolve(row, comparison.right());
         return compare(left, right, comparison.op());
+    }
+
+    /**
+     * Strip a leading bare {@code NOT} (not {@code NOT IN}). Returns the remainder, or null
+     * when the atom is not a bare-NOT form.
+     */
+    static String stripLeadingNot(String atom) {
+        if (atom == null || atom.isBlank()) {
+            return null;
+        }
+        String trimmed = atom.trim();
+        // Keep "NOT IN (...)" for the IN parser (and reject leading-only NOT IN without a left expr).
+        if (findKeyword(trimmed, "not in", 6) == 0) {
+            return null;
+        }
+        if (findKeyword(trimmed, "not", 3) != 0) {
+            return null;
+        }
+        String rest = trimmed.substring(3).trim();
+        return rest.isEmpty() ? null : rest;
     }
 
     /**
