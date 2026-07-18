@@ -3,10 +3,16 @@ package org.apache.datawise.backend.controller.platform;
 import org.apache.datawise.backend.common.ApiResponse;
 import org.apache.datawise.backend.domain.DataQualityGateRequest;
 import org.apache.datawise.backend.domain.DataQualityGateResultDto;
+import org.apache.datawise.backend.domain.DataQualityTemplateDto;
+import org.apache.datawise.backend.domain.SaveDataQualityTemplateRequest;
 import org.apache.datawise.backend.domain.ScheduledTaskDto;
 import org.apache.datawise.backend.platform.schedule.ScheduledTaskService;
+import org.apache.datawise.backend.service.platform.DataQualityTemplateService;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,16 +21,21 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Data-quality rule catalog and release-gate evaluation.
+ * Data-quality rule catalog, shared templates, and release-gate evaluation.
  */
 @RestController
 @RequestMapping("/api/platform/data-quality")
 public class DataQualityController {
 
     private final ScheduledTaskService scheduledTaskService;
+    private final DataQualityTemplateService templateService;
 
-    public DataQualityController(ScheduledTaskService scheduledTaskService) {
+    public DataQualityController(
+            ScheduledTaskService scheduledTaskService,
+            DataQualityTemplateService templateService
+    ) {
         this.scheduledTaskService = scheduledTaskService;
+        this.templateService = templateService;
     }
 
     /** List {@code data_quality} scheduled tasks (optional connection/database scope). */
@@ -34,6 +45,23 @@ public class DataQualityController {
             @RequestParam(required = false) String database
     ) {
         return ApiResponse.ok(scheduledTaskService.listDataQualityRules(connectionId, database));
+    }
+
+    /** Tenant-shared rule templates (file: {@code tenants/{tenantId}/data-quality-templates.json}). */
+    @GetMapping("/templates")
+    public ApiResponse<List<DataQualityTemplateDto>> listTemplates() {
+        return ApiResponse.ok(templateService.list());
+    }
+
+    @PutMapping("/templates")
+    public ApiResponse<DataQualityTemplateDto> saveTemplate(@RequestBody SaveDataQualityTemplateRequest request) {
+        return ApiResponse.ok(templateService.save(request));
+    }
+
+    @DeleteMapping("/templates/{id}")
+    public ApiResponse<Void> deleteTemplate(@PathVariable String id) {
+        templateService.delete(id);
+        return ApiResponse.ok(null);
     }
 
     /**

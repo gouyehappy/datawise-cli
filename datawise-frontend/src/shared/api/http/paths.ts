@@ -410,6 +410,9 @@ export const API_PATHS = {
             `/api/platform/scheduled-tasks/${encodeURIComponent(id)}/run`,
         dataQualityRules: '/api/platform/data-quality/rules',
         dataQualityGate: '/api/platform/data-quality/gate',
+        dataQualityTemplates: '/api/platform/data-quality/templates',
+        dataQualityTemplate: (id: string) =>
+            `/api/platform/data-quality/templates/${encodeURIComponent(id)}`,
         orchestrationTrigger: '/api/platform/orchestration/trigger',
         orchestrationStatus: '/api/platform/orchestration/status',
         insightActions: '/api/platform/insight-actions',

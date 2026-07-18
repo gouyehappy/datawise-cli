@@ -65,6 +65,10 @@ public final class ConfigPaths {
         return tenantDir(tenantId) + "/outbound-webhooks.json";
     }
 
+    public static String tenantDataQualityTemplates(String tenantId) {
+        return tenantDir(tenantId) + "/data-quality-templates.json";
+    }
+
     public static String tenantAiUsage(String tenantId) {
         return tenantDir(tenantId) + "/ai-usage.json";
     }

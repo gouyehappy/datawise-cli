@@ -18,6 +18,8 @@ import type {
     SaveQueryLibraryVersionRequest,
     DataQualityGateRequest,
     DataQualityGateResult,
+    DataQualitySharedTemplate,
+    SaveDataQualitySharedTemplateRequest,
     OrchestrationStatusResult,
     SaveScheduledTaskRequest,
     SaveSchemaDriftMonitorRequest,
@@ -142,6 +144,15 @@ export function createHttpPlatformApi(): PlatformApi {
 
         evaluateDataQualityGate: (request: DataQualityGateRequest) =>
             postJson<DataQualityGateResult>(paths.dataQualityGate, request ?? {}),
+
+        listDataQualityTemplates: () =>
+            getJson<DataQualitySharedTemplate[]>(paths.dataQualityTemplates),
+
+        saveDataQualityTemplate: (request: SaveDataQualitySharedTemplateRequest) =>
+            putJson<DataQualitySharedTemplate>(paths.dataQualityTemplates, request),
+
+        deleteDataQualityTemplate: (id: string) =>
+            deleteJson<void>(paths.dataQualityTemplate(id)),
 
         pollOrchestrationStatus: (taskId: string) =>
             postJson<OrchestrationStatusResult>(paths.orchestrationStatus, {taskId}),

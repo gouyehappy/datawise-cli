@@ -18,7 +18,10 @@ import {
     type PlatformCatalogFormPayload,
 } from '@/features/platform/services/platform-catalog-mutations.service'
 import {instanceSqlApi, platformApi} from '@/api'
-import type {AnalysisCanvasSummary} from '@/features/platform/types/platform.types'
+import type {
+    AnalysisCanvasSummary,
+    DataQualitySharedTemplate,
+} from '@/features/platform/types/platform.types'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useNotificationStore} from '@/features/layout/stores/notification-store'
 import {useTeamStore} from '@/features/team/stores/team-store'
@@ -114,10 +117,24 @@ const canvasOptions = ref<AnalysisCanvasSummary[]>([])
 const canvasOptionsLoading = ref(false)
 const dqTemplateId = ref(DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID)
 const dqUserTemplates = ref<DataQualityUserTemplate[]>([])
+const dqSharedTemplates = ref<DataQualitySharedTemplate[]>([])
+const dqSharedTemplatesLoading = ref(false)
 const templateFeedback = ref('')
+const templateBusy = ref(false)
 
 function reloadDqUserTemplates() {
     dqUserTemplates.value = readDataQualityUserTemplates()
+}
+
+async function reloadDqSharedTemplates() {
+    dqSharedTemplatesLoading.value = true
+    try {
+        dqSharedTemplates.value = await platformApi.listDataQualityTemplates()
+    } catch {
+        dqSharedTemplates.value = []
+    } finally {
+        dqSharedTemplatesLoading.value = false
+    }
 }
 
 const canSaveDqUserTemplate = computed(() =>
@@ -126,6 +143,10 @@ const canSaveDqUserTemplate = computed(() =>
 
 const selectedDqUserTemplate = computed(() =>
     findDataQualityUserTemplate(dqTemplateId.value, dqUserTemplates.value),
+)
+
+const selectedDqSharedTemplate = computed(() =>
+    dqSharedTemplates.value.find((item) => item.id === dqTemplateId.value) ?? null,
 )
 
 const dialogTitle = computed(() => {
@@ -228,6 +249,10 @@ const dqTemplateOptions = computed<SelectOption[]>(() => [
         value: item.id,
         label: t(`workspace.platformCatalog.form.dqTemplate.items.${item.nameKey}`),
     })),
+    ...dqSharedTemplates.value.map((item) => ({
+        value: item.id,
+        label: t('workspace.platformCatalog.form.dqTemplate.sharedPrefix', {name: item.name}),
+    })),
     ...dqUserTemplates.value.map((item) => ({
         value: item.id,
         label: t('workspace.platformCatalog.form.dqTemplate.userPrefix', {name: item.name}),
@@ -235,6 +260,10 @@ const dqTemplateOptions = computed<SelectOption[]>(() => [
 ])
 
 const dqTemplateHint = computed(() => {
+    const shared = selectedDqSharedTemplate.value
+    if (shared) {
+        return shared.description || t('workspace.platformCatalog.form.hint.dqSharedTemplate')
+    }
     const user = selectedDqUserTemplate.value
     if (user) {
         return user.description || t('workspace.platformCatalog.form.hint.dqUserTemplate')
@@ -243,6 +272,28 @@ const dqTemplateHint = computed(() => {
     if (!tpl) return t('workspace.platformCatalog.form.hint.dqTemplate')
     return t(`workspace.platformCatalog.form.dqTemplate.items.${tpl.descriptionKey}`)
 })
+
+function applySharedOrUserFields(fields: {
+    name: string
+    sql: string
+    dqAssertion: string
+    dqExpected: string
+    dqColumn: string
+    dqBlocking: boolean
+    cronExpression?: string | null
+}) {
+    taskForm.name = fields.name
+    taskForm.sql = fields.sql
+    taskForm.dqAssertion = fields.dqAssertion
+    taskForm.dqExpected = fields.dqExpected
+    taskForm.dqColumn = fields.dqColumn
+    taskForm.dqBlocking = fields.dqBlocking
+    if (fields.cronExpression != null && fields.cronExpression !== '') {
+        taskForm.cronExpression = fields.cronExpression
+    } else if (isDataQualityCatalog.value) {
+        taskForm.cronExpression = ''
+    }
+}
 
 function applySelectedDqTemplate(id: string) {
     templateFeedback.value = ''
@@ -262,20 +313,22 @@ function applySelectedDqTemplate(id: string) {
         }
         return
     }
+    const shared = dqSharedTemplates.value.find((item) => item.id === id)
+    if (shared) {
+        applySharedOrUserFields({
+            name: shared.name,
+            sql: shared.sql,
+            dqAssertion: shared.assertion,
+            dqExpected: shared.expected ?? '0',
+            dqColumn: shared.column ?? '',
+            dqBlocking: shared.blocking,
+            cronExpression: shared.cronExpression,
+        })
+        return
+    }
     const user = findDataQualityUserTemplate(id, dqUserTemplates.value)
     if (!user) return
-    const fields = applyDataQualityUserTemplate(user)
-    taskForm.name = fields.name
-    taskForm.sql = fields.sql
-    taskForm.dqAssertion = fields.dqAssertion
-    taskForm.dqExpected = fields.dqExpected
-    taskForm.dqColumn = fields.dqColumn
-    taskForm.dqBlocking = fields.dqBlocking
-    if (fields.cronExpression != null) {
-        taskForm.cronExpression = fields.cronExpression
-    } else if (isDataQualityCatalog.value) {
-        taskForm.cronExpression = ''
-    }
+    applySharedOrUserFields(applyDataQualityUserTemplate(user))
 }
 
 function saveCurrentAsDqUserTemplate() {
@@ -309,6 +362,43 @@ function saveCurrentAsDqUserTemplate() {
     templateFeedback.value = t('workspace.platformCatalog.form.dqTemplate.saved', {name: created.name})
 }
 
+async function saveCurrentAsDqSharedTemplate() {
+    templateFeedback.value = ''
+    error.value = ''
+    if (!canSaveDqUserTemplate.value) {
+        error.value = t('workspace.platformCatalog.form.dqTemplate.saveDenied')
+        return
+    }
+    const name = taskForm.name.trim()
+    const sql = taskForm.sql.trim()
+    if (!name || !sql) {
+        error.value = t('workspace.platformCatalog.form.dqTemplate.saveNeedNameSql')
+        return
+    }
+    templateBusy.value = true
+    try {
+        const created = await platformApi.saveDataQualityTemplate({
+            name,
+            description: '',
+            sql,
+            assertion: taskForm.dqAssertion,
+            expected: taskForm.dqExpected,
+            column: taskForm.dqColumn || null,
+            blocking: taskForm.dqBlocking,
+            cronExpression: taskForm.cronExpression.trim() || null,
+        })
+        await reloadDqSharedTemplates()
+        dqTemplateId.value = created.id
+        templateFeedback.value = t('workspace.platformCatalog.form.dqTemplate.sharedSaved', {
+            name: created.name,
+        })
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : t('workspace.platformCatalog.form.dqTemplate.sharedSaveFailed')
+    } finally {
+        templateBusy.value = false
+    }
+}
+
 function deleteSelectedDqUserTemplate() {
     templateFeedback.value = ''
     error.value = ''
@@ -322,6 +412,26 @@ function deleteSelectedDqUserTemplate() {
     dqUserTemplates.value = next
     dqTemplateId.value = DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID
     templateFeedback.value = t('workspace.platformCatalog.form.dqTemplate.deleted', {name: current.name})
+}
+
+async function deleteSelectedDqSharedTemplate() {
+    templateFeedback.value = ''
+    error.value = ''
+    const current = selectedDqSharedTemplate.value
+    if (!current) return
+    templateBusy.value = true
+    try {
+        await platformApi.deleteDataQualityTemplate(current.id)
+        await reloadDqSharedTemplates()
+        dqTemplateId.value = DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID
+        templateFeedback.value = t('workspace.platformCatalog.form.dqTemplate.sharedDeleted', {
+            name: current.name,
+        })
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : t('workspace.platformCatalog.form.dqTemplate.sharedSaveFailed')
+    } finally {
+        templateBusy.value = false
+    }
 }
 
 const sqlSourceOptions = computed<SelectOption[]>(() => [
@@ -510,6 +620,7 @@ function resetForms() {
     canvasOptions.value = []
     sqlFileOptions.value = []
     sharedQueryOptions.value = []
+    dqSharedTemplates.value = []
     error.value = ''
     templateFeedback.value = ''
 }
@@ -548,6 +659,9 @@ watch(
         if (!isOpen) return
         resetForms()
         reloadDqUserTemplates()
+        if (props.feature === 'data_quality' || props.feature === 'scheduled_tasks') {
+            void reloadDqSharedTemplates()
+        }
         if (props.feature === 'data_quality') {
             taskForm.type = 'data_quality'
             taskForm.cronExpression = ''
@@ -1045,23 +1159,43 @@ async function submit() {
             />
           </label>
           <p class="modal-hint">{{ dqTemplateHint }}</p>
+          <p v-if="dqSharedTemplatesLoading" class="modal-hint">
+            {{ t('workspace.platformCatalog.form.dqTemplate.sharedLoading') }}
+          </p>
           <div class="modal-template-actions">
             <button
                 type="button"
                 class="dw-text-btn"
-                :disabled="!canSaveDqUserTemplate"
+                :disabled="!canSaveDqUserTemplate || templateBusy"
                 @click="saveCurrentAsDqUserTemplate"
             >
               {{ t('workspace.platformCatalog.form.dqTemplate.saveCurrent') }}
             </button>
             <button
+                type="button"
+                class="dw-text-btn"
+                :disabled="!canSaveDqUserTemplate || templateBusy"
+                @click="saveCurrentAsDqSharedTemplate"
+            >
+              {{ t('workspace.platformCatalog.form.dqTemplate.saveShared') }}
+            </button>
+            <button
                 v-if="selectedDqUserTemplate"
                 type="button"
                 class="dw-text-btn"
-                :disabled="!canSaveDqUserTemplate"
+                :disabled="!canSaveDqUserTemplate || templateBusy"
                 @click="deleteSelectedDqUserTemplate"
             >
               {{ t('workspace.platformCatalog.form.dqTemplate.deleteSelected') }}
+            </button>
+            <button
+                v-if="selectedDqSharedTemplate"
+                type="button"
+                class="dw-text-btn"
+                :disabled="!canSaveDqUserTemplate || templateBusy"
+                @click="deleteSelectedDqSharedTemplate"
+            >
+              {{ t('workspace.platformCatalog.form.dqTemplate.deleteShared') }}
             </button>
           </div>
           <DwInlineAlert

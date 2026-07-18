@@ -59,7 +59,7 @@
 | G12 | 多租户 / 托管 SaaS | partial | Dual-mode 已落地（`tenancy.mode=single|multi`）：租户隔离、RBAC、OIDC 映射、配额硬顶、成员邀请；见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。缺完整计费/发票与对象存储 | 托管商业化与计费仍弱 |
 | G13 | 组织级数据发现 | partial | 命令面板跨库搜表 + GET /api/discovery/search（**offset 分页**）；**数据目录 Tab** + 血缘跳转 + 分面 + 无查询浏览 + **Load more**；见 [DISCOVERY.md](./DISCOVERY.md)。缺标签分面 / 服务端分面 | 语义层有了，发现体验仍弱 |
 | G14 | 编排生态对接 | partial | 定时任务 http_trigger + 入站 trigger + orchestration.* Webhook + **DAG 状态回写**（statusUrlTemplate / POST /api/platform/orchestration/status + 定时任务目录列）；见 [ORCHESTRATION.md](./ORCHESTRATION.md)。缺原生算子 / 多引擎状态适配器 | Yarn 可看，闭环不足 |
-| G15 | 可调度数据质量规则 | partial | 定时任务 data_quality + Explorer **数据质量**目录 + blocking + gate API + **内置/用户模板库** + **多环境对照门禁**（pairByName 按名配对）；见 [DATA_QUALITY.md](./DATA_QUALITY.md)。缺服务端共享模板 | 质量治理难产品化 |
+| G15 | 可调度数据质量规则 | partial | 定时任务 data_quality + Explorer **数据质量**目录 + blocking + gate API + **内置/本机/租户共享模板** + **多环境对照门禁**（pairByName 按名配对）；见 [DATA_QUALITY.md](./DATA_QUALITY.md)。缺 JDBC 元数据表 / 更完整的共享模板管理 UI | 质量治理难产品化 |
 
 ---
 
@@ -144,6 +144,7 @@
 | 2026-07-18、S2 UPPER/LOWER | 联邦残差/下推支持 unary UPPER/LOWER |
 | 2026-07-18、S2 LIKE | 联邦残差/下推支持 [NOT] LIKE 字面量模式 |
 | 2026-07-18、S2 单别名 OR / IS NULL | 联邦 WHERE 单别名 OR 下推实测 + 残差 IS NULL |
+| 2026-07-18、G15 共享模板 | 租户共享 DQ 规则模板 API + 表单 Save/Delete |
 | 2026-07-18、G15 按名配对 | 多环境门禁 pairByName 按规则名配对 |
 | 2026-07-18、G15 用户模板 | 数据质量用户保存规则模板（localStorage） |
 | 2026-07-18、G15 多环境门禁 | DQ gate 支持 reference 对照连接 + scopes 汇总 |

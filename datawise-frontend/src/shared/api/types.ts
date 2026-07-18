@@ -55,6 +55,8 @@ import type {
     SaveQueryLibraryVersionRequest,
     DataQualityGateRequest,
     DataQualityGateResult,
+    DataQualitySharedTemplate,
+    SaveDataQualitySharedTemplateRequest,
     OrchestrationStatusResult,
     SaveScheduledTaskRequest,
     SaveSchemaDriftMonitorRequest,
@@ -1758,6 +1760,12 @@ export interface PlatformApi {
     listDataQualityRules(connectionId?: string, database?: string): Promise<ScheduledTask[]>
 
     evaluateDataQualityGate(request: DataQualityGateRequest): Promise<DataQualityGateResult>
+
+    listDataQualityTemplates(): Promise<DataQualitySharedTemplate[]>
+
+    saveDataQualityTemplate(request: SaveDataQualitySharedTemplateRequest): Promise<DataQualitySharedTemplate>
+
+    deleteDataQualityTemplate(id: string): Promise<void>
 
     pollOrchestrationStatus(taskId: string): Promise<OrchestrationStatusResult>
 

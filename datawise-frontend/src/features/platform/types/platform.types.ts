@@ -329,6 +329,34 @@ export interface DataQualityGateResult {
     pairs?: DataQualityGatePair[] | null
 }
 
+/** Tenant-shared data-quality rule template (server). */
+export interface DataQualitySharedTemplate {
+    id: string
+    name: string
+    description?: string | null
+    sql: string
+    assertion: string
+    expected?: string | null
+    column?: string | null
+    blocking: boolean
+    cronExpression?: string | null
+    createdAt?: string | null
+    updatedAt?: string | null
+    createdByUserId?: number | null
+}
+
+export interface SaveDataQualitySharedTemplateRequest {
+    id?: string | null
+    name: string
+    description?: string | null
+    sql: string
+    assertion: string
+    expected?: string | null
+    column?: string | null
+    blocking?: boolean | null
+    cronExpression?: string | null
+}
+
 export interface QueryLibraryVersion {
     queryId: string
     teamId: string

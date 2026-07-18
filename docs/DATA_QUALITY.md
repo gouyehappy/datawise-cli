@@ -38,7 +38,33 @@ When creating a rule (Explorer → AI → **Data quality** → Add), pick a buil
 | `max_violation_rows` | row_count_lte | yes |
 | `failed_count_threshold` | scalar_lte | no |
 
-Templates include five **built-in** presets plus a **user-saved library** (localStorage, per registered user). From the Add form: pick a template to prefill, **Save as template** to store the current fields, or **Delete saved template** when a saved entry is selected. Server-shared template catalogs remain open.
+Templates include five **built-in** presets, a **user-saved library** (localStorage, per registered user), and **tenant-shared templates** stored on the server (`tenants/{tenantId}/data-quality-templates.json`). From the Add form: pick a template to prefill, **Save as local template** / **Save as shared template**, or delete when a local/shared entry is selected.
+
+### Shared template APIs
+
+```http
+GET    /api/platform/data-quality/templates
+PUT    /api/platform/data-quality/templates
+DELETE /api/platform/data-quality/templates/{id}
+```
+
+`PUT` body:
+
+```json
+{
+  "id": null,
+  "name": "No negatives",
+  "description": "",
+  "sql": "SELECT id FROM {table} WHERE amount < 0",
+  "assertion": "empty_result",
+  "expected": "0",
+  "column": null,
+  "blocking": true,
+  "cronExpression": null
+}
+```
+
+Omit `id` to create; include `id` to update. Requires a registered user session.
 
 ## Catalog UI
 
