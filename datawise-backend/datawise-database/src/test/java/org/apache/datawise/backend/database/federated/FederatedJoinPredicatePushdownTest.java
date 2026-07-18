@@ -10,6 +10,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FederatedJoinPredicatePushdownTest {
@@ -519,6 +520,21 @@ class FederatedJoinPredicatePushdownTest {
         assertTrue(ordersSql.contains("LENGTH"));
         assertTrue(ordersSql.contains("ABS"));
         assertNull(result.residualWhere());
+    }
+
+    @Test
+    void toIntRejectsOutOfRangeAndAcceptsNumericStrings() {
+        assertEquals("ab", FederatedJoinResidualFilter.substringValue("abcdef", 1L, 2L));
+        assertEquals("cd", FederatedJoinResidualFilter.substringValue("abcdef", "3", "2"));
+        // floating start truncates toward zero → start 1
+        assertEquals("a", FederatedJoinResidualFilter.substringValue("ab", 1.9, 1));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                FederatedJoinResidualFilter.substringValue("x", Long.MAX_VALUE, 1)
+        );
+        assertThrows(IllegalArgumentException.class, () ->
+                FederatedJoinResidualFilter.substringValue("x", "nope", 1)
+        );
     }
 
     @Test

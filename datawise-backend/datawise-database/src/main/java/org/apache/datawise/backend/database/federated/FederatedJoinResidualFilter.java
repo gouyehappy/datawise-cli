@@ -695,14 +695,33 @@ final class FederatedJoinResidualFilter {
     }
 
     private static int toInt(Object value, String label) {
-        if (!(value instanceof Number number)) {
-            try {
-                return (int) Double.parseDouble(String.valueOf(value));
-            } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException(label + " must be numeric: " + value);
-            }
+        if (value instanceof Number number) {
+            return numberToInt(number, label);
         }
-        return number.intValue();
+        try {
+            return numberToInt(Double.parseDouble(String.valueOf(value)), label);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException(label + " must be numeric: " + value, ex);
+        }
+    }
+
+    private static int numberToInt(Number number, String label) {
+        if (number instanceof Double || number instanceof Float || number instanceof java.math.BigDecimal) {
+            double d = number.doubleValue();
+            if (Double.isNaN(d) || Double.isInfinite(d)) {
+                throw new IllegalArgumentException(label + " must be a finite number: " + number);
+            }
+            // Truncate toward zero (SQL CAST to integer style), then require int range.
+            return longToInt((long) d, label, number);
+        }
+        return longToInt(number.longValue(), label, number);
+    }
+
+    private static int longToInt(long value, String label, Object original) {
+        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(label + " out of int range: " + original);
+        }
+        return (int) value;
     }
 
     /**
