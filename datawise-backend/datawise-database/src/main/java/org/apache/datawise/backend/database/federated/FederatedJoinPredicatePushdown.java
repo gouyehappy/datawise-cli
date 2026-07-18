@@ -16,7 +16,8 @@ import java.util.regex.Pattern;
 
 /**
  * Pushes single-table-alias conjuncts from the outer WHERE into each source subquery.
- * Cross-alias (or unqualified) predicates remain as residual filters for in-memory evaluation.
+ * Cross-alias (or unqualified) predicates — including OR groups that touch multiple aliases —
+ * remain as residual filters for in-memory evaluation.
  */
 final class FederatedJoinPredicatePushdown {
 
@@ -94,6 +95,15 @@ final class FederatedJoinPredicatePushdown {
     }
 
     static List<String> splitAnd(String where) {
+        return splitBoolean(where, "and", 3);
+    }
+
+    /** Split on top-level {@code OR} (paren-aware; does not split inside parentheses). */
+    static List<String> splitOr(String where) {
+        return splitBoolean(where, "or", 2);
+    }
+
+    private static List<String> splitBoolean(String where, String keyword, int keywordLength) {
         List<String> parts = new ArrayList<>();
         if (where == null || where.isBlank()) {
             return parts;
@@ -101,10 +111,10 @@ final class FederatedJoinPredicatePushdown {
         StringBuilder current = new StringBuilder();
         int depth = 0;
         for (int i = 0; i < where.length(); ) {
-            if (depth == 0 && matchesAnd(where, i)) {
+            if (depth == 0 && matchesKeyword(where, i, keyword, keywordLength)) {
                 addPart(parts, current);
                 current = new StringBuilder();
-                i += 3;
+                i += keywordLength;
                 while (i < where.length() && Character.isWhitespace(where.charAt(i))) {
                     i++;
                 }
@@ -123,15 +133,16 @@ final class FederatedJoinPredicatePushdown {
         return parts;
     }
 
-    private static boolean matchesAnd(String sql, int index) {
-        if (index + 3 > sql.length()) {
+    private static boolean matchesKeyword(String sql, int index, String keyword, int keywordLength) {
+        if (index + keywordLength > sql.length()) {
             return false;
         }
-        if (!sql.regionMatches(true, index, "and", 0, 3)) {
+        if (!sql.regionMatches(true, index, keyword, 0, keywordLength)) {
             return false;
         }
         boolean leftOk = index == 0 || !isIdentChar(sql.charAt(index - 1));
-        boolean rightOk = index + 3 >= sql.length() || !isIdentChar(sql.charAt(index + 3));
+        boolean rightOk = index + keywordLength >= sql.length()
+                || !isIdentChar(sql.charAt(index + keywordLength));
         return leftOk && rightOk;
     }
 

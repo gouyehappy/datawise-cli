@@ -5,8 +5,10 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Best-effort in-memory evaluation of residual outer WHERE conjuncts after federated JOIN.
- * Supports AND of simple comparisons: {@code alias.col OP literal} or {@code alias.col OP other.col}
+ * Best-effort in-memory evaluation of residual outer WHERE after federated JOIN.
+ * Supports AND of simple comparisons, and OR within a conjunct
+ * ({@code a.x = 1 OR b.y = 2}, optionally parenthesized).
+ * Each atom is {@code alias.col OP literal} or {@code alias.col OP other.col}
  * where OP is {@code = != <> < <= > >=}.
  */
 final class FederatedJoinResidualFilter {
@@ -20,21 +22,64 @@ final class FederatedJoinResidualFilter {
         }
         List<String> conjuncts = FederatedJoinPredicatePushdown.splitAnd(residualWhere);
         return rows.stream()
-                .filter(row -> conjuncts.stream().allMatch(c -> matches(row, c)))
+                .filter(row -> conjuncts.stream().allMatch(c -> matchesConjunct(row, c)))
                 .toList();
     }
 
-    private static boolean matches(Map<String, Object> row, String conjunct) {
-        Comparison comparison = parseComparison(conjunct);
+    private static boolean matchesConjunct(Map<String, Object> row, String conjunct) {
+        String unwrapped = unwrapOuterParens(conjunct);
+        List<String> disjuncts = FederatedJoinPredicatePushdown.splitOr(unwrapped);
+        if (disjuncts.size() > 1) {
+            return disjuncts.stream().anyMatch(d -> matchesAtom(row, unwrapOuterParens(d)));
+        }
+        return matchesAtom(row, unwrapped);
+    }
+
+    private static boolean matchesAtom(Map<String, Object> row, String atom) {
+        Comparison comparison = parseComparison(atom);
         if (comparison == null) {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
-                            + "subqueries or use simple comparisons): " + conjunct
+                            + "subqueries or use simple comparisons / OR of comparisons): " + atom
             );
         }
         Object left = resolve(row, comparison.left());
         Object right = resolve(row, comparison.right());
         return compare(left, right, comparison.op());
+    }
+
+    /** Unwrap one or more layers of fully wrapping parentheses. */
+    static String unwrapOuterParens(String expression) {
+        if (expression == null) {
+            return null;
+        }
+        String trimmed = expression.trim();
+        while (trimmed.length() >= 2 && trimmed.charAt(0) == '(' && trimmed.charAt(trimmed.length() - 1) == ')') {
+            if (!parensFullyWrap(trimmed)) {
+                break;
+            }
+            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+        }
+        return trimmed;
+    }
+
+    private static boolean parensFullyWrap(String text) {
+        int depth = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch == '(') {
+                depth++;
+            } else if (ch == ')') {
+                depth--;
+                if (depth == 0 && i < text.length() - 1) {
+                    return false;
+                }
+                if (depth < 0) {
+                    return false;
+                }
+            }
+        }
+        return depth == 0;
     }
 
     private static Comparison parseComparison(String conjunct) {

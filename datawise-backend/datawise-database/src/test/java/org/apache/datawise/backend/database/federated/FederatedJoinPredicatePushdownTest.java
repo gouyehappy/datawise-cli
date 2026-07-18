@@ -46,4 +46,65 @@ class FederatedJoinPredicatePushdownTest {
         assertEquals(1, filtered.size());
         assertEquals(1, filtered.get(0).get("o.id"));
     }
+
+    @Test
+    void residualFilterSupportsTopLevelOrAcrossAliases() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.status", "active", "u.region", "US"),
+                Map.of("o.id", 2, "o.status", "closed", "u.region", "CN"),
+                Map.of("o.id", 3, "o.status", "closed", "u.region", "US")
+        );
+        List<Map<String, Object>> filtered = FederatedJoinResidualFilter.apply(
+                rows,
+                "o.status = 'active' OR u.region = 'CN'"
+        );
+        assertEquals(2, filtered.size());
+        assertEquals(1, filtered.get(0).get("o.id"));
+        assertEquals(2, filtered.get(1).get("o.id"));
+    }
+
+    @Test
+    void residualFilterSupportsParenthesizedOrAndedWithComparison() {
+        List<Map<String, Object>> rows = List.of(
+                Map.of("o.id", 1, "o.status", "active", "u.region", "US", "o.user_id", 9, "u.id", 9),
+                Map.of("o.id", 2, "o.status", "closed", "u.region", "CN", "o.user_id", 8, "u.id", 9),
+                Map.of("o.id", 3, "o.status", "active", "u.region", "CN", "o.user_id", 7, "u.id", 7)
+        );
+        List<Map<String, Object>> filtered = FederatedJoinResidualFilter.apply(
+                rows,
+                "(o.status = 'active' OR u.region = 'CN') AND o.user_id = u.id"
+        );
+        assertEquals(2, filtered.size());
+        assertEquals(1, filtered.get(0).get("o.id"));
+        assertEquals(3, filtered.get(1).get("o.id"));
+    }
+
+    @Test
+    void crossAliasOrRemainsResidualAfterPushdown() {
+        FederatedJoinPlan plan = new FederatedJoinPlan(
+                List.of("o.id", "u.name"),
+                List.of(
+                        new FederatedJoinStep("orders", "o", "SELECT id, user_id, status FROM orders", null),
+                        new FederatedJoinStep("users", "u", "SELECT id, name, region FROM users", "o.user_id = u.id")
+                ),
+                "o.amount > 0 AND (o.status = 'active' OR u.region = 'CN')"
+        );
+
+        FederatedJoinPredicatePushdown.PushdownResult result = FederatedJoinPredicatePushdown.apply(plan);
+
+        assertTrue(result.plan().steps().get(0).subQuery().toUpperCase().contains("AMOUNT"));
+        assertEquals("(o.status = 'active' OR u.region = 'CN')", result.residualWhere());
+    }
+
+    @Test
+    void splitOrIsParenAware() {
+        assertEquals(
+                List.of("o.status = 'active'", "u.region = 'CN'"),
+                FederatedJoinPredicatePushdown.splitOr("o.status = 'active' OR u.region = 'CN'")
+        );
+        assertEquals(
+                List.of("(o.status = 'active' OR u.region = 'CN')"),
+                FederatedJoinPredicatePushdown.splitOr("(o.status = 'active' OR u.region = 'CN')")
+        );
+    }
 }
