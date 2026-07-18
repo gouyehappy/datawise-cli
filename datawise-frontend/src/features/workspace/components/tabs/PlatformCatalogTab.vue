@@ -2,7 +2,7 @@
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DwDataGrid from '@/core/components/DwDataGrid.vue'
-import {AppModal, ConfirmDialog, FormField, ModalActions} from '@/core/components'
+import {AppModal, ConfirmDialog, FormField, ModalActions, SettingsSwitch} from '@/core/components'
 import DwSelect from '@/core/components/DwSelect.vue'
 import {DwIcon} from '@/core/icons'
 import type {DwDataGridLabels} from '@/core/components/dw-data-grid.types'
@@ -49,6 +49,7 @@ const canvasRerunOpen = ref(false)
 const multiEnvOpen = ref(false)
 const multiEnvConnectionId = ref('')
 const multiEnvDatabase = ref('')
+const multiEnvPairByName = ref(true)
 const canvasRerunId = ref<string | null>(null)
 const driftReportOpen = ref(false)
 const driftReport = ref<SchemaDriftReport | null>(null)
@@ -267,6 +268,7 @@ const multiEnvConnectionOptions = computed<SelectOption[]>(() =>
 function openMultiEnvGateDialog() {
   multiEnvConnectionId.value = multiEnvConnectionOptions.value[0]?.value ?? ''
   multiEnvDatabase.value = props.tab.database?.trim() ?? ''
+  multiEnvPairByName.value = true
   multiEnvOpen.value = true
 }
 
@@ -290,6 +292,7 @@ async function confirmMultiEnvGate() {
       blockingOnly: selected.length ? false : true,
       referenceConnectionId,
       referenceDatabase: multiEnvDatabase.value.trim() || database,
+      pairByName: multiEnvPairByName.value,
     })
     const summary = summarizeMultiEnvGate(result, (scope, index) => {
       const fallback = index === 0
@@ -298,7 +301,11 @@ async function confirmMultiEnvGate() {
       const node = scope.connectionId ? explorer.findNode(scope.connectionId) : null
       return node?.label || scope.connectionId || fallback
     })
-    const detail = summary.summaryParts.join(' · ')
+    const detailParts = [...summary.summaryParts]
+    if (summary.unpaired > 0) {
+      detailParts.push(t('platform.dq.multiEnvUnpaired', {count: summary.unpaired}))
+    }
+    const detail = detailParts.join(' · ')
     if (summary.passed) {
       layout.showSuccessToast(t('platform.dq.multiEnvPassed', {detail}))
     } else {
@@ -506,6 +513,11 @@ function runReleaseAction(action: ReleaseHighlightAction) {
       </template>
     </FormField>
     <p class="modal-hint">{{ t('platform.dq.multiEnvDatabaseHint') }}</p>
+    <SettingsSwitch
+        v-model="multiEnvPairByName"
+        :label="t('platform.dq.multiEnvPairByName')"
+    />
+    <p class="modal-hint">{{ t('platform.dq.multiEnvPairByNameHint') }}</p>
     <template #footer>
       <ModalActions>
         <button type="button" class="dw-btn" @click="multiEnvOpen = false">

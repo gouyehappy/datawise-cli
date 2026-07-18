@@ -10,7 +10,11 @@ import java.util.List;
  * to include every matching DQ rule.
  * <p>
  * Optional {@code referenceConnectionId} (+ {@code referenceDatabase}) runs a second
- * blocking-only suite against another environment; aggregate {@code passed} requires both.
+ * suite against another environment; aggregate {@code passed} requires both.
+ * When {@code pairByName} is true (default for multi-env), the reference suite runs
+ * rules that share the same name as primary rules; unpaired primary names fail the
+ * reference scope. Set {@code pairByName=false} to run the reference blocking suite
+ * independently (legacy).
  */
 public record DataQualityGateRequest(
         List<String> ruleIds,
@@ -18,6 +22,7 @@ public record DataQualityGateRequest(
         String database,
         Boolean blockingOnly,
         String referenceConnectionId,
-        String referenceDatabase
+        String referenceDatabase,
+        Boolean pairByName
 ) {
 }

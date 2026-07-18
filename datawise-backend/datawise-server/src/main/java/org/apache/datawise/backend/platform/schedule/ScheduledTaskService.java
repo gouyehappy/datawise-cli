@@ -10,6 +10,7 @@ import org.apache.datawise.backend.configstore.ScheduledTaskStore;
 import org.apache.datawise.backend.database.drift.SchemaDriftService;
 import org.apache.datawise.backend.database.sql.SqlReviewService;
 import org.apache.datawise.backend.database.sql.SqlService;
+import org.apache.datawise.backend.domain.DataQualityGatePairDto;
 import org.apache.datawise.backend.domain.DataQualityGateRequest;
 import org.apache.datawise.backend.domain.DataQualityGateResultDto;
 import org.apache.datawise.backend.domain.DataQualityGateScopeResultDto;
@@ -154,14 +155,15 @@ public class ScheduledTaskService {
      * Release gate: run matching DQ rules and return aggregate pass/fail.
      * Each rule still updates last-run status and emits outbound webhooks.
      * <p>
-     * When {@code referenceConnectionId} is set, also evaluates a blocking-only suite
-     * on that scope (rule IDs apply only to the primary scope). Aggregate {@code passed}
-     * requires both scopes to pass; {@code scopes} carries the per-env breakdown.
+     * When {@code referenceConnectionId} is set, also evaluates a second suite.
+     * With {@code pairByName} (default true for multi-env), reference runs rules that
+     * share names with the primary suite; unpaired primary names fail the reference scope.
+     * With {@code pairByName=false}, reference runs its own blocking suite (legacy).
      */
     public DataQualityGateResultDto evaluateDataQualityGate(DataQualityGateRequest request) {
         DataQualityGateRequest req = request != null
                 ? request
-                : new DataQualityGateRequest(null, null, null, null, null, null);
+                : new DataQualityGateRequest(null, null, null, null, null, null, null);
         boolean blockingOnly = req.blockingOnly() == null || Boolean.TRUE.equals(req.blockingOnly());
 
         DataQualityGateScopeResultDto primary = evaluateDataQualityScope(
@@ -178,29 +180,98 @@ public class ScheduledTaskService {
                     primary.total(),
                     primary.failed(),
                     primary.results(),
+                    null,
                     null
             );
         }
 
         String primaryConnectionId = blankToNull(req.connectionId());
         String primaryDatabase = blankToNull(req.database());
-        String referenceDatabase = blankToNull(req.referenceDatabase());
-        if (referenceDatabase == null) {
-            referenceDatabase = primaryDatabase;
+        String resolvedReferenceDatabase = blankToNull(req.referenceDatabase());
+        if (resolvedReferenceDatabase == null) {
+            resolvedReferenceDatabase = primaryDatabase;
         }
+        final String referenceDatabase = resolvedReferenceDatabase;
         if (referenceConnectionId.equals(primaryConnectionId)
                 && java.util.Objects.equals(nullToEmpty(referenceDatabase), nullToEmpty(primaryDatabase))) {
             throw new IllegalArgumentException("reference scope must differ from primary connection/database");
         }
 
-        // Reference env always uses its own blocking suite (rule IDs are primary-scoped).
-        DataQualityGateScopeResultDto reference = evaluateDataQualityScope(
-                referenceConnectionId,
-                referenceDatabase,
-                null,
-                true
-        );
+        boolean pairByName = req.pairByName() == null || Boolean.TRUE.equals(req.pairByName());
+        if (!pairByName) {
+            DataQualityGateScopeResultDto reference = evaluateDataQualityScope(
+                    referenceConnectionId,
+                    referenceDatabase,
+                    null,
+                    true
+            );
+            return aggregateMultiEnv(primary, reference, null);
+        }
 
+        List<ScheduledTaskEntry> referenceCandidates = taskStore.listAll().stream()
+                .filter(entry -> ScheduledTaskEntry.TYPE_DATA_QUALITY.equals(entry.getType()))
+                .filter(entry -> matchesDqScope(entry, referenceConnectionId, referenceDatabase))
+                .toList();
+
+        List<String> primaryIds = primary.results().stream().map(DataQualityRuleRunDto::ruleId).toList();
+        List<String> primaryNames = primary.results().stream().map(DataQualityRuleRunDto::name).toList();
+        DataQualityRulePairingSupport.PairPlan plan =
+                DataQualityRulePairingSupport.plan(primaryIds, primaryNames, referenceCandidates);
+
+        DataQualityGateScopeResultDto referenceMatched;
+        if (plan.matchedReferenceRuleIds().isEmpty()) {
+            referenceMatched = new DataQualityGateScopeResultDto(
+                    blankToNull(referenceConnectionId),
+                    blankToNull(referenceDatabase),
+                    true,
+                    0,
+                    0,
+                    List.of()
+            );
+        } else {
+            referenceMatched = evaluateDataQualityScope(
+                    referenceConnectionId,
+                    referenceDatabase,
+                    plan.matchedReferenceRuleIds(),
+                    false
+            );
+        }
+
+        List<DataQualityRuleRunDto> mergedResults = new ArrayList<>(referenceMatched.results());
+        int unpairedFailed = 0;
+        Instant unpairedAt = Instant.now();
+        for (DataQualityGatePairDto pair : plan.pairs()) {
+            if (pair.paired()) {
+                continue;
+            }
+            unpairedFailed++;
+            mergedResults.add(new DataQualityRuleRunDto(
+                    "unpaired:" + (pair.primaryRuleId() != null ? pair.primaryRuleId() : pair.name()),
+                    pair.name(),
+                    true,
+                    "failed",
+                    "No matching rule by name on reference scope",
+                    unpairedAt
+            ));
+        }
+        int refFailed = referenceMatched.failed() + unpairedFailed;
+        int refTotal = mergedResults.size();
+        DataQualityGateScopeResultDto reference = new DataQualityGateScopeResultDto(
+                blankToNull(referenceConnectionId),
+                blankToNull(referenceDatabase),
+                refFailed == 0,
+                refTotal,
+                refFailed,
+                mergedResults
+        );
+        return aggregateMultiEnv(primary, reference, plan.pairs());
+    }
+
+    private static DataQualityGateResultDto aggregateMultiEnv(
+            DataQualityGateScopeResultDto primary,
+            DataQualityGateScopeResultDto reference,
+            List<DataQualityGatePairDto> pairs
+    ) {
         int total = primary.total() + reference.total();
         int failed = primary.failed() + reference.failed();
         boolean passed = primary.passed() && reference.passed();
@@ -209,7 +280,8 @@ public class ScheduledTaskService {
                 total,
                 failed,
                 primary.results(),
-                List.of(primary, reference)
+                List.of(primary, reference),
+                pairs
         );
     }
 

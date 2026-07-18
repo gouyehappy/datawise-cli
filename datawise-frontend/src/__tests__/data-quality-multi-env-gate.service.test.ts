@@ -39,4 +39,22 @@ describe('data-quality-multi-env-gate.service', () => {
         assert.equal(summary.passed, false)
         assert.deepEqual(summary.summaryParts, ['a: 0/2', 'b: 1/1'])
     })
+
+    it('includes unpaired pair count in summary', () => {
+        const summary = summarizeMultiEnvGate({
+            passed: false,
+            total: 2,
+            failed: 1,
+            results: [],
+            scopes: [
+                {connectionId: 'a', database: 'db', passed: true, total: 1, failed: 0, results: []},
+                {connectionId: 'b', database: 'db', passed: false, total: 1, failed: 1, results: []},
+            ],
+            pairs: [
+                {name: 'No negatives', primaryRuleId: 'p1', referenceRuleId: null, paired: false},
+            ],
+        }, (scope) => scope.connectionId ?? '?')
+        assert.equal(summary.unpaired, 1)
+        assert.deepEqual(summary.summaryParts, ['a: 0/1', 'b: 1/1'])
+    })
 })

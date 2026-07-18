@@ -286,7 +286,7 @@ class ScheduledTaskServiceTest {
         ));
 
         DataQualityGateResultDto gate = service.evaluateDataQualityGate(
-                new DataQualityGateRequest(null, "conn-1", "app", true, null, null)
+                new DataQualityGateRequest(null, "conn-1", "app", true, null, null, null)
         );
 
         assertFalse(gate.passed());
@@ -341,7 +341,7 @@ class ScheduledTaskServiceTest {
         });
 
         DataQualityGateResultDto gate = service.evaluateDataQualityGate(
-                new DataQualityGateRequest(null, "conn-prod", "app", true, "conn-stg", "app")
+                new DataQualityGateRequest(null, "conn-prod", "app", true, "conn-stg", "app", false)
         );
 
         assertFalse(gate.passed());
@@ -352,6 +352,115 @@ class ScheduledTaskServiceTest {
         assertEquals("conn-prod", gate.scopes().get(0).connectionId());
         assertFalse(gate.scopes().get(1).passed());
         assertEquals("conn-stg", gate.scopes().get(1).connectionId());
+        assertNull(gate.pairs());
+    }
+
+    @Test
+    void evaluateDataQualityGatePairsRulesByName() {
+        ScheduledTaskEntry primary = new ScheduledTaskEntry();
+        primary.setId("dq-prod");
+        primary.setName("No negatives");
+        primary.setType(ScheduledTaskEntry.TYPE_DATA_QUALITY);
+        primary.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        primary.setPayloadJson(
+                "{\"connectionId\":\"conn-prod\",\"database\":\"app\",\"sql\":\"SELECT 1 WHERE 1=0\","
+                        + "\"assertion\":\"empty_result\",\"blocking\":true}"
+        );
+        ScheduledTaskEntry stagingMatch = new ScheduledTaskEntry();
+        stagingMatch.setId("dq-stg-match");
+        stagingMatch.setName("No negatives");
+        stagingMatch.setType(ScheduledTaskEntry.TYPE_DATA_QUALITY);
+        stagingMatch.setCreatedAt(Instant.parse("2026-01-02T00:00:00Z"));
+        stagingMatch.setPayloadJson(
+                "{\"connectionId\":\"conn-stg\",\"database\":\"app\",\"sql\":\"SELECT 1 WHERE 1=0\","
+                        + "\"assertion\":\"empty_result\",\"blocking\":true}"
+        );
+        ScheduledTaskEntry stagingExtra = new ScheduledTaskEntry();
+        stagingExtra.setId("dq-stg-extra");
+        stagingExtra.setName("Staging only");
+        stagingExtra.setType(ScheduledTaskEntry.TYPE_DATA_QUALITY);
+        stagingExtra.setCreatedAt(Instant.parse("2026-01-03T00:00:00Z"));
+        stagingExtra.setPayloadJson(
+                "{\"connectionId\":\"conn-stg\",\"database\":\"app\",\"sql\":\"SELECT id FROM t WHERE bad=1\","
+                        + "\"assertion\":\"empty_result\",\"blocking\":true}"
+        );
+        when(taskStore.listAll()).thenReturn(List.of(primary, stagingMatch, stagingExtra));
+        when(taskStore.findById("dq-prod")).thenReturn(primary);
+        when(taskStore.findById("dq-stg-match")).thenReturn(stagingMatch);
+        when(sqlReviewService.review(any(SqlReviewRequest.class)))
+                .thenReturn(new SqlReviewResultDto(true, false, List.of()));
+        when(sqlService.execute(any(ExecuteSqlRequest.class))).thenAnswer(invocation -> {
+            ExecuteSqlRequest req = invocation.getArgument(0);
+            return new ExecuteSqlResult(
+                    req.sql(),
+                    0,
+                    3L,
+                    List.of(Map.of("name", "id")),
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null
+            );
+        });
+
+        DataQualityGateResultDto gate = service.evaluateDataQualityGate(
+                new DataQualityGateRequest(null, "conn-prod", "app", true, "conn-stg", "app", true)
+        );
+
+        assertTrue(gate.passed());
+        assertEquals(2, gate.total());
+        assertEquals(0, gate.failed());
+        assertEquals(1, gate.scopes().get(1).total());
+        assertEquals("dq-stg-match", gate.scopes().get(1).results().get(0).ruleId());
+        assertEquals(1, gate.pairs().size());
+        assertTrue(gate.pairs().get(0).paired());
+        assertEquals("dq-stg-match", gate.pairs().get(0).referenceRuleId());
+    }
+
+    @Test
+    void evaluateDataQualityGateFailsWhenPairMissingOnReference() {
+        ScheduledTaskEntry primary = new ScheduledTaskEntry();
+        primary.setId("dq-prod");
+        primary.setName("No negatives");
+        primary.setType(ScheduledTaskEntry.TYPE_DATA_QUALITY);
+        primary.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        primary.setPayloadJson(
+                "{\"connectionId\":\"conn-prod\",\"database\":\"app\",\"sql\":\"SELECT 1 WHERE 1=0\","
+                        + "\"assertion\":\"empty_result\",\"blocking\":true}"
+        );
+        when(taskStore.listAll()).thenReturn(List.of(primary));
+        when(taskStore.findById("dq-prod")).thenReturn(primary);
+        when(sqlReviewService.review(any(SqlReviewRequest.class)))
+                .thenReturn(new SqlReviewResultDto(true, false, List.of()));
+        when(sqlService.execute(any(ExecuteSqlRequest.class))).thenAnswer(invocation -> {
+            ExecuteSqlRequest req = invocation.getArgument(0);
+            return new ExecuteSqlResult(
+                    req.sql(),
+                    0,
+                    3L,
+                    List.of(Map.of("name", "id")),
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null
+            );
+        });
+
+        DataQualityGateResultDto gate = service.evaluateDataQualityGate(
+                new DataQualityGateRequest(null, "conn-prod", "app", true, "conn-stg", "app", null)
+        );
+
+        assertFalse(gate.passed());
+        assertEquals(1, gate.scopes().get(0).total());
+        assertEquals(1, gate.scopes().get(1).failed());
+        assertFalse(gate.pairs().get(0).paired());
+        assertTrue(gate.scopes().get(1).results().get(0).ruleId().startsWith("unpaired:"));
     }
 
     @Test

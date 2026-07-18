@@ -2,7 +2,11 @@ import type {TreeNode} from '@/core/types'
 import {
     resolveConnectionEnvironmentLabel,
 } from '@/features/connection/services/connection-environment.service'
-import type {DataQualityGateResult, DataQualityGateScopeResult} from '@/features/platform/types/platform.types'
+import type {
+    DataQualityGatePair,
+    DataQualityGateResult,
+    DataQualityGateScopeResult,
+} from '@/features/platform/types/platform.types'
 
 export interface DataQualityReferenceConnectionOption {
     value: string
@@ -35,22 +39,29 @@ export function listDataQualityReferenceConnections(
     return options
 }
 
+export function countUnpairedGatePairs(pairs: readonly DataQualityGatePair[] | null | undefined): number {
+    if (!pairs?.length) return 0
+    return pairs.filter((pair) => !pair.paired).length
+}
+
 export function summarizeMultiEnvGate(
     result: DataQualityGateResult,
     scopeLabel: (scope: DataQualityGateScopeResult, index: number) => string,
-): {passed: boolean; summaryParts: string[]} {
+): {passed: boolean; summaryParts: string[]; unpaired: number} {
     const scopes = result.scopes?.length ? result.scopes : null
+    const parts: string[] = []
     if (!scopes) {
-        return {
-            passed: result.passed,
-            summaryParts: [`${result.failed}/${result.total}`],
+        parts.push(`${result.failed}/${result.total}`)
+    } else {
+        for (let index = 0; index < scopes.length; index++) {
+            const scope = scopes[index]
+            const label = scopeLabel(scope, index)
+            parts.push(`${label}: ${scope.failed}/${scope.total}`)
         }
     }
     return {
         passed: result.passed,
-        summaryParts: scopes.map((scope, index) => {
-            const label = scopeLabel(scope, index)
-            return `${label}: ${scope.failed}/${scope.total}`
-        }),
+        summaryParts: parts,
+        unpaired: countUnpairedGatePairs(result.pairs),
     }
 }

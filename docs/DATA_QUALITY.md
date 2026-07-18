@@ -38,7 +38,7 @@ When creating a rule (Explorer → AI → **Data quality** → Add), pick a buil
 | `max_violation_rows` | row_count_lte | yes |
 | `failed_count_threshold` | scalar_lte | no |
 
-Templates include five **built-in** presets plus a **user-saved library** (localStorage, per registered user). From the Add form: pick a template to prefill, **Save as template** to store the current fields, or **Delete saved template** when a saved entry is selected. Multi-env rule auto-pairing remains open.
+Templates include five **built-in** presets plus a **user-saved library** (localStorage, per registered user). From the Add form: pick a template to prefill, **Save as template** to store the current fields, or **Delete saved template** when a saved entry is selected. Server-shared template catalogs remain open.
 
 ## Catalog UI
 
@@ -107,11 +107,12 @@ Optional second scope compares **primary** vs **reference** environments in one 
 |-------|--------|
 | `referenceConnectionId` | Required for multi-env; must differ from primary when databases match |
 | `referenceDatabase` | Optional; defaults to primary `database` |
-| `ruleIds` | Applied only to the **primary** scope; reference always uses its own blocking suite |
+| `ruleIds` | Applied only to the **primary** scope; reference pairing uses primary result names |
+| `pairByName` | Default **true** for multi-env: reference runs same-name rules; unpaired primary names fail the reference scope. Set `false` to run the reference **blocking** suite independently |
 
-Response adds `scopes[]` (primary then reference). Aggregate `passed` requires both scopes to pass; `total`/`failed` are sums. `results` remains the primary-scope runs for backward compatibility.
+Response adds `scopes[]` (primary then reference) and, when pairing is on, `pairs[]` (`name`, `primaryRuleId`, `referenceRuleId`, `paired`). Aggregate `passed` requires both scopes to pass; `total`/`failed` are sums. `results` remains the primary-scope runs for backward compatibility.
 
-UI: Data quality catalog → **Run multi-env gate** (pick a reference connection by env badge).
+UI: Data quality catalog → **Run multi-env gate** (pick a reference connection by env badge; **Pair rules by name** is on by default).
 
 ## CI example
 

@@ -291,6 +291,8 @@ export interface DataQualityGateRequest {
     blockingOnly?: boolean | null
     referenceConnectionId?: string | null
     referenceDatabase?: string | null
+    /** When true (default for multi-env), pair reference rules by name. */
+    pairByName?: boolean | null
 }
 
 export interface DataQualityRuleRun {
@@ -311,12 +313,20 @@ export interface DataQualityGateScopeResult {
     results: DataQualityRuleRun[]
 }
 
+export interface DataQualityGatePair {
+    name: string
+    primaryRuleId: string
+    referenceRuleId?: string | null
+    paired: boolean
+}
+
 export interface DataQualityGateResult {
     passed: boolean
     total: number
     failed: number
     results: DataQualityRuleRun[]
     scopes?: DataQualityGateScopeResult[] | null
+    pairs?: DataQualityGatePair[] | null
 }
 
 export interface QueryLibraryVersion {
