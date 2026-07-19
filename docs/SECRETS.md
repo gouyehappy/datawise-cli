@@ -1,6 +1,6 @@
 # Secrets & master key (G5)
 
-DataWise encrypts sensitive fields (connection passwords, SSH keys, AI API keys) with a local AES-256 master key. This document covers portable master key, external secret references (`env` / `file` / **Vault**), and what remains for cloud KMS.
+DataWise encrypts sensitive fields (connection passwords, SSH keys, AI API keys) with a local AES-256 master key. This document covers portable master key, external secret references (`env` / `file` / **json-file** / **Vault**), and what remains for cloud KMS.
 
 ## Master key
 

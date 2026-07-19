@@ -35,6 +35,8 @@ const EVENT_OPTIONS = [
   'data_quality.failed',
   'orchestration.triggered',
   'orchestration.failed',
+  'ai.quota.near_limit',
+  'ai.quota.exhausted',
   'prod.approval.pending',
   'prod.approval.decided',
   'schema_drift.detected',

@@ -36,6 +36,24 @@ class SecretReferenceResolverTest {
     }
 
     @Test
+    void resolvesJsonFileField() throws Exception {
+        Path secrets = temp.resolve("secrets");
+        Files.createDirectories(secrets);
+        Files.writeString(
+                secrets.resolve("bundle.json"),
+                "{\"dbPassword\":\"p@ss\",\"apiKey\":\"k\"}\n",
+                StandardCharsets.UTF_8
+        );
+        ConfigDirectoryService configDirectory = new ConfigDirectoryService(temp);
+        SecretReferenceResolver resolver = new SecretReferenceResolver(configDirectory);
+
+        assertEquals("p@ss", resolver.resolve("dwsecret:json-file:secrets/bundle.json#dbPassword"));
+        assertEquals("k", resolver.resolve("dwsecret:json-file:secrets/bundle.json#apiKey"));
+        assertThrows(IllegalStateException.class, () ->
+                resolver.resolve("dwsecret:json-file:secrets/bundle.json#missing"));
+    }
+
+    @Test
     void rejectsMissingEnv() {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(temp);
         SecretReferenceResolver resolver = new SecretReferenceResolver(configDirectory);

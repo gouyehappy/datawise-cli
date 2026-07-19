@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * <ul>
  *   <li>{@code dwsecret:env:VAR_NAME} — process environment variable</li>
  *   <li>{@code dwsecret:file:path} — file contents (relative paths resolve under config dir)</li>
+ *   <li>{@code dwsecret:json-file:path#field} — JSON object file field (relative under config dir)</li>
  *   <li>{@code dwsecret:vault:mount/data/path#field} — HashiCorp Vault KV v2
  *       ({@code VAULT_ADDR} / {@code VAULT_TOKEN}, or {@code DATAWISE_VAULT_ADDR} / {@code DATAWISE_VAULT_TOKEN})</li>
  * </ul>
@@ -36,6 +37,7 @@ public class SecretReferenceResolver {
     public static final String PREFIX = "dwsecret:";
     public static final String SCHEME_ENV = "env";
     public static final String SCHEME_FILE = "file";
+    public static final String SCHEME_JSON_FILE = "json-file";
     public static final String SCHEME_VAULT = "vault";
 
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -81,6 +83,7 @@ public class SecretReferenceResolver {
         return switch (scheme) {
             case SCHEME_ENV -> resolveEnv(name, stored);
             case SCHEME_FILE -> resolveFile(name, stored);
+            case SCHEME_JSON_FILE -> resolveJsonFile(name, stored);
             case SCHEME_VAULT -> resolveVault(name, stored);
             default -> throw new IllegalArgumentException("Unsupported secret reference scheme: " + scheme);
         };
@@ -110,6 +113,52 @@ public class SecretReferenceResolver {
             return value;
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to read secret file: " + path, ex);
+        }
+    }
+
+    /**
+     * {@code path#field} → read JSON object file and return string field value.
+     */
+    private String resolveJsonFile(String pathAndField, String stored) {
+        int hash = pathAndField.lastIndexOf('#');
+        if (hash <= 0 || hash >= pathAndField.length() - 1) {
+            throw new IllegalArgumentException(
+                    "JSON file secret reference must be dwsecret:json-file:<path>#<field> (from " + stored + ")"
+            );
+        }
+        String pathName = pathAndField.substring(0, hash).trim();
+        String field = pathAndField.substring(hash + 1).trim();
+        if (pathName.isEmpty() || field.isEmpty()) {
+            throw new IllegalArgumentException("JSON file path/field is empty: " + stored);
+        }
+        Path path = Path.of(pathName);
+        if (!path.isAbsolute()) {
+            path = configDirectory.resolve(pathName).normalize();
+        }
+        if (!Files.isRegularFile(path)) {
+            throw new IllegalStateException("Secret JSON file not found: " + path + " (from " + stored + ")");
+        }
+        try {
+            String body = Files.readString(path, StandardCharsets.UTF_8);
+            Map<String, Object> root = JSON.readValue(body, MAP_TYPE);
+            if (root == null || !root.containsKey(field)) {
+                throw new IllegalStateException("Secret JSON field not found: " + field + " (from " + stored + ")");
+            }
+            Object value = root.get(field);
+            if (value == null) {
+                throw new IllegalStateException("Secret JSON field is null: " + field);
+            }
+            String text = String.valueOf(value).trim();
+            if (text.isEmpty()) {
+                throw new IllegalStateException("Secret JSON field is empty: " + field);
+            }
+            return text;
+        } catch (IllegalStateException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read secret JSON file: " + path, ex);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Invalid secret JSON file (from " + stored + ")", ex);
         }
     }
 

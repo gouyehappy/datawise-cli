@@ -218,4 +218,42 @@ public class OutboundNotifySupport {
                 List.of(userId)
         );
     }
+
+    /** Publish when tenant AI daily usage enters the near-limit band. */
+    public void aiQuotaNearLimit(String tenantId, int calls, int limit, int remaining, Long userId) {
+        if (userId == null) {
+            return;
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("tenantId", tenantId != null ? tenantId : "");
+        data.put("calls", calls);
+        data.put("limit", limit);
+        data.put("remaining", remaining);
+        publish(
+                OutboundEventType.AI_QUOTA_NEAR_LIMIT,
+                "AI quota near daily limit",
+                "remaining=" + remaining + " / limit=" + limit,
+                data,
+                List.of(userId)
+        );
+    }
+
+    /** Publish when tenant AI daily usage is exhausted. */
+    public void aiQuotaExhausted(String tenantId, int calls, int limit, Long userId) {
+        if (userId == null) {
+            return;
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("tenantId", tenantId != null ? tenantId : "");
+        data.put("calls", calls);
+        data.put("limit", limit);
+        data.put("remaining", 0);
+        publish(
+                OutboundEventType.AI_QUOTA_EXHAUSTED,
+                "AI daily quota exhausted",
+                "calls=" + calls + " / limit=" + limit,
+                data,
+                List.of(userId)
+        );
+    }
 }

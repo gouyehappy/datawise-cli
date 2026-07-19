@@ -32,6 +32,9 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave C G6 slice: macOS Apple Silicon desktop packaging (`dist:desktop:mac`, electron-builder DMG/zip, host-aware `build.mjs`); see [docs/DESKTOP_MAC.md](./docs/DESKTOP_MAC.md). Unsigned / no CI release yet.
 - Wave D S4 slice: Visual Query Builder field board (drag-in / reorder / remove SELECT columns) + Text-to-SQL side panel that opens AI with the prompt.
 - Wave D S5 slice: ER diagram column edit — click/double-click field opens Alter Column wizard (DDL preview, execute, or open console for approval).
+- Wave C G9 deepen: outbound **`ai.quota.near_limit` / `ai.quota.exhausted`** when tenant daily AI usage crosses thresholds (once per day per process); Integrations can subscribe.
+- Wave D G5 deepen: secret reference **`dwsecret:json-file:path#field`** for JSON secret bundles under the config directory. See [docs/SECRETS.md](./docs/SECRETS.md).
+- Wave D S5 deepen: ER diagram **batch ADD column DDL** — paste `name TYPE [NOT NULL]` lines, preview concatenated ALTER, copy or open in console.
 - Wave D S4 deepen: Visual Query Builder **Copy SQL** + **Refine preview with AI** (sends current SQL into Text-to-SQL).
 - Wave D G14 deepen: `http_trigger` form **presets** for Airflow DAG run / dbt Cloud job / generic webhook (URL, headers, body, statusUrlTemplate). See [docs/ORCHESTRATION.md](./docs/ORCHESTRATION.md).
 - Wave D G11 / S6 deepen: connector marketplace **Reinstall / upgrade** for already-loaded plugins that publish `downloadUrl`.

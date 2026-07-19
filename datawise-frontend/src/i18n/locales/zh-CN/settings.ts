@@ -1044,6 +1044,8 @@ export default {
             data_quality_failed: '数据质量检查失败',
             orchestration_triggered: '编排触发成功',
             orchestration_failed: '编排触发失败',
+            ai_quota_near_limit: 'AI 配额接近日限额',
+            ai_quota_exhausted: 'AI 日配额已用尽',
             prod_approval_pending: '生产审批待审',
             prod_approval_decided: '生产审批已决',
             schema_drift_detected: '检测到 Schema 漂移',

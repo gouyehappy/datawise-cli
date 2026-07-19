@@ -154,7 +154,7 @@ export function buildAlterColumnSql(
     return `ALTER TABLE ${qualified} MODIFY COLUMN ${formatMysqlColumnDefinition(options.dbType, options.column)};`
 }
 
-export type BatchAlterColumnOperation = 'drop'
+export type BatchAlterColumnOperation = 'drop' | 'add'
 
 /** Concatenate per-column ALTER statements for a batch preview (no execution). */
 export function buildBatchAlterColumnDdl(
@@ -163,24 +163,63 @@ export function buildBatchAlterColumnDdl(
         dbType?: DbType
         tableName: string
         database?: string
-        columnNames: string[]
+        columnNames?: string[]
+        columns?: AlterColumnSpec[]
     },
 ): string | null {
     const tableName = options.tableName.trim()
     if (!tableName) return null
 
-    const names = options.columnNames.map((name) => name.trim()).filter(Boolean)
-    if (names.length === 0) return null
+    if (operation === 'drop') {
+        const names = (options.columnNames ?? []).map((name) => name.trim()).filter(Boolean)
+        if (names.length === 0) return null
+        const statements: string[] = []
+        for (const name of names) {
+            const sql = buildAlterColumnSql('drop', {
+                dbType: options.dbType,
+                tableName,
+                database: options.database,
+                column: {name, dataType: '', nullable: true},
+            })
+            if (sql) statements.push(sql)
+        }
+        return statements.length > 0 ? statements.join('\n') : null
+    }
 
+    const columns = (options.columns ?? []).filter(
+        (column) => column.name.trim() && column.dataType.trim(),
+    )
+    if (columns.length === 0) return null
     const statements: string[] = []
-    for (const name of names) {
-        const sql = buildAlterColumnSql(operation, {
+    for (const column of columns) {
+        const sql = buildAlterColumnSql('add', {
             dbType: options.dbType,
             tableName,
             database: options.database,
-            column: {name, dataType: '', nullable: true},
+            column: {
+                name: column.name.trim(),
+                dataType: column.dataType.trim(),
+                nullable: column.nullable !== false,
+                autoIncrement: column.autoIncrement,
+                defaultValue: column.defaultValue,
+            },
         })
         if (sql) statements.push(sql)
     }
     return statements.length > 0 ? statements.join('\n') : null
+}
+
+/** Parse lines like {@code note VARCHAR(64)} or {@code flag INT NOT NULL} into add specs. */
+export function parseBatchAddColumnLines(text: string): AlterColumnSpec[] {
+    const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+    const columns: AlterColumnSpec[] = []
+    for (const line of lines) {
+        const match = line.match(/^([A-Za-z_][\w$]*)\s+(.+?)(?:\s+NOT\s+NULL)?$/i)
+        if (!match) continue
+        const nullable = !/\bNOT\s+NULL\b/i.test(line)
+        const dataType = match[2]!.replace(/\s+NOT\s+NULL\s*$/i, '').trim()
+        if (!dataType) continue
+        columns.push({name: match[1]!, dataType, nullable})
+    }
+    return columns
 }

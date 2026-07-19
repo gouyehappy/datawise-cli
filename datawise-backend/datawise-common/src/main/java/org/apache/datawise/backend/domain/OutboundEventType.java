@@ -17,6 +17,10 @@ public final class OutboundEventType {
     public static final String DATA_QUALITY_FAILED = "data_quality.failed";
     public static final String ORCHESTRATION_TRIGGERED = "orchestration.triggered";
     public static final String ORCHESTRATION_FAILED = "orchestration.failed";
+    /** Tenant AI daily quota crossed into near-limit band (≤10% or ≤5 remaining). */
+    public static final String AI_QUOTA_NEAR_LIMIT = "ai.quota.near_limit";
+    /** Tenant AI daily quota fully consumed. */
+    public static final String AI_QUOTA_EXHAUSTED = "ai.quota.exhausted";
     public static final String OUTBOUND_TEST = "outbound.test";
 
     private OutboundEventType() {

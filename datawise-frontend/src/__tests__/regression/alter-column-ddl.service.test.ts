@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
     buildAlterColumnSql,
     buildBatchAlterColumnDdl,
+    parseBatchAddColumnLines,
     supportsAlterColumnWizard,
 } from '@/features/workspace/services/alter-column-ddl.service'
 
@@ -110,5 +111,25 @@ describe('alter-column-ddl.service', () => {
             }),
             null,
         )
+    })
+
+    it('builds batch add column DDL from specs and line parser', () => {
+        const sql = buildBatchAlterColumnDdl('add', {
+            dbType: 'mysql',
+            tableName: 'orders',
+            database: 'shop',
+            columns: [
+                {name: 'note', dataType: 'VARCHAR(64)', nullable: true},
+                {name: 'flag', dataType: 'INT', nullable: false},
+            ],
+        })
+        assert.equal(
+            sql,
+            'ALTER TABLE `shop`.`orders` ADD COLUMN `note` VARCHAR(64);\nALTER TABLE `shop`.`orders` ADD COLUMN `flag` INT NOT NULL;',
+        )
+        const parsed = parseBatchAddColumnLines('note VARCHAR(64)\nflag INT NOT NULL\n')
+        assert.equal(parsed.length, 2)
+        assert.equal(parsed[0]?.name, 'note')
+        assert.equal(parsed[1]?.nullable, false)
     })
 })

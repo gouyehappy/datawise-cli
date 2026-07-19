@@ -40,6 +40,7 @@ import {
 import {
   supportsAlterColumnWizard,
   buildBatchAlterColumnDdl,
+  parseBatchAddColumnLines,
   type AlterColumnOperation,
 } from '@/features/workspace/services/alter-column-ddl.service'
 import {executeAlterColumnSql} from '@/features/workspace/services/execute-alter-column.service'
@@ -110,6 +111,7 @@ const batchDdlOpen = ref(false)
 const batchDdlTitle = ref('')
 const batchDdlSql = ref('')
 const batchDdlSummary = ref<string[]>([])
+const batchAddDraft = ref('note VARCHAR(64)\nlegacy_flag INT')
 
 const dbType = computed<DbType | undefined>(() => {
   if (props.tab.dbType) return props.tab.dbType
@@ -348,6 +350,34 @@ function openBatchDropDdl() {
     t('workspace.schemaEr.batchAlterSummaryTable', {table: target.table, count: columnNames.length}),
     ...columnNames.map((column) =>
         t('workspace.schemaEr.batchAlterSummaryColumn', {column}),
+    ),
+  ]
+  batchDdlOpen.value = true
+}
+
+function openBatchAddDdl() {
+  const target = selectedColumnTarget.value
+  if (!target || !canAlterColumn.value) return
+  const columns = parseBatchAddColumnLines(batchAddDraft.value)
+  const sql = buildBatchAlterColumnDdl('add', {
+    dbType: dbType.value,
+    tableName: target.table,
+    database: databaseName.value,
+    columns,
+  })
+  if (!sql?.trim()) {
+    workspace.setStatus(t('workspace.schemaEr.batchAlterAddEmpty'))
+    return
+  }
+  batchDdlTitle.value = t('workspace.schemaEr.batchAlterAddTitle')
+  batchDdlSql.value = sql
+  batchDdlSummary.value = [
+    t('workspace.schemaEr.batchAlterAddSummaryTable', {table: target.table, count: columns.length}),
+    ...columns.map((column) =>
+        t('workspace.schemaEr.batchAlterAddSummaryColumn', {
+          column: column.name,
+          type: column.dataType,
+        }),
     ),
   ]
   batchDdlOpen.value = true
@@ -905,6 +935,25 @@ onUnmounted(() => {
             {{ t('workspace.schemaEr.batchAlterDropAction') }}
           </DwButton>
         </div>
+        <label class="schema-er-graph__batch-add">
+          <span>{{ t('workspace.schemaEr.batchAlterAddHint') }}</span>
+          <textarea
+              v-model="batchAddDraft"
+              class="dw-input schema-er-graph__batch-add-input"
+              rows="3"
+              spellcheck="false"
+              :placeholder="t('workspace.schemaEr.batchAlterAddPlaceholder')"
+          />
+        </label>
+        <DwButton
+            variant="secondary"
+            size="sm"
+            type="button"
+            :disabled="!canAlterColumn"
+            @click="openBatchAddDdl"
+        >
+          {{ t('workspace.schemaEr.batchAlterAddAction') }}
+        </DwButton>
       </aside>
 
       <aside v-else-if="selectedEdge && selectedEdgeDraft" class="schema-er-graph__inspector">
@@ -1218,6 +1267,20 @@ onUnmounted(() => {
 .schema-er-graph__batch-type {
   margin-left: auto;
   color: var(--dw-text-muted);
+}
+
+.schema-er-graph__batch-add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-muted);
+}
+
+.schema-er-graph__batch-add-input {
+  font-family: var(--dw-font-mono);
+  resize: vertical;
+  min-height: 4.5rem;
 }
 
 .schema-er-graph__inspector-hint {

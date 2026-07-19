@@ -1044,6 +1044,8 @@ export default {
             data_quality_failed: 'Data quality check failed',
             orchestration_triggered: 'Orchestration trigger succeeded',
             orchestration_failed: 'Orchestration trigger failed',
+            ai_quota_near_limit: 'AI quota near daily limit',
+            ai_quota_exhausted: 'AI daily quota exhausted',
             prod_approval_pending: 'Production approval pending',
             prod_approval_decided: 'Production approval decided',
             schema_drift_detected: 'Schema drift detected',
