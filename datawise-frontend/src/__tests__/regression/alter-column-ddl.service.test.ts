@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 import {
     buildAlterColumnSql,
     buildBatchAlterColumnDdl,
+    buildBatchCommentColumnDdl,
     parseBatchAddColumnLines,
+    parseBatchCommentColumnLines,
     parseBatchRenameColumnLines,
     supportsAlterColumnWizard,
 } from '@/features/workspace/services/alter-column-ddl.service'
@@ -183,5 +185,42 @@ describe('alter-column-ddl.service', () => {
             column: {name: 'a', dataType: '', nullable: true, renameTo: 'b'},
         })
         assert.equal(pg, 'ALTER TABLE "orders" RENAME COLUMN "a" TO "b";')
+    })
+
+    it('builds batch comment DDL for postgres and mysql', () => {
+        const parsed = parseBatchCommentColumnLines("note: customer memo\nflag IS active\nx 'quoted'")
+        assert.deepEqual(parsed, [
+            {name: 'note', comment: 'customer memo'},
+            {name: 'flag', comment: 'active'},
+            {name: 'x', comment: 'quoted'},
+        ])
+
+        const pg = buildBatchCommentColumnDdl({
+            dbType: 'postgresql',
+            tableName: 'orders',
+            database: 'shop',
+            comments: [{name: 'note', comment: "it's fine"}],
+        })
+        assert.equal(pg, `COMMENT ON COLUMN "shop"."orders"."note" IS 'it''s fine';`)
+
+        const mysql = buildBatchCommentColumnDdl({
+            dbType: 'mysql',
+            tableName: 'orders',
+            database: 'shop',
+            comments: [{name: 'note', comment: 'memo'}],
+            columnMeta: [{name: 'note', dataType: 'VARCHAR(64)', nullable: true}],
+        })
+        assert.equal(
+            mysql,
+            "ALTER TABLE `shop`.`orders` MODIFY COLUMN `note` VARCHAR(64) COMMENT 'memo';",
+        )
+        assert.equal(
+            buildBatchCommentColumnDdl({
+                dbType: 'mysql',
+                tableName: 'orders',
+                comments: [{name: 'note', comment: 'memo'}],
+            }),
+            null,
+        )
     })
 })

@@ -48,6 +48,9 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave B S3 deepen: lakehouse lineage softens **`QUALIFY`** (strip → `PARTIAL`); see [docs/LAKEHOUSE_LINEAGE.md](./docs/LAKEHOUSE_LINEAGE.md).
 - Wave D G14 deepen: `http_trigger` form presets for **Prefect flow run** and **Dagster GraphQL launchRun**.
 - Wave B S2 deepen: federated residual **`ROUND(expr[, scale])`**.
+- Wave C G10 deepen: insight action **`data.labels`** applied for GitHub, GitLab (comma-separated), and Jira.
+- Wave D S5 deepen: ER diagram **batch COMMENT column DDL** (`COMMENT ON` / MySQL `MODIFY … COMMENT`).
+- Wave B S2 deepen: federated residual **`CEIL` / `CEILING` / `FLOOR`**.
 - Wave B S1 slice: table migration mode `PK_UPSERT` with conflict strategies OVERWRITE / SKIP / FAIL (MySQL `ON DUPLICATE KEY` / PostgreSQL `ON CONFLICT`); production-target migration plans go through team approval (approve records consent; managers run the wizard).
 - Wave B S2 slice: federated JOIN hard caps (`FederatedJoinLimits`), hash join for equality ON, cross-product rejection, `hasMore` truncation; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 UX: raise `maxRows` when federated results truncate — result grid **Raise limit and re-run** (console) and platform federated **Retry at {limit}** (1k → 5k → 10k hard cap); see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).

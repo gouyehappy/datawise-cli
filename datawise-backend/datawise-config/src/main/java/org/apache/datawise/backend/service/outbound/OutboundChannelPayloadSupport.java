@@ -229,17 +229,9 @@ final class OutboundChannelPayloadSupport {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("title", issueTitle(event));
         body.put("body", formatIssueBody(event));
-        Object labels = event.data() != null ? event.data().get("labels") : null;
-        if (labels instanceof Collection<?> collection && !collection.isEmpty()) {
-            List<String> labelNames = new ArrayList<>();
-            for (Object item : collection) {
-                if (item != null && !String.valueOf(item).isBlank()) {
-                    labelNames.add(String.valueOf(item).trim());
-                }
-            }
-            if (!labelNames.isEmpty()) {
-                body.put("labels", labelNames);
-            }
+        List<String> labels = labelNames(event);
+        if (!labels.isEmpty()) {
+            body.put("labels", labels);
         }
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("Authorization", "Bearer " + secret.trim());
@@ -253,6 +245,11 @@ final class OutboundChannelPayloadSupport {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("title", issueTitle(event));
         body.put("description", formatIssueBody(event));
+        List<String> labels = labelNames(event);
+        if (!labels.isEmpty()) {
+            // GitLab create-issue API expects a comma-separated string.
+            body.put("labels", String.join(",", labels));
+        }
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("PRIVATE-TOKEN", secret.trim());
         return PreparedRequest.of(url, body, false, headers);
@@ -279,6 +276,10 @@ final class OutboundChannelPayloadSupport {
         fields.put("summary", issueTitle(event));
         fields.put("description", description);
         fields.put("issuetype", Map.of("name", "Task"));
+        List<String> labels = labelNames(event);
+        if (!labels.isEmpty()) {
+            fields.put("labels", labels);
+        }
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("fields", fields);
@@ -288,6 +289,24 @@ final class OutboundChannelPayloadSupport {
         headers.put("Content-Type", "application/json");
         headers.put("Authorization", jiraAuthorization(secret.trim()));
         return PreparedRequest.of(url, body, false, headers);
+    }
+
+    /** Optional {@code data.labels} string array shared by GitHub / GitLab / Jira issue channels. */
+    static List<String> labelNames(OutboundEvent event) {
+        if (event == null || event.data() == null) {
+            return List.of();
+        }
+        Object labels = event.data().get("labels");
+        if (!(labels instanceof Collection<?> collection) || collection.isEmpty()) {
+            return List.of();
+        }
+        List<String> labelNames = new ArrayList<>();
+        for (Object item : collection) {
+            if (item != null && !String.valueOf(item).isBlank()) {
+                labelNames.add(String.valueOf(item).trim());
+            }
+        }
+        return List.copyOf(labelNames);
     }
 
     static String resolveJiraProjectKey(String url, OutboundEvent event) {
@@ -363,6 +382,9 @@ final class OutboundChannelPayloadSupport {
             sb.append("### Details\n\n");
             for (Map.Entry<String, Object> entry : data.entrySet()) {
                 if (entry.getKey() == null || entry.getValue() == null) {
+                    continue;
+                }
+                if ("labels".equalsIgnoreCase(entry.getKey())) {
                     continue;
                 }
                 String value = String.valueOf(entry.getValue()).trim();

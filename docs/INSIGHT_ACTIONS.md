@@ -42,7 +42,7 @@ Content-Type: application/json
 
 Publishes `insight.action` to matching tenant outbound hooks (so a `github_issue`, `gitlab_issue`, or `jira_issue` subscription opens the ticket).
 
-Response includes `ticketUrl` / `ticketUrls` when an issue channel returns a browseable link (`html_url` / `web_url` / Jira browse URL). GitHub also accepts optional `data.labels` (string array) on create.
+Response includes `ticketUrl` / `ticketUrls` when an issue channel returns a browseable link (`html_url` / `web_url` / Jira browse URL). Optional `data.labels` (string array) is applied on create for **GitHub** (JSON array), **GitLab** (comma-separated string), and **Jira** (`fields.labels`).
 
 ## Manual: AI workbench
 

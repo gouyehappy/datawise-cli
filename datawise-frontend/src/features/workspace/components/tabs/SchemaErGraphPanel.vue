@@ -40,9 +40,11 @@ import {
 import {
   supportsAlterColumnWizard,
   buildBatchAlterColumnDdl,
+  buildBatchCommentColumnDdl,
   parseBatchAddColumnLines,
   parseBatchModifyColumnLines,
   parseBatchRenameColumnLines,
+  parseBatchCommentColumnLines,
   type AlterColumnOperation,
 } from '@/features/workspace/services/alter-column-ddl.service'
 import {executeAlterColumnSql} from '@/features/workspace/services/execute-alter-column.service'
@@ -115,6 +117,7 @@ const batchDdlSql = ref('')
 const batchDdlSummary = ref<string[]>([])
 const batchAddDraft = ref('note VARCHAR(64)\nlegacy_flag INT')
 const batchRenameDraft = ref('old_name new_name')
+const batchCommentDraft = ref("note: customer memo\nflag IS active flag")
 
 const dbType = computed<DbType | undefined>(() => {
   if (props.tab.dbType) return props.tab.dbType
@@ -436,6 +439,39 @@ function openBatchRenameDdl() {
         t('workspace.schemaEr.batchAlterRenameSummaryColumn', {
           from: item.from,
           to: item.to,
+        }),
+    ),
+  ]
+  batchDdlOpen.value = true
+}
+
+function openBatchCommentDdl() {
+  const target = selectedColumnTarget.value
+  if (!target || !canAlterColumn.value) return
+  const comments = parseBatchCommentColumnLines(batchCommentDraft.value)
+  const sql = buildBatchCommentColumnDdl({
+    dbType: dbType.value,
+    tableName: target.table,
+    database: databaseName.value,
+    comments,
+    columnMeta: inspectorTableColumns.value.map((column) => ({
+      name: column.name,
+      dataType: column.dataType,
+      nullable: column.nullable,
+    })),
+  })
+  if (!sql?.trim()) {
+    workspace.setStatus(t('workspace.schemaEr.batchAlterCommentEmpty'))
+    return
+  }
+  batchDdlTitle.value = t('workspace.schemaEr.batchAlterCommentTitle')
+  batchDdlSql.value = sql
+  batchDdlSummary.value = [
+    t('workspace.schemaEr.batchAlterCommentSummaryTable', {table: target.table, count: comments.length}),
+    ...comments.map((item) =>
+        t('workspace.schemaEr.batchAlterCommentSummaryColumn', {
+          column: item.name,
+          comment: item.comment,
         }),
     ),
   ]
@@ -1043,6 +1079,27 @@ onUnmounted(() => {
               @click="openBatchRenameDdl"
           >
             {{ t('workspace.schemaEr.batchAlterRenameAction') }}
+          </DwButton>
+        </div>
+        <label class="schema-er-graph__batch-add">
+          <span>{{ t('workspace.schemaEr.batchAlterCommentHint') }}</span>
+          <textarea
+              v-model="batchCommentDraft"
+              class="dw-input schema-er-graph__batch-add-input"
+              rows="3"
+              spellcheck="false"
+              :placeholder="t('workspace.schemaEr.batchAlterCommentPlaceholder')"
+          />
+        </label>
+        <div class="schema-er-graph__inspector-actions">
+          <DwButton
+              variant="secondary"
+              size="sm"
+              type="button"
+              :disabled="!canAlterColumn"
+              @click="openBatchCommentDdl"
+          >
+            {{ t('workspace.schemaEr.batchAlterCommentAction') }}
           </DwButton>
         </div>
       </aside>

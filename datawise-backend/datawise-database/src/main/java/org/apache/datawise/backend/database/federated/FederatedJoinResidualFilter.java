@@ -15,7 +15,8 @@ import java.util.Set;
  * {@code alias.col IS [NOT] NULL},
  * {@code alias.col [NOT] LIKE 'pattern'},
  * expression functions ({@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM}/
- * {@code LENGTH}/{@code CHAR_LENGTH}/{@code ABS}/{@code ROUND}/{@code COALESCE}/{@code NULLIF}/
+ * {@code LENGTH}/{@code CHAR_LENGTH}/{@code ABS}/{@code ROUND}/{@code CEIL}/{@code FLOOR}/
+ * {@code COALESCE}/{@code NULLIF}/
  * {@code CONCAT}/{@code SUBSTR}/{@code SUBSTRING}/{@code ||}/{@code CAST(expr AS type)}/
  * {@code CASE WHEN … THEN … ELSE … END} (prefer parenthesized CASE in comparisons)} in
  * comparisons / LIKE / BETWEEN,
@@ -26,7 +27,7 @@ final class FederatedJoinResidualFilter {
 
     private static final Set<String> SUPPORTED_FUNCTIONS = Set.of(
             "upper", "lower", "trim", "ltrim", "rtrim",
-            "length", "char_length", "abs", "round",
+            "length", "char_length", "abs", "round", "ceil", "ceiling", "floor",
             "coalesce", "nullif", "concat", "substr", "substring"
     );
 
@@ -104,7 +105,7 @@ final class FederatedJoinResidualFilter {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
                             + "subqueries or use simple comparisons / IS NULL / LIKE / BETWEEN / "
-                            + "LENGTH|ABS|ROUND|COALESCE|CONCAT|SUBSTR / UPPER|LOWER|TRIM / CAST / CASE / IN / NOT / OR "
+                            + "LENGTH|ABS|ROUND|CEIL|FLOOR|COALESCE|CONCAT|SUBSTR / UPPER|LOWER|TRIM / CAST / CASE / IN / NOT / OR "
                             + "of those): "
                             + atom
             );
@@ -746,6 +747,14 @@ final class FederatedJoinResidualFilter {
                         args.size() == 2 ? resolve(row, args.get(1)) : null
                 );
             }
+            case "ceil", "ceiling" -> {
+                requireArity(call, 1);
+                yield ceilValue(resolve(row, args.get(0)));
+            }
+            case "floor" -> {
+                requireArity(call, 1);
+                yield floorValue(resolve(row, args.get(0)));
+            }
             case "coalesce" -> {
                 if (args.size() < 2) {
                     throw new IllegalArgumentException("COALESCE requires at least 2 arguments");
@@ -834,6 +843,20 @@ final class FederatedJoinResidualFilter {
         }
         double factor = Math.pow(10, scale);
         return Math.round(number * factor) / factor;
+    }
+
+    static Object ceilValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return (long) Math.ceil(toDouble(value, "CEIL"));
+    }
+
+    static Object floorValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return (long) Math.floor(toDouble(value, "FLOOR"));
     }
 
     private static double toDouble(Object value, String label) {

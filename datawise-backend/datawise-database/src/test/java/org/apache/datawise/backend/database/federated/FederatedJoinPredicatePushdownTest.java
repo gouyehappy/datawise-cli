@@ -606,6 +606,27 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsCeilAndFloor() {
+        Map<String, Object> row1 = new java.util.HashMap<>();
+        row1.put("o.id", 1);
+        row1.put("o.amount", 1.2);
+        Map<String, Object> row2 = new java.util.HashMap<>();
+        row2.put("o.id", 2);
+        row2.put("o.amount", 1.8);
+        List<Map<String, Object>> rows = List.of(row1, row2);
+
+        List<Map<String, Object>> byCeil = FederatedJoinResidualFilter.apply(rows, "CEIL(o.amount) = 2");
+        assertEquals(2, byCeil.size());
+
+        List<Map<String, Object>> byFloor = FederatedJoinResidualFilter.apply(rows, "FLOOR(o.amount) = 1");
+        assertEquals(2, byFloor.size());
+
+        assertEquals(2L, FederatedJoinResidualFilter.ceilValue(1.1));
+        assertEquals(1L, FederatedJoinResidualFilter.floorValue(1.9));
+        assertEquals(2L, FederatedJoinResidualFilter.ceilValue("1.01"));
+    }
+
+    @Test
     void singleAliasLengthIsPushedIntoSourceSubquery() {
         FederatedJoinPlan plan = new FederatedJoinPlan(
                 List.of("o.id", "u.name"),

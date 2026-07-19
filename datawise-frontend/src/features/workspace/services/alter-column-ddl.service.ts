@@ -21,6 +21,18 @@ export interface RenameColumnSpec {
     to: string
 }
 
+export interface CommentColumnSpec {
+    name: string
+    comment: string
+}
+
+/** Optional live column metadata used when MySQL MODIFY needs the current type. */
+export interface CommentColumnMeta {
+    name: string
+    dataType: string
+    nullable?: boolean
+}
+
 const PG_FAMILY = new Set<DbType>([
     'postgresql',
     'kingbase',
@@ -287,4 +299,82 @@ export function parseBatchRenameColumnLines(text: string): RenameColumnSpec[] {
         }
     }
     return renames
+}
+
+/** Parse lines like {@code note: customer memo}, {@code note IS memo}, or {@code note 'memo'}. */
+export function parseBatchCommentColumnLines(text: string): CommentColumnSpec[] {
+    const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+    const comments: CommentColumnSpec[] = []
+    for (const line of lines) {
+        const quoted = line.match(/^([A-Za-z_][\w$]*)\s+(['"])([\s\S]*)\2\s*$/)
+        if (quoted) {
+            comments.push({name: quoted[1]!, comment: quoted[3]!})
+            continue
+        }
+        const marked = line.match(/^([A-Za-z_][\w$]*)\s*(?::|IS|=)\s*(.+)$/i)
+        if (marked) {
+            comments.push({name: marked[1]!, comment: marked[2]!.trim()})
+            continue
+        }
+        const spaced = line.match(/^([A-Za-z_][\w$]*)\s+(.+)$/)
+        if (spaced) {
+            comments.push({name: spaced[1]!, comment: spaced[2]!.trim()})
+        }
+    }
+    return comments.filter((item) => item.name && item.comment)
+}
+
+function escapeSqlLiteral(value: string): string {
+    return value.replace(/'/g, "''")
+}
+
+/**
+ * Build COMMENT / MODIFY…COMMENT statements for a batch preview.
+ * PostgreSQL-family / Oracle / DM use {@code COMMENT ON COLUMN};
+ * MySQL / MariaDB use {@code MODIFY COLUMN … COMMENT} with current type from {@code columnMeta}.
+ */
+export function buildBatchCommentColumnDdl(options: {
+    dbType?: DbType
+    tableName: string
+    database?: string
+    comments: CommentColumnSpec[]
+    columnMeta?: CommentColumnMeta[]
+}): string | null {
+    const tableName = options.tableName.trim()
+    if (!tableName) return null
+    const comments = (options.comments ?? []).filter((item) => item.name.trim() && item.comment.trim())
+    if (comments.length === 0) return null
+
+    const qualified = quoteTable(options.dbType, tableName, options.database)
+    if (!qualified) return null
+
+    const metaByName = new Map(
+        (options.columnMeta ?? []).map((column) => [column.name.toLowerCase(), column]),
+    )
+    const statements: string[] = []
+    const dbType = options.dbType
+
+    for (const item of comments) {
+        const name = item.name.trim()
+        const literal = escapeSqlLiteral(item.comment.trim())
+        const quotedColumn = quoteSqlIdentifier(dbType, name)
+
+        if (isPgFamily(dbType) || dbType === 'oracle' || dbType === 'dm') {
+            statements.push(`COMMENT ON COLUMN ${qualified}.${quotedColumn} IS '${literal}';`)
+            continue
+        }
+
+        if (dbType === 'mysql' || dbType === 'mariadb') {
+            const meta = metaByName.get(name.toLowerCase())
+            const dataType = meta?.dataType?.trim()
+            if (!dataType) continue
+            const nullClause = meta?.nullable === false ? ' NOT NULL' : ''
+            statements.push(
+                `ALTER TABLE ${qualified} MODIFY COLUMN ${quotedColumn} ${dataType}${nullClause} COMMENT '${literal}';`,
+            )
+            continue
+        }
+    }
+
+    return statements.length > 0 ? statements.join('\n') : null
 }

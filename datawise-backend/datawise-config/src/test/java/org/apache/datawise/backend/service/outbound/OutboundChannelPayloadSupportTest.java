@@ -129,6 +129,48 @@ class OutboundChannelPayloadSupportTest {
     }
 
     @Test
+    void issueChannelsHonorDataLabels() {
+        OutboundEvent event = new OutboundEvent(
+                "evt-labels",
+                "insight.action",
+                Instant.now(),
+                "Investigate",
+                "bad rows",
+                Map.of("labels", java.util.List.of("datawise", "insight"), "name", "neg")
+        );
+
+        var github = OutboundChannelPayloadSupport.prepare(
+                "github_issue",
+                "https://api.github.com/repos/acme/data/issues",
+                "ghp_test",
+                event,
+                Map.of()
+        );
+        assertEquals(java.util.List.of("datawise", "insight"), github.body().get("labels"));
+
+        var gitlab = OutboundChannelPayloadSupport.prepare(
+                "gitlab_issue",
+                "https://gitlab.com/api/v4/projects/1/issues",
+                "glpat-x",
+                event,
+                Map.of()
+        );
+        assertEquals("datawise,insight", gitlab.body().get("labels"));
+
+        var jira = OutboundChannelPayloadSupport.prepare(
+                "jira_issue",
+                "https://acme.atlassian.net/rest/api/3/issue?project=DEMO",
+                "token",
+                event,
+                Map.of()
+        );
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fields = (Map<String, Object>) jira.body().get("fields");
+        assertEquals(java.util.List.of("datawise", "insight"), fields.get("labels"));
+        assertFalse(String.valueOf(github.body().get("body")).contains("**labels:**"));
+    }
+
+    @Test
     void jiraIssueUsesBearerTokenAndAdfBody() {
         OutboundEvent event = new OutboundEvent(
                 "evt-j1",
