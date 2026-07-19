@@ -7,7 +7,7 @@ import AiAnalysisChart from '@/features/ai/analysis/components/AiAnalysisChart.v
 import {buildAiChartOption} from '@/features/ai/analysis/services/ai-chart.service'
 import DashboardWidgetFrame from '@/features/dashboard/components/DashboardWidgetFrame.vue'
 import type {DashboardChartWidget} from '@/features/dashboard/services/dashboard-chart-widget.service'
-import {buildShareEmbedSnippet} from '@/features/dashboard/services/share-embed.service'
+import {buildShareEmbedSnippet, buildShareMarkdownEmbedSnippet} from '@/features/dashboard/services/share-embed.service'
 import {
     pivotQueryResultRows,
     toAiChartSpec,
@@ -51,7 +51,7 @@ const chartOption = computed(() => {
   return buildAiChartOption(spec, props.widget.columns, chartRows.value)
 })
 
-async function shareSnapshot(mode: 'link' | 'embed' = 'link') {
+async function shareSnapshot(mode: 'link' | 'embed' | 'markdown' = 'link') {
   if (sharing.value) return
   sharing.value = true
   try {
@@ -72,6 +72,11 @@ async function shareSnapshot(mode: 'link' | 'embed' = 'link') {
           buildShareEmbedSnippet(created.token, {title: props.widget.title}),
       )
       toast.success(t('dashboard.savedChart.embedCopiedWithExpiry', {days: expiresInDays}))
+    } else if (mode === 'markdown') {
+      await navigator.clipboard.writeText(
+          buildShareMarkdownEmbedSnippet(created.token, {title: props.widget.title}),
+      )
+      toast.success(t('dashboard.savedChart.markdownEmbedCopiedWithExpiry', {days: expiresInDays}))
     } else {
       await navigator.clipboard.writeText(sharesApi.publicPageUrl(created.token))
       toast.success(t('dashboard.savedChart.shareCopiedWithExpiry', {days: expiresInDays}))
@@ -135,6 +140,16 @@ async function shareSnapshot(mode: 'link' | 'embed' = 'link') {
             @click="shareSnapshot('embed')"
         >
           {{ t('dashboard.savedChart.embed') }}
+        </DwButton>
+        <DwButton
+            variant="ghost"
+            size="sm"
+            type="button"
+            :disabled="sharing"
+            :title="t('dashboard.savedChart.markdownEmbedHint')"
+            @click="shareSnapshot('markdown')"
+        >
+          {{ t('dashboard.savedChart.markdownEmbed') }}
         </DwButton>
         <DwButton
             v-if="editMode"

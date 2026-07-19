@@ -16,7 +16,7 @@ import java.util.Set;
  * {@code alias.col [NOT] LIKE 'pattern'},
  * expression functions ({@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM}/
  * {@code LENGTH}/{@code CHAR_LENGTH}/{@code ABS}/{@code ROUND}/{@code CEIL}/{@code FLOOR}/
- * {@code COALESCE}/{@code NULLIF}/
+ * {@code GREATEST}/{@code LEAST}/{@code COALESCE}/{@code NULLIF}/
  * {@code CONCAT}/{@code SUBSTR}/{@code SUBSTRING}/{@code ||}/{@code CAST(expr AS type)}/
  * {@code CASE WHEN … THEN … ELSE … END} (prefer parenthesized CASE in comparisons)} in
  * comparisons / LIKE / BETWEEN,
@@ -28,6 +28,7 @@ final class FederatedJoinResidualFilter {
     private static final Set<String> SUPPORTED_FUNCTIONS = Set.of(
             "upper", "lower", "trim", "ltrim", "rtrim",
             "length", "char_length", "abs", "round", "ceil", "ceiling", "floor",
+            "greatest", "least",
             "coalesce", "nullif", "concat", "substr", "substring"
     );
 
@@ -105,7 +106,7 @@ final class FederatedJoinResidualFilter {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
                             + "subqueries or use simple comparisons / IS NULL / LIKE / BETWEEN / "
-                            + "LENGTH|ABS|ROUND|CEIL|FLOOR|COALESCE|CONCAT|SUBSTR / UPPER|LOWER|TRIM / CAST / CASE / IN / NOT / OR "
+                            + "LENGTH|ABS|ROUND|CEIL|FLOOR|GREATEST|LEAST|COALESCE|CONCAT|SUBSTR / UPPER|LOWER|TRIM / CAST / CASE / IN / NOT / OR "
                             + "of those): "
                             + atom
             );
@@ -755,6 +756,18 @@ final class FederatedJoinResidualFilter {
                 requireArity(call, 1);
                 yield floorValue(resolve(row, args.get(0)));
             }
+            case "greatest", "least" -> {
+                if (args.size() < 2) {
+                    throw new IllegalArgumentException(
+                            call.name().toUpperCase(Locale.ROOT) + " requires at least 2 arguments"
+                    );
+                }
+                List<Object> values = new ArrayList<>(args.size());
+                for (String arg : args) {
+                    values.add(resolve(row, arg));
+                }
+                yield extremumValue(values, "greatest".equals(call.name()));
+            }
             case "coalesce" -> {
                 if (args.size() < 2) {
                     throw new IllegalArgumentException("COALESCE requires at least 2 arguments");
@@ -857,6 +870,32 @@ final class FederatedJoinResidualFilter {
             return null;
         }
         return (long) Math.floor(toDouble(value, "FLOOR"));
+    }
+
+    /**
+     * MySQL-style extremum: ignore NULL arguments; return null when every argument is null.
+     */
+    static Object extremumValue(List<Object> values, boolean greatest) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        Object best = null;
+        boolean found = false;
+        for (Object value : values) {
+            if (value == null) {
+                continue;
+            }
+            if (!found) {
+                best = value;
+                found = true;
+                continue;
+            }
+            int cmp = compareValues(value, best);
+            if ((greatest && cmp > 0) || (!greatest && cmp < 0)) {
+                best = value;
+            }
+        }
+        return found ? best : null;
     }
 
     private static double toDouble(Object value, String label) {

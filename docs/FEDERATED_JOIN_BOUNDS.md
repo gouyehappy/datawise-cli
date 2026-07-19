@@ -35,6 +35,7 @@ When the federated SQL has an outer `WHERE`:
 | `SUBSTR` / `SUBSTRING(expr, start[, length])` | 1-based start; `start < 1` clamps to 1 |
 | `ROUND(expr[, scale])` | Numeric round; scale defaults to 0 (nearest long). Accepts numeric strings |
 | `CEIL` / `CEILING` / `FLOOR` | Numeric ceiling / floor → long |
+| `GREATEST` / `LEAST` | ≥2 args; NULL arguments ignored (MySQL-style); all-null → null |
 | `CAST(expr AS type)` | Residual only types: `VARCHAR`/`CHAR`/`TEXT`, `INT`/`BIGINT`, `DOUBLE`/`DECIMAL`/`NUMERIC`, `BOOLEAN` (optional length `VARCHAR(64)` ignored) |
 | `CASE WHEN pred THEN a ELSE b END` | Single `WHEN`; nested CASE unsupported. **Parenthesize** when used in residual comparisons so `=` / `AND` inside `WHEN` are not mis-parsed: `(CASE WHEN o.status = 1 THEN 'paid' ELSE 'pending' END) = 'paid'` |
 

@@ -627,6 +627,37 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsGreatestAndLeast() {
+        Map<String, Object> row1 = new java.util.HashMap<>();
+        row1.put("o.id", 1);
+        row1.put("o.a", 3);
+        row1.put("o.b", 9);
+        Map<String, Object> row2 = new java.util.HashMap<>();
+        row2.put("o.id", 2);
+        row2.put("o.a", 5);
+        row2.put("o.b", 1);
+        List<Map<String, Object>> rows = List.of(row1, row2);
+
+        List<Map<String, Object>> byGreatest = FederatedJoinResidualFilter.apply(
+                rows,
+                "GREATEST(o.a, o.b) = 9"
+        );
+        assertEquals(1, byGreatest.size());
+        assertEquals(1, byGreatest.get(0).get("o.id"));
+
+        List<Map<String, Object>> byLeast = FederatedJoinResidualFilter.apply(
+                rows,
+                "LEAST(o.a, o.b) = 1"
+        );
+        assertEquals(1, byLeast.size());
+        assertEquals(2, byLeast.get(0).get("o.id"));
+
+        assertEquals(9, FederatedJoinResidualFilter.extremumValue(java.util.Arrays.asList(3, null, 9), true));
+        assertEquals(1, FederatedJoinResidualFilter.extremumValue(java.util.Arrays.asList(5, 1, null), false));
+        assertNull(FederatedJoinResidualFilter.extremumValue(java.util.Arrays.asList(null, null), true));
+    }
+
+    @Test
     void singleAliasLengthIsPushedIntoSourceSubquery() {
         FederatedJoinPlan plan = new FederatedJoinPlan(
                 List.of("o.id", "u.name"),

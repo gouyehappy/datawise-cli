@@ -90,4 +90,20 @@ class LakehouseSqlSupportTest {
         assertFalse(softened.sql().toUpperCase().contains("QUALIFY"));
         assertTrue(softened.sql().toUpperCase().contains("ORDER BY"));
     }
+
+    @Test
+    void softensPivotAndUnpivot() {
+        String pivotSql = "SELECT * FROM sales PIVOT (SUM(amount) FOR region IN ('E', 'W')) AS p";
+        assertTrue(LakehouseSqlSupport.detectHardFeatures(pivotSql)
+                .contains(LakehouseSqlSupport.LakehouseFeature.PIVOT));
+        LakehouseSqlSupport.SoftenResult pivot = LakehouseSqlSupport.softenHardFeatures(pivotSql);
+        assertTrue(pivot.softenedFeatures().contains("PIVOT"));
+        assertFalse(pivot.sql().toUpperCase().contains("PIVOT"));
+        assertTrue(pivot.sql().toUpperCase().contains("FROM SALES"));
+
+        String unpivotSql = "SELECT * FROM wide UNPIVOT (v FOR c IN (a, b)) u";
+        LakehouseSqlSupport.SoftenResult unpivot = LakehouseSqlSupport.softenHardFeatures(unpivotSql);
+        assertTrue(unpivot.softenedFeatures().contains("UNPIVOT"));
+        assertFalse(unpivot.sql().toUpperCase().contains("UNPIVOT"));
+    }
 }

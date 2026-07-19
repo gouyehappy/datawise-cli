@@ -30,6 +30,7 @@ public final class LakehouseSqlSupport {
     private static final Pattern WITH_ORDINALITY = Pattern.compile("\\bWITH\\s+ORDINALITY\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern TRY_CAST = Pattern.compile("\\bTRY_CAST\\s*\\(", Pattern.CASE_INSENSITIVE);
     private static final Pattern QUALIFY = Pattern.compile("\\bQUALIFY\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PIVOT = Pattern.compile("\\b(UN)?PIVOT\\b", Pattern.CASE_INSENSITIVE);
     /** Snowflake/Databricks QUALIFY — strip through next major clause or EOS. */
     private static final Pattern QUALIFY_CLAUSE = Pattern.compile(
             "(?is)\\bQUALIFY\\b.+?(?=\\s+(?:ORDER\\s+BY|LIMIT|OFFSET|FETCH|UNION|EXCEPT|INTERSECT)|;|$)"
@@ -123,6 +124,9 @@ public final class LakehouseSqlSupport {
         if (QUALIFY.matcher(sql).find()) {
             features.add(LakehouseFeature.QUALIFY);
         }
+        if (PIVOT.matcher(sql).find()) {
+            features.add(LakehouseFeature.PIVOT);
+        }
         if (WINDOW_TVF.matcher(sql).find()) {
             features.add(LakehouseFeature.WINDOW_TVF);
         }
@@ -197,9 +201,103 @@ public final class LakehouseSqlSupport {
             applied.add("QUALIFY");
         }
 
+        current = softenPivotClauses(current, applied);
         current = softenAdvancedGrouping(current, applied);
 
         return new SoftenResult(current, List.copyOf(applied));
+    }
+
+    /**
+     * Strips {@code PIVOT (...)} / {@code UNPIVOT (...)} (and optional {@code AS alias}) so AST lineage
+     * can continue on the base table reference (always PARTIAL).
+     */
+    private static String softenPivotClauses(String sql, Set<String> applied) {
+        String current = sql;
+        while (true) {
+            int pivotIdx = indexOfKeywordIgnoreCase(current, "PIVOT");
+            int unpivotIdx = indexOfKeywordIgnoreCase(current, "UNPIVOT");
+            int start;
+            String feature;
+            if (pivotIdx >= 0 && (unpivotIdx < 0 || pivotIdx < unpivotIdx)) {
+                start = pivotIdx;
+                feature = "PIVOT";
+            } else if (unpivotIdx >= 0) {
+                start = unpivotIdx;
+                feature = "UNPIVOT";
+            } else {
+                break;
+            }
+            int open = current.indexOf('(', start);
+            if (open < 0) {
+                break;
+            }
+            int close = findMatchingParen(current, open);
+            if (close < 0) {
+                break;
+            }
+            int end = skipOptionalAsAlias(current, close + 1);
+            current = (current.substring(0, start) + " " + current.substring(end))
+                    .replaceAll("\\s{2,}", " ")
+                    .trim();
+            applied.add(feature);
+        }
+        return current;
+    }
+
+    private static int skipOptionalAsAlias(String sql, int from) {
+        int i = from;
+        while (i < sql.length() && Character.isWhitespace(sql.charAt(i))) {
+            i++;
+        }
+        if (i + 2 <= sql.length()
+                && sql.regionMatches(true, i, "as", 0, 2)
+                && (i + 2 >= sql.length() || !isIdentChar(sql.charAt(i + 2)))) {
+            i += 2;
+            while (i < sql.length() && Character.isWhitespace(sql.charAt(i))) {
+                i++;
+            }
+        }
+        if (i >= sql.length()) {
+            return i;
+        }
+        char ch = sql.charAt(i);
+        if (ch == '`' || ch == '"' || ch == '[') {
+            char close = ch == '[' ? ']' : ch;
+            int end = sql.indexOf(close, i + 1);
+            return end >= 0 ? end + 1 : i;
+        }
+        if (isIdentChar(ch)) {
+            int end = i + 1;
+            while (end < sql.length() && (isIdentChar(sql.charAt(end)) || sql.charAt(end) == '.')) {
+                end++;
+            }
+            return end;
+        }
+        return i;
+    }
+
+    private static int indexOfKeywordIgnoreCase(String haystack, String keyword) {
+        String lower = haystack.toLowerCase(Locale.ROOT);
+        String needle = keyword.toLowerCase(Locale.ROOT);
+        int from = 0;
+        while (from <= lower.length() - needle.length()) {
+            int idx = lower.indexOf(needle, from);
+            if (idx < 0) {
+                return -1;
+            }
+            boolean leftOk = idx == 0 || !isIdentChar(haystack.charAt(idx - 1));
+            boolean rightOk = idx + needle.length() >= haystack.length()
+                    || !isIdentChar(haystack.charAt(idx + needle.length()));
+            if (leftOk && rightOk) {
+                return idx;
+            }
+            from = idx + 1;
+        }
+        return -1;
+    }
+
+    private static boolean isIdentChar(char ch) {
+        return Character.isLetterOrDigit(ch) || ch == '_';
     }
 
     /**
@@ -387,6 +485,7 @@ public final class LakehouseSqlSupport {
         TRY_CAST("TRY_CAST is softened to CAST; failure-null semantics are not modeled in lineage"),
         ADVANCED_GROUPING("GROUPING SETS / CUBE / ROLLUP are softened to a simple GROUP BY list"),
         QUALIFY("QUALIFY filter is stripped for lineage; window-filter semantics are not modeled"),
+        PIVOT("PIVOT / UNPIVOT are stripped for lineage; reshaped columns are not modeled"),
         WINDOW_TVF("Flink window TVFs (TUMBLE/HOP/CUMULATE/SESSION) are not supported for automatic lineage yet");
 
         private final String message;
