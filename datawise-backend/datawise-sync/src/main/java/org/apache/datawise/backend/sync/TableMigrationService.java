@@ -5,6 +5,7 @@ import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.apache.datawise.backend.configstore.migration.MigrationJobEntity;
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
 import org.apache.datawise.backend.sync.api.MigrationExecutionControl;
+import org.apache.datawise.backend.sync.api.MigrationCancelledException;
 import org.apache.datawise.backend.sync.api.MigrationPausedException;
 import org.apache.datawise.backend.sync.api.TableMigrationProgressListener;
 import org.apache.datawise.backend.sync.engine.MigrationEndpoints;
@@ -193,6 +194,11 @@ public class TableMigrationService {
                 executeRunningJob(jobId, null);
                 MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
                 jobStreamHub.publishDone(jobId, view);
+            } catch (MigrationCancelledException ex) {
+                flushCheckpoint(execution);
+                jobCoordinator.markJobCancelled(execution.job());
+                MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
+                jobStreamHub.publishDone(jobId, view);
             } catch (MigrationPausedException ex) {
                 flushCheckpoint(execution);
                 jobCoordinator.markJobPaused(execution.job());
@@ -234,6 +240,12 @@ public class TableMigrationService {
                 executePreparedBatch(execution, request, streamListener, jobRuntime.controlFor(jobId));
                 MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
                 jobStreamHub.publishDone(jobId, view);
+            } catch (MigrationCancelledException ex) {
+                flushCheckpoint(execution);
+                jobCoordinator.markJobCancelled(execution.job());
+                MigrationJobView view = jobCoordinator.viewFor(userId, jobId);
+                jobStreamHub.publishDone(jobId, view);
+                throw ex;
             } catch (MigrationPausedException ex) {
                 flushCheckpoint(execution);
                 jobCoordinator.markJobPaused(execution.job());
@@ -305,6 +317,19 @@ public class TableMigrationService {
         return jobCoordinator.viewFor(userId, jobId);
     }
 
+    public MigrationJobView cancelJob(String jobId) {
+        long userId = userAccountService.requireUserId();
+        MigrationJobEntity job = jobCoordinator.requireOwnedJob(userId, jobId);
+        if ("running".equals(job.getStatus())) {
+            jobRuntime.requestCancel(jobId);
+        }
+        if ("paused".equals(job.getStatus())
+                || (!jobRuntime.isRunning(jobId) && "running".equals(job.getStatus()))) {
+            jobCoordinator.markJobCancelled(job);
+        }
+        return jobCoordinator.viewFor(userId, jobId);
+    }
+
     public MigrationJobView resumeJobAsync(String jobId) {
         long userId = userAccountService.requireUserId();
         MigrationJobEntity job = jobCoordinator.requireOwnedJob(userId, jobId);
@@ -346,6 +371,10 @@ public class TableMigrationService {
         MigrationExecutionControl executionControl = jobRuntime.controlFor(execution.jobId());
         try {
             return executePreparedBatch(execution, request, progressListener, executionControl);
+        } catch (MigrationCancelledException ex) {
+            flushCheckpoint(execution);
+            jobCoordinator.markJobCancelled(execution.job());
+            throw ex;
         } catch (MigrationPausedException ex) {
             flushCheckpoint(execution);
             jobCoordinator.markJobPaused(execution.job());

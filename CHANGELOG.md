@@ -24,6 +24,9 @@ All notable product-level changes for DataWise are documented in this file.
 - JDBC team / connection / OIDC / webhook / AI usage / SQL history snapshots when `storage.backend=jdbc`.
 - Settings → Tenants panel for platform admins in multi mode; member invite/role UI; custom tenant roles.
 - Team APIs reject cross-tenant IDs (IDOR guard).
+- Wave B S1 deepen: migration **Cancel** (`POST /api/migration/jobs/{id}/cancel`) — batch-boundary stop with `cancelled` status (not resumable); pause still supports checkpoint resume.
+- Wave C G15 deepen: data-quality catalog **Copy / Download gate JSON** after release or multi-env gate runs.
+- Wave B S3 deepen: lakehouse lineage treats Trino/Presto **`UNNEST … WITH ORDINALITY`** as a hard feature (soft-strip → `PARTIAL`).
 - Wave C G9 deepen: AI workbench tenant quota UX — near-limit warning + exhausted banner (disables send) from `GET /api/tenants/mine/ai-usage`; Settings → Tenants card unchanged.
 - Wave B S1 slice: table migration mode `PK_UPSERT` with conflict strategies OVERWRITE / SKIP / FAIL (MySQL `ON DUPLICATE KEY` / PostgreSQL `ON CONFLICT`); production-target migration plans go through team approval (approve records consent; managers run the wizard).
 - Wave B S2 slice: federated JOIN hard caps (`FederatedJoinLimits`), hash join for equality ON, cross-product rejection, `hasMore` truncation; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).

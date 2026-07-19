@@ -195,6 +195,7 @@ export const API_PATHS = {
         jobs: '/api/migration/jobs',
         job: (id: string) => `/api/migration/jobs/${encodeURIComponent(id)}`,
         jobPause: (id: string) => `/api/migration/jobs/${encodeURIComponent(id)}/pause`,
+        jobCancel: (id: string) => `/api/migration/jobs/${encodeURIComponent(id)}/cancel`,
         jobResume: (id: string) => `/api/migration/jobs/${encodeURIComponent(id)}/resume`,
         jobStream: (id: string) => `/api/migration/jobs/${encodeURIComponent(id)}/stream`,
     },

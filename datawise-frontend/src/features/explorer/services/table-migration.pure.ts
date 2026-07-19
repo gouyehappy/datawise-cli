@@ -606,10 +606,10 @@ export interface MigrationLogLine {
     detail?: string
 }
 
-export type TableMigrationRunStatus = 'running' | 'success' | 'partial' | 'failed' | 'paused'
+export type TableMigrationRunStatus = 'running' | 'success' | 'partial' | 'failed' | 'paused' | 'cancelled'
 
 export const MIGRATION_JOB_POLL_MS = 1500
-export const MIGRATION_JOB_TERMINAL_STATUSES = new Set(['completed', 'partial', 'failed', 'paused'])
+export const MIGRATION_JOB_TERMINAL_STATUSES = new Set(['completed', 'partial', 'failed', 'paused', 'cancelled'])
 
 export interface TableMigrationRunRecord {
     id: string
@@ -919,6 +919,7 @@ export function resolveMigrationRunStatus(
     jobStatus?: string,
 ): TableMigrationRunRecord['status'] {
     if (jobStatus === 'paused') return 'paused'
+    if (jobStatus === 'cancelled') return 'cancelled'
     if (!results.length && jobStatus === 'failed') return 'failed'
     if (!results.length) return 'failed'
     const failed = results.filter((item) => item.status !== 'success').length
@@ -1113,6 +1114,7 @@ export function canRestartMigrationFresh(record: TableMigrationRunRecord): boole
     return record.status === 'failed'
         || record.status === 'partial'
         || record.status === 'paused'
+        || record.status === 'cancelled'
 }
 
 export function resolveMigrationCheckpointBannerKey(
@@ -1141,6 +1143,7 @@ export function resolveMigrationCheckpointBannerKey(
 export interface TableMigrationRunOutcome {
     results: TableMigrationResult[]
     paused: boolean
+    cancelled?: boolean
 }
 
 export function canPauseMigrationRun(
@@ -1149,6 +1152,16 @@ export function canPauseMigrationRun(
     recordId: string,
 ): boolean {
     return isRunning && activeRunId === recordId
+}
+
+export function canCancelMigrationRun(
+    isRunning: boolean,
+    activeRunId: string | null | undefined,
+    recordId: string,
+    recordStatus: TableMigrationRunStatus,
+): boolean {
+    if (recordStatus === 'paused') return true
+    return canPauseMigrationRun(isRunning, activeRunId, recordId)
 }
 
 export function sleep(ms: number): Promise<void> {
@@ -1161,6 +1174,7 @@ export function mapJobStatusToRunStatus(status: string): TableMigrationRunStatus
     if (status === 'completed') return 'success'
     if (status === 'partial') return 'partial'
     if (status === 'paused') return 'paused'
+    if (status === 'cancelled') return 'cancelled'
     if (status === 'failed') return 'failed'
     return 'running'
 }

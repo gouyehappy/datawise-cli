@@ -76,6 +76,7 @@ Explorer → AI → **Data quality** opens the catalog for the current connectio
 - **Manage shared templates** — list / delete tenant-shared rule templates
 - **Run** — run the selected rule now
 - **Run release gate** — evaluate the gate suite (selection = those IDs; otherwise all **blocking** rules in scope)
+- **Copy / Download gate JSON** — after a gate (or multi-env gate) run in this tab, export the last result payload (passed/total/failed, scopes, pairs, results) for CI or audit notes
 
 Rules also appear under **Scheduled tasks** when they have a Cron.
 

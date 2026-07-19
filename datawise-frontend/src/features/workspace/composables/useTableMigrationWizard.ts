@@ -29,6 +29,7 @@ import {
     pickDefaultWatermarkColumn,
     resumeTableMigrationRun,
     canResumeMigrationRun,
+    cancelMigrationJob,
     recordToMigrationForm,
     runTableMigration,
     runTableMigrationPreflight,
@@ -77,6 +78,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
     const selectedPreflightTable = ref<string | null>(null)
     const wizardStep = ref<MigrationFlowStep>('configure')
     const pausing = ref(false)
+    const cancelling = ref(false)
     const resuming = ref(false)
     const activeJobId = ref<string | null>(null)
     const productionApprovalDialogOpen = ref(false)
@@ -85,7 +87,8 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
     const productionApprovalSql = ref('')
 
     const running = computed(() => migrationTasks.isRunning)
-    const canPauseMigration = computed(() => Boolean(activeJobId.value && running.value))
+    const canPauseMigration = computed(() => Boolean(activeJobId.value && running.value && !cancelling.value))
+    const canCancelMigration = computed(() => Boolean(activeJobId.value && running.value && !pausing.value))
     const progress = computed<TableMigrationRunProgress | null>(() => migrationTasks.activeProgress)
     const migrationResults = computed<TableMigrationResult[]>(() => {
         if (migrationTasks.activeRun) return migrationTasks.activeRun.results
@@ -746,6 +749,18 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         }
     }
 
+    async function cancelActiveMigration() {
+        if (!canCancelMigration.value || !activeJobId.value || cancelling.value) return
+        cancelling.value = true
+        try {
+            await cancelMigrationJob(activeJobId.value)
+        } catch (error) {
+            cancelling.value = false
+            const message = error instanceof Error ? error.message : String(error)
+            layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
+        }
+    }
+
     const canResumeFromWizard = computed(() => {
         const record = migrationRunRecord.value
         if (!record || running.value || resuming.value) return false
@@ -791,10 +806,12 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
                 tablesPlanned: [...record.tablesPlanned],
                 results: outcome.results,
                 logs: migrationTasks.activeRun?.logs ?? record.logs,
-                jobStatus: outcome.paused ? 'paused' : undefined,
+                jobStatus: outcome.cancelled ? 'cancelled' : outcome.paused ? 'paused' : undefined,
             })
             migrationTasks.completeRun(nextRecord)
-            if (outcome.paused) {
+            if (outcome.cancelled) {
+                layout.showWarningToast(t('explorer.tableMigrationWizard.migrationCancelled'))
+            } else if (outcome.paused) {
                 layout.showSuccessToast(t('explorer.tableMigrationWizard.migrationPaused'))
             } else {
                 const summary = summarizeMigrationResults(outcome.results)
@@ -810,6 +827,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
             layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
         } finally {
             pausing.value = false
+            cancelling.value = false
             activeJobId.value = null
             resuming.value = false
             wizardStep.value = 'complete'
@@ -965,11 +983,13 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
                 tablesPlanned,
                 results: outcome.results,
                 logs: migrationRunLogsFull.value,
-                jobStatus: outcome.paused ? 'paused' : undefined,
+                jobStatus: outcome.cancelled ? 'cancelled' : outcome.paused ? 'paused' : undefined,
             })
             migrationTasks.completeRun(record)
 
-            if (outcome.paused) {
+            if (outcome.cancelled) {
+                layout.showWarningToast(t('explorer.tableMigrationWizard.migrationCancelled'))
+            } else if (outcome.paused) {
                 layout.showSuccessToast(t('explorer.tableMigrationWizard.migrationPaused'))
             } else {
                 const summary = summarizeMigrationResults(outcome.results)
@@ -1009,6 +1029,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
             }
         } finally {
             pausing.value = false
+            cancelling.value = false
             activeJobId.value = null
             if (migrationTasks.isRunning) {
                 migrationTasks.abortRun()
@@ -1047,7 +1068,9 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         selectedPreflightTable,
         wizardStep,
         pausing,
+        cancelling,
         canPauseMigration,
+        canCancelMigration,
         running,
         progress,
         progressPercent,
@@ -1115,6 +1138,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         startMigration,
         onSubmitProductionApproval,
         pauseActiveMigration,
+        cancelActiveMigration,
         resumeFromCheckpoint,
     })
 }

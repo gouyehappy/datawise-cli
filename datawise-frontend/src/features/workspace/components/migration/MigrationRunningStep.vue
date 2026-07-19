@@ -115,11 +115,22 @@ onUnmounted(() => {
             class="migration-progress-card__pause"
             variant="secondary"
             size="sm"
-            :disabled="w.pausing"
+            :disabled="w.pausing || w.cancelling"
             :loading="w.pausing"
             @click="w.pauseActiveMigration"
         >
           {{ t('explorer.tableMigrationWizard.pauseMigration') }}
+        </DwButton>
+        <DwButton
+            v-if="w.canCancelMigration"
+            class="migration-progress-card__cancel"
+            variant="secondary"
+            size="sm"
+            :disabled="w.cancelling || w.pausing"
+            :loading="w.cancelling"
+            @click="w.cancelActiveMigration"
+        >
+          {{ t('explorer.tableMigrationWizard.cancelMigration') }}
         </DwButton>
         <span class="table-migration__running-meta">{{ w.progressPercent }}%</span>
       </div>
@@ -130,6 +141,13 @@ onUnmounted(() => {
           variant="warning"
           class="migration-progress-card__pause-alert"
           :message="t('explorer.tableMigrationWizard.pauseRequested')"
+      />
+      <DwInlineAlert
+          v-if="w.cancelling"
+          density="banner"
+          variant="warning"
+          class="migration-progress-card__pause-alert"
+          :message="t('explorer.tableMigrationWizard.cancelRequested')"
       />
 
       <div class="migration-progress-card__bar">

@@ -1700,6 +1700,8 @@ export interface MigrationApi {
 
     pauseJob(jobId: string): Promise<MigrationJobView>
 
+    cancelJob(jobId: string): Promise<MigrationJobView>
+
     resumeJob(jobId: string): Promise<MigrationJobView>
 }
 

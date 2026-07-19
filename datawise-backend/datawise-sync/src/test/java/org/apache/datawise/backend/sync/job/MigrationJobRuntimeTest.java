@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.sync.job;
 
+import org.apache.datawise.backend.sync.api.MigrationCancelledException;
 import org.apache.datawise.backend.sync.api.MigrationPausedException;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +33,19 @@ class MigrationJobRuntimeTest {
 
         MigrationPausedException ex = assertThrows(
                 MigrationPausedException.class,
+                () -> runtime.controlFor("job-1").checkContinue()
+        );
+        assertEquals("job-1", ex.getJobId());
+    }
+
+    @Test
+    void controlFor_throwsCancelledWhenCancelRequested() {
+        MigrationJobRuntime runtime = new MigrationJobRuntime();
+        runtime.registerRunning("job-1");
+        runtime.requestCancel("job-1");
+
+        MigrationCancelledException ex = assertThrows(
+                MigrationCancelledException.class,
                 () -> runtime.controlFor("job-1").checkContinue()
         );
         assertEquals("job-1", ex.getJobId());

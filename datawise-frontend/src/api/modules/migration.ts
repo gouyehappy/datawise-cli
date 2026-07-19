@@ -12,5 +12,6 @@ export const migrationApi = {
     getJob: (jobId: string) => api.migration.getJob(jobId),
     startJob: (request: TableMigrationBatchRequest) => api.migration.startJob(request),
     pauseJob: (jobId: string) => api.migration.pauseJob(jobId),
+    cancelJob: (jobId: string) => api.migration.cancelJob(jobId),
     resumeJob: (jobId: string) => api.migration.resumeJob(jobId),
 }

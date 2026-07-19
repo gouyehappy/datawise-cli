@@ -396,13 +396,16 @@ async function watchMigrationJobUntilDone(
         if (outcome.view.status === 'paused') {
             throw new Error('migrationPaused')
         }
+        if (outcome.view.status === 'cancelled') {
+            throw new Error('migrationCancelled')
+        }
         const failureMessage = resolveMigrationJobFailureMessage(outcome.view)
         if (failureMessage) {
             throw new Error(failureMessage)
         }
         return outcome
     } catch (error) {
-        if (error instanceof Error && error.message === 'migrationPaused') {
+        if (error instanceof Error && (error.message === 'migrationPaused' || error.message === 'migrationCancelled')) {
             throw error
         }
         return pollMigrationJobUntilDone(jobId, callbacks)
@@ -467,6 +470,9 @@ async function pollMigrationJobUntilDone(
             if (view.status === 'paused') {
                 throw new Error('migrationPaused')
             }
+            if (view.status === 'cancelled') {
+                throw new Error('migrationCancelled')
+            }
             const failureMessage = resolveMigrationJobFailureMessage(view)
             if (failureMessage) {
                 throw new Error(failureMessage)
@@ -480,6 +486,11 @@ async function pollMigrationJobUntilDone(
 export async function pauseMigrationJob(jobId: string): Promise<MigrationJobView> {
     const {migrationApi} = await import('@/api/modules/migration')
     return migrationApi.pauseJob(jobId)
+}
+
+export async function cancelMigrationJob(jobId: string): Promise<MigrationJobView> {
+    const {migrationApi} = await import('@/api/modules/migration')
+    return migrationApi.cancelJob(jobId)
 }
 
 export async function watchExistingMigrationJob(
@@ -500,6 +511,9 @@ export async function watchExistingMigrationJob(
     } catch (error) {
         if (error instanceof Error && error.message === 'migrationPaused') {
             return {results: [], paused: true}
+        }
+        if (error instanceof Error && error.message === 'migrationCancelled') {
+            return {results: [], paused: false, cancelled: true}
         }
         throw error
     }
@@ -553,6 +567,18 @@ async function runBatchJobMigration(
                     level: 'warn',
                     event: 'run_done',
                     message: 'Migration paused',
+                    detail: startedView.id,
+                },
+                onLog,
+            )
+        }
+        if (error instanceof Error && error.message === 'migrationCancelled') {
+            appendMigrationLog(
+                logs,
+                {
+                    level: 'warn',
+                    event: 'run_done',
+                    message: 'Migration cancelled',
                     detail: startedView.id,
                 },
                 onLog,
@@ -617,6 +643,9 @@ export async function runTableMigration(
     } catch (error) {
         if (error instanceof Error && error.message === 'migrationPaused') {
             return {results, paused: true}
+        }
+        if (error instanceof Error && error.message === 'migrationCancelled') {
+            return {results, paused: false, cancelled: true}
         }
         const message = error instanceof Error ? error.message : String(error)
         appendMigrationLog(

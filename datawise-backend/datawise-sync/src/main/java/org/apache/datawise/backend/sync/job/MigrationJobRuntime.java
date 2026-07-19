@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.sync.job;
 
+import org.apache.datawise.backend.sync.api.MigrationCancelledException;
 import org.apache.datawise.backend.sync.api.MigrationExecutionControl;
 import org.apache.datawise.backend.sync.api.MigrationPausedException;
 import org.springframework.stereotype.Component;
@@ -7,11 +8,12 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** 内存态：运行中 job 的暂停信号与注册表。 */
+/** 内存态：运行中 job 的暂停/取消信号与注册表。 */
 @Component
 public class MigrationJobRuntime {
 
     private final ConcurrentHashMap<String, AtomicBoolean> pauseRequested = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AtomicBoolean> cancelRequested = new ConcurrentHashMap<>();
     private final ConcurrentHashMap.KeySetView<String, Boolean> runningJobs = ConcurrentHashMap.newKeySet();
 
     public void registerRunning(String jobId) {
@@ -29,6 +31,7 @@ public class MigrationJobRuntime {
             return false;
         }
         pauseRequested.put(jobId, new AtomicBoolean(false));
+        cancelRequested.put(jobId, new AtomicBoolean(false));
         return true;
     }
 
@@ -38,6 +41,7 @@ public class MigrationJobRuntime {
         }
         runningJobs.remove(jobId);
         pauseRequested.remove(jobId);
+        cancelRequested.remove(jobId);
     }
 
     public boolean isRunning(String jobId) {
@@ -51,13 +55,26 @@ public class MigrationJobRuntime {
         pauseRequested.computeIfAbsent(jobId, ignored -> new AtomicBoolean(false)).set(true);
     }
 
+    public void requestCancel(String jobId) {
+        if (jobId == null || jobId.isBlank()) {
+            return;
+        }
+        cancelRequested.computeIfAbsent(jobId, ignored -> new AtomicBoolean(false)).set(true);
+        // Cancel supersedes pause: also set pause so any pause-only checks stop promptly.
+        pauseRequested.computeIfAbsent(jobId, ignored -> new AtomicBoolean(false)).set(true);
+    }
+
     public MigrationExecutionControl controlFor(String jobId) {
         if (jobId == null || jobId.isBlank()) {
             return MigrationExecutionControl.noop();
         }
         return () -> {
-            AtomicBoolean flag = pauseRequested.get(jobId);
-            if (flag != null && flag.get()) {
+            AtomicBoolean cancel = cancelRequested.get(jobId);
+            if (cancel != null && cancel.get()) {
+                throw new MigrationCancelledException(jobId);
+            }
+            AtomicBoolean pause = pauseRequested.get(jobId);
+            if (pause != null && pause.get()) {
                 throw new MigrationPausedException(jobId);
             }
         };

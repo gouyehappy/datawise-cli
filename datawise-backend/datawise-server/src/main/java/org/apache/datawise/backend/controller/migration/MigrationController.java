@@ -14,6 +14,7 @@ import org.apache.datawise.backend.domain.TableMigrationRowDiffResult;
 import org.apache.datawise.backend.sync.support.MigrationBatchReportSupport;
 import org.apache.datawise.backend.sync.preflight.TableMigrationPreflightService;
 import org.apache.datawise.backend.sync.preflight.TableMigrationRowDiffService;
+import org.apache.datawise.backend.sync.api.MigrationCancelledException;
 import org.apache.datawise.backend.sync.api.MigrationPausedException;
 import org.apache.datawise.backend.sync.api.TableMigrationProgressListener;
 import org.apache.datawise.backend.sync.TableMigrationService;
@@ -90,6 +91,20 @@ public class MigrationController {
             return ApiResponse.ok(view);
         } catch (RuntimeException ex) {
             ApiRequestLogger.logFailure(log, "POST /api/migration/jobs/{id}/pause", ex, "jobId", jobId);
+            throw ex;
+        }
+    }
+
+    @PostMapping("/jobs/{id}/cancel")
+    public ApiResponse<MigrationJobView> cancelMigrationJob(@PathVariable("id") String jobId) {
+        requireMigrationAccess();
+        ApiRequestLogger.logEntry(log, "POST /api/migration/jobs/{id}/cancel", "jobId", jobId);
+        try {
+            MigrationJobView view = tableMigrationService.cancelJob(jobId);
+            ApiRequestLogger.logSuccess(log, "POST /api/migration/jobs/{id}/cancel", "status", view.status());
+            return ApiResponse.ok(view);
+        } catch (RuntimeException ex) {
+            ApiRequestLogger.logFailure(log, "POST /api/migration/jobs/{id}/cancel", ex, "jobId", jobId);
             throw ex;
         }
     }
@@ -372,6 +387,10 @@ public class MigrationController {
                     "POST /api/migration/tables/batch/stream",
                     "tables", result.results().size()
             );
+            TableMigrationStreamEmitter.completeSuccess(emitter);
+        } catch (MigrationCancelledException ex) {
+            MigrationJobView view = tableMigrationService.getJob(ex.getJobId());
+            TableMigrationStreamEmitter.sendJobDone(emitter, view);
             TableMigrationStreamEmitter.completeSuccess(emitter);
         } catch (MigrationPausedException ex) {
             MigrationJobView view = tableMigrationService.getJob(ex.getJobId());

@@ -3,6 +3,7 @@ package org.apache.datawise.backend.lineage.parser.lakehouse;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LakehouseSqlSupportTest {
@@ -33,5 +34,18 @@ class LakehouseSqlSupportTest {
         );
         assertEquals(1, features.size());
         assertEquals(LakehouseSqlSupport.LakehouseFeature.WINDOW_TVF, features.get(0));
+    }
+
+    @Test
+    void detectsAndSoftensUnnestWithOrdinality() {
+        String sql = "SELECT * FROM t CROSS JOIN UNNEST(t.arr) WITH ORDINALITY AS u(x, ord)";
+        var features = LakehouseSqlSupport.detectHardFeatures(sql);
+        assertEquals(1, features.size());
+        assertEquals(LakehouseSqlSupport.LakehouseFeature.UNNEST_ORDINALITY, features.get(0));
+
+        LakehouseSqlSupport.SoftenResult softened = LakehouseSqlSupport.softenHardFeatures(sql);
+        assertTrue(softened.changed());
+        assertTrue(softened.softenedFeatures().contains("UNNEST_ORDINALITY"));
+        assertFalse(softened.sql().toUpperCase().contains("ORDINALITY"));
     }
 }

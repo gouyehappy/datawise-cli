@@ -31,6 +31,8 @@ export function createHttpMigrationApi(): MigrationApi {
             postJson<MigrationJobView>(API_PATHS.migration.jobs, request),
         pauseJob: (jobId: string) =>
             postJson<MigrationJobView>(API_PATHS.migration.jobPause(jobId), {}),
+        cancelJob: (jobId: string) =>
+            postJson<MigrationJobView>(API_PATHS.migration.jobCancel(jobId), {}),
         resumeJob: (jobId: string) =>
             postJson<MigrationJobView>(API_PATHS.migration.jobResume(jobId), {}),
     }

@@ -46,12 +46,21 @@ const w = useMigrationWizard()
         </DwButton>
         <DwButton
             v-if="w.canPauseMigration"
-            variant="primary"
-            :disabled="w.pausing"
+            variant="secondary"
+            :disabled="w.pausing || w.cancelling"
             :loading="w.pausing"
             @click="w.pauseActiveMigration"
         >
           {{ t('explorer.tableMigrationWizard.pauseMigration') }}
+        </DwButton>
+        <DwButton
+            v-if="w.canCancelMigration"
+            variant="primary"
+            :disabled="w.cancelling || w.pausing"
+            :loading="w.cancelling"
+            @click="w.cancelActiveMigration"
+        >
+          {{ t('explorer.tableMigrationWizard.cancelMigration') }}
         </DwButton>
       </template>
 

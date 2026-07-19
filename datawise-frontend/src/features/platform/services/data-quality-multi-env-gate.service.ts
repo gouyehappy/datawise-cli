@@ -65,3 +65,26 @@ export function summarizeMultiEnvGate(
         unpaired: countUnpairedGatePairs(result.pairs),
     }
 }
+
+/** JSON payload for copy/download after a release-gate run. */
+export function formatDataQualityGateExport(result: DataQualityGateResult): string {
+    return JSON.stringify(
+        {
+            passed: result.passed,
+            total: result.total,
+            failed: result.failed,
+            scopes: result.scopes ?? undefined,
+            pairs: result.pairs ?? undefined,
+            results: result.results,
+            exportedAt: new Date().toISOString(),
+        },
+        null,
+        2,
+    )
+}
+
+export function buildDataQualityGateExportFilename(result: DataQualityGateResult, at = new Date()): string {
+    const stamp = at.toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const verdict = result.passed ? 'passed' : 'failed'
+    return `dq-gate-${verdict}-${stamp}.json`
+}

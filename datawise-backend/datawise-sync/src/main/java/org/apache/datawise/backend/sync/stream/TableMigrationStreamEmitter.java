@@ -88,7 +88,8 @@ public final class TableMigrationStreamEmitter {
         return "completed".equals(status)
                 || "partial".equals(status)
                 || "failed".equals(status)
-                || "paused".equals(status);
+                || "paused".equals(status)
+                || "cancelled".equals(status);
     }
 
     public static void sendTerminalJobEvent(SseEmitter emitter, MigrationJobView view) {

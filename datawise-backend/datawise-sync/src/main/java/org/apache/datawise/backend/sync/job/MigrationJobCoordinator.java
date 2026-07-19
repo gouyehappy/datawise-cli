@@ -130,6 +130,15 @@ public class MigrationJobCoordinator {
         jobStore.save(job);
     }
 
+    public void markJobCancelled(MigrationJobEntity job) {
+        if (job == null) {
+            return;
+        }
+        job.setStatus("cancelled");
+        job.setUpdatedAt(Instant.now());
+        jobStore.save(job);
+    }
+
     public void markJobFailed(MigrationJobEntity job) {
         if (job == null) {
             return;
@@ -340,6 +349,9 @@ public class MigrationJobCoordinator {
         }
         if ("completed".equals(job.getStatus())) {
             throw new IllegalArgumentException("Migration job already completed");
+        }
+        if ("cancelled".equals(job.getStatus())) {
+            throw new IllegalArgumentException("Migration job was cancelled; start a new job");
         }
     }
 

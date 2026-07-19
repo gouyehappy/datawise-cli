@@ -13,6 +13,7 @@ import {resolveLogLevelVariant, statusVariantClass} from '@/core/utils/status-va
 import {useMigrationTaskStore} from '@/features/explorer/stores/migration-task-store'
 import {
     buildMigrationRunRecord,
+    canCancelMigrationRun,
     canPauseMigrationRun,
     canRestartMigrationFresh,
     canResumeMigrationRun,
@@ -26,6 +27,7 @@ import {
     formatMigrationRunLogText,
     formatMigrationTableProgressLabel,
     formatMigrationTime,
+    cancelMigrationJob,
     pauseMigrationJob,
     recordToMigrationForm,
     recordToSourceScope,
@@ -48,6 +50,7 @@ const migrationTasks = useMigrationTaskStore()
 const resuming = ref(false)
 const restartingFresh = ref(false)
 const pausing = ref(false)
+const cancelling = ref(false)
 const reconnectingRunId = ref<string | null>(null)
 const serverJob = ref<MigrationJobView | null>(null)
 const serverJobLoaded = ref(false)
@@ -195,11 +198,14 @@ watch(
                     targetMissingPolicy: current.options.targetMissingPolicy,
                 },
                 tablesPlanned: current.tablesPlanned,
-                results: outcome.paused ? current.results : outcome.results,
+                results: outcome.paused || outcome.cancelled ? current.results : outcome.results,
                 logs: current.logs,
-                jobStatus: outcome.paused ? 'paused' : undefined,
+                jobStatus: outcome.cancelled ? 'cancelled' : outcome.paused ? 'paused' : undefined,
             })
             migrationTasks.completeRun(nextRecord)
+            if (outcome.cancelled) {
+                notifyMigrationOutcome(current.results, false, true)
+            }
         } catch (error) {
             migrationTasks.abortRun()
             const message = error instanceof Error ? error.message : String(error)
@@ -237,7 +243,7 @@ function taskDisplayStatus(record: TableMigrationRunRecord): TableMigrationRunSt
 function taskStatusDotClass(status: TableMigrationRunStatus): string {
     if (status === 'success') return 'migration-task-pill__dot--success'
     if (status === 'partial' || status === 'paused') return 'migration-task-pill__dot--partial'
-    if (status === 'failed') return 'migration-task-pill__dot--failed'
+    if (status === 'failed' || status === 'cancelled') return 'migration-task-pill__dot--failed'
     if (status === 'running') return 'migration-task-pill__dot--running'
     return ''
 }
@@ -294,7 +300,15 @@ function buildRunRecordFromActive(
     })
 }
 
-function notifyMigrationOutcome(results: TableMigrationRunRecord['results'], paused: boolean) {
+function notifyMigrationOutcome(
+    results: TableMigrationRunRecord['results'],
+    paused: boolean,
+    cancelled?: boolean,
+) {
+    if (cancelled) {
+        layout.showWarningToast(t('explorer.tableMigrationWizard.migrationCancelled'))
+        return
+    }
     if (paused) {
         layout.showSuccessToast(t('explorer.tableMigrationWizard.migrationPaused'))
         return
@@ -308,7 +322,16 @@ function notifyMigrationOutcome(results: TableMigrationRunRecord['results'], pau
 }
 
 function canPause(record: TableMigrationRunRecord): boolean {
-    return canPauseMigrationRun(migrationTasks.isRunning, migrationTasks.activeRun?.id, record.id) && !pausing.value
+    return canPauseMigrationRun(migrationTasks.isRunning, migrationTasks.activeRun?.id, record.id) && !pausing.value && !cancelling.value
+}
+
+function canCancel(record: TableMigrationRunRecord): boolean {
+    return canCancelMigrationRun(
+        migrationTasks.isRunning,
+        migrationTasks.activeRun?.id,
+        record.id,
+        record.status,
+    ) && !cancelling.value && !pausing.value
 }
 
 async function pauseTask(record: TableMigrationRunRecord) {
@@ -321,6 +344,32 @@ async function pauseTask(record: TableMigrationRunRecord) {
         layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
     } finally {
         pausing.value = false
+    }
+}
+
+async function cancelTask(record: TableMigrationRunRecord) {
+    if (!canCancel(record)) return
+    cancelling.value = true
+    try {
+        await cancelMigrationJob(record.id)
+        if (record.status === 'paused') {
+            const nextRecord = buildRunRecordFromActive(
+                record,
+                record.id,
+                record.startedAt,
+                new Date().toISOString(),
+                record.results,
+                record.logs,
+                'cancelled',
+            )
+            migrationTasks.completeRun(nextRecord)
+            notifyMigrationOutcome(record.results, false, true)
+        }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        layout.showErrorToast(t('explorer.tableMigrationWizard.errors.runFailed', {detail: message}))
+    } finally {
+        cancelling.value = false
     }
 }
 
@@ -350,10 +399,10 @@ async function resumeTask(record: TableMigrationRunRecord) {
             finishedAt,
             outcome.results,
             migrationTasks.activeRun?.logs ?? record.logs,
-            outcome.paused ? 'paused' : undefined,
+            outcome.cancelled ? 'cancelled' : outcome.paused ? 'paused' : undefined,
         )
         migrationTasks.completeRun(nextRecord)
-        notifyMigrationOutcome(outcome.results, outcome.paused)
+        notifyMigrationOutcome(outcome.results, outcome.paused, outcome.cancelled)
     } catch (error) {
         migrationTasks.abortRun()
         const message = error instanceof Error ? error.message : String(error)
@@ -390,10 +439,10 @@ async function restartFreshTask(record: TableMigrationRunRecord) {
             finishedAt,
             outcome.results,
             migrationTasks.activeRun?.logs ?? [],
-            outcome.paused ? 'paused' : undefined,
+            outcome.cancelled ? 'cancelled' : outcome.paused ? 'paused' : undefined,
         )
         migrationTasks.completeRun(nextRecord)
-        notifyMigrationOutcome(outcome.results, outcome.paused)
+        notifyMigrationOutcome(outcome.results, outcome.paused, outcome.cancelled)
     } catch (error) {
         migrationTasks.abortRun()
         const message = error instanceof Error ? error.message : String(error)
@@ -550,7 +599,7 @@ const checkpointTableColumns = computed<ResizableColumnDef[]>(() => [
         </div>
 
         <div
-            v-if="canPause(selected) || canResume(selected) || canRestartFresh(selected)"
+            v-if="canPause(selected) || canCancel(selected) || canResume(selected) || canRestartFresh(selected)"
             class="migration-actions"
         >
           <div class="migration-actions__primary">
@@ -558,10 +607,20 @@ const checkpointTableColumns = computed<ResizableColumnDef[]>(() => [
                 v-if="canPause(selected)"
                 variant="secondary"
                 size="sm"
-                :disabled="pausing"
+                :disabled="pausing || cancelling"
                 @click="pauseTask(selected)"
             >
               {{ t('explorer.tableMigrationWizard.pauseMigration') }}
+            </DwButton>
+            <DwButton
+                v-if="canCancel(selected)"
+                variant="secondary"
+                size="sm"
+                :disabled="cancelling || pausing"
+                :loading="cancelling"
+                @click="cancelTask(selected)"
+            >
+              {{ t('explorer.tableMigrationWizard.cancelMigration') }}
             </DwButton>
             <DwButton
                 v-if="canResume(selected)"

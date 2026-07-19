@@ -27,6 +27,7 @@ public final class LakehouseSqlSupport {
 
     private static final Pattern LATERAL_VIEW = Pattern.compile("\\bLATERAL\\s+VIEW\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern MATCH_RECOGNIZE = Pattern.compile("\\bMATCH_RECOGNIZE\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern WITH_ORDINALITY = Pattern.compile("\\bWITH\\s+ORDINALITY\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern WINDOW_TVF = Pattern.compile(
             "\\b(TUMBLE|HOP|CUMULATE|SESSION)\\s*\\(",
             Pattern.CASE_INSENSITIVE
@@ -100,6 +101,9 @@ public final class LakehouseSqlSupport {
         if (MATCH_RECOGNIZE.matcher(sql).find()) {
             features.add(LakehouseFeature.MATCH_RECOGNIZE);
         }
+        if (WITH_ORDINALITY.matcher(sql).find()) {
+            features.add(LakehouseFeature.UNNEST_ORDINALITY);
+        }
         if (WINDOW_TVF.matcher(sql).find()) {
             features.add(LakehouseFeature.WINDOW_TVF);
         }
@@ -155,6 +159,12 @@ public final class LakehouseSqlSupport {
                         .trim();
                 applied.add("MATCH_RECOGNIZE");
             }
+        }
+
+        Matcher ordinality = WITH_ORDINALITY.matcher(current);
+        if (ordinality.find()) {
+            current = ordinality.replaceAll(" ").replaceAll("\\s{2,}", " ").trim();
+            applied.add("UNNEST_ORDINALITY");
         }
 
         return new SoftenResult(current, List.copyOf(applied));
@@ -292,6 +302,7 @@ public final class LakehouseSqlSupport {
     public enum LakehouseFeature {
         LATERAL_VIEW("Hive LATERAL VIEW / explode is not supported for automatic lineage yet"),
         MATCH_RECOGNIZE("MATCH_RECOGNIZE pattern matching is not supported for automatic lineage yet"),
+        UNNEST_ORDINALITY("UNNEST … WITH ORDINALITY ordinal column is not supported for automatic lineage yet"),
         WINDOW_TVF("Flink window TVFs (TUMBLE/HOP/CUMULATE/SESSION) are not supported for automatic lineage yet");
 
         private final String message;

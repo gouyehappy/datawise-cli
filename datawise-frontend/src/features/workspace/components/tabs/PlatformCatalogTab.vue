@@ -16,12 +16,14 @@ import {
     platformCatalogRowLabel,
 } from '@/features/platform/services/platform-catalog-mutations.service'
 import {
+    buildDataQualityGateExportFilename,
+    formatDataQualityGateExport,
     listDataQualityReferenceConnections,
     summarizeMultiEnvGate,
 } from '@/features/platform/services/data-quality-multi-env-gate.service'
 import AnalysisCanvasRerunDialog from '@/features/platform/components/AnalysisCanvasRerunDialog.vue'
 import SchemaDriftReportDialog from '@/features/platform/components/SchemaDriftReportDialog.vue'
-import type {SchemaDriftReport} from '@/features/platform/types/platform.types'
+import type {DataQualityGateResult, SchemaDriftReport} from '@/features/platform/types/platform.types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import DataQualitySharedTemplatesDialog from '@/features/platform/components/DataQualitySharedTemplatesDialog.vue'
 import FederatedViewWizardDialog from '@/features/platform/components/FederatedViewWizardDialog.vue'
@@ -56,6 +58,7 @@ const multiEnvOpen = ref(false)
 const multiEnvConnectionId = ref('')
 const multiEnvDatabase = ref('')
 const multiEnvPairByName = ref(true)
+const lastGateResult = ref<DataQualityGateResult | null>(null)
 const canvasRerunId = ref<string | null>(null)
 const driftReportOpen = ref(false)
 const driftReport = ref<SchemaDriftReport | null>(null)
@@ -265,6 +268,7 @@ async function runDataQualityGate() {
         t('platform.dq.gateFailed', {failed: result.failed, total: result.total}),
       )
     }
+    lastGateResult.value = result
     await reload()
   } catch (err) {
     layout.showErrorToast(err instanceof Error ? err.message : String(err))
@@ -334,12 +338,37 @@ async function confirmMultiEnvGate() {
     } else {
       layout.showErrorToast(t('platform.dq.multiEnvFailed', {detail}))
     }
+    lastGateResult.value = result
     await reload()
   } catch (err) {
     layout.showErrorToast(err instanceof Error ? err.message : String(err))
   } finally {
     runningAction.value = false
   }
+}
+
+async function copyLastGateResult() {
+  const result = lastGateResult.value
+  if (!result) return
+  try {
+    await navigator.clipboard.writeText(formatDataQualityGateExport(result))
+    layout.showSuccessToast(t('platform.dq.gateExportCopied'))
+  } catch (err) {
+    layout.showErrorToast(err instanceof Error ? err.message : String(err))
+  }
+}
+
+function downloadLastGateResult() {
+  const result = lastGateResult.value
+  if (!result) return
+  const blob = new Blob([formatDataQualityGateExport(result)], {type: 'application/json'})
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = buildDataQualityGateExportFilename(result)
+  anchor.click()
+  URL.revokeObjectURL(url)
+  layout.showSuccessToast(t('platform.dq.gateExportDownloaded'))
 }
 
 async function executeFederatedView(overrideMaxRows?: number, options?: {nextBatch?: boolean}) {
@@ -488,6 +517,24 @@ function runReleaseAction(action: ReleaseHighlightAction) {
       >
         <DwIcon name="tab-cross-env-compare" size="sm" :stroke-width="1.35"/>
         {{ t('platform.dq.runMultiEnvGate') }}
+      </button>
+      <button
+          v-if="isDataQuality"
+          type="button"
+          :disabled="!lastGateResult"
+          @click="copyLastGateResult"
+      >
+        <DwIcon name="copy" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.dq.copyGateResult') }}
+      </button>
+      <button
+          v-if="isDataQuality"
+          type="button"
+          :disabled="!lastGateResult"
+          @click="downloadLastGateResult"
+      >
+        <DwIcon name="export" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.dq.downloadGateResult') }}
       </button>
       <button
           v-if="isFederatedViews"

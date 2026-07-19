@@ -1,6 +1,8 @@
 import {describe, it} from 'node:test'
 import assert from 'node:assert/strict'
 import {
+    buildDataQualityGateExportFilename,
+    formatDataQualityGateExport,
     listDataQualityReferenceConnections,
     summarizeMultiEnvGate,
 } from '@/features/platform/services/data-quality-multi-env-gate.service'
@@ -56,5 +58,24 @@ describe('data-quality-multi-env-gate.service', () => {
         }, (scope) => scope.connectionId ?? '?')
         assert.equal(summary.unpaired, 1)
         assert.deepEqual(summary.summaryParts, ['a: 0/1', 'b: 1/1'])
+    })
+
+    it('formats gate export JSON', () => {
+        const json = formatDataQualityGateExport({
+            passed: true,
+            total: 1,
+            failed: 0,
+            results: [],
+        })
+        const parsed = JSON.parse(json) as {passed: boolean; exportedAt: string}
+        assert.equal(parsed.passed, true)
+        assert.ok(parsed.exportedAt)
+        assert.match(
+            buildDataQualityGateExportFilename(
+                {passed: true, total: 1, failed: 0, results: []},
+                new Date('2026-07-19T12:00:00.000Z'),
+            ),
+            /^dq-gate-passed-2026-07-19T12-00-00\.json$/,
+        )
     })
 })
