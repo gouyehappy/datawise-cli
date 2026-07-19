@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import {describe, it} from 'node:test'
 import {
     buildExportFileName,
+    GRID_EXPORT_INCOMPLETE_CSV_MARKER,
+    serializeGridData,
     serializeGridToCsv,
     serializeGridToJson,
     serializeGridToSql,
@@ -39,5 +41,16 @@ describe('grid-export.service', () => {
         assert.match(sql, /INSERT INTO cdp_tag/)
         assert.match(sql, /'hello,world'/)
         assert.match(sql, /\(1,/)
+    })
+
+    it('marks incomplete text and json exports', () => {
+        const csv = serializeGridData(columns, rows, 'csv', undefined, {incomplete: true})
+        assert.ok(csv.startsWith(GRID_EXPORT_INCOMPLETE_CSV_MARKER))
+        const json = JSON.parse(serializeGridData(columns, rows, 'json', undefined, {incomplete: true})) as {
+            incomplete: boolean
+            rows: unknown[]
+        }
+        assert.equal(json.incomplete, true)
+        assert.equal(json.rows.length, 2)
     })
 })

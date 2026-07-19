@@ -19,11 +19,13 @@ const props = defineProps<{
     suggestMask?: boolean
     maskExportEnabled?: boolean
     exporting?: boolean
+    /** Result hit a hard row cap (federated JOIN / maxRows) — export is incomplete. */
+    truncatedAtCap?: boolean
 }>()
 
 const emit = defineEmits<{
     'update:open': [value: boolean]
-    export: [payload: { format: GridExportFormat; mask?: GridExportMaskConfig }]
+    export: [payload: { format: GridExportFormat; mask?: GridExportMaskConfig; incomplete?: boolean }]
 }>()
 
 const {t} = useI18n()
@@ -91,7 +93,11 @@ function submit() {
             columns: columnRules.value.map((rule) => ({...rule})),
         }
         : undefined
-    emit('export', {format: format.value, mask})
+    emit('export', {
+        format: format.value,
+        mask,
+        incomplete: props.truncatedAtCap === true,
+    })
     close()
 }
 </script>
@@ -108,6 +114,10 @@ function submit() {
       <span>{{ t('dataGrid.exportDialog.format') }}</span>
       <DwSelect v-model="format" size="sm" :options="formatOptions"/>
     </label>
+
+    <p v-if="truncatedAtCap" class="modal-warn-box" role="status">
+      {{ t('dataGrid.exportDialog.truncatedWarning') }}
+    </p>
 
     <CollapsibleSection
         v-if="showMaskSection"

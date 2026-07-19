@@ -101,6 +101,7 @@ export default {
         title: 'Export results',
         subtitle: 'Choose a format; configure masking below before exporting.',
         format: 'Format',
+        truncatedWarning: 'This result hit a row cap and is incomplete. Text exports will include an INCOMPLETE marker; raise maxRows or tighten filters for a full set.',
         export: 'Export',
         exporting: 'Exporting…',
     },

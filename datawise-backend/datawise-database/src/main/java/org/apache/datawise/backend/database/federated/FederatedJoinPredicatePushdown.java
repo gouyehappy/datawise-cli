@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  * (including single-alias {@code OR} / {@code IS [NOT] NULL} / {@code [NOT] LIKE} /
  * {@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM} /
  * {@code LENGTH}/{@code CHAR_LENGTH}/{@code ABS}/{@code COALESCE}/{@code NULLIF}/
- * {@code CONCAT}/{@code SUBSTR}/{@code ||} /
+ * {@code CONCAT}/{@code SUBSTR}/{@code ||}/{@code CAST} /
  * {@code [NOT] BETWEEN} / {@code IN} forms).
  * Cross-alias (or unqualified) predicates — including OR groups that touch multiple aliases —
  * remain as residual filters for in-memory evaluation.

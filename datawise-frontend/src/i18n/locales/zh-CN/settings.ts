@@ -50,7 +50,10 @@ export default {
         refsHint: '连接密码等字段可写入引用，而不是明文；落盘时不会被二次加密。',
         refEnv: '从进程环境变量读取',
         refFile: '从配置目录下文件读取（相对路径）',
-        refsNote: '完整 Vault / KMS 拉取仍未接入；当前支持 env 与 file 两档引用。',
+        refJsonFile: '从配置目录下 JSON 对象文件读取字段',
+        refProperties: '从配置目录下 Java .properties 文件读取键',
+        refVault: '从 HashiCorp Vault KV 读取字段（VAULT_ADDR / VAULT_TOKEN）',
+        refsNote: 'AWS KMS / Azure Key Vault 仍缺；env、file、json-file、properties、Vault 引用已可用。',
     },
     tenants: {
         title: '租户管理',

@@ -39,7 +39,7 @@
 | G2 | 企业 IdP / 组织同步 | partial | OIDC 组 claim → 租户角色同步 + 缺组时停用 membership / 吊销会话（Settings → Integrations）。缺完整 SCIM / 组织树 / LDAP | 账号生命周期不可运营 |
 | G3 | 外发通知通道 | done（Webhook+飞书/钉钉/邮件） | 通用 Webhook + HMAC；飞书/钉钉机器人；**邮件** `channel=email`（HTTP 邮件网关 / `mailto:` + `DATAWISE_MAIL_WEBHOOK_URL`）。原生 SMTP 客户端仍缺 | 审批、漂移、定时失败可外发闭环 |
 | G4 | 合规审计导出 | done（导出+Webhook） | 服务端 CSV/JSON 导出 + `audit.appended`；完整 SIEM/哈希链仍缺 | 「可证明合规」不足 |
-| G5 | 集中密钥（Vault / KMS） | partial | 主密钥可来自 `DATAWISE_MASTER_KEY`；连接字段支持 `dwsecret:env:` / `dwsecret:file:` / **`dwsecret:json-file:path#field`** / **`dwsecret:vault:path#field`**；Settings 密钥中心。缺 AWS/Azure KMS | 多机 / 集中部署故事弱 |
+| G5 | 集中密钥（Vault / KMS） | partial | 主密钥可来自 DATAWISE_MASTER_KEY；连接字段支持 dwsecret:env: / dwsecret:file: / **dwsecret:json-file:path#field** / **dwsecret:properties:path#key** / **dwsecret:vault:path#field**；Settings 密钥中心。缺 AWS/Azure KMS | 多机 / 集中部署故事弱 |
 | G6 | Mac / Linux 正式桌面包 | partial | Windows NSIS/便携已稳；macOS Apple Silicon：`dist:desktop:mac` + electron-builder DMG/zip + [DESKTOP_MAC.md](./DESKTOP_MAC.md)；缺签名/公证与 CI 产物；Linux AppImage 脚手架 | 研发侧 macOS 用户门槛高 |
 
 ### 3.2 价值外溢与运营
@@ -70,7 +70,7 @@
 | # | 能力 | 状态 | 现状 | 补强目标 |
 |---|------|------|------|----------|
 | S1 | 按主键 / 唯一键的**数据增量同步** | partial | 结构同步已闭环；数据迁移 PK_UPSERT + 冲突策略（MySQL/PG）+ 生产目标审批门控；**行级 Diff 预览**；向导预检 **源行数估算 + 全表扫描/无主键警告**；进度卡 **暂停/取消**（取消不可续传）+ 断点续传。缺更细批次内中断 | Compare → 勾选 → 冲突策略 → 进度可中断 → 可走审批 |
-| S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限 + hasMore；Grace hash 落盘；残差谓词/函数目录已闭环；**控制台/网格限流提示** + **提高 maxRows 重跑**（1k→5k→10k）；**源窗口分批**（`offset` + 平台「下一批」）。见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 限流 / 溢出策略 / 文档化边界；可选下推 |
+| S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限 + hasMore；Grace hash 落盘；残差谓词/函数目录已闭环（含 **CAST**）；**控制台/网格限流提示** + **提高 maxRows 重跑**；**源窗口分批**；**截断导出 INCOMPLETE 标记**。见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 限流 / 溢出策略 / 文档化边界；可选下推 |
 | S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：LakehouseLineageParser 规范化 + 硬特性软剥离/表级回退；Trino/Presto SELECT 仍 COMPLETE，**UNNEST … WITH ORDINALITY** 软剥离为 PARTIAL；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite / sidecar 仍缺 | 关键方言到可用 complete/partial，失败诚实降级 |
 | S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL + **复制 SQL / 用 AI 精炼 / 在控制台运行**；画布上字段自由布局仍浅 | 画布级字段自由布局 / 更强与 AI 联动 |
 | S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列 + **批量 DROP / ADD / MODIFY 列 DDL**（多选/行解析预览/复制/控制台）；列级仍非画布内联编辑 | 图上内联改列 / 更完整批量 DDL 编排 |
@@ -150,6 +150,9 @@
 | 2026-07-19、G11 重装升级 | 连接器市场已装插件可从 downloadUrl 重装/升级 |
 | 2026-07-19、G9 配额外发 | AI 配额 near_limit / exhausted 出站事件（Integrations 可订阅） |
 | 2026-07-19、G5 json-file | dwsecret:json-file:path#field 读取 JSON 密钥包字段 |
+| 2026-07-19、S2 CAST | 联邦残差 WHERE 支持 CAST(expr AS type) |
+| 2026-07-19、S2 截断导出 | 网格导出截断警告 + CSV/JSON INCOMPLETE 标记 |
+| 2026-07-19、G5 properties | dwsecret:properties:path#key 读取 .properties 密钥包 |
 | 2026-07-19、G12 AI 用量导出 | Settings 租户卡 Copy JSON / Download CSV |
 | 2026-07-19、S5 批量 MODIFY | ER 图批量修改列 DDL（同行解析 name TYPE） |
 | 2026-07-19、S4 控制台运行 | VQB 一键 Apply + Execute |

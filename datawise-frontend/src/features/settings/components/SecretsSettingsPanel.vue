@@ -70,6 +70,9 @@ onMounted(() => {
       <ul class="settings-secrets__list">
         <li><code>dwsecret:env:DB_PASSWORD</code> — {{ t('settings.secrets.refEnv') }}</li>
         <li><code>dwsecret:file:secrets/db-password.txt</code> — {{ t('settings.secrets.refFile') }}</li>
+        <li><code>dwsecret:json-file:secrets/bundle.json#dbPassword</code> — {{ t('settings.secrets.refJsonFile') }}</li>
+        <li><code>dwsecret:properties:secrets/bundle.properties#db.password</code> — {{ t('settings.secrets.refProperties') }}</li>
+        <li><code>dwsecret:vault:secret/data/myapp/db#password</code> — {{ t('settings.secrets.refVault') }}</li>
       </ul>
       <p class="settings-secrets__muted">{{ t('settings.secrets.refsNote') }}</p>
       <p v-if="status?.secretRefHint" class="settings-secrets__muted">{{ status.secretRefHint }}</p>

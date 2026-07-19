@@ -39,9 +39,12 @@ public class SecretsController {
                 List.of(
                         SecretReferenceResolver.SCHEME_ENV,
                         SecretReferenceResolver.SCHEME_FILE,
+                        SecretReferenceResolver.SCHEME_JSON_FILE,
+                        SecretReferenceResolver.SCHEME_PROPERTIES,
                         SecretReferenceResolver.SCHEME_VAULT
                 ),
-                "Store dwsecret:env:NAME, dwsecret:file:relative-path, or dwsecret:vault:path#field "
+                "Store dwsecret:env:NAME, dwsecret:file:path, dwsecret:json-file:path#field, "
+                        + "dwsecret:properties:path#key, or dwsecret:vault:path#field "
                         + "(Vault KV via VAULT_ADDR/VAULT_TOKEN) instead of plaintext in connections.xml"
         ));
     }

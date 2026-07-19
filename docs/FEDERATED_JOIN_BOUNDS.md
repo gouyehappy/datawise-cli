@@ -33,10 +33,11 @@ When the federated SQL has an outer `WHERE`:
 | `NULLIF(a, b)` | Null when equal |
 | `CONCAT(a, …)` / `\|\|` | Null args treated as empty string |
 | `SUBSTR` / `SUBSTRING(expr, start[, length])` | 1-based start; `start < 1` clamps to 1 |
+| `CAST(expr AS type)` | Residual only types: `VARCHAR`/`CHAR`/`TEXT`, `INT`/`BIGINT`, `DOUBLE`/`DECIMAL`/`NUMERIC`, `BOOLEAN` (optional length `VARCHAR(64)` ignored) |
 
-Nesting is supported (`LENGTH(TRIM(COALESCE(o.name, '')))`). Unknown function names fail with a clear error.
+Nesting is supported (`LENGTH(TRIM(COALESCE(o.name, '')))`, `CAST(LENGTH(o.name) AS VARCHAR)`). Unknown function names fail with a clear error.
 
-4. Unsupported residual forms (`TRIM(BOTH FROM …)`, `SUBSTRING … FROM … FOR …`, column refs inside `IN` lists, nested boolean beyond AND of OR-groups / NOT) fail with a clear error — push those filters into the source subqueries instead.
+4. Unsupported residual forms (`TRIM(BOTH FROM …)`, `SUBSTRING … FROM … FOR …`, column refs inside `IN` lists, nested boolean beyond AND of OR-groups / NOT, `CASE`) fail with a clear error — push those filters into the source subqueries instead.
 
 Parser also peels trailing `WHERE` / `GROUP BY` / `ORDER BY` / `HAVING` / `LIMIT` off the JOIN chain so `ON` is not polluted by outer clauses.
 
@@ -53,6 +54,8 @@ Probe rows stay in memory (already capped by `maxRows` / hard cap). Spill reduce
 ## Truncation signal
 
 The SQL console result grid shows a **truncation hint** when `hasMore` is true but there is **no** `cursorId` (federated JOIN cannot page the join output like a cursor). Prefer tighter `WHERE` / source filters, **raise request `maxRows`** up to the hard cap, or **batch over source windows** with `offset`.
+
+**Export:** when truncated, the export dialog warns that the download is incomplete; CSV/TSV/SQL get an `INCOMPLETE` marker line, and JSON wraps `{ incomplete: true, rows: […] }`.
 
 When truncated below the hard cap, the grid shows **Raise limit and re-run** (SQL console re-executes the active statement with the next step: 1 000 → 5 000 → 10 000). Platform catalog → Federated Views → Execute uses the same steps and offers **Retry at {limit}** after a truncated run.
 

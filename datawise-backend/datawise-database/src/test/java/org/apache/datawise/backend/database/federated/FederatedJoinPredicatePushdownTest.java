@@ -504,6 +504,45 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsCast() {
+        Map<String, Object> row1 = new java.util.HashMap<>();
+        row1.put("o.id", 1);
+        row1.put("o.code", "42");
+        row1.put("o.flag", "true");
+        Map<String, Object> row2 = new java.util.HashMap<>();
+        row2.put("o.id", 2);
+        row2.put("o.code", "7");
+        row2.put("o.flag", "0");
+        List<Map<String, Object>> rows = List.of(row1, row2);
+
+        List<Map<String, Object>> byInt = FederatedJoinResidualFilter.apply(
+                rows,
+                "CAST(o.code AS INTEGER) = 42"
+        );
+        assertEquals(1, byInt.size());
+        assertEquals(1, byInt.get(0).get("o.id"));
+
+        List<Map<String, Object>> byVarchar = FederatedJoinResidualFilter.apply(
+                rows,
+                "CAST(o.id AS VARCHAR) = '2'"
+        );
+        assertEquals(1, byVarchar.size());
+        assertEquals(2, byVarchar.get(0).get("o.id"));
+
+        List<Map<String, Object>> byBool = FederatedJoinResidualFilter.apply(
+                rows,
+                "CAST(o.flag AS BOOLEAN) = true"
+        );
+        assertEquals(1, byBool.size());
+        assertEquals(1, byBool.get(0).get("o.id"));
+
+        assertEquals("hello", FederatedJoinResidualFilter.applyCast("hello", "varchar"));
+        assertEquals(42L, FederatedJoinResidualFilter.applyCast("42", "int"));
+        assertThrows(IllegalArgumentException.class, () ->
+                FederatedJoinResidualFilter.applyCast("x", "uuid"));
+    }
+
+    @Test
     void singleAliasLengthIsPushedIntoSourceSubquery() {
         FederatedJoinPlan plan = new FederatedJoinPlan(
                 List.of("o.id", "u.name"),

@@ -560,7 +560,11 @@ function openExportDialog() {
   exportDialogOpen.value = true
 }
 
-async function onExportConfirm(payload: { format: GridExportFormat; mask?: GridExportOptions['mask'] }) {
+async function onExportConfirm(payload: {
+  format: GridExportFormat
+  mask?: GridExportOptions['mask']
+  incomplete?: boolean
+}) {
   exportSubmitting.value = true
   try {
     const resolved = await downloadGridExport(
@@ -569,7 +573,7 @@ async function onExportConfirm(payload: { format: GridExportFormat; mask?: GridE
         payload.format,
         props.exportBaseName,
         props.exportTableName,
-        {mask: payload.mask},
+        {mask: payload.mask, incomplete: payload.incomplete === true || props.truncatedAtCap === true},
     )
     emit('exported', resolved)
   } finally {
@@ -1562,6 +1566,7 @@ function dismissColumnStats() {
         :suggest-mask="suggestExportMask"
         :mask-export-enabled="maskExportEnabled"
         :exporting="exportSubmitting"
+        :truncated-at-cap="truncatedAtCap"
         @export="onExportConfirm"
     />
   </div>

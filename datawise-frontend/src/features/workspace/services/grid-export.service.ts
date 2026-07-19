@@ -11,7 +11,15 @@ export type GridExportFormat = 'csv' | 'json' | 'tsv' | 'sql' | 'xlsx'
 
 export interface GridExportOptions {
     mask?: GridExportMaskConfig
+    /** When true, text exports include an incomplete-result marker (federated / row-cap truncation). */
+    incomplete?: boolean
 }
+
+/** Leading marker for incomplete CSV/TSV exports. */
+export const GRID_EXPORT_INCOMPLETE_CSV_MARKER = '# INCOMPLETE: result truncated at row cap'
+
+/** Leading marker for incomplete SQL exports. */
+export const GRID_EXPORT_INCOMPLETE_SQL_MARKER = '-- INCOMPLETE: result truncated at row cap'
 
 const FORMAT_EXT: Record<GridExportFormat, string> = {
     csv: 'csv',
@@ -114,19 +122,36 @@ export function serializeGridData(
     rows: TableRow[],
     format: GridExportFormat,
     tableName?: string,
+    options?: Pick<GridExportOptions, 'incomplete'>,
 ): string {
+    let content: string
     switch (format) {
         case 'csv':
-            return serializeGridToCsv(columns, rows)
+            content = serializeGridToCsv(columns, rows)
+            break
         case 'tsv':
-            return serializeGridToTsv(columns, rows)
+            content = serializeGridToTsv(columns, rows)
+            break
         case 'json':
-            return serializeGridToJson(columns, rows)
+            content = serializeGridToJson(columns, rows)
+            break
         case 'sql':
-            return serializeGridToSql(columns, rows, tableName)
+            content = serializeGridToSql(columns, rows, tableName)
+            break
         default:
-            return serializeGridToCsv(columns, rows)
+            content = serializeGridToCsv(columns, rows)
     }
+    if (!options?.incomplete) {
+        return content
+    }
+    if (format === 'json') {
+        const parsed = JSON.parse(content) as unknown
+        return JSON.stringify({incomplete: true, rows: parsed}, null, 2)
+    }
+    if (format === 'sql') {
+        return `${GRID_EXPORT_INCOMPLETE_SQL_MARKER}\n${content}`
+    }
+    return `${GRID_EXPORT_INCOMPLETE_CSV_MARKER}\n${content}`
 }
 
 export async function createGridExportBlob(
@@ -144,7 +169,9 @@ export async function createGridExportBlob(
         })
         return new Blob([buffer], {type: FORMAT_MIME.xlsx})
     }
-    const content = serializeGridData(columns, exportRows, format, tableName)
+    const content = serializeGridData(columns, exportRows, format, tableName, {
+        incomplete: options?.incomplete,
+    })
     const body = format === 'csv' ? `\uFEFF${content}` : content
     return new Blob([body], {type: FORMAT_MIME[format]})
 }

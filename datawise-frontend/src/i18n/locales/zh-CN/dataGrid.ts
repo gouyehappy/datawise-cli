@@ -101,6 +101,7 @@ export default {
         title: '导出结果',
         subtitle: '选择格式；可在下方配置脱敏规则后再导出。',
         format: '导出格式',
+        truncatedWarning: '当前结果已触及行上限，不完整。文本导出会带上 INCOMPLETE 标记；请提高 maxRows 或收紧过滤条件以获取全量。',
         export: '导出',
         exporting: '导出中…',
     },

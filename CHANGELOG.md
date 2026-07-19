@@ -24,6 +24,8 @@ All notable product-level changes for DataWise are documented in this file.
 - JDBC team / connection / OIDC / webhook / AI usage / SQL history snapshots when `storage.backend=jdbc`.
 - Settings → Tenants panel for platform admins in multi mode; member invite/role UI; custom tenant roles.
 - Team APIs reject cross-tenant IDs (IDOR guard).
+- Wave B S2 deepen: federated residual **`CAST(expr AS type)`** (VARCHAR/INT/DOUBLE/BOOLEAN) + truncated grid export **INCOMPLETE** marker / dialog warning.
+- Wave D G5 deepen: secret reference **`dwsecret:properties:path#key`** for Java `.properties` bundles; Secrets settings lists json-file / properties / vault.
 - Wave D G12 deepen: Settings → Tenants **AI usage Copy JSON / Download CSV** for the current day’s quota snapshot.
 - Wave D S5 deepen: ER diagram **batch MODIFY column DDL** — same `name TYPE [NOT NULL]` lines as batch ADD, preview concatenated ALTER, copy or open in console.
 - Wave D S4 deepen: Visual Query Builder **Run in console** — replace editor SQL and execute in one step.

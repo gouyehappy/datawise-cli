@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   <li>{@code dwsecret:env:VAR_NAME} — process environment variable</li>
  *   <li>{@code dwsecret:file:path} — file contents (relative paths resolve under config dir)</li>
  *   <li>{@code dwsecret:json-file:path#field} — JSON object file field (relative under config dir)</li>
+ *   <li>{@code dwsecret:properties:path#key} — Java {@code .properties} file key (relative under config dir)</li>
  *   <li>{@code dwsecret:vault:mount/data/path#field} — HashiCorp Vault KV v2
  *       ({@code VAULT_ADDR} / {@code VAULT_TOKEN}, or {@code DATAWISE_VAULT_ADDR} / {@code DATAWISE_VAULT_TOKEN})</li>
  * </ul>
@@ -38,6 +39,7 @@ public class SecretReferenceResolver {
     public static final String SCHEME_ENV = "env";
     public static final String SCHEME_FILE = "file";
     public static final String SCHEME_JSON_FILE = "json-file";
+    public static final String SCHEME_PROPERTIES = "properties";
     public static final String SCHEME_VAULT = "vault";
 
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -84,6 +86,7 @@ public class SecretReferenceResolver {
             case SCHEME_ENV -> resolveEnv(name, stored);
             case SCHEME_FILE -> resolveFile(name, stored);
             case SCHEME_JSON_FILE -> resolveJsonFile(name, stored);
+            case SCHEME_PROPERTIES -> resolveProperties(name, stored);
             case SCHEME_VAULT -> resolveVault(name, stored);
             default -> throw new IllegalArgumentException("Unsupported secret reference scheme: " + scheme);
         };
@@ -159,6 +162,47 @@ public class SecretReferenceResolver {
             throw new IllegalStateException("Failed to read secret JSON file: " + path, ex);
         } catch (Exception ex) {
             throw new IllegalStateException("Invalid secret JSON file (from " + stored + ")", ex);
+        }
+    }
+
+    /**
+     * {@code path#key} → load Java properties file and return property value.
+     */
+    private String resolveProperties(String pathAndKey, String stored) {
+        int hash = pathAndKey.lastIndexOf('#');
+        if (hash <= 0 || hash >= pathAndKey.length() - 1) {
+            throw new IllegalArgumentException(
+                    "Properties secret reference must be dwsecret:properties:<path>#<key> (from " + stored + ")"
+            );
+        }
+        String pathName = pathAndKey.substring(0, hash).trim();
+        String key = pathAndKey.substring(hash + 1).trim();
+        if (pathName.isEmpty() || key.isEmpty()) {
+            throw new IllegalArgumentException("Properties path/key is empty: " + stored);
+        }
+        Path path = Path.of(pathName);
+        if (!path.isAbsolute()) {
+            path = configDirectory.resolve(pathName).normalize();
+        }
+        if (!Files.isRegularFile(path)) {
+            throw new IllegalStateException("Secret properties file not found: " + path + " (from " + stored + ")");
+        }
+        try (var reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            java.util.Properties props = new java.util.Properties();
+            props.load(reader);
+            String value = props.getProperty(key);
+            if (value == null) {
+                throw new IllegalStateException("Secret properties key not found: " + key + " (from " + stored + ")");
+            }
+            String text = value.trim();
+            if (text.isEmpty()) {
+                throw new IllegalStateException("Secret properties key is empty: " + key);
+            }
+            return text;
+        } catch (IllegalStateException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read secret properties file: " + path, ex);
         }
     }
 

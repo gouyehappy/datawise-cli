@@ -54,6 +54,24 @@ class SecretReferenceResolverTest {
     }
 
     @Test
+    void resolvesPropertiesFileKey() throws Exception {
+        Path secrets = temp.resolve("secrets");
+        Files.createDirectories(secrets);
+        Files.writeString(
+                secrets.resolve("bundle.properties"),
+                "db.password=p@ss\napi.key=k\n",
+                StandardCharsets.UTF_8
+        );
+        ConfigDirectoryService configDirectory = new ConfigDirectoryService(temp);
+        SecretReferenceResolver resolver = new SecretReferenceResolver(configDirectory);
+
+        assertEquals("p@ss", resolver.resolve("dwsecret:properties:secrets/bundle.properties#db.password"));
+        assertEquals("k", resolver.resolve("dwsecret:properties:secrets/bundle.properties#api.key"));
+        assertThrows(IllegalStateException.class, () ->
+                resolver.resolve("dwsecret:properties:secrets/bundle.properties#missing"));
+    }
+
+    @Test
     void rejectsMissingEnv() {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(temp);
         SecretReferenceResolver resolver = new SecretReferenceResolver(configDirectory);
