@@ -48,8 +48,8 @@
 |---|------|------|------|------------------|
 | G7 | 洞察 / Dashboard 订阅外发 | partial | 定时 SQL/画布任务可选 `digest` → `insight.digest` Webhook（截断行/画布摘要）；非全量 BI 订阅中心 | AI 画布价值留在桌面内 |
 | G8 | 只读分享看板 / 嵌入链接 | partial | Dashboard 图表冻结快照分享 + 设置菜单管理/撤销；公开页 `/share/{token}`；非实时嵌入 | 分析师路径断在工作台 |
-| G9 | AI 成本与配额治理 | partial | 租户日调用硬顶 + Settings 用量卡；未做人/团队账单 | 开 AI 后运维会怕滥用 |
-| G10 | Insight → 工单 / PR / Runbook | partial | 出站通道 `github_issue` / `gitlab_issue` + 手动 `POST /api/platform/insight-actions`（`insight.action`）；见 [INSIGHT_ACTIONS.md](./INSIGHT_ACTIONS.md)。缺自动开 PR / 状态回写 / Jira 原生 | 洞察难变成组织动作 |
+| G9 | AI 成本与配额治理 | partial | 租户日调用硬顶 + Settings 用量卡 + **AI 工作台** near-limit / exhausted 提示（禁用发送）；未做人/团队账单 | 开 AI 后运维会怕滥用 |
+| G10 | Insight → 工单 / PR / Runbook | partial | 出站通道 `github_issue` / `gitlab_issue` / `jira_issue` + 手动 `POST /api/platform/insight-actions`（`insight.action`）；见 [INSIGHT_ACTIONS.md](./INSIGHT_ACTIONS.md)。缺自动开 PR / 状态回写 | 洞察难变成组织动作 |
 
 ### 3.3 平台与生态规模化
 
@@ -70,7 +70,7 @@
 | # | 能力 | 状态 | 现状 | 补强目标 |
 |---|------|------|------|----------|
 | S1 | 按主键 / 唯一键的**数据增量同步** | partial | 结构同步已闭环；数据迁移 `PK_UPSERT` + 冲突策略（MySQL/PG）+ 生产目标审批门控；**行级 Diff 预览**；向导预检 **源行数估算 + 全表扫描/无主键警告**；进度卡 **暂停 + 暂停中反馈** + 断点续传。缺更细可中断粒度 | Compare → 勾选 → 冲突策略 → 进度可中断 → 可走审批 |
-| S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限 + hasMore；Grace hash 落盘；残差谓词/函数目录已闭环；**控制台/网格限流提示**（无游标 hasMore → 截断横幅）+ **提高 maxRows 重跑**（网格 Raise limit / 平台 Retry at limit，1k→5k→10k）。见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md)。仍缺分批执行 | 限流 / 溢出策略 / 文档化边界；可选下推或分批 |
+| S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限 + hasMore；Grace hash 落盘；残差谓词/函数目录已闭环；**控制台/网格限流提示** + **提高 maxRows 重跑**（1k→5k→10k）；**源窗口分批**（`offset` + 平台「下一批」）。见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 限流 / 溢出策略 / 文档化边界；可选下推 |
 | S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：`LakehouseLineageParser` 规范化 + 硬特性软剥离/表级回退（`_table_deps`）；Trino/Presto 仍 COMPLETE；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite 语义分析 / sidecar 仍缺 | 关键方言到可用 `complete/partial`，失败诚实降级 |
 | S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL 并排；画布上字段自由布局仍浅 | 画布级字段自由布局 / 更强与 AI 联动 |
 | S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列（AlterColumn DDL 预览/执行/控制台审批）；列级仍非画布内联编辑 | 图上内联改列 / 批量 DDL 编排 |
@@ -144,6 +144,7 @@
 
 | 2026-07-18、S2 残差 IN | 联邦 JOIN 残差 WHERE 支持 IN / NOT IN 字面量列表 |
 | 2026-07-18、S2 残差 OR | 联邦 JOIN 残差 WHERE 支持跨别名 OR |
+| 2026-07-19、S2 源窗口分批 | 联邦 JOIN `offset` 源窗口 LIMIT/OFFSET + 平台「下一批」；见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) |
 | 2026-07-19、Wave B UX | S1 迁移预检源行数 + 全表扫描/无主键警告横幅 |
 | 2026-07-19、Wave B UX | S1 迁移进度卡暂停反馈 + S2 联邦截断限流提示 |
 | 2026-07-19、S2 残差函数目录 | LENGTH/ABS/COALESCE/NULLIF/CONCAT/\|\|/SUBSTR 一次收口 |

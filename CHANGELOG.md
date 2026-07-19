@@ -24,7 +24,7 @@ All notable product-level changes for DataWise are documented in this file.
 - JDBC team / connection / OIDC / webhook / AI usage / SQL history snapshots when `storage.backend=jdbc`.
 - Settings → Tenants panel for platform admins in multi mode; member invite/role UI; custom tenant roles.
 - Team APIs reject cross-tenant IDs (IDOR guard).
-- Wave C spillover MVP: tenant AI usage card (`GET /api/tenants/mine/ai-usage`); scheduled SQL/canvas `digest` → `insight.digest` webhook; Dashboard chart read-only share links (`/share/{token}`).
+- Wave C G9 deepen: AI workbench tenant quota UX — near-limit warning + exhausted banner (disables send) from `GET /api/tenants/mine/ai-usage`; Settings → Tenants card unchanged.
 - Wave B S1 slice: table migration mode `PK_UPSERT` with conflict strategies OVERWRITE / SKIP / FAIL (MySQL `ON DUPLICATE KEY` / PostgreSQL `ON CONFLICT`); production-target migration plans go through team approval (approve records consent; managers run the wizard).
 - Wave B S2 slice: federated JOIN hard caps (`FederatedJoinLimits`), hash join for equality ON, cross-product rejection, `hasMore` truncation; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 UX: raise `maxRows` when federated results truncate — result grid **Raise limit and re-run** (console) and platform federated **Retry at {limit}** (1k → 5k → 10k hard cap); see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
@@ -40,6 +40,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G14 slice: orchestration bridge — scheduled task type `http_trigger` (outbound HTTP to Airflow/dbt/Flink) + `POST /api/platform/orchestration/trigger` inbound run + `orchestration.triggered|failed` webhooks; see [docs/ORCHESTRATION.md](./docs/ORCHESTRATION.md).
 - Wave A G3 deepen: Feishu / DingTalk bot channels on outbound webhooks (`channel=feishu|dingtalk` with platform signing); generic JSON+HMAC remains default.
 - Wave C G10 slice: Insight → ticket export — outbound `github_issue` / `gitlab_issue` channels + `POST /api/platform/insight-actions` (`insight.action`); see [docs/INSIGHT_ACTIONS.md](./docs/INSIGHT_ACTIONS.md).
+- Wave C G10 deepen: Jira Cloud outbound channel `jira_issue` (REST v3 create issue, ADF description, Basic/Bearer auth); see [docs/INSIGHT_ACTIONS.md](./docs/INSIGHT_ACTIONS.md).
 - Wave B S1 deepen: PK row-diff preview — `POST /api/migration/row-diff` samples source rows and classifies insert/update/unchanged for `PK_UPSERT` (wizard preflight panel).
 - Wave B S2 deepen: federated equality JOIN Grace hash spill — build side above 512 rows partitions to temp files; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated outer WHERE predicate pushdown — single-alias conjuncts into source SQL; cross-alias residuals filtered in memory; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
@@ -66,6 +67,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G15 deepen: multi-env gate **pair rules by name** (`pairByName`, default on) with unpaired failures + `pairs[]` in the response. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G15 deepen: **tenant-shared data-quality rule templates** (`GET/PUT/DELETE /api/platform/data-quality/templates`, file `tenants/{id}/data-quality-templates.json`) alongside local templates in the Add form. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G15 deepen: **shared template management UI** — Data quality catalog → Manage shared templates (list, assertion summary, delete). See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
+- Wave B S2 deepen: federated **source-window batching** — `ExecuteFederatedViewRequest.offset` applies `LIMIT maxRows OFFSET offset` per source (dialect-aware); platform catalog **Next batch**; `pageOffset` on truncated results. Not join-output cursor pagination. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated WHERE **single-alias OR** pushdown (documented + tested) and residual **`IS [NOT] NULL`**. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual / pushdown **`[NOT] LIKE`** with literal `%` / `_` patterns. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual / pushdown unary **`UPPER` / `LOWER`** on comparisons and LIKE. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).

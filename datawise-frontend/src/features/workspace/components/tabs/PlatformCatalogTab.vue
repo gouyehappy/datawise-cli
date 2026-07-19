@@ -60,6 +60,7 @@ const canvasRerunId = ref<string | null>(null)
 const driftReportOpen = ref(false)
 const driftReport = ref<SchemaDriftReport | null>(null)
 const federatedMaxRows = ref(FEDERATED_DEFAULT_MAX_ROWS)
+const federatedSourceOffset = ref(0)
 const federatedTruncated = ref(false)
 const dqSharedTemplatesOpen = ref(false)
 
@@ -341,15 +342,21 @@ async function confirmMultiEnvGate() {
   }
 }
 
-async function executeFederatedView(overrideMaxRows?: number) {
+async function executeFederatedView(overrideMaxRows?: number, options?: {nextBatch?: boolean}) {
   const id = singleSelectedId.value
   if (!id || runningAction.value) return
   runningAction.value = true
   const maxRows = resolveFederatedMaxRows(overrideMaxRows ?? federatedMaxRows.value)
   federatedMaxRows.value = maxRows
-  federatedTruncated.value = false
+  const nextBatch = options?.nextBatch === true
+  if (!nextBatch) {
+    federatedSourceOffset.value = 0
+    federatedTruncated.value = false
+  }
+  const offset = nextBatch ? federatedSourceOffset.value + maxRows : 0
   try {
-    const result = await platformApi.executeFederatedView({viewId: id, maxRows})
+    const result = await platformApi.executeFederatedView({viewId: id, maxRows, offset})
+    federatedSourceOffset.value = result.pageOffset ?? offset
     const rows = result.rowCount ?? 0
     if (result.hasMore) {
       federatedTruncated.value = true
@@ -360,6 +367,7 @@ async function executeFederatedView(overrideMaxRows?: number) {
         layout.showWarningToast(t('platform.federated.executeTruncated', {rows, limit: maxRows}))
       }
     } else {
+      federatedTruncated.value = false
       layout.showSuccessToast(t('platform.federated.executeDone', {rows}))
     }
   } catch (err) {
@@ -372,6 +380,11 @@ async function executeFederatedView(overrideMaxRows?: number) {
 function retryFederatedAtNextLimit() {
   const next = federatedRetryMaxRows.value
   if (next != null) void executeFederatedView(next)
+}
+
+function executeFederatedNextBatch() {
+  if (!federatedTruncated.value) return
+  void executeFederatedView(undefined, {nextBatch: true})
 }
 
 function runReleaseAction(action: ReleaseHighlightAction) {
@@ -493,6 +506,15 @@ function runReleaseAction(action: ReleaseHighlightAction) {
       >
         <DwIcon name="run" size="sm" :stroke-width="1.35"/>
         {{ t('platform.federated.retryAtLimit', {limit: federatedRetryMaxRows}) }}
+      </button>
+      <button
+          v-if="isFederatedViews && federatedTruncated"
+          type="button"
+          :disabled="loading || runningAction"
+          @click="executeFederatedNextBatch"
+      >
+        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.federated.nextBatch', {offset: federatedSourceOffset + federatedMaxRows}) }}
       </button>
       <button
           v-if="isSemanticMetrics"

@@ -10,6 +10,7 @@ import ResizeHandle from '@/core/components/ResizeHandle.vue'
 import {useAiChatScroll} from '@/features/ai/chat/composables/useAiChatScroll'
 import {useAiChatSend} from '@/features/ai/chat/composables/useAiChatSend'
 import {useAiConsoleBridge} from '@/features/ai/shared/composables/useAiConsoleBridge'
+import {useTenantAiQuota} from '@/features/ai/shared/composables/useTenantAiQuota'
 import {useAiDatabaseScope} from '@/features/ai/datasource/composables/useAiDatabaseScope'
 import {provideAiTaggedScope} from '@/features/ai/datasource/composables/ai-tagged-scope.context'
 import {extractSqlFromContent} from '@/features/ai/chat/services/ai-chat.service'
@@ -58,6 +59,13 @@ const {scrollToBottom} = useAiChatScroll(
     activeSessionId,
 )
 const {openInConsole} = useAiConsoleBridge(selectedTargets)
+const {
+  usage: tenantAiUsage,
+  nearLimit: tenantAiNearLimit,
+  exhausted: tenantAiExhausted,
+  refresh: refreshTenantAiUsage,
+  refreshIfLimited: refreshTenantAiUsageIfLimited,
+} = useTenantAiQuota()
 
 const {
   send,
@@ -101,6 +109,7 @@ function resolveInitialTargetIds() {
 
 onMounted(() => {
   aiChat.ensureInitialized(resolveInitialTargetIds())
+  void refreshTenantAiUsage()
 })
 
 watch(activeSessionId, () => {
@@ -115,20 +124,28 @@ function createChat() {
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
+    if (tenantAiExhausted.value) return
     void chatMainRef.value?.buildSendPayload(input.value.trim()).then((prompt) => {
       if (!prompt) return
-      void send(prompt)
+      void onSend(prompt)
     })
   }
 }
 
 function onQuickPrompt(prompt: string) {
   input.value = prompt
-  void send(prompt)
+  void onSend(prompt)
 }
 
-function onSend(prompt: string) {
-  void send(prompt)
+async function onSend(prompt: string) {
+  if (tenantAiExhausted.value) return
+  await refreshTenantAiUsageIfLimited()
+  if (tenantAiExhausted.value) return
+  try {
+    await send(prompt)
+  } finally {
+    await refreshTenantAiUsageIfLimited()
+  }
 }
 
 const analysisMode = computed(() => appConfig.aiPreferences.analysisMode ?? 'smart')
@@ -207,6 +224,9 @@ async function shareSessionToTeam(sessionId: string) {
           :badge="demoBadge"
           :selected-target-ids="selectedTargetIds"
           :analysis-mode="analysisMode as AiAnalysisMode"
+          :tenant-ai-usage="tenantAiUsage"
+          :tenant-ai-near-limit="tenantAiNearLimit"
+          :tenant-ai-exhausted="tenantAiExhausted"
           @send="onSend"
           @remove-target="removeTarget"
           @open-in-console="openInConsole"

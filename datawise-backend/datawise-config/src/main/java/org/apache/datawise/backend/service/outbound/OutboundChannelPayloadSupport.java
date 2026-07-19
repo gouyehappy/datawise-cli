@@ -10,12 +10,13 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Builds channel-specific HTTP bodies (generic webhook, Feishu, DingTalk, email gateway, GitHub/GitLab issues).
+ * Builds channel-specific HTTP bodies (generic webhook, Feishu, DingTalk, email gateway, GitHub/GitLab/Jira issues).
  */
 final class OutboundChannelPayloadSupport {
 
@@ -46,6 +47,7 @@ final class OutboundChannelPayloadSupport {
             case OutboundWebhookChannels.EMAIL -> prepareEmail(url, secret, event);
             case OutboundWebhookChannels.GITHUB_ISSUE -> prepareGithubIssue(url, secret, event);
             case OutboundWebhookChannels.GITLAB_ISSUE -> prepareGitlabIssue(url, secret, event);
+            case OutboundWebhookChannels.JIRA_ISSUE -> prepareJiraIssue(url, secret, event);
             default -> PreparedRequest.generic(url, genericPayload);
         };
     }
@@ -240,6 +242,66 @@ final class OutboundChannelPayloadSupport {
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("PRIVATE-TOKEN", secret.trim());
         return PreparedRequest.of(url, body, false, headers);
+    }
+
+    private static PreparedRequest prepareJiraIssue(String url, String secret, OutboundEvent event) {
+        requireToken(secret, "jira_issue");
+        String projectKey = resolveJiraProjectKey(url, event);
+        String plainBody = formatIssueBody(event);
+
+        Map<String, Object> textNode = new LinkedHashMap<>();
+        textNode.put("type", "text");
+        textNode.put("text", plainBody);
+        Map<String, Object> paragraph = new LinkedHashMap<>();
+        paragraph.put("type", "paragraph");
+        paragraph.put("content", List.of(textNode));
+        Map<String, Object> description = new LinkedHashMap<>();
+        description.put("type", "doc");
+        description.put("version", 1);
+        description.put("content", List.of(paragraph));
+
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("project", Map.of("key", projectKey));
+        fields.put("summary", issueTitle(event));
+        fields.put("description", description);
+        fields.put("issuetype", Map.of("name", "Task"));
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("fields", fields);
+
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("Accept", "application/json");
+        headers.put("Content-Type", "application/json");
+        headers.put("Authorization", jiraAuthorization(secret.trim()));
+        return PreparedRequest.of(url, body, false, headers);
+    }
+
+    static String resolveJiraProjectKey(String url, OutboundEvent event) {
+        String fromUrl = firstNonBlank(queryParam(url, "project"), queryParam(url, "projectKey"));
+        if (fromUrl != null) {
+            return fromUrl;
+        }
+        if (event != null && event.data() != null) {
+            Object projectKey = event.data().get("projectKey");
+            if (projectKey == null) {
+                projectKey = event.data().get("jiraProject");
+            }
+            if (projectKey != null && !String.valueOf(projectKey).isBlank()) {
+                return String.valueOf(projectKey).trim();
+            }
+        }
+        throw new IllegalArgumentException(
+                "jira_issue requires project key (?project=KEY or ?projectKey=KEY on webhook URL, "
+                        + "or data.projectKey / data.jiraProject on the event)"
+        );
+    }
+
+    private static String jiraAuthorization(String secret) {
+        if (secret.contains(":")) {
+            String encoded = Base64.getEncoder().encodeToString(secret.getBytes(StandardCharsets.UTF_8));
+            return "Basic " + encoded;
+        }
+        return "Bearer " + secret;
     }
 
     private static void requireToken(String secret, String channel) {

@@ -65,6 +65,7 @@ const channelOptions = computed<SelectOption[]>(() => [
   {value: 'email', label: t('settings.integrations.channel.email')},
   {value: 'github_issue', label: t('settings.integrations.channel.github_issue')},
   {value: 'gitlab_issue', label: t('settings.integrations.channel.gitlab_issue')},
+  {value: 'jira_issue', label: t('settings.integrations.channel.jira_issue')},
 ])
 
 function channelLabel(channel: string | undefined) {
@@ -85,6 +86,8 @@ function urlPlaceholder() {
       return 'https://api.github.com/repos/{owner}/{repo}/issues'
     case 'gitlab_issue':
       return 'https://gitlab.example/api/v4/projects/{id}/issues'
+    case 'jira_issue':
+      return 'https://your-domain.atlassian.net/rest/api/3/issue?project=KEY'
     default:
       return 'https://example.com/hooks/datawise'
   }
@@ -94,6 +97,7 @@ function secretPlaceholder() {
   switch (form.channel) {
     case 'github_issue':
     case 'gitlab_issue':
+    case 'jira_issue':
       return t('settings.integrations.issueTokenPlaceholder')
     case 'feishu':
     case 'dingtalk':

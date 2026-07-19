@@ -31,6 +31,10 @@ export default {
     },
     scopedPrefix: '数据源：{names}',
     noDatabaseSelected: '未选择数据源，将按通用模式回答',
+    quota: {
+        nearLimit: '今日 AI 调用仅剩 {remaining} 次（{calls}/{limit}）。可在 设置 → 租户 调整日配额。',
+        exhausted: '今日 AI 调用配额已用尽（{limit} 次）。请在 设置 → 租户 提高上限。',
+    },
     sidePanel: {
         sectionLabel: '面板',
         current: '当前面板',

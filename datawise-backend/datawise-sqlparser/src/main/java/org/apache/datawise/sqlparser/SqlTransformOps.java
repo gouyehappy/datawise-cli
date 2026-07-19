@@ -79,6 +79,19 @@ public final class SqlTransformOps {
         }
     }
 
+    /** AST rewrite when possible; otherwise append dialect-neutral {@code LIMIT … OFFSET …}. */
+    public static String limitOffset(String sql, long limit, long offset) {
+        SqlPaginationSupport.validateLimitOffset(Math.toIntExact(limit), Math.toIntExact(offset));
+        try {
+            return SqlTransform.of(sql, DbType.MYSQL).limitOffset(limit, offset).toSql();
+        } catch (JSQLParserException ignored) {
+            String clause = offset > 0
+                    ? " LIMIT " + limit + " OFFSET " + offset
+                    : " LIMIT " + limit;
+            return SqlPaginationSupport.appendClause(sql, clause);
+        }
+    }
+
     public static String wrapCount(String sql) {
         if (sql == null || sql.isBlank()) {
             return sql;

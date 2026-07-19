@@ -85,6 +85,15 @@ class SqlTransformTest {
     }
 
     @Test
+    void limitOffsetAddsLimitAndOffset() throws JSQLParserException {
+        String sql = SqlTransform.of("select id from orders", DbType.MYSQL)
+                .limitOffset(100, 1000)
+                .toSql();
+        String lower = sql.toLowerCase();
+        assertTrue(lower.contains("limit 1000, 100") || lower.contains("offset 1000"));
+    }
+
+    @Test
     void composedTransformsChainTogether() throws JSQLParserException {
         String sql = SqlTransform.of("select id from orders", DbType.MYSQL)
                 .appendWhere("deleted = 0")

@@ -10,6 +10,7 @@ In **Settings → Integrations**, create a hook with channel:
 |---------|-----|--------|
 | `github_issue` | `https://api.github.com/repos/{owner}/{repo}/issues` | GitHub PAT with `issues:write` |
 | `gitlab_issue` | `https://gitlab.example/api/v4/projects/{id}/issues` | GitLab PAT / project token |
+| `jira_issue` | `https://{domain}.atlassian.net/rest/api/3/issue?project=KEY` | Atlassian API token, or `email:token` for Basic auth |
 
 Subscribe to events such as:
 
@@ -17,7 +18,10 @@ Subscribe to events such as:
 - `insight.action` — manual export (below)
 - `data_quality.failed` / `scheduled_task.failed` — ops tickets
 
-DataWise POSTs a GitHub/GitLab Issues API body (`title` + `body`/`description`) using the token in `secret`.
+DataWise POSTs an Issues API body using the token in `secret`:
+
+- **GitHub / GitLab:** `title` + `body` / `description`
+- **Jira Cloud:** REST v3 `{ fields: { project, summary, description (ADF), issuetype } }` — project key from URL `?project=` / `?projectKey=`, or event `data.projectKey` / `data.jiraProject`
 
 ## Manual: API
 
@@ -32,10 +36,9 @@ Content-Type: application/json
 }
 ```
 
-Publishes `insight.action` to matching tenant outbound hooks (so a `github_issue` subscription opens the ticket).
+Publishes `insight.action` to matching tenant outbound hooks (so a `github_issue`, `gitlab_issue`, or `jira_issue` subscription opens the ticket).
 
 ## Still out of scope
 
 - Auto-open pull requests / commit runbooks
 - Two-way sync of issue status back into DataWise
-- Jira-native adapter (use generic `webhook` or GitHub/GitLab for now)

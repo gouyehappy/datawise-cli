@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Insight → ticket / runbook export. Publishes {@code insight.action} for outbound channels
- * (e.g. {@code github_issue} / {@code gitlab_issue}).
+ * (e.g. {@code github_issue} / {@code gitlab_issue} / {@code jira_issue}).
  */
 @RestController
 @RequestMapping("/api/platform/insight-actions")

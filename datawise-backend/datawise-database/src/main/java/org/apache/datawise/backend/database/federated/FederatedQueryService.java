@@ -10,7 +10,10 @@ import org.apache.datawise.backend.domain.SaveFederatedViewRequest;
 import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.model.FederatedViewEntry;
 import org.apache.datawise.backend.model.FederatedViewSource;
+import org.apache.datawise.backend.service.ConnectionVisibilityService;
+import org.apache.datawise.backend.sql.spi.SqlPaginationService;
 import org.apache.datawise.sqlparser.SqlTransformOps;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -34,13 +37,19 @@ public class FederatedQueryService {
 
     private final FederatedViewStore viewStore;
     private final SqlService sqlService;
+    private final ConnectionVisibilityService connectionVisibilityService;
+    private final SqlPaginationService paginationService;
 
     public FederatedQueryService(
             FederatedViewStore viewStore,
-            SqlService sqlService
+            SqlService sqlService,
+            ConnectionVisibilityService connectionVisibilityService,
+            @Autowired(required = false) SqlPaginationService paginationService
     ) {
         this.viewStore = viewStore;
         this.sqlService = sqlService;
+        this.connectionVisibilityService = connectionVisibilityService;
+        this.paginationService = paginationService;
     }
 
     public List<FederatedViewSummaryDto> list() {
@@ -91,10 +100,15 @@ public class FederatedQueryService {
     public ExecuteSqlResult execute(ExecuteFederatedViewRequest request) {
         FederatedViewEntry view = requireEntry(request.viewId());
         int maxRows = FederatedJoinLimits.resolveMaxRows(request.maxRows());
-        return executeView(view, maxRows);
+        int offset = FederatedJoinLimits.resolveOffset(request.offset());
+        return executeView(view, maxRows, offset);
     }
 
     ExecuteSqlResult executeView(FederatedViewEntry view, int maxRows) {
+        return executeView(view, maxRows, 0);
+    }
+
+    ExecuteSqlResult executeView(FederatedViewEntry view, int maxRows, int offset) {
         Map<String, FederatedViewSource> sourceByAlias = new LinkedHashMap<>();
         for (FederatedViewSource source : view.getSources()) {
             if (source.getAlias() == null || source.getAlias().isBlank()) {
@@ -108,22 +122,34 @@ public class FederatedQueryService {
 
         if (containsFederatedJoin(view.getSql())) {
             FederatedJoinSqlParser.FederatedJoinPlan plan = FederatedJoinSqlParser.parse(view.getSql());
+            Map<String, String> dbTypeByAlias = resolveDbTypes(sourceByAlias);
             return FederatedJoinExecutor.execute(
                     view.getSql(),
                     plan,
                     sourceByAlias,
                     sqlService,
-                    maxRows
+                    maxRows,
+                    offset,
+                    dbTypeByAlias,
+                    paginationService
             );
         }
 
         Map<String, ExecuteSqlResult> partialResults = new LinkedHashMap<>();
         boolean sourceTruncated = false;
+        Map<String, String> dbTypeByAlias = resolveDbTypes(sourceByAlias);
         for (FederatedViewSource source : view.getSources()) {
             String subSql = FederatedSqlSubquerySupport.extractSubQuery(view.getSql(), source.getAlias());
             if (subSql == null || subSql.isBlank()) {
                 subSql = SqlTransformOps.selectAllFrom(source.getAlias());
             }
+            subSql = FederatedSourceSqlSupport.applySourceWindow(
+                    subSql,
+                    dbTypeByAlias.get(source.getAlias()),
+                    maxRows,
+                    offset,
+                    paginationService
+            );
             ExecuteSqlResult partial = sqlService.execute(
                     subSql,
                     source.getConnectionId(),
@@ -155,9 +181,22 @@ public class FederatedQueryService {
                 merged.orderBy(),
                 merged.cursorId(),
                 Boolean.TRUE,
-                merged.pageOffset(),
+                offset > 0 ? offset : merged.pageOffset(),
                 maxRows
         );
+    }
+
+    private Map<String, String> resolveDbTypes(Map<String, FederatedViewSource> sourceByAlias) {
+        Map<String, String> dbTypeByAlias = new LinkedHashMap<>();
+        for (Map.Entry<String, FederatedViewSource> entry : sourceByAlias.entrySet()) {
+            FederatedViewSource source = entry.getValue();
+            if (source.getConnectionId() == null || source.getConnectionId().isBlank()) {
+                continue;
+            }
+            connectionVisibilityService.resolveConnectionEntity(source.getConnectionId())
+                    .ifPresent(entity -> dbTypeByAlias.put(entry.getKey(), entity.getDbType()));
+        }
+        return dbTypeByAlias;
     }
 
     private static boolean containsFederatedJoin(String sql) {

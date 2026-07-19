@@ -1013,6 +1013,7 @@ export default {
             email: 'Email (HTTP mail gateway)',
             github_issue: 'GitHub Issue',
             gitlab_issue: 'GitLab Issue',
+            jira_issue: 'Jira Issue',
         },
         channelHint: {
             webhook: 'POSTs DataWise JSON with optional X-DataWise-Signature (HMAC-SHA256).',
@@ -1021,6 +1022,7 @@ export default {
             email: 'POSTs JSON {to,subject,text} to an HTTP mail gateway. Use mailto:ops@acme.com (requires DATAWISE_MAIL_WEBHOOK_URL) or a gateway URL with recipient in secret / data.emailTo.',
             github_issue: 'Creates a GitHub Issue. URL = …/repos/{owner}/{repo}/issues; secret = PAT with issues:write. Subscribe to insight.digest / insight.action / data_quality.failed.',
             gitlab_issue: 'Creates a GitLab Issue. URL = …/projects/{id}/issues; secret = PAT. Subscribe to insight.* or failure events.',
+            jira_issue: 'Creates a Jira Cloud issue. URL = …/rest/api/3/issue?project=KEY (or set data.projectKey); secret = Atlassian API token or email:token for Basic auth. Subscribe to insight.* or failure events.',
         },
         url: 'Webhook URL',
         secret: 'Signing secret (HMAC-SHA256)',

@@ -219,6 +219,8 @@ export interface SaveFederatedViewRequest {
 export interface ExecuteFederatedViewRequest {
     viewId: string
     maxRows?: number | null
+    /** Source-window offset for batched federated JOIN (LIMIT maxRows OFFSET offset per source). */
+    offset?: number | null
 }
 
 export interface SchemaDriftMonitor {

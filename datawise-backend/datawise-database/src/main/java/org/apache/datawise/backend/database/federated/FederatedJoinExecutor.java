@@ -6,6 +6,7 @@ import org.apache.datawise.backend.database.federated.FederatedJoinSqlParser.Fed
 import org.apache.datawise.backend.database.sql.SqlService;
 import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.model.FederatedViewSource;
+import org.apache.datawise.backend.sql.spi.SqlPaginationService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,7 +30,21 @@ final class FederatedJoinExecutor {
             SqlService sqlService,
             int maxRows
     ) {
+        return execute(viewSql, plan, sourceByAlias, sqlService, maxRows, 0, Map.of(), null);
+    }
+
+    static ExecuteSqlResult execute(
+            String viewSql,
+            FederatedJoinPlan plan,
+            Map<String, FederatedViewSource> sourceByAlias,
+            SqlService sqlService,
+            int maxRows,
+            int offset,
+            Map<String, String> dbTypeByAlias,
+            SqlPaginationService paginationService
+    ) {
         int resolvedMaxRows = FederatedJoinLimits.resolveMaxRows(maxRows);
+        int resolvedOffset = FederatedJoinLimits.resolveOffset(offset);
         FederatedJoinPredicatePushdown.PushdownResult pushdown = FederatedJoinPredicatePushdown.apply(plan);
         FederatedJoinPlan effectivePlan = pushdown.plan();
 
@@ -45,6 +60,14 @@ final class FederatedJoinExecutor {
             if (subSql == null || subSql.isBlank()) {
                 subSql = SqlTransformOps.selectAllFrom(step.sourceAlias());
             }
+            String dbType = dbTypeByAlias != null ? dbTypeByAlias.get(step.sourceAlias()) : null;
+            subSql = FederatedSourceSqlSupport.applySourceWindow(
+                    subSql,
+                    dbType,
+                    resolvedMaxRows,
+                    resolvedOffset,
+                    paginationService
+            );
             ExecuteSqlResult partial = sqlService.execute(
                     subSql,
                     source.getConnectionId(),
@@ -78,7 +101,7 @@ final class FederatedJoinExecutor {
                 null,
                 null,
                 truncated ? Boolean.TRUE : null,
-                null,
+                resolvedOffset > 0 ? resolvedOffset : null,
                 resolvedMaxRows
         );
     }

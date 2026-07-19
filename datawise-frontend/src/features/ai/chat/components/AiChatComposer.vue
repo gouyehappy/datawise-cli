@@ -29,6 +29,7 @@ interface BrowserSpeechRecognition {
 const props = defineProps<{
   modelValue: string
   sending: boolean
+  quotaExhausted?: boolean
   selectedTargets: AiDatabaseTarget[]
   formatTargetLabel: (target: AiDatabaseTarget) => string
 }>()
@@ -151,8 +152,9 @@ watch(
 )
 
 function handleSend() {
+  if (props.quotaExhausted) return
   void buildSendPayload(props.modelValue.trim()).then((prompt) => {
-    if (!prompt) return
+    if (!prompt || props.quotaExhausted) return
     emit('send', prompt)
   })
 }
@@ -256,7 +258,7 @@ defineExpose({
           <button
               class="send-btn"
               type="button"
-              :disabled="sending || !modelValue.trim()"
+              :disabled="sending || quotaExhausted || !modelValue.trim()"
               :title="t('common.send')"
               :aria-label="t('common.send')"
               @click="handleSend"

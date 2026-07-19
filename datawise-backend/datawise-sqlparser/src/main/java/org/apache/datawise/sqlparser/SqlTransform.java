@@ -3,6 +3,7 @@ package org.apache.datawise.sqlparser;
 import net.sf.jsqlparser.JSQLParserException;
 import org.apache.datawise.backend.common.DbType;
 import org.apache.datawise.sqlparser.handle.LimitHandler;
+import org.apache.datawise.sqlparser.handle.LimitOffsetHandler;
 import org.apache.datawise.sqlparser.handle.OrderByHandler;
 import org.apache.datawise.sqlparser.handle.WhereConditionHandler;
 
@@ -73,6 +74,11 @@ public final class SqlTransform {
     /** Add {@code LIMIT maxRows} only when the query has none; leave any existing LIMIT as-is. */
     public SqlTransform limitIfAbsent(long maxRows) {
         return enqueue(new LimitHandler(maxRows, false));
+    }
+
+    /** Apply {@code LIMIT limit OFFSET offset} on the outer query, replacing any existing pagination. */
+    public SqlTransform limitOffset(long limit, long offset) {
+        return enqueue(new LimitOffsetHandler(limit, offset));
     }
 
     /** Quote reserved-word / mixed-case identifiers for the configured dialect. */

@@ -6,7 +6,8 @@ import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DbTypeIcon from '@/core/components/DbTypeIcon.vue'
 import {DB_TYPE_ICON_SIZE} from '@/features/connection/constants/db-type-icon-sizes'
-import {ModuleHeader, TagChip, AiIcon} from '@/core/components'
+import {DwInlineAlert, ModuleHeader, TagChip, AiIcon} from '@/core/components'
+import type {TenantAiUsage} from '@/shared/api/types'
 import AiAnalysisTemplateBar from '@/features/ai/analysis/components/AiAnalysisTemplateBar.vue'
 import AiFederatedScopeBanner from '@/features/ai/analysis/components/AiFederatedScopeBanner.vue'
 import AiChatComposer from '@/features/ai/chat/components/AiChatComposer.vue'
@@ -34,6 +35,9 @@ const props = defineProps<{
   badge?: string
   selectedTargetIds?: string[]
   analysisMode?: AiAnalysisMode
+  tenantAiUsage?: TenantAiUsage | null
+  tenantAiNearLimit?: boolean
+  tenantAiExhausted?: boolean
 }>()
 
 const input = defineModel<string>('input', {required: true})
@@ -65,6 +69,22 @@ defineExpose({
 const composerBusy = computed(
     () => props.sending || !!props.sqlConfirmPending || !!props.resumingSql,
 )
+
+const quotaNearLimitMessage = computed(() => {
+  const usage = props.tenantAiUsage
+  if (!props.tenantAiNearLimit || !usage || usage.unlimited) return null
+  return t('ai.quota.nearLimit', {
+    remaining: usage.remaining,
+    calls: usage.calls,
+    limit: usage.limit,
+  })
+})
+
+const quotaExhaustedMessage = computed(() => {
+  const usage = props.tenantAiUsage
+  if (!props.tenantAiExhausted || !usage || usage.unlimited) return null
+  return t('ai.quota.exhausted', {limit: usage.limit})
+})
 </script>
 
 <template>
@@ -114,6 +134,21 @@ const composerBusy = computed(
     </div>
 
     <footer class="ai-workspace__footer">
+      <DwInlineAlert
+          v-if="quotaExhaustedMessage"
+          class="ai-workspace__quota-alert"
+          variant="error"
+          density="banner"
+          :message="quotaExhaustedMessage"
+      />
+      <DwInlineAlert
+          v-else-if="quotaNearLimitMessage"
+          class="ai-workspace__quota-alert"
+          variant="warning"
+          density="banner"
+          :message="quotaNearLimitMessage"
+      />
+
       <AiAnalysisTemplateBar
           v-if="selectedTargetIds && analysisMode"
           :prompt="input"
@@ -126,6 +161,7 @@ const composerBusy = computed(
           ref="composerRef"
           v-model="input"
           :sending="composerBusy"
+          :quota-exhausted="!!tenantAiExhausted"
           :selected-targets="selectedTargets"
           :format-target-label="formatTargetLabel"
           @send="emit('send', $event)"
@@ -189,5 +225,9 @@ const composerBusy = computed(
   flex-shrink: 0;
   border-top: 1px solid var(--dw-border-light);
   background: var(--dw-bg-panel);
+}
+
+.ai-workspace__quota-alert {
+  margin: var(--dw-space-5) var(--dw-space-10) 0;
 }
 </style>

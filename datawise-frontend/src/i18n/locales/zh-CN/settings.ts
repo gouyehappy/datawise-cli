@@ -1013,6 +1013,7 @@ export default {
             email: '邮件（HTTP 邮件网关）',
             github_issue: 'GitHub Issue',
             gitlab_issue: 'GitLab Issue',
+            jira_issue: 'Jira Issue',
         },
         channelHint: {
             webhook: '投递 DataWise JSON，可选 X-DataWise-Signature（HMAC-SHA256）。',
@@ -1021,6 +1022,7 @@ export default {
             email: '向 HTTP 邮件网关 POST JSON {to,subject,text}。可用 mailto:ops@acme.com（需配置 DATAWISE_MAIL_WEBHOOK_URL），或填网关 URL 并在密钥 / data.emailTo 中指定收件人。',
             github_issue: '创建 GitHub Issue。URL 填 …/repos/{owner}/{repo}/issues；密钥为具有 issues:write 的 PAT。建议订阅 insight.digest / insight.action / data_quality.failed。',
             gitlab_issue: '创建 GitLab Issue。URL 填 …/projects/{id}/issues；密钥为 PAT。可订阅 insight.* 或失败类事件。',
+            jira_issue: '创建 Jira Cloud 工单。URL 填 …/rest/api/3/issue?project=KEY（或在 data.projectKey 中指定）；密钥为 Atlassian API Token，或 email:token 用于 Basic 认证。可订阅 insight.* 或失败类事件。',
         },
         url: 'Webhook URL',
         secret: '签名密钥（HMAC-SHA256）',

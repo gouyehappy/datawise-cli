@@ -129,6 +129,104 @@ class OutboundChannelPayloadSupportTest {
     }
 
     @Test
+    void jiraIssueUsesBearerTokenAndAdfBody() {
+        OutboundEvent event = new OutboundEvent(
+                "evt-j1",
+                "insight.action",
+                Instant.now(),
+                "Investigate DQ",
+                "12 bad rows",
+                Map.of("name", "neg-amount")
+        );
+        var prepared = OutboundChannelPayloadSupport.prepare(
+                "jira_issue",
+                "https://acme.atlassian.net/rest/api/3/issue?project=DEMO",
+                "atlassian-api-token",
+                event,
+                Map.of()
+        );
+        assertEquals("Bearer atlassian-api-token", prepared.extraHeaders().get("Authorization"));
+        assertEquals("application/json", prepared.extraHeaders().get("Accept"));
+        assertEquals("application/json", prepared.extraHeaders().get("Content-Type"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fields = (Map<String, Object>) prepared.body().get("fields");
+        assertEquals("DEMO", ((Map<?, ?>) fields.get("project")).get("key"));
+        assertEquals("Investigate DQ: neg-amount", fields.get("summary"));
+        assertEquals("Task", ((Map<?, ?>) fields.get("issuetype")).get("name"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> description = (Map<String, Object>) fields.get("description");
+        assertEquals("doc", description.get("type"));
+    }
+
+    @Test
+    void jiraIssueUsesBasicAuthWhenSecretContainsColon() {
+        OutboundEvent event = new OutboundEvent(
+                "evt-j2",
+                "data_quality.failed",
+                Instant.now(),
+                "DQ failed",
+                "rows > 0",
+                Map.of("projectKey", "OPS")
+        );
+        var prepared = OutboundChannelPayloadSupport.prepare(
+                "jira",
+                "https://acme.atlassian.net/rest/api/3/issue",
+                "user@acme.com:secret-token",
+                event,
+                Map.of()
+        );
+        String expected = "Basic "
+                + Base64.getEncoder().encodeToString("user@acme.com:secret-token".getBytes());
+        assertEquals(expected, prepared.extraHeaders().get("Authorization"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fields = (Map<String, Object>) prepared.body().get("fields");
+        assertEquals("OPS", ((Map<?, ?>) fields.get("project")).get("key"));
+    }
+
+    @Test
+    void jiraIssueResolvesProjectKeyFromEventData() {
+        OutboundEvent event = new OutboundEvent(
+                "evt-j3",
+                "scheduled_task.failed",
+                Instant.now(),
+                "Task failed",
+                "boom",
+                Map.of("jiraProject", "SRE")
+        );
+        var prepared = OutboundChannelPayloadSupport.prepare(
+                "jira_issue",
+                "https://acme.atlassian.net/rest/api/3/issue",
+                "token",
+                event,
+                Map.of()
+        );
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fields = (Map<String, Object>) prepared.body().get("fields");
+        assertEquals("SRE", ((Map<?, ?>) fields.get("project")).get("key"));
+    }
+
+    @Test
+    void jiraIssueRequiresProjectKey() {
+        OutboundEvent event = new OutboundEvent(
+                "evt-j4",
+                "insight.action",
+                Instant.now(),
+                "No project",
+                "body",
+                Map.of()
+        );
+        assertThrows(IllegalArgumentException.class, () ->
+                OutboundChannelPayloadSupport.prepare(
+                        "jira_issue",
+                        "https://acme.atlassian.net/rest/api/3/issue",
+                        "token",
+                        event,
+                        Map.of()
+                )
+        );
+    }
+
+    @Test
     void emailChannelPostsJsonToHttpGateway() {
         OutboundEvent event = new OutboundEvent(
                 "evt-5",

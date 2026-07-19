@@ -31,6 +31,10 @@ export default {
     },
     scopedPrefix: 'Data sources: {names}',
     noDatabaseSelected: 'No data source selected — answers will be generic',
+    quota: {
+        nearLimit: 'Only {remaining} AI calls left today ({calls}/{limit}). Adjust the daily cap in Settings → Tenants.',
+        exhausted: 'Daily AI quota used up ({limit} calls). Increase the limit in Settings → Tenants.',
+    },
     sidePanel: {
         sectionLabel: 'Panel',
         current: 'Active panel',

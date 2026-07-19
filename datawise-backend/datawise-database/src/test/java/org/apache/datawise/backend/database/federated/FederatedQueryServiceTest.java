@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.datawise.backend.configstore.FederatedViewStore;
 import org.apache.datawise.backend.database.sql.SqlService;
+import org.apache.datawise.backend.service.ConnectionVisibilityService;
 import org.apache.datawise.sqlparser.SqlTransformOps;
 
 import java.util.LinkedHashMap;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -29,7 +31,12 @@ class FederatedQueryServiceTest {
     @BeforeEach
     void setUp() {
         sqlService = mock(SqlService.class);
-        service = new FederatedQueryService(mock(FederatedViewStore.class), sqlService);
+        service = new FederatedQueryService(
+                mock(FederatedViewStore.class),
+                sqlService,
+                mock(ConnectionVisibilityService.class),
+                null
+        );
     }
 
     @Test
@@ -96,6 +103,41 @@ class FederatedQueryServiceTest {
         assertEquals(1, result.rowCount());
         assertEquals(1, result.rows().get(0).get("o.id"));
         assertEquals("Carol", result.rows().get(0).get("u.name"));
+    }
+
+    @Test
+    void executeViewJoinAppliesSourceOffsetWindow() {
+        FederatedViewEntry view = new FederatedViewEntry();
+        view.setSources(List.of(source("orders"), source("users")));
+        view.setSql("SELECT o.id, u.name FROM @orders o JOIN @users u ON o.user_id = u.id");
+
+        String ordersPaged = FederatedSourceSqlSupport.applySourceWindow(
+                SqlTransformOps.selectAllFrom("orders"),
+                50,
+                100
+        );
+        String usersPaged = FederatedSourceSqlSupport.applySourceWindow(
+                SqlTransformOps.selectAllFrom("users"),
+                50,
+                100
+        );
+
+        when(sqlService.execute(eq(ordersPaged), eq("conn-orders"), eq("shop"), eq(50), isNull()))
+                .thenReturn(sqlResult(
+                        List.of(col("id"), col("user_id")),
+                        List.of(row("id", 10, "user_id", 1))
+                ));
+        when(sqlService.execute(eq(usersPaged), eq("conn-users"), eq("shop"), eq(50), isNull()))
+                .thenReturn(sqlResult(
+                        List.of(col("id"), col("name")),
+                        List.of(row("id", 1, "name", "Alice"))
+                ));
+
+        ExecuteSqlResult result = service.executeView(view, 50, 100);
+
+        assertEquals(1, result.rowCount());
+        assertEquals(Integer.valueOf(100), result.pageOffset());
+        assertEquals(Integer.valueOf(50), result.pageSize());
     }
 
     @Test

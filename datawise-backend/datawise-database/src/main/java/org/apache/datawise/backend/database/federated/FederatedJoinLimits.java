@@ -21,6 +21,8 @@ public final class FederatedJoinLimits {
     public static final int MEMORY_HASH_BUILD_ROWS = 512;
     /** Number of spill partitions for Grace hash join. */
     public static final int SPILL_BUCKETS = 32;
+    /** Max source-window offset to limit deep scans without tighter filters. */
+    public static final int MAX_OFFSET = 100_000;
 
     private FederatedJoinLimits() {
     }
@@ -28,5 +30,12 @@ public final class FederatedJoinLimits {
     public static int resolveMaxRows(Integer requested) {
         int rows = requested != null && requested > 0 ? requested : DEFAULT_MAX_ROWS;
         return Math.min(rows, HARD_MAX_ROWS);
+    }
+
+    public static int resolveOffset(Integer requested) {
+        if (requested == null || requested <= 0) {
+            return 0;
+        }
+        return Math.min(requested, MAX_OFFSET);
     }
 }

@@ -7,6 +7,7 @@ Cross-source federated views run each `@alias` subquery on its connection, then 
 | Bound | Default | Hard cap | Behavior |
 |-------|---------|----------|----------|
 | `maxRows` (request) | 1 000 | 10 000 | Applied per source fetch **and** to joined output |
+| `offset` (request) | 0 | 100 000 | Source-window skip per `@alias` subquery (`LIMIT maxRows OFFSET offset`) |
 | Cross JOIN (no `ON`) | — | 2 000 000 left×right pairs | Rejected with a clear error |
 | Equality `ON` | — | — | Hash join; output still capped at `maxRows` |
 | Hash build memory | 512 rows | — | Build side above this spills to temp files (Grace hash, 32 buckets) |
@@ -51,11 +52,15 @@ Probe rows stay in memory (already capped by `maxRows` / hard cap). Spill reduce
 
 ## Truncation signal
 
-The SQL console result grid shows a **truncation hint** when `hasMore` is true but there is **no** `cursorId` (federated JOIN cannot page further). Prefer tighter `WHERE` / source filters, or raise request `maxRows` up to the hard cap.
+The SQL console result grid shows a **truncation hint** when `hasMore` is true but there is **no** `cursorId` (federated JOIN cannot page the join output like a cursor). Prefer tighter `WHERE` / source filters, **raise request `maxRows`** up to the hard cap, or **batch over source windows** with `offset`.
 
 When truncated below the hard cap, the grid shows **Raise limit and re-run** (SQL console re-executes the active statement with the next step: 1 000 → 5 000 → 10 000). Platform catalog → Federated Views → Execute uses the same steps and offers **Retry at {limit}** after a truncated run.
 
-When a source hits `maxRows` or the join stops early at the output cap, `ExecuteSqlResult.hasMore` is `true` and `pageSize` carries the effective `maxRows`. The UI should treat this as a partial result, not a full join.
+### Source-window batching (`offset`)
+
+`ExecuteFederatedViewRequest.offset` (default `0`, capped at 100 000) advances each `@alias` source subquery by one window: `LIMIT maxRows OFFSET offset` (dialect-aware via connection dbType). This is **not** pagination of the joined result — each batch re-fetches the next slice of every source and re-runs the in-memory JOIN. Use **Next batch** in the platform catalog when `hasMore` is true; reset `offset` to `0` on a normal Execute.
+
+When a source hits `maxRows` or the join stops early at the output cap, `ExecuteSqlResult.hasMore` is `true`, `pageSize` carries the effective `maxRows`, and `pageOffset` carries the request offset. The UI should treat this as a partial result, not a full join.
 
 ## Practical guidance
 
