@@ -132,6 +132,7 @@ export default {
         digest: '推送结果摘要到 Webhook',
         digestHint: '成功后额外发送 insight.digest（含截断行或画布摘要）。需在集成设置中订阅该事件。',
         digestMaxRows: '摘要最大行数（1–50）',
+        digestMaxRowsCanvasHint: '画布摘要：该值会按比例控制 insight.digest 中 AI 摘要（及 SQL 预览）的长度。',
         lastRun: '上次运行',
         orchestrationStatus: '查询编排状态',
         orchestrationStatusDone: '编排状态：{state}（ref={ref}）',

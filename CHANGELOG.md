@@ -36,6 +36,9 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave C G8 deepen: Dashboard chart **Copy embed** (iframe snippet) + public `/share/{token}` **expiry banner**.
 - Wave D G2 deepen: OIDC directory-sync UI — warn when scopes omit `groups`, one-click add recommended scopes, role claim map preview.
 - Wave C G6 deepen: Linux AppImage packaging doc ([DESKTOP_LINUX.md](./docs/DESKTOP_LINUX.md)); About panel shows desktop platform when running in Electron.
+- Wave B S3 deepen: lakehouse lineage softens **`TRY_CAST` → `CAST`** and **`GROUPING SETS` / `CUBE` / `ROLLUP`** (→ `PARTIAL`); see [docs/LAKEHOUSE_LINEAGE.md](./docs/LAKEHOUSE_LINEAGE.md).
+- Wave C G7 deepen: scheduled **canvas** tasks honor **`digestMaxRows`** (scales insight.digest summary length) alongside SQL digests.
+- Wave D S5 deepen: ER diagram **batch RENAME column DDL** (`old new` / `old -> new` lines).
 - Wave B S1 slice: table migration mode `PK_UPSERT` with conflict strategies OVERWRITE / SKIP / FAIL (MySQL `ON DUPLICATE KEY` / PostgreSQL `ON CONFLICT`); production-target migration plans go through team approval (approve records consent; managers run the wizard).
 - Wave B S2 slice: federated JOIN hard caps (`FederatedJoinLimits`), hash join for equality ON, cross-product rejection, `hasMore` truncation; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 UX: raise `maxRows` when federated results truncate — result grid **Raise limit and re-run** (console) and platform federated **Retry at {limit}** (1k → 5k → 10k hard cap); see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).

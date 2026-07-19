@@ -48,4 +48,34 @@ class LakehouseSqlSupportTest {
         assertTrue(softened.softenedFeatures().contains("UNNEST_ORDINALITY"));
         assertFalse(softened.sql().toUpperCase().contains("ORDINALITY"));
     }
+
+    @Test
+    void softensTryCastToCast() {
+        String sql = "SELECT TRY_CAST(a AS VARCHAR) AS v FROM t";
+        var features = LakehouseSqlSupport.detectHardFeatures(sql);
+        assertTrue(features.contains(LakehouseSqlSupport.LakehouseFeature.TRY_CAST));
+
+        LakehouseSqlSupport.SoftenResult softened = LakehouseSqlSupport.softenHardFeatures(sql);
+        assertTrue(softened.softenedFeatures().contains("TRY_CAST"));
+        assertTrue(softened.sql().toUpperCase().contains("CAST("));
+        assertFalse(softened.sql().toUpperCase().contains("TRY_CAST"));
+    }
+
+    @Test
+    void softensCubeAndGroupingSets() {
+        LakehouseSqlSupport.SoftenResult cube = LakehouseSqlSupport.softenHardFeatures(
+                "SELECT a, b, COUNT(*) FROM t GROUP BY CUBE(a, b)"
+        );
+        assertTrue(cube.softenedFeatures().contains("ADVANCED_GROUPING"));
+        assertFalse(cube.sql().toUpperCase().contains("CUBE"));
+        assertTrue(cube.sql().toUpperCase().contains("GROUP BY"));
+        assertTrue(cube.sql().contains("a, b") || cube.sql().contains("a,b"));
+
+        LakehouseSqlSupport.SoftenResult sets = LakehouseSqlSupport.softenHardFeatures(
+                "SELECT a, b, COUNT(*) FROM t GROUP BY GROUPING SETS ((a, b), (a))"
+        );
+        assertTrue(sets.softenedFeatures().contains("ADVANCED_GROUPING"));
+        assertFalse(sets.sql().toUpperCase().contains("GROUPING SETS"));
+        assertTrue(sets.sql().toUpperCase().contains("A") && sets.sql().toUpperCase().contains("B"));
+    }
 }

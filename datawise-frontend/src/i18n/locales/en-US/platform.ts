@@ -132,6 +132,7 @@ export default {
         digest: 'Push result digest to webhook',
         digestHint: 'On success, also emit insight.digest (truncated rows or canvas summary). Subscribe to the event under Integrations.',
         digestMaxRows: 'Digest max rows (1–50)',
+        digestMaxRowsCanvasHint: 'For canvas digests, this scales how much of the AI summary (and SQL preview) is included in insight.digest.',
         lastRun: 'Last run',
         orchestrationStatus: 'Check orchestration status',
         orchestrationStatusDone: 'Orchestration state: {state} (ref={ref})',

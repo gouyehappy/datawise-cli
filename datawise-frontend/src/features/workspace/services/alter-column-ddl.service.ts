@@ -4,7 +4,7 @@ import {
     quoteSqlIdentifier,
 } from '@/features/connection/services/sql-dialect.service'
 
-export type AlterColumnOperation = 'add' | 'modify' | 'drop'
+export type AlterColumnOperation = 'add' | 'modify' | 'drop' | 'rename'
 
 export interface AlterColumnSpec {
     name: string
@@ -12,6 +12,13 @@ export interface AlterColumnSpec {
     nullable: boolean
     autoIncrement?: boolean
     defaultValue?: string | null
+    /** Target name when operation is rename. */
+    renameTo?: string
+}
+
+export interface RenameColumnSpec {
+    from: string
+    to: string
 }
 
 const PG_FAMILY = new Set<DbType>([
@@ -96,6 +103,19 @@ export function buildAlterColumnSql(
         return `ALTER TABLE ${qualified} DROP COLUMN ${quotedColumn};`
     }
 
+    if (operation === 'rename') {
+        const renameTo = options.column.renameTo?.trim()
+        if (!renameTo) return null
+        const quotedTo = quoteSqlIdentifier(options.dbType, renameTo)
+        if (options.dbType === 'sqlserver') {
+            const objectName = options.database?.trim()
+                ? `${options.database.trim()}.${tableName}.${columnName}`
+                : `${tableName}.${columnName}`
+            return `EXEC sp_rename N'${objectName.replace(/'/g, "''")}', N'${renameTo.replace(/'/g, "''")}', N'COLUMN';`
+        }
+        return `ALTER TABLE ${qualified} RENAME COLUMN ${quotedColumn} TO ${quotedTo};`
+    }
+
     const dataType = options.column.dataType.trim()
     if (!dataType) return null
 
@@ -154,7 +174,7 @@ export function buildAlterColumnSql(
     return `ALTER TABLE ${qualified} MODIFY COLUMN ${formatMysqlColumnDefinition(options.dbType, options.column)};`
 }
 
-export type BatchAlterColumnOperation = 'drop' | 'add' | 'modify'
+export type BatchAlterColumnOperation = 'drop' | 'add' | 'modify' | 'rename'
 
 /** Concatenate per-column ALTER statements for a batch preview (no execution). */
 export function buildBatchAlterColumnDdl(
@@ -165,6 +185,7 @@ export function buildBatchAlterColumnDdl(
         database?: string
         columnNames?: string[]
         columns?: AlterColumnSpec[]
+        renames?: RenameColumnSpec[]
     },
 ): string | null {
     const tableName = options.tableName.trim()
@@ -180,6 +201,27 @@ export function buildBatchAlterColumnDdl(
                 tableName,
                 database: options.database,
                 column: {name, dataType: '', nullable: true},
+            })
+            if (sql) statements.push(sql)
+        }
+        return statements.length > 0 ? statements.join('\n') : null
+    }
+
+    if (operation === 'rename') {
+        const renames = (options.renames ?? []).filter((item) => item.from.trim() && item.to.trim())
+        if (renames.length === 0) return null
+        const statements: string[] = []
+        for (const item of renames) {
+            const sql = buildAlterColumnSql('rename', {
+                dbType: options.dbType,
+                tableName,
+                database: options.database,
+                column: {
+                    name: item.from.trim(),
+                    dataType: '',
+                    nullable: true,
+                    renameTo: item.to.trim(),
+                },
             })
             if (sql) statements.push(sql)
         }
@@ -227,4 +269,22 @@ export function parseBatchAddColumnLines(text: string): AlterColumnSpec[] {
 /** Same line format as {@link parseBatchAddColumnLines} — used for batch MODIFY previews. */
 export function parseBatchModifyColumnLines(text: string): AlterColumnSpec[] {
     return parseBatchAddColumnLines(text)
+}
+
+/** Parse lines like {@code old_name new_name} or {@code old -> new} / {@code old TO new}. */
+export function parseBatchRenameColumnLines(text: string): RenameColumnSpec[] {
+    const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+    const renames: RenameColumnSpec[] = []
+    for (const line of lines) {
+        const arrow = line.match(/^([A-Za-z_][\w$]*)\s*(?:->|=>|TO)\s*([A-Za-z_][\w$]*)$/i)
+        if (arrow) {
+            renames.push({from: arrow[1]!, to: arrow[2]!})
+            continue
+        }
+        const spaced = line.match(/^([A-Za-z_][\w$]*)\s+([A-Za-z_][\w$]*)$/)
+        if (spaced) {
+            renames.push({from: spaced[1]!, to: spaced[2]!})
+        }
+    }
+    return renames
 }

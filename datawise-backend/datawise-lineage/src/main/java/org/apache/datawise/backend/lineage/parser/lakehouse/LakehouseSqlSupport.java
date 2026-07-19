@@ -28,6 +28,11 @@ public final class LakehouseSqlSupport {
     private static final Pattern LATERAL_VIEW = Pattern.compile("\\bLATERAL\\s+VIEW\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern MATCH_RECOGNIZE = Pattern.compile("\\bMATCH_RECOGNIZE\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern WITH_ORDINALITY = Pattern.compile("\\bWITH\\s+ORDINALITY\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern TRY_CAST = Pattern.compile("\\bTRY_CAST\\s*\\(", Pattern.CASE_INSENSITIVE);
+    private static final Pattern ADVANCED_GROUPING = Pattern.compile(
+            "\\b(GROUPING\\s+SETS|CUBE|ROLLUP)\\s*\\(",
+            Pattern.CASE_INSENSITIVE
+    );
     private static final Pattern WINDOW_TVF = Pattern.compile(
             "\\b(TUMBLE|HOP|CUMULATE|SESSION)\\s*\\(",
             Pattern.CASE_INSENSITIVE
@@ -104,6 +109,12 @@ public final class LakehouseSqlSupport {
         if (WITH_ORDINALITY.matcher(sql).find()) {
             features.add(LakehouseFeature.UNNEST_ORDINALITY);
         }
+        if (TRY_CAST.matcher(sql).find()) {
+            features.add(LakehouseFeature.TRY_CAST);
+        }
+        if (ADVANCED_GROUPING.matcher(sql).find()) {
+            features.add(LakehouseFeature.ADVANCED_GROUPING);
+        }
         if (WINDOW_TVF.matcher(sql).find()) {
             features.add(LakehouseFeature.WINDOW_TVF);
         }
@@ -167,7 +178,63 @@ public final class LakehouseSqlSupport {
             applied.add("UNNEST_ORDINALITY");
         }
 
+        if (TRY_CAST.matcher(current).find()) {
+            current = TRY_CAST.matcher(current).replaceAll("CAST(");
+            applied.add("TRY_CAST");
+        }
+
+        current = softenAdvancedGrouping(current, applied);
+
         return new SoftenResult(current, List.copyOf(applied));
+    }
+
+    /**
+     * Rewrites {@code CUBE}/{@code ROLLUP}/{@code GROUPING SETS} calls to their first argument list
+     * so AST lineage can continue (always PARTIAL).
+     */
+    private static String softenAdvancedGrouping(String sql, Set<String> applied) {
+        String current = sql;
+        Matcher matcher = ADVANCED_GROUPING.matcher(current);
+        if (!matcher.find()) {
+            return current;
+        }
+        StringBuilder rebuilt = new StringBuilder();
+        int last = 0;
+        matcher.reset();
+        while (matcher.find()) {
+            int open = current.indexOf('(', matcher.start());
+            int close = findMatchingParen(current, open);
+            if (close < 0) {
+                continue;
+            }
+            String inner = current.substring(open + 1, close).trim();
+            String replacement = firstGroupingArgs(inner);
+            rebuilt.append(current, last, matcher.start());
+            rebuilt.append(replacement);
+            last = close + 1;
+            applied.add("ADVANCED_GROUPING");
+        }
+        if (last == 0) {
+            return current;
+        }
+        rebuilt.append(current.substring(last));
+        return rebuilt.toString().replaceAll("\\s{2,}", " ").trim();
+    }
+
+    /** Prefer the first GROUPING SETS tuple; otherwise keep the raw args (CUBE/ROLLUP). */
+    private static String firstGroupingArgs(String inner) {
+        if (inner.isEmpty()) {
+            return "1";
+        }
+        String trimmed = inner.trim();
+        if (trimmed.startsWith("(")) {
+            int close = findMatchingParen(trimmed, 0);
+            if (close > 0) {
+                String tuple = trimmed.substring(1, close).trim();
+                return tuple.isEmpty() ? "1" : tuple;
+            }
+        }
+        return trimmed;
     }
 
     public static NormalizationResult normalizeForLineage(String sql) {
@@ -303,6 +370,8 @@ public final class LakehouseSqlSupport {
         LATERAL_VIEW("Hive LATERAL VIEW / explode is not supported for automatic lineage yet"),
         MATCH_RECOGNIZE("MATCH_RECOGNIZE pattern matching is not supported for automatic lineage yet"),
         UNNEST_ORDINALITY("UNNEST … WITH ORDINALITY ordinal column is not supported for automatic lineage yet"),
+        TRY_CAST("TRY_CAST is softened to CAST; failure-null semantics are not modeled in lineage"),
+        ADVANCED_GROUPING("GROUPING SETS / CUBE / ROLLUP are softened to a simple GROUP BY list"),
         WINDOW_TVF("Flink window TVFs (TUMBLE/HOP/CUMULATE/SESSION) are not supported for automatic lineage yet");
 
         private final String message;

@@ -46,7 +46,7 @@
 
 | # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
 |---|------|------|------|------------------|
-| G7 | 洞察 / Dashboard 订阅外发 | partial | 定时 SQL/画布任务可选 digest → insight.digest Webhook（截断行/画布摘要）；SQL 任务可配 **digestMaxRows（1–50）**；非全量 BI 订阅中心 | AI 画布价值留在桌面内 |
+| G7 | 洞察 / Dashboard 订阅外发 | partial | 定时 SQL/画布任务可选 digest → insight.digest Webhook（截断行/画布摘要）；SQL 与 **画布任务均可配 digestMaxRows（1–50）**（画布按比例截断摘要）；非全量 BI 订阅中心 | AI 画布价值留在桌面内 |
 | G8 | 只读分享看板 / 嵌入链接 | partial | Dashboard 图表冻结快照分享（**可选 7/14/30/90 天过期**）+ **Copy embed iframe** + 公开页过期横幅；设置菜单管理/撤销（过期态）；非实时嵌入 | 分析师路径断在工作台 |
 | G9 | AI 成本与配额治理 | partial | 租户日调用硬顶 + Settings 用量卡 + **AI 工作台** near-limit / exhausted 提示（禁用发送）+ 出站 **`ai.quota.near_limit` / `ai.quota.exhausted`**；未做人/团队账单 | 开 AI 后运维会怕滥用 |
 | G10 | Insight → 工单 / PR / Runbook | partial | 出站通道 `github_issue` / `gitlab_issue` / `jira_issue` + `POST /api/platform/insight-actions`（`insight.action`）；**AI 工作台**分析回复 **导出工单**；见 [INSIGHT_ACTIONS.md](./INSIGHT_ACTIONS.md)。缺自动开 PR / 状态回写 | 洞察难变成组织动作 |
@@ -71,9 +71,9 @@
 |---|------|------|------|----------|
 | S1 | 按主键 / 唯一键的**数据增量同步** | partial | 结构同步已闭环；数据迁移 PK_UPSERT + 冲突策略（MySQL/PG）+ 生产目标审批门控；**行级 Diff 预览**；向导预检 **源行数估算 + 全表扫描/无主键警告**；进度卡 **暂停/取消**（取消不可续传）+ 断点续传。缺更细批次内中断 | Compare → 勾选 → 冲突策略 → 进度可中断 → 可走审批 |
 | S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限 + hasMore；Grace hash 落盘；残差谓词/函数目录已闭环（含 **CAST**）；**控制台/网格限流提示** + **提高 maxRows 重跑**；**源窗口分批**；**截断导出 INCOMPLETE 标记**。见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 限流 / 溢出策略 / 文档化边界；可选下推 |
-| S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：LakehouseLineageParser 规范化 + 硬特性软剥离/表级回退；Trino/Presto SELECT 仍 COMPLETE，**UNNEST … WITH ORDINALITY** 软剥离为 PARTIAL；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite / sidecar 仍缺 | 关键方言到可用 complete/partial，失败诚实降级 |
+| S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：LakehouseLineageParser 规范化 + 硬特性软剥离/表级回退；Trino/Presto SELECT 仍 COMPLETE，**UNNEST … WITH ORDINALITY** / **TRY_CAST** / **GROUPING SETS·CUBE·ROLLUP** 软剥离为 PARTIAL；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite / sidecar 仍缺 | 关键方言到可用 complete/partial，失败诚实降级 |
 | S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL + **复制 SQL / 用 AI 精炼 / 在控制台运行**；画布上字段自由布局仍浅 | 画布级字段自由布局 / 更强与 AI 联动 |
-| S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列 + **批量 DROP / ADD / MODIFY 列 DDL**（多选/行解析预览/复制/控制台）；列级仍非画布内联编辑 | 图上内联改列 / 更完整批量 DDL 编排 |
+| S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列 + **批量 DROP / ADD / MODIFY / RENAME 列 DDL**（多选/行解析预览/复制/控制台）；列级仍非画布内联编辑 | 图上内联改列 / 更完整批量 DDL 编排 |
 | S6 | 连接器市场深度 | partial | 浏览 catalog + `manifest.json` + 远程一键安装 + **热加载** + **重装/升级**；缺签名通道 / 远程目录托管 | 远程安装 / 签名通道 / 一键升级 |
 
 对标细节仍见 [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)（结构同步数据侧、VQB、ER 等条目）。
@@ -163,6 +163,9 @@
 | 2026-07-19、G8 嵌入 | Dashboard 图表 **Copy embed**（iframe）+ 公开页过期横幅 |
 | 2026-07-19、G2 OIDC 护栏 | 角色同步时 scopes 缺 groups 警告 / 一键补全 + role claim map 预览 |
 | 2026-07-19、G6 Linux 文档 | [DESKTOP_LINUX.md](./DESKTOP_LINUX.md) + About 桌面平台行 |
+| 2026-07-19、S3 TRY_CAST/GROUPING | 湖仓血缘软剥离 TRY_CAST→CAST、GROUPING SETS/CUBE/ROLLUP → PARTIAL |
+| 2026-07-19、G7 画布 digestMaxRows | 定时画布任务可配 digestMaxRows，按比例截断 insight.digest 摘要 |
+| 2026-07-19、S5 批量 RENAME | ER 图批量重命名列 DDL（old new / old -> new） |
 
 | 2026-07-18、S2 残差 IN | 联邦 JOIN 残差 WHERE 支持 IN / NOT IN 字面量列表 |
 | 2026-07-18、S2 残差 OR | 联邦 JOIN 残差 WHERE 支持跨别名 OR |

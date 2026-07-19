@@ -42,6 +42,7 @@ import {
   buildBatchAlterColumnDdl,
   parseBatchAddColumnLines,
   parseBatchModifyColumnLines,
+  parseBatchRenameColumnLines,
   type AlterColumnOperation,
 } from '@/features/workspace/services/alter-column-ddl.service'
 import {executeAlterColumnSql} from '@/features/workspace/services/execute-alter-column.service'
@@ -113,6 +114,7 @@ const batchDdlTitle = ref('')
 const batchDdlSql = ref('')
 const batchDdlSummary = ref<string[]>([])
 const batchAddDraft = ref('note VARCHAR(64)\nlegacy_flag INT')
+const batchRenameDraft = ref('old_name new_name')
 
 const dbType = computed<DbType | undefined>(() => {
   if (props.tab.dbType) return props.tab.dbType
@@ -406,6 +408,34 @@ function openBatchModifyDdl() {
         t('workspace.schemaEr.batchAlterModifySummaryColumn', {
           column: column.name,
           type: column.dataType,
+        }),
+    ),
+  ]
+  batchDdlOpen.value = true
+}
+
+function openBatchRenameDdl() {
+  const target = selectedColumnTarget.value
+  if (!target || !canAlterColumn.value) return
+  const renames = parseBatchRenameColumnLines(batchRenameDraft.value)
+  const sql = buildBatchAlterColumnDdl('rename', {
+    dbType: dbType.value,
+    tableName: target.table,
+    database: databaseName.value,
+    renames,
+  })
+  if (!sql?.trim()) {
+    workspace.setStatus(t('workspace.schemaEr.batchAlterRenameEmpty'))
+    return
+  }
+  batchDdlTitle.value = t('workspace.schemaEr.batchAlterRenameTitle')
+  batchDdlSql.value = sql
+  batchDdlSummary.value = [
+    t('workspace.schemaEr.batchAlterRenameSummaryTable', {table: target.table, count: renames.length}),
+    ...renames.map((item) =>
+        t('workspace.schemaEr.batchAlterRenameSummaryColumn', {
+          from: item.from,
+          to: item.to,
         }),
     ),
   ]
@@ -992,6 +1022,27 @@ onUnmounted(() => {
               @click="openBatchModifyDdl"
           >
             {{ t('workspace.schemaEr.batchAlterModifyAction') }}
+          </DwButton>
+        </div>
+        <label class="schema-er-graph__batch-add">
+          <span>{{ t('workspace.schemaEr.batchAlterRenameHint') }}</span>
+          <textarea
+              v-model="batchRenameDraft"
+              class="dw-input schema-er-graph__batch-add-input"
+              rows="3"
+              spellcheck="false"
+              :placeholder="t('workspace.schemaEr.batchAlterRenamePlaceholder')"
+          />
+        </label>
+        <div class="schema-er-graph__inspector-actions">
+          <DwButton
+              variant="secondary"
+              size="sm"
+              type="button"
+              :disabled="!canAlterColumn"
+              @click="openBatchRenameDdl"
+          >
+            {{ t('workspace.schemaEr.batchAlterRenameAction') }}
           </DwButton>
         </div>
       </aside>

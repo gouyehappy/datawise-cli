@@ -13,8 +13,8 @@ View-model / SQL lineage for Hive, Spark, Flink, Trino, and Presto.
 
 ## Behavior
 
-1. **Hard features** (`LATERAL VIEW`, `MATCH_RECOGNIZE`, Flink `TUMBLE`/`HOP`/`CUMULATE`/`SESSION` TVFs, Trino/Presto `UNNEST … WITH ORDINALITY`):
-   - First **soften** when possible (strip `LATERAL VIEW`, unwrap `TABLE(TUMBLE(TABLE t, …))` → `t`, strip `MATCH_RECOGNIZE (…)`, strip `WITH ORDINALITY`), then run the AST engine → status `PARTIAL` with column lineage when parse succeeds (`LAKEHOUSE_SOFTENED`).
+1. **Hard features** (`LATERAL VIEW`, `MATCH_RECOGNIZE`, Flink `TUMBLE`/`HOP`/`CUMULATE`/`SESSION` TVFs, Trino/Presto `UNNEST … WITH ORDINALITY`, **`TRY_CAST`**, **`GROUPING SETS` / `CUBE` / `ROLLUP`**):
+   - First **soften** when possible (strip `LATERAL VIEW`, unwrap `TABLE(TUMBLE(TABLE t, …))` → `t`, strip `MATCH_RECOGNIZE (…)`, strip `WITH ORDINALITY`, rewrite `TRY_CAST(` → `CAST(`, rewrite advanced grouping to a simple `GROUP BY` arg list), then run the AST engine → status `PARTIAL` with column lineage when parse succeeds (`LAKEHOUSE_SOFTENED`).
    - If soften + AST cannot produce columns → **table-level** fallback: synthetic output `_table_deps` with source column `*` per FROM/JOIN / inner TVF table (`LAKEHOUSE_TABLE_LEVEL_ONLY`).
 2. **Normalizable clauses** (`DISTRIBUTE BY` / `CLUSTER BY` / `SORT BY`, `INSERT OVERWRITE` → `INSERT INTO`, `INSERT … PARTITION (…)` strip, `TABLESAMPLE`) are stripped, then the AST engine analyzes the remaining SQL. Warning: `LAKEHOUSE_NORMALIZED`.
 3. **Hive / Spark / Flink** successful SELECTs are reported as **`PARTIAL`** compatibility (`LAKEHOUSE_PARTIAL_COMPAT`).

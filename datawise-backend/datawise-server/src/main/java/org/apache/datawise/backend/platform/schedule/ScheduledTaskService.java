@@ -600,13 +600,19 @@ public class ScheduledTaskService {
         if (!digest) {
             return TaskRunOutcome.messageOnly(message);
         }
+        int digestMaxRows = resolveDigestMaxRows(payload);
+        int summaryMaxChars = Math.min(2000, Math.max(200, digestMaxRows * 40));
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("canvasId", result.canvasId() != null ? result.canvasId() : canvasId);
         data.put("title", result.title() != null ? result.title() : "");
         data.put("rowCount", result.rowCount());
-        data.put("summary", clip(result.summary(), 500));
+        data.put("digestMaxRows", digestMaxRows);
+        String summary = result.summary() != null ? result.summary() : "";
+        boolean summaryTruncated = summary.length() > summaryMaxChars;
+        data.put("summary", clip(summary, summaryMaxChars));
+        data.put("summaryTruncated", summaryTruncated);
         if (result.sql() != null && !result.sql().isBlank()) {
-            data.put("sql", result.sql());
+            data.put("sql", clip(result.sql(), Math.min(4000, summaryMaxChars * 2)));
         }
         return new TaskRunOutcome(message, data);
     }

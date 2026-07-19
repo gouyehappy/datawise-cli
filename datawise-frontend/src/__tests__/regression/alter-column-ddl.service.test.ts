@@ -4,6 +4,7 @@ import {
     buildAlterColumnSql,
     buildBatchAlterColumnDdl,
     parseBatchAddColumnLines,
+    parseBatchRenameColumnLines,
     supportsAlterColumnWizard,
 } from '@/features/workspace/services/alter-column-ddl.service'
 
@@ -154,5 +155,33 @@ describe('alter-column-ddl.service', () => {
         })
         assert.ok(pg?.includes('ALTER COLUMN'))
         assert.ok(pg?.includes('TYPE TEXT'))
+    })
+
+    it('builds batch rename column DDL and parses lines', () => {
+        const sql = buildBatchAlterColumnDdl('rename', {
+            dbType: 'mysql',
+            tableName: 'orders',
+            database: 'shop',
+            renames: [
+                {from: 'legacy_flag', to: 'flag'},
+                {from: 'old_note', to: 'note'},
+            ],
+        })
+        assert.equal(
+            sql,
+            'ALTER TABLE `shop`.`orders` RENAME COLUMN `legacy_flag` TO `flag`;\nALTER TABLE `shop`.`orders` RENAME COLUMN `old_note` TO `note`;',
+        )
+        const parsed = parseBatchRenameColumnLines('a b\nold -> new\nx TO y\n')
+        assert.deepEqual(parsed, [
+            {from: 'a', to: 'b'},
+            {from: 'old', to: 'new'},
+            {from: 'x', to: 'y'},
+        ])
+        const pg = buildAlterColumnSql('rename', {
+            dbType: 'postgresql',
+            tableName: 'orders',
+            column: {name: 'a', dataType: '', nullable: true, renameTo: 'b'},
+        })
+        assert.equal(pg, 'ALTER TABLE "orders" RENAME COLUMN "a" TO "b";')
     })
 })

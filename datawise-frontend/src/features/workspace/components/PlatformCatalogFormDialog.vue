@@ -740,7 +740,7 @@ function close() {
 }
 
 function parseDigestMaxRows(): number | undefined {
-    if (!taskForm.digest || taskForm.type !== 'sql') return undefined
+    if (!taskForm.digest || (taskForm.type !== 'sql' && taskForm.type !== 'canvas')) return undefined
     const parsed = Number.parseInt(taskForm.digestMaxRows.trim() || '20', 10)
     if (!Number.isFinite(parsed)) return 20
     return Math.max(1, Math.min(50, parsed))
@@ -757,9 +757,11 @@ function buildPayload(): PlatformCatalogFormPayload | null {
         case 'scheduled_tasks': {
             let payloadJson = taskForm.payloadJson.trim() || undefined
             if (taskForm.type === 'canvas') {
+                const digestMaxRows = parseDigestMaxRows()
                 payloadJson = JSON.stringify({
                     canvasId: taskForm.canvasId.trim(),
                     ...(taskForm.digest ? {digest: true} : {}),
+                    ...(digestMaxRows != null ? {digestMaxRows} : {}),
                 })
             } else if (taskForm.type === 'sql') {
                 try {
@@ -1176,7 +1178,7 @@ async function submit() {
             :label="t('platform.tasks.digest')"
         />
         <FormField
-            v-if="taskForm.type === 'sql' && taskForm.digest"
+            v-if="(taskForm.type === 'sql' || taskForm.type === 'canvas') && taskForm.digest"
             :label="t('platform.tasks.digestMaxRows')"
         >
           <template #default="{ id }">
@@ -1191,6 +1193,9 @@ async function submit() {
             >
           </template>
         </FormField>
+        <p v-if="taskForm.type === 'canvas' && taskForm.digest" class="modal-hint">
+          {{ t('platform.tasks.digestMaxRowsCanvasHint') }}
+        </p>
         <p v-if="taskForm.type === 'sql' || taskForm.type === 'canvas'" class="modal-hint">
           {{ t('platform.tasks.digestHint') }}
         </p>
