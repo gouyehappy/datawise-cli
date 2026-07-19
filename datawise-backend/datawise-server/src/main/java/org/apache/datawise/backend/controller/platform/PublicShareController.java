@@ -59,11 +59,17 @@ public class PublicShareController {
                 .append("body{font-family:system-ui,sans-serif;margin:0;padding:24px;background:#f6f7f9;color:#1a1a1a}")
                 .append("main{max-width:960px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:24px}")
                 .append("h1{font-size:1.25rem;margin:0 0 8px}p{color:#6b7280;margin:0 0 16px;font-size:.9rem}")
+                .append(".expiry{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:8px 12px;border-radius:8px;margin:0 0 16px;font-size:.875rem}")
                 .append("table{border-collapse:collapse;width:100%;font-size:.875rem}th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left}")
                 .append("th{background:#f3f4f6}tr:nth-child(even) td{background:#fafafa}")
                 .append("</style></head><body><main>")
                 .append("<h1>").append(title).append("</h1>")
                 .append("<p>Read-only snapshot · DataWise</p>");
+        if (share.expiresAt() != null) {
+            body.append("<p class=\"expiry\">This share expires at ")
+                    .append(escape(share.expiresAt().toString()))
+                    .append(" (UTC).</p>");
+        }
         try {
             JsonNode root = objectMapper.readTree(share.payloadJson() != null ? share.payloadJson() : "{}");
             JsonNode rowsNode = root.get("rows");

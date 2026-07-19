@@ -52,12 +52,13 @@ Config dir: `~/Library/Application Support/DataWise CLI/config` (Electron `userD
 
 ## Still open
 
+- Linux AppImage polish — see [DESKTOP_LINUX.md](./DESKTOP_LINUX.md) (`npm run dist:desktop:linux`)
 - Apple Developer ID signing + notarization
 - Intel (x64) Mac dual-arch universal build
 - CI `macos-14` workflow publishing release assets
-- Linux AppImage polish (`npm run dist:desktop:linux` scaffold exists)
 
 ## Related
 
+- Linux: [DESKTOP_LINUX.md](./DESKTOP_LINUX.md)
 - Scripts: `scripts/desktop/build.mjs`, `platform.mjs`, `bundle-backend.mjs`
 - Runtime: `electron/backend-service.ts` (`jre/bin/java` on non-Windows)

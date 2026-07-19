@@ -7,6 +7,7 @@ import AiAnalysisChart from '@/features/ai/analysis/components/AiAnalysisChart.v
 import {buildAiChartOption} from '@/features/ai/analysis/services/ai-chart.service'
 import DashboardWidgetFrame from '@/features/dashboard/components/DashboardWidgetFrame.vue'
 import type {DashboardChartWidget} from '@/features/dashboard/services/dashboard-chart-widget.service'
+import {buildShareEmbedSnippet} from '@/features/dashboard/services/share-embed.service'
 import {
     pivotQueryResultRows,
     toAiChartSpec,
@@ -50,7 +51,7 @@ const chartOption = computed(() => {
   return buildAiChartOption(spec, props.widget.columns, chartRows.value)
 })
 
-async function shareSnapshot() {
+async function shareSnapshot(mode: 'link' | 'embed' = 'link') {
   if (sharing.value) return
   sharing.value = true
   try {
@@ -66,9 +67,15 @@ async function shareSnapshot() {
       }),
       expiresInDays,
     })
-    const url = sharesApi.publicPageUrl(created.token)
-    await navigator.clipboard.writeText(url)
-    toast.success(t('dashboard.savedChart.shareCopiedWithExpiry', {days: expiresInDays}))
+    if (mode === 'embed') {
+      await navigator.clipboard.writeText(
+          buildShareEmbedSnippet(created.token, {title: props.widget.title}),
+      )
+      toast.success(t('dashboard.savedChart.embedCopiedWithExpiry', {days: expiresInDays}))
+    } else {
+      await navigator.clipboard.writeText(sharesApi.publicPageUrl(created.token))
+      toast.success(t('dashboard.savedChart.shareCopiedWithExpiry', {days: expiresInDays}))
+    }
   } catch (error) {
     toast.error(
         resolveDisplayApiErrorMessage(error, (key) => String(t(key)))
@@ -115,9 +122,19 @@ async function shareSnapshot() {
             size="sm"
             type="button"
             :disabled="sharing"
-            @click="shareSnapshot"
+            @click="shareSnapshot('link')"
         >
           {{ t('dashboard.savedChart.share') }}
+        </DwButton>
+        <DwButton
+            variant="ghost"
+            size="sm"
+            type="button"
+            :disabled="sharing"
+            :title="t('dashboard.savedChart.embedHint')"
+            @click="shareSnapshot('embed')"
+        >
+          {{ t('dashboard.savedChart.embed') }}
         </DwButton>
         <DwButton
             v-if="editMode"

@@ -6,7 +6,7 @@ Build desktop executables with an embedded backend and JRE.
 |------|-----------------|
 | Windows | NSIS installer + portable |
 | macOS (Apple Silicon) | DMG + zip (`arm64`) — see [DESKTOP_MAC.md](../../../docs/DESKTOP_MAC.md) |
-| Linux | AppImage (scaffold) |
+| Linux | AppImage — see [DESKTOP_LINUX.md](../../../docs/DESKTOP_LINUX.md) |
 
 ## Why `target-desktop/`
 

@@ -11,6 +11,13 @@ import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {resolveDisplayApiErrorMessage} from '@/shared/api/http/api-error-message'
 import type {OutboundWebhook, OidcConfig} from '@/shared/api/types'
+import {
+  claimMapPreviewRows,
+  directorySyncScopesIncomplete,
+  formatClaimMap,
+  parseClaimMap,
+  withRecommendedDirectorySyncScopes,
+} from '@/features/settings/services/oidc-directory-sync.service'
 
 const {t} = useI18n()
 const auth = useAuthStore()
@@ -132,23 +139,14 @@ const oidc = reactive({
 })
 const oidcSaving = ref(false)
 
-function parseClaimMap(text: string): Record<string, string> {
-  const map: Record<string, string> = {}
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const idx = trimmed.indexOf('=')
-    if (idx <= 0) continue
-    const key = trimmed.slice(0, idx).trim()
-    const value = trimmed.slice(idx + 1).trim()
-    if (key && value) map[key] = value
-  }
-  return map
-}
+const directorySyncScopeWarn = computed(() =>
+  oidc.syncRolesFromClaim && directorySyncScopesIncomplete(oidc.scopes, oidc.roleClaim),
+)
 
-function formatClaimMap(map?: Record<string, string> | null): string {
-  if (!map) return ''
-  return Object.entries(map).map(([k, v]) => `${k}=${v}`).join('\n')
+const roleClaimPreview = computed(() => claimMapPreviewRows(oidc.roleClaimMapText))
+
+function addRecommendedDirectoryScopes() {
+  oidc.scopes = withRecommendedDirectorySyncScopes(oidc.scopes, oidc.roleClaim)
 }
 
 async function reloadHooks() {
@@ -421,6 +419,12 @@ onMounted(async () => {
           <DwInput v-model="oidc.defaultOidcRoleKey" placeholder="developer"/>
         </FormField>
       </div>
+      <p v-if="directorySyncScopeWarn" class="hint warn">
+        {{ t('settings.integrations.directorySyncScopeWarn') }}
+        <DwButton variant="ghost" size="sm" type="button" @click="addRecommendedDirectoryScopes">
+          {{ t('settings.integrations.addRecommendedScopes') }}
+        </DwButton>
+      </p>
       <FormField :label="t('settings.integrations.tenantClaimMap')">
         <textarea
             v-model="oidc.tenantClaimMapText"
@@ -442,6 +446,16 @@ onMounted(async () => {
             :placeholder="t('settings.integrations.roleClaimMapPlaceholder')"
         />
       </FormField>
+      <div v-if="roleClaimPreview.length" class="claim-preview">
+        <p class="events-title">{{ t('settings.integrations.roleClaimMapPreview') }}</p>
+        <ul>
+          <li v-for="row in roleClaimPreview" :key="`${row.from}=${row.to}`">
+            <code>{{ row.from }}</code>
+            →
+            <code>{{ row.to }}</code>
+          </li>
+        </ul>
+      </div>
       <p class="hint">{{ t('settings.integrations.directorySyncHint') }}</p>
       <div class="checks">
         <DwCheckbox
@@ -470,6 +484,31 @@ onMounted(async () => {
   color: var(--dw-text-muted);
   font-size: 12px;
   margin: 0 0 12px;
+}
+.hint.warn {
+  color: var(--dw-warning, #9a3412);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.claim-preview {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 8px;
+  background: var(--dw-surface-muted);
+  font-size: 12px;
+}
+.claim-preview ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.claim-preview code {
+  font-size: 11px;
 }
 .form-grid {
   display: grid;

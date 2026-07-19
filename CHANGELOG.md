@@ -33,6 +33,9 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave C G15 deepen: data-quality catalog **Copy / Download gate JSON** after release or multi-env gate runs.
 - Wave B S3 deepen: lakehouse lineage treats Trino/Presto **`UNNEST … WITH ORDINALITY`** as a hard feature (soft-strip → `PARTIAL`).
 - Wave C G9 deepen: AI workbench tenant quota UX — near-limit warning + exhausted banner (disables send) from `GET /api/tenants/mine/ai-usage`; Settings → Tenants card unchanged.
+- Wave C G8 deepen: Dashboard chart **Copy embed** (iframe snippet) + public `/share/{token}` **expiry banner**.
+- Wave D G2 deepen: OIDC directory-sync UI — warn when scopes omit `groups`, one-click add recommended scopes, role claim map preview.
+- Wave C G6 deepen: Linux AppImage packaging doc ([DESKTOP_LINUX.md](./docs/DESKTOP_LINUX.md)); About panel shows desktop platform when running in Electron.
 - Wave B S1 slice: table migration mode `PK_UPSERT` with conflict strategies OVERWRITE / SKIP / FAIL (MySQL `ON DUPLICATE KEY` / PostgreSQL `ON CONFLICT`); production-target migration plans go through team approval (approve records consent; managers run the wizard).
 - Wave B S2 slice: federated JOIN hard caps (`FederatedJoinLimits`), hash join for equality ON, cross-product rejection, `hasMore` truncation; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 UX: raise `maxRows` when federated results truncate — result grid **Raise limit and re-run** (console) and platform federated **Retry at {limit}** (1k → 5k → 10k hard cap); see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).

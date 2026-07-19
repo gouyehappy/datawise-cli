@@ -1095,6 +1095,10 @@ export default {
         syncRolesFromClaim: '登录时按组 Claim 同步租户角色',
         deprovisionMissingRoleClaim: '组全部移除时停用 membership 并吊销会话',
         directorySyncHint: '组织同步（G2）：依赖 IdP 在 ID Token 中下发 groups（或自定义 claim）。完整 SCIM 推送仍未支持。',
+        directorySyncScopeWarn:
+            '已开启角色同步，但 Scopes 似乎缺少 groups。多数 IdP 仅在请求 groups scope 时才会下发组 Claim。',
+        addRecommendedScopes: '添加推荐 Scopes',
+        roleClaimMapPreview: '角色 Claim 映射预览',
         saveOidc: '保存 OIDC 配置',
         oidcSaved: 'OIDC 配置已保存',
     },
@@ -1103,6 +1107,12 @@ export default {
         subtitle: '版本信息与软件更新设置',
         versionLabel: '版本 {version}',
         latestVersion: '最新版本 {version}',
+        desktopPlatform: {
+            mac: '桌面应用 · macOS',
+            linux: '桌面应用 · Linux',
+            windows: '桌面应用 · Windows',
+            other: '桌面应用 · {platform}',
+        },
         checkUpdate: '检查更新',
         checking: '正在检查更新…',
         upToDate: '当前已是最新版本',

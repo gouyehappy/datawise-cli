@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from 'vue'
+import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {AppModal, DwButton} from '@/core/components'
 import {UserResource} from '@/features/auth/types/user-resource.types'
@@ -10,12 +10,22 @@ import SettingsPageShell from '@/features/settings/components/SettingsPageShell.
 import {APP_VERSION} from '@/features/settings/services/about-settings.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useUpdateSettingsStore} from '@/features/settings/stores/update-settings'
+import {desktopPlatform, isDesktopApp} from '@/features/layout/services/desktop-chrome'
 
 const {t, tm} = useI18n()
 const layout = useLayoutStore()
 const updateSettings = useUpdateSettingsStore()
 const {readOnly, hint, denyIfReadOnly} = useResourceWriteGuard(UserResource.UpdatePreferences)
 const showChangelog = ref(false)
+const desktopApp = isDesktopApp()
+const platformLabel = computed(() => {
+  const platform = desktopPlatform()
+  if (!desktopApp || !platform) return ''
+  if (platform === 'darwin') return t('settings.about.desktopPlatform.mac')
+  if (platform === 'linux') return t('settings.about.desktopPlatform.linux')
+  if (platform === 'win32') return t('settings.about.desktopPlatform.windows')
+  return t('settings.about.desktopPlatform.other', {platform})
+})
 
 const changelogItems = tm('settings.about.changelogItems') as {
   version: string
@@ -51,6 +61,7 @@ function patchUpdatePrefs(patch: Partial<typeof updateSettings.preferences>) {
           <AppBrandLogo size="lg"/>
           <div>
             <h3>{{ t('settings.about.versionLabel', {version: APP_VERSION}) }}</h3>
+            <p v-if="platformLabel" class="latest-line">{{ platformLabel }}</p>
             <p class="latest-line">
               {{ t('settings.about.latestVersion', {version: updateSettings.lastCheck?.latestVersion ?? APP_VERSION}) }}
             </p>

@@ -36,18 +36,18 @@
 | # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
 |---|------|------|------|------------------|
 | G1 | SSO（OIDC / SAML / LDAP） | done（OIDC） | OIDC Authorization Code + PKCE 已落地；SAML/LDAP 仍缺 | 中大型客户过不了安全评审 |
-| G2 | 企业 IdP / 组织同步 | partial | OIDC 组 claim → 租户角色同步 + 缺组时停用 membership / 吊销会话（Settings → Integrations）。缺完整 SCIM / 组织树 / LDAP | 账号生命周期不可运营 |
+| G2 | 企业 IdP / 组织同步 | partial | OIDC 组 claim → 租户角色同步 + 缺组时停用 membership / 吊销会话（Settings → Integrations）；**scopes 缺 groups 时警告 + 一键补全 + claim map 预览**。缺完整 SCIM / 组织树 / LDAP | 账号生命周期不可运营 |
 | G3 | 外发通知通道 | done（Webhook+飞书/钉钉/邮件） | 通用 Webhook + HMAC；飞书/钉钉机器人；**邮件** `channel=email`（HTTP 邮件网关 / `mailto:` + `DATAWISE_MAIL_WEBHOOK_URL`）。原生 SMTP 客户端仍缺 | 审批、漂移、定时失败可外发闭环 |
 | G4 | 合规审计导出 | done（导出+Webhook） | 服务端 CSV/JSON 导出 + `audit.appended`；完整 SIEM/哈希链仍缺 | 「可证明合规」不足 |
 | G5 | 集中密钥（Vault / KMS） | partial | 主密钥可来自 DATAWISE_MASTER_KEY；连接字段支持 dwsecret:env: / dwsecret:file: / **dwsecret:json-file:path#field** / **dwsecret:properties:path#key** / **dwsecret:vault:path#field**；Settings 密钥中心。缺 AWS/Azure KMS | 多机 / 集中部署故事弱 |
-| G6 | Mac / Linux 正式桌面包 | partial | Windows NSIS/便携已稳；macOS Apple Silicon：`dist:desktop:mac` + electron-builder DMG/zip + [DESKTOP_MAC.md](./DESKTOP_MAC.md)；缺签名/公证与 CI 产物；Linux AppImage 脚手架 | 研发侧 macOS 用户门槛高 |
+| G6 | Mac / Linux 正式桌面包 | partial | Windows NSIS/便携已稳；macOS Apple Silicon：`dist:desktop:mac` + [DESKTOP_MAC.md](./DESKTOP_MAC.md)；Linux AppImage：`dist:desktop:linux` + [DESKTOP_LINUX.md](./DESKTOP_LINUX.md)；About 显示桌面平台。缺签名/公证与 CI 产物 | 研发侧 macOS/Linux 用户门槛高 |
 
 ### 3.2 价值外溢与运营
 
 | # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
 |---|------|------|------|------------------|
 | G7 | 洞察 / Dashboard 订阅外发 | partial | 定时 SQL/画布任务可选 digest → insight.digest Webhook（截断行/画布摘要）；SQL 任务可配 **digestMaxRows（1–50）**；非全量 BI 订阅中心 | AI 画布价值留在桌面内 |
-| G8 | 只读分享看板 / 嵌入链接 | partial | Dashboard 图表冻结快照分享（**可选 7/14/30/90 天过期**）+ 设置菜单管理/撤销（过期态）；公开页 /share/{token}；非实时嵌入 | 分析师路径断在工作台 |
+| G8 | 只读分享看板 / 嵌入链接 | partial | Dashboard 图表冻结快照分享（**可选 7/14/30/90 天过期**）+ **Copy embed iframe** + 公开页过期横幅；设置菜单管理/撤销（过期态）；非实时嵌入 | 分析师路径断在工作台 |
 | G9 | AI 成本与配额治理 | partial | 租户日调用硬顶 + Settings 用量卡 + **AI 工作台** near-limit / exhausted 提示（禁用发送）+ 出站 **`ai.quota.near_limit` / `ai.quota.exhausted`**；未做人/团队账单 | 开 AI 后运维会怕滥用 |
 | G10 | Insight → 工单 / PR / Runbook | partial | 出站通道 `github_issue` / `gitlab_issue` / `jira_issue` + `POST /api/platform/insight-actions`（`insight.action`）；**AI 工作台**分析回复 **导出工单**；见 [INSIGHT_ACTIONS.md](./INSIGHT_ACTIONS.md)。缺自动开 PR / 状态回写 | 洞察难变成组织动作 |
 
@@ -160,6 +160,9 @@
 | 2026-07-19、G15 门禁导出 | 发版/多环境门禁结果 Copy / Download JSON |
 | 2026-07-19、S3 ORDINALITY | Trino/Presto WITH ORDINALITY 硬特性软剥离 → PARTIAL |
 | 2026-07-19、S5 批量 ADD | ER 图批量新增列 DDL（行解析 name TYPE） |
+| 2026-07-19、G8 嵌入 | Dashboard 图表 **Copy embed**（iframe）+ 公开页过期横幅 |
+| 2026-07-19、G2 OIDC 护栏 | 角色同步时 scopes 缺 groups 警告 / 一键补全 + role claim map 预览 |
+| 2026-07-19、G6 Linux 文档 | [DESKTOP_LINUX.md](./DESKTOP_LINUX.md) + About 桌面平台行 |
 
 | 2026-07-18、S2 残差 IN | 联邦 JOIN 残差 WHERE 支持 IN / NOT IN 字面量列表 |
 | 2026-07-18、S2 残差 OR | 联邦 JOIN 残差 WHERE 支持跨别名 OR |

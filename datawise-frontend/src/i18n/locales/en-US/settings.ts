@@ -1095,6 +1095,10 @@ export default {
         syncRolesFromClaim: 'Sync tenant roles from groups claim on login',
         deprovisionMissingRoleClaim: 'Disable membership and revoke sessions when groups are gone',
         directorySyncHint: 'Org sync (G2): requires IdP groups (or custom claim) in the ID token. Full SCIM push is not supported yet.',
+        directorySyncScopeWarn:
+            'Role sync is enabled, but scopes look incomplete (missing groups). Many IdPs only emit group claims when the groups scope is requested.',
+        addRecommendedScopes: 'Add recommended scopes',
+        roleClaimMapPreview: 'Role claim map preview',
         saveOidc: 'Save OIDC config',
         oidcSaved: 'OIDC config saved',
     },
@@ -1103,6 +1107,12 @@ export default {
         subtitle: 'Version info and software update preferences',
         versionLabel: 'Version {version}',
         latestVersion: 'Latest version {version}',
+        desktopPlatform: {
+            mac: 'Desktop app · macOS',
+            linux: 'Desktop app · Linux',
+            windows: 'Desktop app · Windows',
+            other: 'Desktop app · {platform}',
+        },
         checkUpdate: 'Check for updates',
         checking: 'Checking for updates…',
         upToDate: 'You are on the latest version',
