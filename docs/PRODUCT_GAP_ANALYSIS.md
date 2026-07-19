@@ -55,10 +55,10 @@
 
 | # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
 |---|------|------|------|------------------|
-| G11 | 真·连接器远程市场 | partial | 浏览 / 安装引导 + 本地 `manifest.json`；管理员一键安装 + **热加载** `POST /api/datasources/plugins/reload`（安装后自动 reload）。缺远程目录托管 / 签名通道 | 生态难自运转 |
+| G11 | 真·连接器远程市场 | partial | 浏览 / 安装引导 + 本地 `manifest.json`；管理员一键安装 + **热加载** + **已装插件可重装/升级**（有 downloadUrl 时）；缺远程目录托管 / 签名通道 | 生态难自运转 |
 | G12 | 多租户 / 托管 SaaS | partial | Dual-mode 已落地（`tenancy.mode=single|multi`）：租户隔离、RBAC、OIDC 映射、配额硬顶、成员邀请；见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。缺完整计费/发票与对象存储 | 托管商业化与计费仍弱 |
 | G13 | 组织级数据发现 | done | 命令面板跨库搜表 + GET /api/discovery/search（offset 分页 + **服务端分面** kind/connection/owner/tag）；**数据目录 Tab** + 血缘跳转 + 标签分面 + Load more + **列预览侧栏**（schema 缓存 / Explorer 树，最多 40 列）；见 [DISCOVERY.md](./DISCOVERY.md) | 语义层发现体验已可用 |
-| G14 | 编排生态对接 | partial | 定时任务 http_trigger + 入站 trigger + orchestration.* Webhook + **DAG 状态回写**（statusUrlTemplate / POST /api/platform/orchestration/status + 定时任务目录列）；见 [ORCHESTRATION.md](./ORCHESTRATION.md)。缺原生算子 / 多引擎状态适配器 | Yarn 可看，闭环不足 |
+| G14 | 编排生态对接 | partial | 定时任务 http_trigger + 入站 trigger + orchestration.* Webhook + DAG 状态回写 + **Airflow/dbt/通用 HTTP 预设**；见 [ORCHESTRATION.md](./ORCHESTRATION.md)。缺原生算子 / 多引擎状态适配器 | Yarn 可看，闭环不足 |
 | G15 | 可调度数据质量规则 | partial | 定时任务 data_quality + Explorer **数据质量**目录 + blocking + gate API + **内置/本机/租户共享模板** + **共享模板管理 UI**（目录工具栏列表/删除；Add 表单重命名）+ **多环境对照门禁**（pairByName 按名配对）；见 [DATA_QUALITY.md](./DATA_QUALITY.md)。缺 JDBC 元数据表 | 质量治理难产品化 |
 
 ---
@@ -72,9 +72,9 @@
 | S1 | 按主键 / 唯一键的**数据增量同步** | partial | 结构同步已闭环；数据迁移 `PK_UPSERT` + 冲突策略（MySQL/PG）+ 生产目标审批门控；**行级 Diff 预览**；向导预检 **源行数估算 + 全表扫描/无主键警告**；进度卡 **暂停 + 暂停中反馈** + 断点续传。缺更细可中断粒度 | Compare → 勾选 → 冲突策略 → 进度可中断 → 可走审批 |
 | S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限 + hasMore；Grace hash 落盘；残差谓词/函数目录已闭环；**控制台/网格限流提示** + **提高 maxRows 重跑**（1k→5k→10k）；**源窗口分批**（`offset` + 平台「下一批」）。见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 限流 / 溢出策略 / 文档化边界；可选下推 |
 | S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：`LakehouseLineageParser` 规范化 + 硬特性软剥离/表级回退（`_table_deps`）；Trino/Presto 仍 COMPLETE；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite 语义分析 / sidecar 仍缺 | 关键方言到可用 `complete/partial`，失败诚实降级 |
-| S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL 并排；画布上字段自由布局仍浅 | 画布级字段自由布局 / 更强与 AI 联动 |
+| S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL + **复制 SQL / 用 AI 精炼预览**；画布上字段自由布局仍浅 | 画布级字段自由布局 / 更强与 AI 联动 |
 | S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列（AlterColumn DDL 预览/执行/控制台审批）+ **批量 DROP 列 DDL**（多选预览/复制/控制台）；列级仍非画布内联编辑 | 图上内联改列 / 更完整批量 DDL 编排 |
-| S6 | 连接器市场深度 | partial | 浏览 catalog + `manifest.json` + 远程一键安装 + **热加载**；缺签名通道 / 远程目录托管 | 远程安装 / 签名通道 / 一键升级 |
+| S6 | 连接器市场深度 | partial | 浏览 catalog + `manifest.json` + 远程一键安装 + **热加载** + **重装/升级**；缺签名通道 / 远程目录托管 | 远程安装 / 签名通道 / 一键升级 |
 
 对标细节仍见 [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)（结构同步数据侧、VQB、ER 等条目）。
 
@@ -145,6 +145,9 @@
 | 2026-07-19、S5 批量 DROP | ER 图多选列生成批量 DROP DDL（预览/复制/控制台） |
 | 2026-07-19、G8 分享过期 | Dashboard 图表分享可选 7/14/30/90 天过期 + 管理列表过期态 |
 | 2026-07-19、G7 digestMaxRows | 定时 SQL 任务 digest 可配置摘要最大行数（1–50） |
+| 2026-07-19、S4 VQB AI | Visual Query Builder 复制 SQL + 用 AI 精炼预览 |
+| 2026-07-19、G14 HTTP 预设 | http_trigger Airflow/dbt/Webhook 表单预设 |
+| 2026-07-19、G11 重装升级 | 连接器市场已装插件可从 downloadUrl 重装/升级 |
 
 | 2026-07-18、S2 残差 IN | 联邦 JOIN 残差 WHERE 支持 IN / NOT IN 字面量列表 |
 | 2026-07-18、S2 残差 OR | 联邦 JOIN 残差 WHERE 支持跨别名 OR |

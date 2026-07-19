@@ -30,6 +30,11 @@ import {
     type ScheduledSqlSource,
 } from '@/features/platform/services/scheduled-sql-payload.service'
 import {
+    applyOrchestrationHttpPreset,
+    ORCHESTRATION_HTTP_PRESETS,
+    type OrchestrationHttpPresetId,
+} from '@/features/platform/services/orchestration-http-presets.service'
+import {
     applyDataQualityRuleTemplate,
     DATA_QUALITY_RULE_TEMPLATE_CUSTOM_ID,
     DATA_QUALITY_RULE_TEMPLATES,
@@ -233,6 +238,26 @@ const httpMethodOptions = computed<SelectOption[]>(() => [
     {value: 'PATCH', label: 'PATCH'},
     {value: 'GET', label: 'GET'},
 ])
+
+const httpPresetId = ref<OrchestrationHttpPresetId>('custom')
+
+const httpPresetOptions = computed<SelectOption[]>(() =>
+    ORCHESTRATION_HTTP_PRESETS.map((preset) => ({
+        value: preset.id,
+        label: t(`workspace.platformCatalog.form.httpPreset.${preset.labelKey}`),
+    })),
+)
+
+watch(httpPresetId, (id, previous) => {
+    if (!id || id === previous || id === 'custom') return
+    const fields = applyOrchestrationHttpPreset(id)
+    taskForm.httpUrl = fields.httpUrl
+    taskForm.httpMethod = fields.httpMethod
+    taskForm.httpBodyJson = fields.httpBodyJson
+    taskForm.httpHeadersJson = fields.httpHeadersJson
+    taskForm.httpTimeoutMs = fields.httpTimeoutMs
+    taskForm.httpStatusUrlTemplate = fields.httpStatusUrlTemplate
+})
 
 const dqAssertionOptions = computed<SelectOption[]>(() => [
     {value: 'empty_result', label: t('workspace.platformCatalog.form.dqAssertion.empty_result')},
@@ -621,6 +646,7 @@ function resetForms() {
     taskForm.httpHeadersJson = '{}'
     taskForm.httpTimeoutMs = '10000'
     taskForm.httpStatusUrlTemplate = ''
+    httpPresetId.value = 'custom'
     canvasOptions.value = []
     sqlFileOptions.value = []
     sharedQueryOptions.value = []
@@ -1297,6 +1323,15 @@ async function submit() {
         <fieldset v-if="showHttpTriggerFields" class="modal-fieldset">
           <legend>{{ t('workspace.platformCatalog.form.section.httpTrigger') }}</legend>
           <p class="modal-hint">{{ t('workspace.platformCatalog.form.hint.httpTrigger') }}</p>
+          <label class="modal-field">
+            <span>{{ t('workspace.platformCatalog.form.httpPresetLabel') }}</span>
+            <DwSelect
+                v-model="httpPresetId"
+                size="sm"
+                :options="httpPresetOptions"
+            />
+          </label>
+          <p class="modal-hint">{{ t('workspace.platformCatalog.form.httpPresetHint') }}</p>
           <FormField :label="t('workspace.platformCatalog.form.httpUrlLabel')">
             <template #default="{ id }">
               <input

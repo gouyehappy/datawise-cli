@@ -384,6 +384,14 @@ export default {
             httpHeadersLabel: '请求头（JSON 对象）',
             httpBodyLabel: '请求体（JSON）',
             httpStatusUrlLabel: '状态查询 URL 模板',
+            httpPresetLabel: '预设',
+            httpPresetHint: '选择模板自动填充 URL / 请求头 / 请求体 / 状态轮询；保存前请替换占位符。',
+            httpPreset: {
+                custom: '自定义（保留当前字段）',
+                airflowDagRun: 'Airflow DAG 触发',
+                dbtCloudJob: 'dbt Cloud Job 触发',
+                genericWebhook: '通用 Webhook',
+            },
             sqlSource: {
                 inline: '内联 SQL',
                 workspace_file: '工作区 SQL 文件',

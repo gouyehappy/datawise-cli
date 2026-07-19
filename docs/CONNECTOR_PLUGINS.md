@@ -9,6 +9,7 @@ marketplace manifest (`version` / `sha256` / `downloadUrl`).
 | Action | API |
 |--------|-----|
 | Install from marketplace URL | `POST /api/datasources/market/install` `{ "connectorId": "…" }` (admin) |
+| Reinstall / upgrade (same API when already loaded + `downloadUrl`) | Marketplace card **Reinstall / upgrade** |
 | Reload JARs into the live registry | `POST /api/datasources/plugins/reload` (admin) |
 
 Install automatically calls reload. When the connector resolves after reload,

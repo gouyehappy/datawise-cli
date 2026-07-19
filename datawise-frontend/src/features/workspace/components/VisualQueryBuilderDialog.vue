@@ -9,6 +9,7 @@ import MigrationWizardSteps from '@/features/workspace/components/migration/Migr
 import VisualQueryCanvas from '@/features/workspace/components/VisualQueryCanvas.vue'
 import VisualQueryFieldBoard from '@/features/workspace/components/VisualQueryFieldBoard.vue'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
+import {useLayoutStore} from '@/features/layout/stores/layout'
 import {
     ensureDatabaseTablesLoaded,
     ensureTableColumnsLoaded,
@@ -42,6 +43,7 @@ const emit = defineEmits<{
 
 const {t} = useI18n()
 const explorer = useExplorerStore()
+const layout = useLayoutStore()
 
 const wizardStep = ref<VqbStep>('table')
 const state = ref<VisualQueryBuilderState>(createEmptyVisualQueryState())
@@ -380,6 +382,25 @@ function submitTextToSql() {
   if (!prompt) return
   emit('text-to-sql', prompt)
   textToSqlPrompt.value = ''
+  close()
+}
+
+async function copyPreviewSql() {
+  const sql = previewSql.value.trim()
+  if (!sql) return
+  try {
+    await navigator.clipboard.writeText(sql)
+    layout.showSuccessToast(t('console.visualQuery.copySqlDone'))
+  } catch {
+    layout.showErrorToast(t('console.visualQuery.copySqlFailed'))
+  }
+}
+
+function refineWithAi() {
+  const sql = previewSql.value.trim()
+  if (!sql) return
+  const prompt = t('console.visualQuery.refineAiPrompt', {sql})
+  emit('text-to-sql', prompt)
   close()
 }
 
@@ -896,6 +917,15 @@ const scopeLabel = computed(() => {
             >
               {{ t('console.visualQuery.textToSqlSubmit') }}
             </DwButton>
+            <DwButton
+                variant="ghost"
+                type="button"
+                size="sm"
+                :disabled="!canApply"
+                @click="refineWithAi"
+            >
+              {{ t('console.visualQuery.refineWithAi') }}
+            </DwButton>
           </div>
         </aside>
       </div>
@@ -925,6 +955,14 @@ const scopeLabel = computed(() => {
         <div class="modal-footer-row__end">
           <DwButton variant="ghost" type="button" @click="close">
             {{ t('common.cancel') }}
+          </DwButton>
+          <DwButton
+              variant="ghost"
+              type="button"
+              :disabled="!canApply"
+              @click="copyPreviewSql"
+          >
+            {{ t('console.visualQuery.copySql') }}
           </DwButton>
           <DwButton
               variant="secondary"

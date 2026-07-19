@@ -32,6 +32,9 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave C G6 slice: macOS Apple Silicon desktop packaging (`dist:desktop:mac`, electron-builder DMG/zip, host-aware `build.mjs`); see [docs/DESKTOP_MAC.md](./docs/DESKTOP_MAC.md). Unsigned / no CI release yet.
 - Wave D S4 slice: Visual Query Builder field board (drag-in / reorder / remove SELECT columns) + Text-to-SQL side panel that opens AI with the prompt.
 - Wave D S5 slice: ER diagram column edit — click/double-click field opens Alter Column wizard (DDL preview, execute, or open console for approval).
+- Wave D S4 deepen: Visual Query Builder **Copy SQL** + **Refine preview with AI** (sends current SQL into Text-to-SQL).
+- Wave D G14 deepen: `http_trigger` form **presets** for Airflow DAG run / dbt Cloud job / generic webhook (URL, headers, body, statusUrlTemplate). See [docs/ORCHESTRATION.md](./docs/ORCHESTRATION.md).
+- Wave D G11 / S6 deepen: connector marketplace **Reinstall / upgrade** for already-loaded plugins that publish `downloadUrl`.
 - Wave C G7 deepen: scheduled SQL digest **digestMaxRows** (1–50) in the platform task form; payload already honored by the runner.
 - Wave C G8 deepen: dashboard chart share **expiry picker** (7/14/30/90 days) + expired status in Manage share links.
 - Wave D S5 deepen: ER diagram **batch DROP column DDL** — multi-select columns in the inspector, preview concatenated ALTER statements, copy or open in console. No auto-execute.

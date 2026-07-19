@@ -8,6 +8,7 @@ import type {ConnectorMarketEntry} from '@/features/datasource/types/datasource.
 import {
     buildConnectorInstallGuide,
     canRemoteInstallConnector,
+    canRemoteReinstallConnector,
     CONNECTOR_PLUGIN_DIR,
     formatConnectorCapabilityLabel,
     formatConnectorIntegrityLabel,
@@ -46,6 +47,7 @@ const copied = ref(false)
 const installing = ref(false)
 const canCreateConnection = computed(() => canMutateConnectionCatalog(auth.isGuest))
 const canRemoteInstall = computed(() => canRemoteInstallConnector(props.entry, auth.isAdmin))
+const canRemoteReinstall = computed(() => canRemoteReinstallConnector(props.entry, auth.isAdmin))
 
 const capLimit = props.standalone ? (props.lead ? 6 : 5) : 4
 
@@ -76,20 +78,34 @@ const integrityClass = computed(() => {
     return ''
 })
 
-async function installRemote(event: Event) {
+async function installRemote(event: Event, reinstall = false) {
     event.stopPropagation()
-    if (!canRemoteInstall.value || installing.value) return
+    if (installing.value) return
+    if (reinstall) {
+        if (!canRemoteReinstall.value) return
+    } else if (!canRemoteInstall.value) {
+        return
+    }
     installing.value = true
     try {
         const result = await datasourcesApi.installFromMarket(props.entry.id)
         if (result.restartRequired) {
             layout.showWarningToast(result.message || t('plugin.connectorMarket.installSuccessRestart'))
         } else {
-            layout.showSuccessToast(result.message || t('plugin.connectorMarket.installSuccess'))
+            layout.showSuccessToast(
+                result.message
+                || (reinstall
+                    ? t('plugin.connectorMarket.reinstallSuccess')
+                    : t('plugin.connectorMarket.installSuccess')),
+            )
         }
         emit('installed')
     } catch (error) {
-        const message = error instanceof Error ? error.message : t('plugin.connectorMarket.installFailed')
+        const message = error instanceof Error
+            ? error.message
+            : (reinstall
+                ? t('plugin.connectorMarket.reinstallFailed')
+                : t('plugin.connectorMarket.installFailed'))
         layout.showErrorToast(message)
     } finally {
         installing.value = false
@@ -206,10 +222,24 @@ function openNewConnection(event?: Event) {
         }}
       </span>
 
-      <div v-if="entry.available && canCreateConnection" class="connector-card__footer-actions">
-        <button class="connector-card__link" type="button" @click="openNewConnection">
+      <div v-if="entry.available" class="connector-card__footer-actions">
+        <button
+            v-if="canCreateConnection"
+            class="connector-card__link"
+            type="button"
+            @click="openNewConnection"
+        >
           {{ dense ? t('plugin.connectorMarket.newConnectionShort') : t('plugin.connectorMarket.newConnection') }}
           <DwIcon name="chevron-right" :size="14" :stroke-width="2"/>
+        </button>
+        <button
+            v-if="canRemoteReinstall"
+            class="connector-card__link"
+            type="button"
+            :disabled="installing"
+            @click="installRemote($event, true)"
+        >
+          {{ installing ? t('plugin.connectorMarket.installing') : t('plugin.connectorMarket.reinstallRemote') }}
         </button>
       </div>
 
@@ -219,7 +249,7 @@ function openNewConnection(event?: Event) {
             class="connector-card__link"
             type="button"
             :disabled="installing"
-            @click="installRemote"
+            @click="installRemote($event, false)"
         >
           {{ installing ? t('plugin.connectorMarket.installing') : t('plugin.connectorMarket.installRemote') }}
         </button>

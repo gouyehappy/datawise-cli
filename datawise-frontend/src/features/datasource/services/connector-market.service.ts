@@ -77,6 +77,14 @@ export function canRemoteInstallConnector(
     return Boolean(isAdmin && !entry.available && entry.downloadUrl?.trim())
 }
 
+/** Re-download from downloadUrl when already loaded (upgrade / repair). */
+export function canRemoteReinstallConnector(
+    entry: ConnectorMarketEntry,
+    isAdmin: boolean,
+): boolean {
+    return Boolean(isAdmin && entry.available && entry.downloadUrl?.trim())
+}
+
 export function formatConnectorIntegrityLabel(
     status: string | null | undefined,
     t: (key: string) => string,

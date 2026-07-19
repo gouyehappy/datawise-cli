@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
     buildConnectorInstallGuide,
     canRemoteInstallConnector,
+    canRemoteReinstallConnector,
     filterConnectorMarketEntries,
     formatConnectorIntegrityLabel,
     summarizeConnectorMarket,
@@ -66,5 +67,16 @@ describe('connector-market.service', () => {
         assert.equal(canRemoteInstallConnector(sampleEntries[1]!, true), true)
         assert.equal(canRemoteInstallConnector(sampleEntries[1]!, false), false)
         assert.equal(canRemoteInstallConnector(sampleEntries[0]!, true), false)
+    })
+
+    it('allows remote reinstall for admin + available + downloadUrl', () => {
+        const installedWithUrl: ConnectorMarketEntry = {
+            ...sampleEntries[0]!,
+            downloadUrl: 'https://example.com/mysql.jar',
+        }
+        assert.equal(canRemoteReinstallConnector(installedWithUrl, true), true)
+        assert.equal(canRemoteReinstallConnector(installedWithUrl, false), false)
+        assert.equal(canRemoteReinstallConnector(sampleEntries[0]!, true), false)
+        assert.equal(canRemoteReinstallConnector(sampleEntries[1]!, true), false)
     })
 })

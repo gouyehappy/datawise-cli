@@ -384,6 +384,14 @@ export default {
             httpHeadersLabel: 'Headers (JSON object)',
             httpBodyLabel: 'Body (JSON)',
             httpStatusUrlLabel: 'Status URL template',
+            httpPresetLabel: 'Preset',
+            httpPresetHint: 'Pick a template to fill URL / headers / body / status poll; edit placeholders before saving.',
+            httpPreset: {
+                custom: 'Custom (keep fields)',
+                airflowDagRun: 'Airflow DAG run',
+                dbtCloudJob: 'dbt Cloud job run',
+                genericWebhook: 'Generic webhook',
+            },
             sqlSource: {
                 inline: 'Inline SQL',
                 workspace_file: 'Workspace SQL file',
