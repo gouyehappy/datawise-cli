@@ -46,8 +46,8 @@
 
 | # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
 |---|------|------|------|------------------|
-| G7 | 洞察 / Dashboard 订阅外发 | partial | 定时 SQL/画布任务可选 `digest` → `insight.digest` Webhook（截断行/画布摘要）；非全量 BI 订阅中心 | AI 画布价值留在桌面内 |
-| G8 | 只读分享看板 / 嵌入链接 | partial | Dashboard 图表冻结快照分享 + 设置菜单管理/撤销；公开页 `/share/{token}`；非实时嵌入 | 分析师路径断在工作台 |
+| G7 | 洞察 / Dashboard 订阅外发 | partial | 定时 SQL/画布任务可选 digest → insight.digest Webhook（截断行/画布摘要）；SQL 任务可配 **digestMaxRows（1–50）**；非全量 BI 订阅中心 | AI 画布价值留在桌面内 |
+| G8 | 只读分享看板 / 嵌入链接 | partial | Dashboard 图表冻结快照分享（**可选 7/14/30/90 天过期**）+ 设置菜单管理/撤销（过期态）；公开页 /share/{token}；非实时嵌入 | 分析师路径断在工作台 |
 | G9 | AI 成本与配额治理 | partial | 租户日调用硬顶 + Settings 用量卡 + **AI 工作台** near-limit / exhausted 提示（禁用发送）；未做人/团队账单 | 开 AI 后运维会怕滥用 |
 | G10 | Insight → 工单 / PR / Runbook | partial | 出站通道 `github_issue` / `gitlab_issue` / `jira_issue` + `POST /api/platform/insight-actions`（`insight.action`）；**AI 工作台**分析回复 **导出工单**；见 [INSIGHT_ACTIONS.md](./INSIGHT_ACTIONS.md)。缺自动开 PR / 状态回写 | 洞察难变成组织动作 |
 
@@ -143,6 +143,8 @@
 | 2026-07-19、G13 标签/服务端分面 | discovery tags + server facet filters (kind/connection/owner/tag) |
 | 2026-07-19、G13 列预览 | 数据目录表/视图选中侧栏列预览（schema 缓存 + Explorer，最多 40 列） |
 | 2026-07-19、S5 批量 DROP | ER 图多选列生成批量 DROP DDL（预览/复制/控制台） |
+| 2026-07-19、G8 分享过期 | Dashboard 图表分享可选 7/14/30/90 天过期 + 管理列表过期态 |
+| 2026-07-19、G7 digestMaxRows | 定时 SQL 任务 digest 可配置摘要最大行数（1–50） |
 
 | 2026-07-18、S2 残差 IN | 联邦 JOIN 残差 WHERE 支持 IN / NOT IN 字面量列表 |
 | 2026-07-18、S2 残差 OR | 联邦 JOIN 残差 WHERE 支持跨别名 OR |

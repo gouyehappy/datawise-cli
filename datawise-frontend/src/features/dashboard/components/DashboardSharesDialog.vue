@@ -23,6 +23,17 @@ const revokingId = ref('')
 
 const activeShares = computed(() => shares.value.filter((item) => !item.revoked))
 
+function isExpired(share: ShareSnapshot): boolean {
+  if (!share.expiresAt) return false
+  const expires = Date.parse(share.expiresAt)
+  return Number.isFinite(expires) && expires < Date.now()
+}
+
+function statusLabel(share: ShareSnapshot): string {
+  if (isExpired(share)) return t('dashboard.shares.expired')
+  return t('dashboard.shares.expires', {date: formatDate(share.expiresAt)})
+}
+
 watch(
     () => props.open,
     async (isOpen) => {
@@ -97,8 +108,8 @@ async function revoke(share: ShareSnapshot) {
       <li v-for="share in activeShares" :key="share.id" class="dash-shares__item">
         <div class="dash-shares__copy">
           <strong>{{ share.title }}</strong>
-          <span class="dash-shares__meta">
-            {{ t('dashboard.shares.expires', {date: formatDate(share.expiresAt)}) }}
+          <span class="dash-shares__meta" :class="{'is-expired': isExpired(share)}">
+            {{ statusLabel(share) }}
           </span>
         </div>
         <DwButton
@@ -166,5 +177,10 @@ async function revoke(share: ShareSnapshot) {
 .dash-shares__meta {
   color: var(--dw-text-muted);
   font-size: var(--dw-text-xs);
+}
+
+.dash-shares__meta.is-expired {
+  color: var(--dw-danger);
+  font-weight: 600;
 }
 </style>

@@ -103,6 +103,7 @@ const taskForm = reactive({
     payloadJson: '{}',
     enabled: true,
     digest: false,
+    digestMaxRows: '20',
     dqAssertion: 'empty_result',
     dqExpected: '0',
     dqColumn: '',
@@ -608,6 +609,7 @@ function resetForms() {
     taskForm.payloadJson = '{}'
     taskForm.enabled = true
     taskForm.digest = false
+    taskForm.digestMaxRows = '20'
     taskForm.dqAssertion = 'empty_result'
     taskForm.dqExpected = '0'
     taskForm.dqColumn = ''
@@ -649,6 +651,7 @@ function applyScheduleDraft() {
             teamId: taskForm.teamId,
             queryId: taskForm.queryId,
             digest: taskForm.digest,
+            digestMaxRows: parseDigestMaxRows(),
         })
     } catch {
         // keep defaults until user fills required fields
@@ -710,6 +713,13 @@ function close() {
     emit('update:open', false)
 }
 
+function parseDigestMaxRows(): number | undefined {
+    if (!taskForm.digest || taskForm.type !== 'sql') return undefined
+    const parsed = Number.parseInt(taskForm.digestMaxRows.trim() || '20', 10)
+    if (!Number.isFinite(parsed)) return 20
+    return Math.max(1, Math.min(50, parsed))
+}
+
 function buildPayload(): PlatformCatalogFormPayload | null {
     switch (props.feature) {
         case 'semantic_metrics':
@@ -736,6 +746,7 @@ function buildPayload(): PlatformCatalogFormPayload | null {
                         teamId: taskForm.teamId,
                         queryId: taskForm.queryId,
                         digest: taskForm.digest,
+                        digestMaxRows: parseDigestMaxRows(),
                     })
                 } catch (e) {
                     error.value = e instanceof Error
@@ -1138,6 +1149,22 @@ async function submit() {
             v-model="taskForm.digest"
             :label="t('platform.tasks.digest')"
         />
+        <FormField
+            v-if="taskForm.type === 'sql' && taskForm.digest"
+            :label="t('platform.tasks.digestMaxRows')"
+        >
+          <template #default="{ id }">
+            <input
+                :id="id"
+                v-model="taskForm.digestMaxRows"
+                class="dw-input"
+                type="number"
+                min="1"
+                max="50"
+                step="1"
+            >
+          </template>
+        </FormField>
         <p v-if="taskForm.type === 'sql' || taskForm.type === 'canvas'" class="modal-hint">
           {{ t('platform.tasks.digestHint') }}
         </p>

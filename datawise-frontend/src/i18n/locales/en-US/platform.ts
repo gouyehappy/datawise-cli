@@ -131,6 +131,7 @@ export default {
         canvasHint: 'Runs the full AI analysis pipeline on schedule and updates the canvas',
         digest: 'Push result digest to webhook',
         digestHint: 'On success, also emit insight.digest (truncated rows or canvas summary). Subscribe to the event under Integrations.',
+        digestMaxRows: 'Digest max rows (1–50)',
         lastRun: 'Last run',
         orchestrationStatus: 'Check orchestration status',
         orchestrationStatusDone: 'Orchestration state: {state} (ref={ref})',

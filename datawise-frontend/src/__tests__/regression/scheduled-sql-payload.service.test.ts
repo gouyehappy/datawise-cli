@@ -44,4 +44,26 @@ describe('scheduled-sql-payload.service', () => {
     it('names schedule from sql file', () => {
         assert.equal(defaultScheduleNameForSqlFile('nightly.sql'), 'Schedule nightly')
     })
+
+    it('includes digestMaxRows when digest is enabled', () => {
+        const json = buildScheduledSqlPayloadJson({
+            source: 'inline',
+            connectionId: 'c1',
+            database: 'app',
+            sql: 'select 1',
+            digest: true,
+            digestMaxRows: 35,
+        })
+        assert.deepEqual(JSON.parse(json), {
+            source: 'inline',
+            connectionId: 'c1',
+            database: 'app',
+            sql: 'select 1',
+            digest: true,
+            digestMaxRows: 35,
+        })
+        const parsed = parseScheduledSqlPayloadJson(json)
+        assert.equal(parsed.digest, true)
+        assert.equal(parsed.digestMaxRows, 35)
+    })
 })
