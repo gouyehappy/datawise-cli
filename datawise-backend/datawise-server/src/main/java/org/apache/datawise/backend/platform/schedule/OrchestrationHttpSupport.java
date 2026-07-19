@@ -156,7 +156,7 @@ final class OrchestrationHttpSupport {
         if (root == null || !root.isObject()) {
             return null;
         }
-        for (String key : new String[]{"dag_run_id", "dagRunId", "run_id", "runId", "id"}) {
+        for (String key : new String[]{"dag_run_id", "dagRunId", "flow_run_id", "flowRunId", "run_id", "runId", "id"}) {
             JsonNode node = root.get(key);
             if (node != null && !node.isNull()) {
                 String value = node.asText("").trim();

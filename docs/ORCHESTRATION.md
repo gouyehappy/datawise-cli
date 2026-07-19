@@ -1,4 +1,4 @@
-# Orchestration hooks (Airflow / dbt / Flink)
+# Orchestration hooks (Airflow / dbt / Prefect / Dagster / Flink)
 
 DataWise exposes a thin two-way bridge for external orchestrators, plus optional
 **DAG / job status write-back** for outbound `http_trigger` tasks.
@@ -11,6 +11,8 @@ In the platform catalog task form, pick a **Preset** to fill example URL / heade
 
 - **Airflow DAG run** — POST `/api/v1/dags/{dag_id}/dagRuns` + status template with `{dag_run_id}`
 - **dbt Cloud job run** — POST job run API with Token auth
+- **Prefect flow run** — POST `/api/deployments/{id}/create_flow_run` + status template with `{run_id}` (also accepts `flow_run_id` in the response)
+- **Dagster job launch** — GraphQL `launchRun` mutation placeholder (edit location / job / auth)
 - **Generic webhook** — simple JSON POST
 
 Replace hosts, IDs, and secrets before enabling the schedule.
@@ -36,7 +38,7 @@ Create a scheduled task with type `http_trigger`. Payload:
 |-------|--------|
 | Methods | `GET` \| `POST` \| `PUT` \| `PATCH` |
 | `statusUrl` | Absolute URL to GET for status (optional) |
-| `statusUrlTemplate` | Template with `{dag_run_id}` / `{run_id}` / `{ref}` filled from the trigger response |
+| `statusUrlTemplate` | Template with `{dag_run_id}` / `{run_id}` / `{ref}` filled from the trigger response (`flow_run_id` / `id` also extracted as ref) |
 | `statusJsonPath` | Optional JSON Pointer / dotted path to the state field (default: `state` / `status`) |
 
 - Non-2xx (or outside the configured status window) fails the task and emits `scheduled_task.failed` plus `orchestration.failed`

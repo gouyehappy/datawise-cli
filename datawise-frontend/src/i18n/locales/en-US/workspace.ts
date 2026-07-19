@@ -409,6 +409,8 @@ export default {
                 custom: 'Custom (keep fields)',
                 airflowDagRun: 'Airflow DAG run',
                 dbtCloudJob: 'dbt Cloud job run',
+                prefectFlowRun: 'Prefect flow run',
+                dagsterJobLaunch: 'Dagster job launch',
                 genericWebhook: 'Generic webhook',
             },
             sqlSource: {

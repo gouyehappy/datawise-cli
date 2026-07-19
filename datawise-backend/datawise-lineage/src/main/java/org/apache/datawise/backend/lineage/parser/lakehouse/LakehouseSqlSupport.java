@@ -29,6 +29,11 @@ public final class LakehouseSqlSupport {
     private static final Pattern MATCH_RECOGNIZE = Pattern.compile("\\bMATCH_RECOGNIZE\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern WITH_ORDINALITY = Pattern.compile("\\bWITH\\s+ORDINALITY\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern TRY_CAST = Pattern.compile("\\bTRY_CAST\\s*\\(", Pattern.CASE_INSENSITIVE);
+    private static final Pattern QUALIFY = Pattern.compile("\\bQUALIFY\\b", Pattern.CASE_INSENSITIVE);
+    /** Snowflake/Databricks QUALIFY — strip through next major clause or EOS. */
+    private static final Pattern QUALIFY_CLAUSE = Pattern.compile(
+            "(?is)\\bQUALIFY\\b.+?(?=\\s+(?:ORDER\\s+BY|LIMIT|OFFSET|FETCH|UNION|EXCEPT|INTERSECT)|;|$)"
+    );
     private static final Pattern ADVANCED_GROUPING = Pattern.compile(
             "\\b(GROUPING\\s+SETS|CUBE|ROLLUP)\\s*\\(",
             Pattern.CASE_INSENSITIVE
@@ -115,6 +120,9 @@ public final class LakehouseSqlSupport {
         if (ADVANCED_GROUPING.matcher(sql).find()) {
             features.add(LakehouseFeature.ADVANCED_GROUPING);
         }
+        if (QUALIFY.matcher(sql).find()) {
+            features.add(LakehouseFeature.QUALIFY);
+        }
         if (WINDOW_TVF.matcher(sql).find()) {
             features.add(LakehouseFeature.WINDOW_TVF);
         }
@@ -181,6 +189,12 @@ public final class LakehouseSqlSupport {
         if (TRY_CAST.matcher(current).find()) {
             current = TRY_CAST.matcher(current).replaceAll("CAST(");
             applied.add("TRY_CAST");
+        }
+
+        Matcher qualify = QUALIFY_CLAUSE.matcher(current);
+        if (qualify.find()) {
+            current = qualify.replaceAll(" ").replaceAll("\\s{2,}", " ").trim();
+            applied.add("QUALIFY");
         }
 
         current = softenAdvancedGrouping(current, applied);
@@ -372,6 +386,7 @@ public final class LakehouseSqlSupport {
         UNNEST_ORDINALITY("UNNEST … WITH ORDINALITY ordinal column is not supported for automatic lineage yet"),
         TRY_CAST("TRY_CAST is softened to CAST; failure-null semantics are not modeled in lineage"),
         ADVANCED_GROUPING("GROUPING SETS / CUBE / ROLLUP are softened to a simple GROUP BY list"),
+        QUALIFY("QUALIFY filter is stripped for lineage; window-filter semantics are not modeled"),
         WINDOW_TVF("Flink window TVFs (TUMBLE/HOP/CUMULATE/SESSION) are not supported for automatic lineage yet");
 
         private final String message;

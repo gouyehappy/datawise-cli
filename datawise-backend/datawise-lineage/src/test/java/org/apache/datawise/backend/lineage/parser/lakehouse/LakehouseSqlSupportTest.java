@@ -78,4 +78,16 @@ class LakehouseSqlSupportTest {
         assertFalse(sets.sql().toUpperCase().contains("GROUPING SETS"));
         assertTrue(sets.sql().toUpperCase().contains("A") && sets.sql().toUpperCase().contains("B"));
     }
+
+    @Test
+    void softensQualifyClause() {
+        String sql = "SELECT a, ROW_NUMBER() OVER (ORDER BY a) AS rn FROM t QUALIFY rn = 1 ORDER BY a";
+        var features = LakehouseSqlSupport.detectHardFeatures(sql);
+        assertTrue(features.contains(LakehouseSqlSupport.LakehouseFeature.QUALIFY));
+
+        LakehouseSqlSupport.SoftenResult softened = LakehouseSqlSupport.softenHardFeatures(sql);
+        assertTrue(softened.softenedFeatures().contains("QUALIFY"));
+        assertFalse(softened.sql().toUpperCase().contains("QUALIFY"));
+        assertTrue(softened.sql().toUpperCase().contains("ORDER BY"));
+    }
 }

@@ -15,7 +15,7 @@ import java.util.Set;
  * {@code alias.col IS [NOT] NULL},
  * {@code alias.col [NOT] LIKE 'pattern'},
  * expression functions ({@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM}/
- * {@code LENGTH}/{@code CHAR_LENGTH}/{@code ABS}/{@code COALESCE}/{@code NULLIF}/
+ * {@code LENGTH}/{@code CHAR_LENGTH}/{@code ABS}/{@code ROUND}/{@code COALESCE}/{@code NULLIF}/
  * {@code CONCAT}/{@code SUBSTR}/{@code SUBSTRING}/{@code ||}/{@code CAST(expr AS type)}/
  * {@code CASE WHEN … THEN … ELSE … END} (prefer parenthesized CASE in comparisons)} in
  * comparisons / LIKE / BETWEEN,
@@ -26,7 +26,7 @@ final class FederatedJoinResidualFilter {
 
     private static final Set<String> SUPPORTED_FUNCTIONS = Set.of(
             "upper", "lower", "trim", "ltrim", "rtrim",
-            "length", "char_length", "abs",
+            "length", "char_length", "abs", "round",
             "coalesce", "nullif", "concat", "substr", "substring"
     );
 
@@ -104,7 +104,7 @@ final class FederatedJoinResidualFilter {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
                             + "subqueries or use simple comparisons / IS NULL / LIKE / BETWEEN / "
-                            + "LENGTH|ABS|COALESCE|CONCAT|SUBSTR / UPPER|LOWER|TRIM / CAST / CASE / IN / NOT / OR "
+                            + "LENGTH|ABS|ROUND|COALESCE|CONCAT|SUBSTR / UPPER|LOWER|TRIM / CAST / CASE / IN / NOT / OR "
                             + "of those): "
                             + atom
             );
@@ -737,6 +737,15 @@ final class FederatedJoinResidualFilter {
                 requireArity(call, 1);
                 yield absValue(resolve(row, args.get(0)));
             }
+            case "round" -> {
+                if (args.isEmpty() || args.size() > 2) {
+                    throw new IllegalArgumentException("ROUND requires 1 or 2 arguments (expr[, scale])");
+                }
+                yield roundValue(
+                        resolve(row, args.get(0)),
+                        args.size() == 2 ? resolve(row, args.get(1)) : null
+                );
+            }
             case "coalesce" -> {
                 if (args.size() < 2) {
                     throw new IllegalArgumentException("COALESCE requires at least 2 arguments");
@@ -811,6 +820,31 @@ final class FederatedJoinResidualFilter {
             return Math.abs(number.doubleValue());
         }
         return Math.abs(number.longValue());
+    }
+
+    /** SQL-style {@code ROUND(expr[, scale])}; scale defaults to 0 (nearest long). */
+    static Object roundValue(Object value, Object scaleObj) {
+        if (value == null) {
+            return null;
+        }
+        double number = toDouble(value, "ROUND");
+        int scale = scaleObj == null ? 0 : toInt(scaleObj, "ROUND scale");
+        if (scale == 0) {
+            return Math.round(number);
+        }
+        double factor = Math.pow(10, scale);
+        return Math.round(number * factor) / factor;
+    }
+
+    private static double toDouble(Object value, String label) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        try {
+            return Double.parseDouble(String.valueOf(value).trim());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException(label + " requires a numeric argument: " + value, ex);
+        }
     }
 
     private static String nullToEmpty(Object value) {

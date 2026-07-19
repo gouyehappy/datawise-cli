@@ -578,6 +578,34 @@ class FederatedJoinPredicatePushdownTest {
     }
 
     @Test
+    void residualFilterSupportsRound() {
+        Map<String, Object> row1 = new java.util.HashMap<>();
+        row1.put("o.id", 1);
+        row1.put("o.amount", 1.44);
+        Map<String, Object> row2 = new java.util.HashMap<>();
+        row2.put("o.id", 2);
+        row2.put("o.amount", 1.46);
+        List<Map<String, Object>> rows = List.of(row1, row2);
+
+        List<Map<String, Object>> byZero = FederatedJoinResidualFilter.apply(
+                rows,
+                "ROUND(o.amount) = 1"
+        );
+        assertEquals(2, byZero.size());
+
+        List<Map<String, Object>> byScale = FederatedJoinResidualFilter.apply(
+                rows,
+                "ROUND(o.amount, 1) = 1.5"
+        );
+        assertEquals(1, byScale.size());
+        assertEquals(2, byScale.get(0).get("o.id"));
+
+        assertEquals(2L, FederatedJoinResidualFilter.roundValue(1.5, null));
+        assertEquals(1.5, FederatedJoinResidualFilter.roundValue(1.46, 1));
+        assertEquals(1.4, FederatedJoinResidualFilter.roundValue(1.44, 1));
+    }
+
+    @Test
     void singleAliasLengthIsPushedIntoSourceSubquery() {
         FederatedJoinPlan plan = new FederatedJoinPlan(
                 List.of("o.id", "u.name"),

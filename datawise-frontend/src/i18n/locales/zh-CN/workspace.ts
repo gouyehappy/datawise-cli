@@ -409,6 +409,8 @@ export default {
                 custom: '自定义（保留当前字段）',
                 airflowDagRun: 'Airflow DAG 触发',
                 dbtCloudJob: 'dbt Cloud Job 触发',
+                prefectFlowRun: 'Prefect Flow 触发',
+                dagsterJobLaunch: 'Dagster Job 触发',
                 genericWebhook: '通用 Webhook',
             },
             sqlSource: {
