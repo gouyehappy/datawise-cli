@@ -43,4 +43,8 @@ export default {
         subtitle: 'Detail',
         score: 'Score',
     },
+    columnPeek: {
+        title: 'Columns',
+        empty: 'No columns in schema cache yet — expand the table in Explorer to hydrate columns.',
+    },
 }

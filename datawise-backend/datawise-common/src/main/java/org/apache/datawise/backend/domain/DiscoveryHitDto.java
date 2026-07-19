@@ -18,6 +18,8 @@ public record DiscoveryHitDto(
         int score,
         /** Populated for metrics — related physical tables for lineage jump. */
         List<String> relatedTables,
+        /** Table/view column peek from schema cache (empty when columns not hydrated). */
+        List<DiscoveryColumnPeekDto> columns,
         /** Metric tags and/or hashtags parsed from table/view comments ({@code #pii}). */
         List<String> tags
 ) {

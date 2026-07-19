@@ -43,4 +43,8 @@ export default {
         subtitle: '说明',
         score: '相关度',
     },
+    columnPeek: {
+        title: '列',
+        empty: 'schema 缓存中暂无列 — 请在 Explorer 中展开该表以加载列信息。',
+    },
 }

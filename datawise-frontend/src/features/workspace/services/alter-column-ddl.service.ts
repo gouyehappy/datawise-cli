@@ -153,3 +153,34 @@ export function buildAlterColumnSql(
 
     return `ALTER TABLE ${qualified} MODIFY COLUMN ${formatMysqlColumnDefinition(options.dbType, options.column)};`
 }
+
+export type BatchAlterColumnOperation = 'drop'
+
+/** Concatenate per-column ALTER statements for a batch preview (no execution). */
+export function buildBatchAlterColumnDdl(
+    operation: BatchAlterColumnOperation,
+    options: {
+        dbType?: DbType
+        tableName: string
+        database?: string
+        columnNames: string[]
+    },
+): string | null {
+    const tableName = options.tableName.trim()
+    if (!tableName) return null
+
+    const names = options.columnNames.map((name) => name.trim()).filter(Boolean)
+    if (names.length === 0) return null
+
+    const statements: string[] = []
+    for (const name of names) {
+        const sql = buildAlterColumnSql(operation, {
+            dbType: options.dbType,
+            tableName,
+            database: options.database,
+            column: {name, dataType: '', nullable: true},
+        })
+        if (sql) statements.push(sql)
+    }
+    return statements.length > 0 ? statements.join('\n') : null
+}

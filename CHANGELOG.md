@@ -32,6 +32,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave C G6 slice: macOS Apple Silicon desktop packaging (`dist:desktop:mac`, electron-builder DMG/zip, host-aware `build.mjs`); see [docs/DESKTOP_MAC.md](./docs/DESKTOP_MAC.md). Unsigned / no CI release yet.
 - Wave D S4 slice: Visual Query Builder field board (drag-in / reorder / remove SELECT columns) + Text-to-SQL side panel that opens AI with the prompt.
 - Wave D S5 slice: ER diagram column edit — click/double-click field opens Alter Column wizard (DDL preview, execute, or open console for approval).
+- Wave D S5 deepen: ER diagram **batch DROP column DDL** — multi-select columns in the inspector, preview concatenated ALTER statements, copy or open in console. No auto-execute.
 - Wave D S6 / G11 slice: connector plugin `manifest.json` (version + SHA-256 + optional downloadUrl); marketplace integrity badges; optional `require-manifest-integrity` load gate. See [config/plugins/README.md](./config/plugins/README.md).
 - Wave D G5 slice: external secret references (`dwsecret:env:` / `dwsecret:file:`) + master-key source status (`GET /api/system/secrets`, Settings → Secrets). See [docs/SECRETS.md](./docs/SECRETS.md).
 - Wave D G13 slice: org discovery — `GET /api/discovery/search` over schema cache tables/views + semantic metrics (name/desc/owner); command palette merges hits; metric `owner` field on semantic layer.
@@ -41,6 +42,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave A G3 deepen: Feishu / DingTalk bot channels on outbound webhooks (`channel=feishu|dingtalk` with platform signing); generic JSON+HMAC remains default.
 - Wave C G10 slice: Insight → ticket export — outbound `github_issue` / `gitlab_issue` channels + `POST /api/platform/insight-actions` (`insight.action`); see [docs/INSIGHT_ACTIONS.md](./docs/INSIGHT_ACTIONS.md).
 - Wave C G10 deepen: Jira Cloud outbound channel `jira_issue` (REST v3 create issue, ADF description, Basic/Bearer auth); see [docs/INSIGHT_ACTIONS.md](./docs/INSIGHT_ACTIONS.md).
+- Wave C G10 deepen: AI workbench **Create ticket** / **导出工单** on analysis replies → `POST /api/platform/insight-actions` (`insight.action`); see [docs/INSIGHT_ACTIONS.md](./docs/INSIGHT_ACTIONS.md).
 - Wave B S1 deepen: PK row-diff preview — `POST /api/migration/row-diff` samples source rows and classifies insert/update/unchanged for `PK_UPSERT` (wizard preflight panel).
 - Wave B S2 deepen: federated equality JOIN Grace hash spill — build side above 512 rows partitions to temp files; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated outer WHERE predicate pushdown — single-alias conjuncts into source SQL; cross-alias residuals filtered in memory; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
@@ -63,6 +65,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G13 deepen: data catalog **related-table picker** when a metric lists several `relatedTables` before lineage jump. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G13 deepen: discovery **pagination** (`offset` + `hasMore` / total) + data catalog **Load more**. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G13 deepen: **server-side facets** (`kind` / `connectionId` / `owner` / `tag`) + hit **tags** (metric tags + comment `#hashtags`); Load more works with facets. See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
+- Wave D G13 deepen: data catalog **column peek** side panel for selected tables/views (schema-cache columns, up to 40; Explorer tree preferred when loaded). See [docs/DISCOVERY.md](./docs/DISCOVERY.md).
 - Wave D G15 deepen: **user-saved data-quality rule templates** (local library + Save/Delete in Add form). See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G15 deepen: multi-env gate **pair rules by name** (`pairByName`, default on) with unpaired failures + `pairs[]` in the response. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G15 deepen: **tenant-shared data-quality rule templates** (`GET/PUT/DELETE /api/platform/data-quality/templates`, file `tenants/{id}/data-quality-templates.json`) alongside local templates in the Add form. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).

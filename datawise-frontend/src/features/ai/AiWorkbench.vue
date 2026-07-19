@@ -217,6 +217,7 @@ async function shareSessionToTeam(sessionId: string) {
           :selected-targets="selectedTargets"
           :format-target-label="formatTargetLabel"
           :extract-sql="extractSqlFromContent"
+          :session-id="activeSessionId"
           :analysis-steps="analysisSteps"
           :analysis-streaming="analysisStreaming"
           :sql-confirm-pending="sqlConfirmPending"

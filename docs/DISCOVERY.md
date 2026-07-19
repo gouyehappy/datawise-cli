@@ -47,6 +47,7 @@ Each hit:
 | `owner` | Optional metric owner |
 | `tags` | Metric tags and/or hashtags parsed from table/view comments |
 | `relatedTables` | Metric-only: related physical tables (used for lineage jump) |
+| `columns` | Table/view-only: up to 40 column names (+ types when schema-cache columns folder is hydrated) |
 | `score` | Ranking hint (browse mode uses a flat score) |
 
 Empty / blank `q` **browses** the org catalog (schema-cache tables/views + semantic metrics), sorted by qualified name. Non-empty `q` ranks by token match (including tags). The data catalog tab loads pages of 40 and offers **Load more** until `hasMore` is false — including while server facets are active. The command palette still requests a single small page.
@@ -82,7 +83,15 @@ For a selected **metric** with non-empty `relatedTables`:
 
 **Open** reuses the same activation path as global object search (locate tree + table tab, or semantic metrics catalog for metrics).
 
+## Column peek
+
+When a **table** or **view** row is selected in the Data catalog tab, a side panel lists up to **40 columns** (name + type when available). Columns come from:
+
+1. The Explorer tree in memory (if that table’s columns folder was loaded in this session), else
+2. The discovery hit `columns` field (from persisted schema cache when the columns folder was previously hydrated).
+
+No live JDBC is issued for the peek. If neither source has columns, the panel shows an empty state (expand the table in Explorer or refresh schema cache).
+
 ## Still open
 
-- Column-level catalog cards
 - Deeper metric → defining SQL / model lineage (beyond related physical tables)

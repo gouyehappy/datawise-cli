@@ -106,6 +106,9 @@ export default {
         saveAsCanvas: '保存为画布',
         saveAsCanvasDone: '分析已保存到画布',
         saveAsCanvasDefaultTitle: '分析画布',
+        createTicket: '导出工单',
+        createTicketDone: '洞察已导出（事件 {eventId}）',
+        insightActionDefaultTitle: 'AI 洞察',
         rowCount: '{count} 行',
         previewShown: '展示前 {shown} / {total} 行',
         chartTypes: {

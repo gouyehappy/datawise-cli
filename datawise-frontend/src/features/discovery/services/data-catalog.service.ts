@@ -1,9 +1,14 @@
 import type {
     DiscoveryFacets,
     DiscoveryHit,
+    DiscoveryColumnPeek,
     DiscoverySearchFilters,
 } from '@/features/platform/types/platform.types'
 import type {LineageImpactItem} from '@/features/lineage/types/lineage.types'
+import type {TreeNode} from '@/core/types'
+import {findNodeById, walkTree} from '@/core/utils/tree'
+import {findExplorerScopeNode} from '@/features/explorer/services/explorer-database-scope'
+import {findDatabaseNode} from '@/features/explorer/services/table-migration.pure'
 
 /** Prefer a single unambiguous downstream model for one-click lineage jump. */
 export function pickLineageJumpTarget(
@@ -281,3 +286,80 @@ export function nextDiscoveryOffset(page: {
 }
 
 export const DATA_CATALOG_PAGE_SIZE = 40
+export const DISCOVERY_COLUMN_PEEK_MAX = 40
+
+function normalizeColumnType(meta?: string | null): string | null {
+    if (!meta) return null
+    const trimmed = meta.replace(/\s*·\s*pk$/i, '').trim()
+    return trimmed || null
+}
+
+function mapTreeColumnNodes(columnNodes: readonly TreeNode[]): DiscoveryColumnPeek[] {
+    const out: DiscoveryColumnPeek[] = []
+    for (const node of columnNodes) {
+        if (node.type !== 'column' && node.type !== 'primary_key') continue
+        const name = node.label?.trim()
+        if (!name) continue
+        out.push({name, type: normalizeColumnType(node.meta)})
+        if (out.length >= DISCOVERY_COLUMN_PEEK_MAX) break
+    }
+    return out
+}
+
+function findRelationNodeUnderScope(
+    scopeNode: TreeNode,
+    relationName: string,
+    kind: 'table' | 'view',
+): TreeNode | null {
+    const trimmed = relationName.trim()
+    if (!trimmed) return null
+    const folderLabel = kind === 'view' ? 'views' : 'tables'
+    const folder = scopeNode.children?.find(
+        (child) => child.type === 'folder' && child.label.toLowerCase() === folderLabel,
+    )
+    const searchRoots = folder?.children?.length ? folder.children : scopeNode.children ?? []
+    let found: TreeNode | null = null
+    walkTree(searchRoots, (node) => {
+        if (node.type === kind && node.label === trimmed) {
+            found = node
+            return true
+        }
+    })
+    return found
+}
+
+function resolveColumnsFromExplorerTree(
+    hit: DiscoveryHit,
+    explorerTree: readonly TreeNode[],
+): DiscoveryColumnPeek[] {
+    const connection = findNodeById(explorerTree, hit.connectionId)
+    if (!connection) return []
+    const scopeNode = findExplorerScopeNode(connection, connection.dbType, hit.database)
+        ?? findDatabaseNode(connection, hit.database)
+    if (!scopeNode) return []
+    const relation = findRelationNodeUnderScope(scopeNode, hit.name, hit.kind)
+    if (!relation) return []
+    const columnsFolder = relation.children?.find((child) => child.type === 'columns')
+    return mapTreeColumnNodes(columnsFolder?.children ?? [])
+}
+
+function capDiscoveryColumnPeek(columns: readonly DiscoveryColumnPeek[]): DiscoveryColumnPeek[] {
+    return columns.slice(0, DISCOVERY_COLUMN_PEEK_MAX)
+}
+
+/** Prefer hydrated explorer tree columns; fall back to discovery hit payload. */
+export function resolveDiscoveryHitColumnPeek(
+    hit: DiscoveryHit | null | undefined,
+    explorerTree: readonly TreeNode[],
+): DiscoveryColumnPeek[] {
+    if (!hit || (hit.kind !== 'table' && hit.kind !== 'view')) return []
+    const fromExplorer = resolveColumnsFromExplorerTree(hit, explorerTree)
+    if (fromExplorer.length) return capDiscoveryColumnPeek(fromExplorer)
+    const fromHit = (hit.columns ?? [])
+        .map((column) => ({
+            name: column.name?.trim() ?? '',
+            type: column.type?.trim() || null,
+        }))
+        .filter((column) => column.name.length > 0)
+    return capDiscoveryColumnPeek(fromHit)
+}

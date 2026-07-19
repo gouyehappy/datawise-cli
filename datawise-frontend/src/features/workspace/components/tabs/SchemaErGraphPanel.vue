@@ -39,10 +39,12 @@ import {
 } from '@/features/workspace/services/schema-er-fk-ddl.service'
 import {
   supportsAlterColumnWizard,
+  buildBatchAlterColumnDdl,
   type AlterColumnOperation,
 } from '@/features/workspace/services/alter-column-ddl.service'
 import {executeAlterColumnSql} from '@/features/workspace/services/execute-alter-column.service'
 import SchemaErFkDdlDialog from '@/features/workspace/components/SchemaErFkDdlDialog.vue'
+import SchemaErBatchAlterDdlDialog from '@/features/workspace/components/SchemaErBatchAlterDdlDialog.vue'
 import AlterColumnDialog from '@/features/workspace/components/AlterColumnDialog.vue'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -103,6 +105,12 @@ const alterInitialColumnName = ref('')
 const alterExecuting = ref(false)
 const alterActionFeedback = ref<ModalFeedback | null>(null)
 
+const batchSelectedColumns = ref<Set<string>>(new Set())
+const batchDdlOpen = ref(false)
+const batchDdlTitle = ref('')
+const batchDdlSql = ref('')
+const batchDdlSummary = ref<string[]>([])
+
 const dbType = computed<DbType | undefined>(() => {
   if (props.tab.dbType) return props.tab.dbType
   const connectionId = props.tab.connectionId
@@ -138,6 +146,18 @@ const alterProductionEnv = computed(() =>
 
 const alterDialogColumns = computed(
     () => columnsByTable.value.get(alterTableName.value) ?? [],
+)
+
+const inspectorTableColumns = computed(() => {
+  const table = selectedColumnTarget.value?.table
+  if (!table) return []
+  return columnsByTable.value.get(table) ?? []
+})
+
+const batchSelectionCount = computed(() => batchSelectedColumns.value.size)
+
+const canGenerateBatchDdl = computed(
+    () => canAlterColumn.value && batchSelectionCount.value > 0,
 )
 
 watch(
@@ -301,6 +321,49 @@ function selectEdge(edge: TableRelationGraphEdge, event?: Event) {
 function clearSelection() {
   selectedEdgeId.value = null
   selectedColumnTarget.value = null
+  batchSelectedColumns.value = new Set()
+}
+
+function toggleBatchColumn(columnName: string, checked: boolean) {
+  const next = new Set(batchSelectedColumns.value)
+  if (checked) next.add(columnName)
+  else next.delete(columnName)
+  batchSelectedColumns.value = next
+}
+
+function openBatchDropDdl() {
+  const target = selectedColumnTarget.value
+  if (!target || !canAlterColumn.value) return
+  const columnNames = [...batchSelectedColumns.value].sort((a, b) => a.localeCompare(b))
+  const sql = buildBatchAlterColumnDdl('drop', {
+    dbType: dbType.value,
+    tableName: target.table,
+    database: databaseName.value,
+    columnNames,
+  })
+  if (!sql?.trim()) return
+  batchDdlTitle.value = t('workspace.schemaEr.batchAlterDropTitle')
+  batchDdlSql.value = sql
+  batchDdlSummary.value = [
+    t('workspace.schemaEr.batchAlterSummaryTable', {table: target.table, count: columnNames.length}),
+    ...columnNames.map((column) =>
+        t('workspace.schemaEr.batchAlterSummaryColumn', {column}),
+    ),
+  ]
+  batchDdlOpen.value = true
+}
+
+function openBatchDdlInConsole() {
+  const sql = batchDdlSql.value.trim()
+  if (!sql) return
+  void workspace.openConsole({
+    connectionId: props.tab.connectionId,
+    instanceId: props.tab.instanceId,
+    database: databaseName.value,
+    sql,
+    title: t('workspace.schemaEr.batchAlterConsoleTitle'),
+  })
+  layoutStore.showSuccessToast(t('workspace.schemaEr.batchAlterOpenedConsole'))
 }
 
 function toggleLinkMode() {
@@ -338,7 +401,13 @@ function onColumnClick(event: Event, node: TableRelationGraphNode, column: Table
   event.stopPropagation()
   if (!linkMode.value) {
     selectedEdgeId.value = null
+    const prevTable = selectedColumnTarget.value?.table
     selectedColumnTarget.value = {table: node.tableName, column: column.name}
+    if (prevTable !== node.tableName) {
+      batchSelectedColumns.value = new Set([column.name])
+    } else {
+      batchSelectedColumns.value = new Set([...batchSelectedColumns.value, column.name])
+    }
     return
   }
   const pick = {nodeId: node.id, table: node.tableName, column: column.name}
@@ -782,6 +851,22 @@ onUnmounted(() => {
           </button>
         </header>
         <p class="schema-er-graph__inspector-hint">{{ t('workspace.schemaEr.columnInspectorHint') }}</p>
+        <p class="schema-er-graph__inspector-hint">
+          {{ t('workspace.schemaEr.batchAlterHint', {count: batchSelectionCount}) }}
+        </p>
+        <ul v-if="inspectorTableColumns.length" class="schema-er-graph__batch-list">
+          <li v-for="column in inspectorTableColumns" :key="column.name">
+            <label class="schema-er-graph__batch-item">
+              <input
+                  type="checkbox"
+                  :checked="batchSelectedColumns.has(column.name)"
+                  @change="toggleBatchColumn(column.name, ($event.target as HTMLInputElement).checked)"
+              >
+              <span class="schema-er-graph__batch-name">{{ column.name }}</span>
+              <span class="schema-er-graph__batch-type">{{ columnTypeLabel(column) }}</span>
+            </label>
+          </li>
+        </ul>
         <div class="schema-er-graph__inspector-actions">
           <DwButton
               variant="primary"
@@ -809,6 +894,15 @@ onUnmounted(() => {
               @click="openAlterFromInspector('drop')"
           >
             {{ t('workspace.schemaEr.columnDropAction') }}
+          </DwButton>
+          <DwButton
+              variant="secondary"
+              size="sm"
+              type="button"
+              :disabled="!canGenerateBatchDdl"
+              @click="openBatchDropDdl"
+          >
+            {{ t('workspace.schemaEr.batchAlterDropAction') }}
           </DwButton>
         </div>
       </aside>
@@ -905,6 +999,14 @@ onUnmounted(() => {
         @open-console="openAlterSqlInConsole"
         @execute="executeAlterColumn"
         @clear-action-feedback="alterActionFeedback = null"
+    />
+
+    <SchemaErBatchAlterDdlDialog
+        v-model:open="batchDdlOpen"
+        :title="batchDdlTitle"
+        :sql="batchDdlSql"
+        :summary-bits="batchDdlSummary"
+        @open-console="openBatchDdlInConsole"
     />
   </div>
 </template>
@@ -1086,6 +1188,36 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: var(--dw-gap-sm);
+}
+
+.schema-er-graph__batch-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-1);
+  max-height: 220px;
+  overflow: auto;
+}
+
+.schema-er-graph__batch-item {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-gap-sm);
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-secondary);
+  cursor: pointer;
+}
+
+.schema-er-graph__batch-name {
+  font-family: var(--dw-font-mono);
+  color: var(--dw-text-primary);
+}
+
+.schema-er-graph__batch-type {
+  margin-left: auto;
+  color: var(--dw-text-muted);
 }
 
 .schema-er-graph__inspector-hint {

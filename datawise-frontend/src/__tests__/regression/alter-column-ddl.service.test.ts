@@ -2,6 +2,7 @@ import {describe, it} from 'node:test'
 import assert from 'node:assert/strict'
 import {
     buildAlterColumnSql,
+    buildBatchAlterColumnDdl,
     supportsAlterColumnWizard,
 } from '@/features/workspace/services/alter-column-ddl.service'
 
@@ -85,6 +86,27 @@ describe('alter-column-ddl.service', () => {
                 dbType: 'mysql',
                 tableName: 'orders',
                 column: {name: 'id', dataType: '', nullable: true},
+            }),
+            null,
+        )
+    })
+
+    it('builds batch drop column DDL', () => {
+        const sql = buildBatchAlterColumnDdl('drop', {
+            dbType: 'mysql',
+            tableName: 'orders',
+            database: 'shop',
+            columnNames: ['note', 'legacy_flag'],
+        })
+        assert.equal(
+            sql,
+            'ALTER TABLE `shop`.`orders` DROP COLUMN `note`;\nALTER TABLE `shop`.`orders` DROP COLUMN `legacy_flag`;',
+        )
+        assert.equal(
+            buildBatchAlterColumnDdl('drop', {
+                dbType: 'mysql',
+                tableName: 'orders',
+                columnNames: [],
             }),
             null,
         )

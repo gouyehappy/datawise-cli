@@ -106,6 +106,9 @@ export default {
         saveAsCanvas: 'Save as Canvas',
         saveAsCanvasDone: 'Analysis saved to canvas',
         saveAsCanvasDefaultTitle: 'Analysis canvas',
+        createTicket: 'Create ticket',
+        createTicketDone: 'Insight exported (event {eventId})',
+        insightActionDefaultTitle: 'AI insight',
         rowCount: '{count} rows',
         previewShown: 'Showing {shown} of {total} rows',
         chartTypes: {

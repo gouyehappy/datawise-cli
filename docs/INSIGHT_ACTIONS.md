@@ -38,6 +38,16 @@ Content-Type: application/json
 
 Publishes `insight.action` to matching tenant outbound hooks (so a `github_issue`, `gitlab_issue`, or `jira_issue` subscription opens the ticket).
 
+## Manual: AI workbench
+
+On analysis replies in **AI Workbench**, use **Create ticket** / **导出工单** in the analysis export bar. This calls the same API with:
+
+- **title** — first line of the reply summary (truncated), or “AI insight”
+- **body** — reply text plus fenced SQL when present
+- **data** — `{ "source": "ai-workbench", "sessionId": "<chat session>", "mode": "analysis" }`
+
+Success shows the outbound event id in a toast; configure hooks under **Settings → Integrations** (see above).
+
 ## Still out of scope
 
 - Auto-open pull requests / commit runbooks

@@ -28,6 +28,7 @@ const props = defineProps<{
   selectedTargets: AiDatabaseTarget[]
   formatTargetLabel: (target: AiDatabaseTarget) => string
   extractSql: (content: string) => string | null
+  sessionId?: string | null
   analysisSteps?: AiAnalysisStepEvent[]
   analysisStreaming?: boolean
   sqlConfirmPending?: AiSqlConfirmPending | null
@@ -121,6 +122,7 @@ const quotaExhaustedMessage = computed(() => {
             :user-initial="userInitial"
             :capabilities="capabilities"
             :extract-sql="extractSql"
+            :session-id="sessionId"
             :analysis-steps="analysisSteps"
             :analysis-streaming="analysisStreaming"
             :sql-confirm-pending="sqlConfirmPending"

@@ -8,6 +8,7 @@ import {
     normalizeRelatedTableName,
     pickLineageJumpTarget,
     resolveDataCatalogFacetOptions,
+    resolveDiscoveryHitColumnPeek,
     resolveLineageImpactSource,
     listRelatedTableChoices,
     needsRelatedTablePicker,
@@ -16,6 +17,7 @@ import {
     toggleFacetValue,
 } from '@/features/discovery/services/data-catalog.service'
 import type {DiscoveryHit} from '@/features/platform/types/platform.types'
+import type {TreeNode} from '@/core/types'
 
 describe('data-catalog.service', () => {
     const tableHit: DiscoveryHit = {
@@ -228,5 +230,58 @@ describe('data-catalog.service', () => {
     it('nextDiscoveryOffset advances while hasMore', () => {
         assert.equal(nextDiscoveryOffset({offset: 0, hits: [1, 2], hasMore: true}), 2)
         assert.equal(nextDiscoveryOffset({offset: 40, hits: [1], hasMore: false}), null)
+    })
+
+    it('resolveDiscoveryHitColumnPeek prefers explorer tree over hit payload', () => {
+        const hit: DiscoveryHit = {
+            ...tableHit,
+            columns: [{name: 'cached_only', type: 'text'}],
+        }
+        const tree: TreeNode[] = [{
+            id: 'c1',
+            label: 'prod',
+            type: 'connection',
+            children: [{
+                id: 'db-app',
+                label: 'app',
+                type: 'database',
+                children: [{
+                    id: 'folder-tables',
+                    label: 'tables',
+                    type: 'folder',
+                    children: [{
+                        id: 'tbl-orders',
+                        label: 'orders',
+                        type: 'table',
+                        children: [{
+                            id: 'cols',
+                            label: 'columns',
+                            type: 'columns',
+                            children: [
+                                {id: 'col-id', label: 'id', type: 'primary_key', meta: 'bigint · pk'},
+                                {id: 'col-name', label: 'name', type: 'column', meta: 'varchar'},
+                            ],
+                        }],
+                    }],
+                }],
+            }],
+        }]
+        assert.deepEqual(resolveDiscoveryHitColumnPeek(hit, tree), [
+            {name: 'id', type: 'bigint'},
+            {name: 'name', type: 'varchar'},
+        ])
+    })
+
+    it('resolveDiscoveryHitColumnPeek falls back to hit columns', () => {
+        const hit: DiscoveryHit = {
+            ...tableHit,
+            columns: [{name: 'id', type: 'int'}],
+        }
+        assert.deepEqual(resolveDiscoveryHitColumnPeek(hit, []), [{name: 'id', type: 'int'}])
+    })
+
+    it('resolveDiscoveryHitColumnPeek returns empty for metrics', () => {
+        const metricHit = hits.find((item) => item.kind === 'metric')
+        assert.deepEqual(resolveDiscoveryHitColumnPeek(metricHit, []), [])
     })
 })

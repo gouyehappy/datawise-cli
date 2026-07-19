@@ -3,7 +3,7 @@ import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DwDataGrid from '@/core/components/DwDataGrid.vue'
 import SearchInput from '@/core/components/SearchInput.vue'
-import {AppModal, ModalActions} from '@/core/components'
+import {AppModal, ModalActions, SidePanel} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import type {DwDataGridColumn, DwDataGridLabels} from '@/core/components/dw-data-grid.types'
 import type {WorkspaceTab} from '@/core/types'
@@ -22,6 +22,7 @@ import {
     pickLineageJumpTarget,
     resolveDataCatalogFacetOptions,
     resolveLineageImpactSource,
+    resolveDiscoveryHitColumnPeek,
     toDiscoverySearchFilters,
     toggleFacetValue,
     type DataCatalogFacets,
@@ -32,12 +33,14 @@ import {activateGlobalObjectSearchEntry} from '@/features/explorer/services/glob
 import {discoveryHitsToSearchEntries} from '@/features/explorer/services/global-object-discovery.service'
 import {useDebouncedRef} from '@/core/utils/debounced-ref'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 
 defineProps<{ tab: WorkspaceTab }>()
 
 const {t} = useI18n()
 const layout = useLayoutStore()
+const explorer = useExplorerStore()
 const workspace = useWorkspaceStore()
 
 const query = ref('')
@@ -124,6 +127,12 @@ const selectedHit = computed(() => {
 
 const canOpen = computed(() => Boolean(selectedHit.value))
 const canLineage = computed(() => canJumpLineage(selectedHit.value))
+const showColumnPeek = computed(() =>
+    selectedHit.value?.kind === 'table' || selectedHit.value?.kind === 'view',
+)
+const columnPeek = computed(() =>
+    resolveDiscoveryHitColumnPeek(selectedHit.value, explorer.tree),
+)
 
 function resetFacets() {
     facets.kinds = []
@@ -411,38 +420,61 @@ function chooseLineageTarget(item: LineageImpactItem) {
       </button>
     </section>
 
-    <DwDataGrid
-        v-model:selected-keys="selectedKeys"
-        :rows="rows"
-        :columns="columns"
-        row-key="id"
-        :loading="loading || lineageLoading"
-        :error="error"
-        :labels="gridLabels"
-        :show-search="false"
-        :column-filter="false"
-    >
-      <template #toolbar-actions>
-        <button type="button" :disabled="!canOpen || loading" @click="openSelected">
-          <DwIcon name="table" size="sm" :stroke-width="1.35"/>
-          {{ t('discovery.open') }}
-        </button>
-        <button type="button" :disabled="!canLineage || loading || lineageLoading" @click="openLineageSelected">
-          <DwIcon name="explain" size="sm" :stroke-width="1.35"/>
-          {{ t('discovery.openLineage') }}
-        </button>
-      </template>
-    </DwDataGrid>
+    <div class="data-catalog__body">
+      <div class="data-catalog__main">
+        <DwDataGrid
+            v-model:selected-keys="selectedKeys"
+            :rows="rows"
+            :columns="columns"
+            row-key="id"
+            :loading="loading || lineageLoading"
+            :error="error"
+            :labels="gridLabels"
+            :show-search="false"
+            :column-filter="false"
+        >
+          <template #toolbar-actions>
+            <button type="button" :disabled="!canOpen || loading" @click="openSelected">
+              <DwIcon name="table" size="sm" :stroke-width="1.35"/>
+              {{ t('discovery.open') }}
+            </button>
+            <button type="button" :disabled="!canLineage || loading || lineageLoading" @click="openLineageSelected">
+              <DwIcon name="explain" size="sm" :stroke-width="1.35"/>
+              {{ t('discovery.openLineage') }}
+            </button>
+          </template>
+        </DwDataGrid>
 
-    <div v-if="showLoadMore" class="data-catalog__more">
-      <button
-          type="button"
-          class="dw-btn"
-          :disabled="loading || loadingMore"
-          @click="loadMore"
+        <div v-if="showLoadMore" class="data-catalog__more">
+          <button
+              type="button"
+              class="dw-btn"
+              :disabled="loading || loadingMore"
+              @click="loadMore"
+          >
+            {{ loadingMore ? t('discovery.loadingMore') : t('discovery.loadMore') }}
+          </button>
+        </div>
+      </div>
+
+      <SidePanel
+          v-if="showColumnPeek && selectedHit"
+          class="data-catalog__peek"
+          :title="t('discovery.columnPeek.title')"
+          :subtitle="selectedHit.qualifiedLabel"
+          border="left"
       >
-        {{ loadingMore ? t('discovery.loadingMore') : t('discovery.loadMore') }}
-      </button>
+        <p v-if="selectedHit.subtitle" class="data-catalog__peek-note">
+          {{ selectedHit.subtitle }}
+        </p>
+        <ul v-if="columnPeek.length" class="data-catalog__peek-list">
+          <li v-for="column in columnPeek" :key="column.name">
+            <span class="data-catalog__peek-name">{{ column.name }}</span>
+            <span v-if="column.type" class="data-catalog__peek-type">{{ column.type }}</span>
+          </li>
+        </ul>
+        <p v-else class="data-catalog__peek-empty">{{ t('discovery.columnPeek.empty') }}</p>
+      </SidePanel>
     </div>
 
     <AppModal
@@ -545,6 +577,72 @@ function chooseLineageTarget(item: LineageImpactItem) {
   min-width: min(360px, 100%);
   flex: 1;
   max-width: 420px;
+}
+
+.data-catalog__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+
+.data-catalog__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  gap: 0;
+}
+
+.data-catalog__peek {
+  width: min(280px, 34%);
+  flex-shrink: 0;
+}
+
+.data-catalog__peek-note {
+  margin: 0 0 10px;
+  color: var(--dw-text-muted, #6b7280);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.data-catalog__peek-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.data-catalog__peek-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.data-catalog__peek-name {
+  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  color: var(--dw-text, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-catalog__peek-type {
+  flex-shrink: 0;
+  color: var(--dw-text-muted, #6b7280);
+  font-size: 0.75rem;
+}
+
+.data-catalog__peek-empty {
+  margin: 0;
+  color: var(--dw-text-muted, #6b7280);
+  font-size: 0.85rem;
 }
 
 .data-catalog__facets {

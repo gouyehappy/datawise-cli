@@ -16,6 +16,7 @@ defineProps<{
   userInitial: string
   capabilities: { title: string; desc: string }[]
   extractSql: (content: string) => string | null
+  sessionId?: string | null
   analysisSteps?: AiAnalysisStepEvent[]
   analysisStreaming?: boolean
   sqlConfirmPending?: AiSqlConfirmPending | null
@@ -44,6 +45,7 @@ defineExpose({
         :user-initial="userInitial"
         :capabilities="capabilities"
         :extract-sql="extractSql"
+        :session-id="sessionId"
         @open-in-console="emit('openInConsole', $event)"
     />
 

@@ -2,6 +2,7 @@ package org.apache.datawise.backend.service.discovery;
 
 import org.apache.datawise.backend.configstore.SchemaCacheStore;
 import org.apache.datawise.backend.configstore.SemanticMetricStore;
+import org.apache.datawise.backend.domain.DiscoveryColumnPeekDto;
 import org.apache.datawise.backend.domain.DiscoveryHitDto;
 import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.model.ConnectionEntity;
@@ -204,6 +205,47 @@ class DiscoverySearchServiceTest {
 
         assertEquals(1, service.search("pii", 20).hits().size());
         assertEquals("orders", service.search("pii", 20).hits().get(0).name());
+    }
+
+    @Test
+    void searchIncludesColumnPeekFromSchemaCache() {
+        ConnectionEntity connection = new ConnectionEntity();
+        connection.setId("conn-1");
+        connection.setName("Shop DB");
+        connection.setDbType("mysql");
+
+        when(visibility.visibleCatalogForCurrentUser())
+                .thenReturn(new ConnectionVisibilityService.VisibleCatalog(List.of(), List.of(connection)));
+
+        TreeNode database = node("db-shop", "shop", "database");
+        TreeNode table = node("tbl-orders", "orders", "table");
+        TreeNode columnsFolder = node("cols-orders", "columns", "columns");
+        TreeNode idCol = node("col-id", "id", "primary_key");
+        idCol.setMeta("bigint · pk");
+        TreeNode nameCol = node("col-name", "customer_name", "column");
+        nameCol.setMeta("varchar");
+        columnsFolder.setChildren(List.of(idCol, nameCol));
+        table.setChildren(List.of(columnsFolder));
+        database.setChildren(List.of(table));
+        when(schemaCacheStore.load("conn-1")).thenReturn(List.of(database));
+        when(metricStore.listAll()).thenReturn(List.of());
+
+        DiscoveryHitDto hit = service.search("orders", 20).hits().get(0);
+        assertEquals("table", hit.kind());
+        assertEquals(List.of(
+                new DiscoveryColumnPeekDto("id", "bigint"),
+                new DiscoveryColumnPeekDto("customer_name", "varchar")
+        ), hit.columns());
+    }
+
+    @Test
+    void extractColumnPeekReturnsEmptyWhenColumnsNotHydrated() {
+        TreeNode table = node("tbl-orders", "orders", "table");
+        TreeNode columnsFolder = node("cols-orders", "columns", "columns");
+        columnsFolder.setChildren(List.of());
+        table.setChildren(List.of(columnsFolder));
+
+        assertTrue(DiscoverySearchService.extractColumnPeek(table).isEmpty());
     }
 
     private static TreeNode node(String id, String label, String type) {

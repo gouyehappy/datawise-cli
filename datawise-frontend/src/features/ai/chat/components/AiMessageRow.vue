@@ -15,6 +15,7 @@ const props = defineProps<{
   userInitial: string
   capabilities: { title: string; desc: string }[]
   extractSql: (content: string) => string | null
+  sessionId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -89,6 +90,7 @@ const hasSummaryText = computed(() =>
                   :federated-target-count="message.databases?.length ?? 0"
                   :summary-text="message.content"
                   :targets-json="message.databases?.length ? JSON.stringify(message.databases) : undefined"
+                  :session-id="sessionId"
                   @open-in-console="emit('openInConsole', $event)"
               />
             </div>

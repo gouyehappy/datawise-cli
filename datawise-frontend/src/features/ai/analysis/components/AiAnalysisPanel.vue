@@ -16,12 +16,14 @@ import AiAnalysisReportSection from '@/features/ai/analysis/components/AiAnalysi
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {platformApi} from '@/api'
 import {extractCanvasParameters} from '@/features/platform/services/analysis-canvas-parameters.service'
+import {buildInsightActionFromAiMessage} from '@/features/ai/analysis/services/insight-action-export.service'
 
 const props = defineProps<{
   analysis: AiAnalysisResult
   federatedTargetCount?: number
   summaryText?: string
   targetsJson?: string
+  sessionId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -31,6 +33,7 @@ const emit = defineEmits<{
 const {t} = useI18n()
 const layout = useLayoutStore()
 const savingCanvas = ref(false)
+const exportingTicket = ref(false)
 
 const PREVIEW_LIMIT = 8
 
@@ -71,6 +74,25 @@ function exportMarkdown() {
 function exportHtml() {
   exportAnalysisHtml(props.analysis)
   layout.showSuccessToast(t('ai.analysis.exportHtmlDone'))
+}
+
+async function createTicket() {
+  if (exportingTicket.value) return
+  exportingTicket.value = true
+  try {
+    const request = buildInsightActionFromAiMessage({
+      reply: props.summaryText?.trim() || '',
+      sql: props.analysis.sql,
+      sessionId: props.sessionId,
+      defaultTitle: t('ai.analysis.insightActionDefaultTitle'),
+    })
+    const result = await platformApi.createInsightAction(request)
+    layout.showSuccessToast(t('ai.analysis.createTicketDone', {eventId: result.eventId}))
+  } catch (error) {
+    layout.showErrorToast(error instanceof Error ? error.message : String(error))
+  } finally {
+    exportingTicket.value = false
+  }
 }
 
 async function saveAsCanvas() {
@@ -122,6 +144,14 @@ async function saveAsCanvas() {
           @click="saveAsCanvas"
       >
         {{ t('ai.analysis.saveAsCanvas') }}
+      </button>
+      <button
+          class="ai-text-action"
+          type="button"
+          :disabled="exportingTicket"
+          @click="createTicket"
+      >
+        {{ t('ai.analysis.createTicket') }}
       </button>
     </header>
     <section class="ai-section-card analysis-sql-card">

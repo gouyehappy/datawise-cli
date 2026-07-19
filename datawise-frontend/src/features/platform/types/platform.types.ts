@@ -104,6 +104,11 @@ export interface AutoGenerateSemanticMetricsRequest {
 }
 
 /** Org-level discovery hit from schema cache + semantic metrics. */
+export interface DiscoveryColumnPeek {
+    name: string
+    type?: string | null
+}
+
 export interface DiscoveryHit {
     kind: 'table' | 'view' | 'metric'
     id: string
@@ -117,6 +122,8 @@ export interface DiscoveryHit {
     score: number
     /** Metric-only: related physical tables for lineage jump. */
     relatedTables?: string[] | null
+    /** Table/view column peek from schema cache (when columns folder is hydrated). */
+    columns?: DiscoveryColumnPeek[] | null
     /** Metric tags and/or hashtags from table/view comments (#pii). */
     tags?: string[] | null
 }

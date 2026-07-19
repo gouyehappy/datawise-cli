@@ -2,6 +2,7 @@ package org.apache.datawise.backend.service.discovery;
 
 import org.apache.datawise.backend.configstore.SchemaCacheStore;
 import org.apache.datawise.backend.configstore.SemanticMetricStore;
+import org.apache.datawise.backend.domain.DiscoveryColumnPeekDto;
 import org.apache.datawise.backend.domain.DiscoveryFacetValueDto;
 import org.apache.datawise.backend.domain.DiscoveryFacetsDto;
 import org.apache.datawise.backend.domain.DiscoveryHitDto;
@@ -32,6 +33,7 @@ public class DiscoverySearchService {
 
     private static final int DEFAULT_LIMIT = 40;
     private static final int MAX_LIMIT = 100;
+    private static final int MAX_COLUMN_PEEK = 40;
     private static final Pattern HASHTAG = Pattern.compile("#([\\p{L}\\p{N}_-]+)");
 
     private final ConnectionVisibilityService connectionVisibilityService;
@@ -384,6 +386,7 @@ public class DiscoverySearchService {
                 trimOrNull(node.getComment()),
                 score,
                 List.of(),
+                extractColumnPeek(node),
                 tags
         );
     }
@@ -450,8 +453,55 @@ public class DiscoverySearchService {
                 trimOrNull(subtitle),
                 score,
                 related,
+                List.of(),
                 tags
         );
+    }
+
+    static List<DiscoveryColumnPeekDto> extractColumnPeek(TreeNode tableOrViewNode) {
+        if (tableOrViewNode == null || tableOrViewNode.getChildren() == null) {
+            return List.of();
+        }
+        TreeNode columnsFolder = null;
+        for (TreeNode child : tableOrViewNode.getChildren()) {
+            if ("columns".equals(child.getType())) {
+                columnsFolder = child;
+                break;
+            }
+        }
+        if (columnsFolder == null || columnsFolder.getChildren() == null || columnsFolder.getChildren().isEmpty()) {
+            return List.of();
+        }
+        List<DiscoveryColumnPeekDto> out = new ArrayList<>();
+        for (TreeNode columnNode : columnsFolder.getChildren()) {
+            String columnType = columnNode.getType();
+            if (!"column".equals(columnType) && !"primary_key".equals(columnType)) {
+                continue;
+            }
+            String columnName = columnNode.getLabel();
+            if (columnName == null || columnName.isBlank()) {
+                continue;
+            }
+            out.add(new DiscoveryColumnPeekDto(columnName.trim(), normalizeColumnType(columnNode.getMeta())));
+            if (out.size() >= MAX_COLUMN_PEEK) {
+                break;
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    private static String normalizeColumnType(String meta) {
+        if (meta == null || meta.isBlank()) {
+            return null;
+        }
+        String trimmed = meta.trim();
+        String lower = trimmed.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(" · pk")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 4).trim();
+        } else if ("pk".equals(lower)) {
+            return null;
+        }
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     static List<String> extractHashtags(String comment) {
