@@ -9,6 +9,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -540,6 +541,40 @@ class FederatedJoinPredicatePushdownTest {
         assertEquals(42L, FederatedJoinResidualFilter.applyCast("42", "int"));
         assertThrows(IllegalArgumentException.class, () ->
                 FederatedJoinResidualFilter.applyCast("x", "uuid"));
+    }
+
+    @Test
+    void residualFilterSupportsCaseWhen() {
+        Map<String, Object> row1 = new java.util.HashMap<>();
+        row1.put("o.id", 1);
+        row1.put("o.status", 1);
+        Map<String, Object> row2 = new java.util.HashMap<>();
+        row2.put("o.id", 2);
+        row2.put("o.status", 0);
+        List<Map<String, Object>> rows = List.of(row1, row2);
+
+        // Parenthesize CASE so the outer '=' is not confused with WHEN predicates.
+        List<Map<String, Object>> paid = FederatedJoinResidualFilter.apply(
+                rows,
+                "(CASE WHEN o.status = 1 THEN 'paid' ELSE 'pending' END) = 'paid'"
+        );
+        assertEquals(1, paid.size());
+        assertEquals(1, paid.get(0).get("o.id"));
+
+        List<Map<String, Object>> pending = FederatedJoinResidualFilter.apply(
+                rows,
+                "(CASE WHEN o.status = 1 THEN 'paid' ELSE 'pending' END) = 'pending'"
+        );
+        assertEquals(1, pending.size());
+        assertEquals(2, pending.get(0).get("o.id"));
+
+        FederatedJoinResidualFilter.CaseExpr parsed = FederatedJoinResidualFilter.parseCase(
+                "CASE WHEN o.status = 1 THEN 'paid' ELSE 'pending' END"
+        );
+        assertNotNull(parsed);
+        assertEquals("o.status = 1", parsed.predicate());
+        assertEquals("'paid'", parsed.thenExpr());
+        assertEquals("'pending'", parsed.elseExpr());
     }
 
     @Test

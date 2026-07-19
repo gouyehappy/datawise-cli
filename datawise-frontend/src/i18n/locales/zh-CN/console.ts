@@ -51,6 +51,8 @@ export default {
         canvasMain: '主表',
         canvasJoin: '关联 {n}',
         canvasSelectJoin: '点击关联表节点，在下方配置 JOIN 条件',
+        canvasDragNodesHint: '拖动节点自由排布，连线会自动跟随。',
+        canvasResetLayout: '重置布局',
         addJoin: '添加关联表',
         addAnotherJoin: '再添加一张关联表',
         removeJoin: '移除',

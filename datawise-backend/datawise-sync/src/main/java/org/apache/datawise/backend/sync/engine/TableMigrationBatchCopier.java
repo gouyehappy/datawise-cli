@@ -134,6 +134,7 @@ public class TableMigrationBatchCopier {
                 break;
             }
 
+            checkExecutionControl(command.executionControl());
             insertPage(
                     endpoints.target(),
                     command.targetConnection(),
@@ -168,7 +169,7 @@ public class TableMigrationBatchCopier {
             if (!shouldFetchAnotherPage(page, command.batchSize())) {
                 break;
             }
-            sleepThrottle(command.throttleMs());
+            sleepThrottle(command.throttleMs(), command.executionControl());
         }
         return new BatchCopyResult(rowsMigrated, batches);
     }
@@ -233,6 +234,7 @@ public class TableMigrationBatchCopier {
                     );
                 }
 
+                checkExecutionControl(command.executionControl());
                 insertPage(
                         endpoints.target(),
                         command.targetConnection(),
@@ -263,7 +265,7 @@ public class TableMigrationBatchCopier {
                 if (!shouldFetchAnotherPage(page, command.batchSize())) {
                     break;
                 }
-                sleepThrottle(command.throttleMs());
+                sleepThrottle(command.throttleMs(), command.executionControl());
             }
             return new BatchCopyResult(rowsMigrated, batches);
         } finally {
@@ -287,6 +289,27 @@ public class TableMigrationBatchCopier {
     private static void checkExecutionControl(MigrationExecutionControl executionControl) {
         if (executionControl != null) {
             executionControl.checkContinue();
+        }
+    }
+
+    private static void sleepThrottle(int throttleMs, MigrationExecutionControl executionControl) throws SQLException {
+        if (throttleMs <= 0) {
+            checkExecutionControl(executionControl);
+            return;
+        }
+        long deadline = System.currentTimeMillis() + throttleMs;
+        while (true) {
+            checkExecutionControl(executionControl);
+            long remaining = deadline - System.currentTimeMillis();
+            if (remaining <= 0) {
+                return;
+            }
+            try {
+                Thread.sleep(Math.min(100L, remaining));
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new SQLException("Migration interrupted", ex);
+            }
         }
     }
 
@@ -438,18 +461,6 @@ public class TableMigrationBatchCopier {
         }
         if (!writeSql.isBlank()) {
             connectorFacade.jdbc().executeUpdateOnConnection(targetConnection, writeSql);
-        }
-    }
-
-    private static void sleepThrottle(int throttleMs) throws SQLException {
-        if (throttleMs <= 0) {
-            return;
-        }
-        try {
-            Thread.sleep(throttleMs);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new SQLException("Migration interrupted", ex);
         }
     }
 

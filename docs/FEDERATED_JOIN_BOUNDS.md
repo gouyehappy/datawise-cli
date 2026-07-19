@@ -34,10 +34,11 @@ When the federated SQL has an outer `WHERE`:
 | `CONCAT(a, …)` / `\|\|` | Null args treated as empty string |
 | `SUBSTR` / `SUBSTRING(expr, start[, length])` | 1-based start; `start < 1` clamps to 1 |
 | `CAST(expr AS type)` | Residual only types: `VARCHAR`/`CHAR`/`TEXT`, `INT`/`BIGINT`, `DOUBLE`/`DECIMAL`/`NUMERIC`, `BOOLEAN` (optional length `VARCHAR(64)` ignored) |
+| `CASE WHEN pred THEN a ELSE b END` | Single `WHEN`; nested CASE unsupported. **Parenthesize** when used in residual comparisons so `=` / `AND` inside `WHEN` are not mis-parsed: `(CASE WHEN o.status = 1 THEN 'paid' ELSE 'pending' END) = 'paid'` |
 
 Nesting is supported (`LENGTH(TRIM(COALESCE(o.name, '')))`, `CAST(LENGTH(o.name) AS VARCHAR)`). Unknown function names fail with a clear error.
 
-4. Unsupported residual forms (`TRIM(BOTH FROM …)`, `SUBSTRING … FROM … FOR …`, column refs inside `IN` lists, nested boolean beyond AND of OR-groups / NOT, `CASE`) fail with a clear error — push those filters into the source subqueries instead.
+4. Unsupported residual forms (`TRIM(BOTH FROM …)`, `SUBSTRING … FROM … FOR …`, column refs inside `IN` lists, nested boolean beyond AND of OR-groups / NOT, nested/`searched` CASE variants) fail with a clear error — push those filters into the source subqueries instead.
 
 Parser also peels trailing `WHERE` / `GROUP BY` / `ORDER BY` / `HAVING` / `LIMIT` off the JOIN chain so `ON` is not polluted by outer clauses.
 

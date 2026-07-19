@@ -42,6 +42,9 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G5 deepen: secret reference **`dwsecret:dotenv:path#KEY`** for `.env`-style bundles; Secrets settings lists dotenv.
 - Wave C G10 deepen: insight action returns **`ticketUrl`** from GitHub/GitLab/Jira create responses; optional GitHub **`data.labels`**; AI workbench toast shows the link.
 - Wave D G11 / S6 deepen: connector marketplace **Upgrade available** badge when installed JAR SHA mismatches manifest and `downloadUrl` is present.
+- Wave B S2 deepen: federated residual **`CASE WHEN … THEN … ELSE … END`** (parenthesize in comparisons); see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
+- Wave D S4 deepen: Visual Query Builder canvas **free-drag node layout** + reset layout.
+- Wave B S1 deepen: migration cancel/pause checked **before each insert page** and polled during throttle sleep (≤100ms).
 - Wave B S1 slice: table migration mode `PK_UPSERT` with conflict strategies OVERWRITE / SKIP / FAIL (MySQL `ON DUPLICATE KEY` / PostgreSQL `ON CONFLICT`); production-target migration plans go through team approval (approve records consent; managers run the wizard).
 - Wave B S2 slice: federated JOIN hard caps (`FederatedJoinLimits`), hash join for equality ON, cross-product rejection, `hasMore` truncation; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 UX: raise `maxRows` when federated results truncate — result grid **Raise limit and re-run** (console) and platform federated **Retry at {limit}** (1k → 5k → 10k hard cap); see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).

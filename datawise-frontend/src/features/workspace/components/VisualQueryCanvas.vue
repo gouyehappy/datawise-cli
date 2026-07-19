@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {DwIcon} from '@/core/icons'
 import {FormField} from '@/core/components'
 import DwSelect from '@/core/components/DwSelect.vue'
 import type {SelectOption} from '@/core/components/select.types'
 import type {VisualQueryJoin} from '@/features/workspace/services/visual-query-builder.service'
-import {layoutVisualQueryCanvas} from '@/features/workspace/services/visual-query-canvas.service'
+import {
+  clampCanvasNodePosition,
+  layoutVisualQueryCanvas,
+  type VisualQueryCanvasPositionOverrides,
+} from '@/features/workspace/services/visual-query-canvas.service'
 
 const props = defineProps<{
   fromTable: string
@@ -32,13 +36,39 @@ const {t} = useI18n()
 const selectedJoinIndex = ref<number | null>(null)
 const dragOver = ref(false)
 const paletteFilter = ref('')
+const positionOverrides = ref<VisualQueryCanvasPositionOverrides>({})
+const svgRef = ref<SVGSVGElement | null>(null)
+
+const dragState = ref<{
+  nodeId: string
+  pointerId: number
+  offsetX: number
+  offsetY: number
+} | null>(null)
 
 const layout = computed(() =>
     layoutVisualQueryCanvas({
       fromTable: props.fromTable,
       fromAlias: props.fromAlias,
       joins: props.joins,
+      positionOverrides: positionOverrides.value,
     }),
+)
+
+watch(
+    () => [props.fromTable, props.joins.map((j) => `${j.table}:${j.alias}`).join('|')] as const,
+    () => {
+      // Drop overrides for removed join nodes; keep free layout for surviving ids.
+      const allowed = new Set<string>(['from'])
+      props.joins.forEach((join, index) => {
+        if (join.table.trim()) allowed.add(`join-${index}`)
+      })
+      const next: VisualQueryCanvasPositionOverrides = {}
+      for (const [id, pos] of Object.entries(positionOverrides.value)) {
+        if (allowed.has(id)) next[id] = pos
+      }
+      positionOverrides.value = next
+    },
 )
 
 const nodeById = computed(() => new Map(layout.value.nodes.map((node) => [node.id, node])))
@@ -104,9 +134,6 @@ function onCanvasDrop(event: DragEvent) {
     return
   }
   if (!props.canAddJoin) return
-  if (props.availableTables.includes(table) || table === props.fromTable) {
-    // fromTable already set; only unused tables should be in palette
-  }
   emit('drop-table', table)
 }
 
@@ -120,6 +147,63 @@ function removeSelected() {
   const index = selectedJoinIndex.value
   emit('remove-join', index)
   selectedJoinIndex.value = null
+}
+
+function svgPoint(event: PointerEvent): {x: number; y: number} | null {
+  const svg = svgRef.value
+  if (!svg) return null
+  const point = svg.createSVGPoint()
+  point.x = event.clientX
+  point.y = event.clientY
+  const matrix = svg.getScreenCTM()
+  if (!matrix) return null
+  const local = point.matrixTransform(matrix.inverse())
+  return {x: local.x, y: local.y}
+}
+
+function onNodePointerDown(event: PointerEvent, nodeId: string, nodeX: number, nodeY: number) {
+  if (event.button !== 0) return
+  const local = svgPoint(event)
+  if (!local) return
+  event.preventDefault()
+  event.stopPropagation()
+  ;(event.currentTarget as Element | null)?.setPointerCapture?.(event.pointerId)
+  dragState.value = {
+    nodeId,
+    pointerId: event.pointerId,
+    offsetX: local.x - nodeX,
+    offsetY: local.y - nodeY,
+  }
+}
+
+function onNodePointerMove(event: PointerEvent) {
+  const state = dragState.value
+  if (!state || state.pointerId !== event.pointerId) return
+  const local = svgPoint(event)
+  if (!local) return
+  const node = nodeById.value.get(state.nodeId)
+  const clamped = clampCanvasNodePosition(
+      local.x - state.offsetX,
+      local.y - state.offsetY,
+      node?.width,
+      node?.height,
+      Math.max(layout.value.width, 480),
+      Math.max(layout.value.height, 240),
+  )
+  positionOverrides.value = {
+    ...positionOverrides.value,
+    [state.nodeId]: clamped,
+  }
+}
+
+function onNodePointerUp(event: PointerEvent) {
+  const state = dragState.value
+  if (!state || state.pointerId !== event.pointerId) return
+  dragState.value = null
+}
+
+function resetLayout() {
+  positionOverrides.value = {}
 }
 </script>
 
@@ -156,6 +240,17 @@ function removeSelected() {
     </aside>
 
     <div class="vqb-canvas__main">
+      <div class="vqb-canvas__toolbar" v-if="fromTable">
+        <p class="vqb-canvas__hint">{{ t('console.visualQuery.canvasDragNodesHint') }}</p>
+        <button
+            v-if="Object.keys(positionOverrides).length"
+            type="button"
+            class="vqb-canvas__link"
+            @click="resetLayout"
+        >
+          {{ t('console.visualQuery.canvasResetLayout') }}
+        </button>
+      </div>
       <div
           class="vqb-canvas__stage"
           :class="{ 'is-dragover': dragOver }"
@@ -168,6 +263,7 @@ function removeSelected() {
         </div>
         <svg
             v-else
+            ref="svgRef"
             class="vqb-canvas__svg"
             :viewBox="`0 0 ${layout.width} ${layout.height}`"
             :width="layout.width"
@@ -191,8 +287,13 @@ function removeSelected() {
               :class="{
                 'is-from': node.kind === 'from',
                 'is-selected': node.kind === 'join' && node.joinIndex === selectedJoinIndex,
+                'is-dragging': dragState?.nodeId === node.id,
               }"
               :transform="`translate(${node.x}, ${node.y})`"
+              @pointerdown="onNodePointerDown($event, node.id, node.x, node.y)"
+              @pointermove="onNodePointerMove"
+              @pointerup="onNodePointerUp"
+              @pointercancel="onNodePointerUp"
               @click="node.kind === 'join' && node.joinIndex != null ? selectJoin(node.joinIndex) : undefined"
           >
             <rect
@@ -327,6 +428,13 @@ function removeSelected() {
   min-width: 0;
 }
 
+.vqb-canvas__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dw-gap);
+}
+
 .vqb-canvas__stage {
   min-height: 200px;
   overflow: auto;
@@ -389,7 +497,13 @@ function removeSelected() {
 }
 
 .vqb-canvas__node {
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
+}
+
+.vqb-canvas__node.is-dragging {
+  cursor: grabbing;
+  opacity: 0.92;
 }
 
 .vqb-canvas__role {

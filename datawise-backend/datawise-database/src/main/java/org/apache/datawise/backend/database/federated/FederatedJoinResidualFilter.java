@@ -16,7 +16,8 @@ import java.util.Set;
  * {@code alias.col [NOT] LIKE 'pattern'},
  * expression functions ({@code UPPER}/{@code LOWER}/{@code TRIM}/{@code LTRIM}/{@code RTRIM}/
  * {@code LENGTH}/{@code CHAR_LENGTH}/{@code ABS}/{@code COALESCE}/{@code NULLIF}/
- * {@code CONCAT}/{@code SUBSTR}/{@code SUBSTRING}/{@code ||}/{@code CAST(expr AS type)}) in
+ * {@code CONCAT}/{@code SUBSTR}/{@code SUBSTRING}/{@code ||}/{@code CAST(expr AS type)}/
+ * {@code CASE WHEN … THEN … ELSE … END} (prefer parenthesized CASE in comparisons)} in
  * comparisons / LIKE / BETWEEN,
  * {@code alias.col [NOT] BETWEEN low AND high},
  * or {@code alias.col IN (...)} / {@code NOT IN (...)} with literal list values.
@@ -103,7 +104,7 @@ final class FederatedJoinResidualFilter {
             throw new IllegalArgumentException(
                     "Unsupported federated residual WHERE predicate (push single-alias filters into source "
                             + "subqueries or use simple comparisons / IS NULL / LIKE / BETWEEN / "
-                            + "LENGTH|ABS|COALESCE|CONCAT|SUBSTR / UPPER|LOWER|TRIM / CAST / IN / NOT / OR "
+                            + "LENGTH|ABS|COALESCE|CONCAT|SUBSTR / UPPER|LOWER|TRIM / CAST / CASE / IN / NOT / OR "
                             + "of those): "
                             + atom
             );
@@ -537,6 +538,10 @@ final class FederatedJoinResidualFilter {
 
     private static Object resolve(Map<String, Object> row, String token) {
         String trimmed = token.trim();
+        CaseExpr caseExpr = parseCase(trimmed);
+        if (caseExpr != null) {
+            return evaluateCase(row, caseExpr);
+        }
         CastCall cast = parseCast(trimmed);
         if (cast != null) {
             return applyCast(resolve(row, cast.expression()), cast.targetType());
@@ -567,6 +572,47 @@ final class FederatedJoinResidualFilter {
             }
         }
         return null;
+    }
+
+    /**
+     * Parse {@code CASE WHEN &lt;predicate&gt; THEN &lt;expr&gt; ELSE &lt;expr&gt; END}.
+     * Nested CASE is not supported. Returns null when the token is not this form.
+     */
+    static CaseExpr parseCase(String token) {
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+        String trimmed = unwrapOuterParens(token.trim());
+        if (trimmed.length() < 12 || !trimmed.regionMatches(true, 0, "case", 0, 4)) {
+            return null;
+        }
+        int whenIdx = findKeyword(trimmed, "when", 4);
+        int thenIdx = findKeyword(trimmed, "then", 4);
+        int elseIdx = findKeyword(trimmed, "else", 4);
+        int endIdx = findKeyword(trimmed, "end", 3);
+        if (whenIdx < 0 || thenIdx < 0 || elseIdx < 0 || endIdx < 0) {
+            return null;
+        }
+        if (!(whenIdx < thenIdx && thenIdx < elseIdx && elseIdx < endIdx)) {
+            return null;
+        }
+        // Require trailing END (allow only whitespace after).
+        String afterEnd = trimmed.substring(endIdx + 3).trim();
+        if (!afterEnd.isEmpty()) {
+            return null;
+        }
+        String predicate = trimmed.substring(whenIdx + 4, thenIdx).trim();
+        String thenExpr = trimmed.substring(thenIdx + 4, elseIdx).trim();
+        String elseExpr = trimmed.substring(elseIdx + 4, endIdx).trim();
+        if (predicate.isEmpty() || thenExpr.isEmpty() || elseExpr.isEmpty()) {
+            return null;
+        }
+        return new CaseExpr(predicate, thenExpr, elseExpr);
+    }
+
+    static Object evaluateCase(Map<String, Object> row, CaseExpr caseExpr) {
+        boolean matched = matchesConjunct(row, caseExpr.predicate());
+        return resolve(row, matched ? caseExpr.thenExpr() : caseExpr.elseExpr());
     }
 
     /**
@@ -1067,5 +1113,8 @@ final class FederatedJoinResidualFilter {
     }
 
     record CastCall(String expression, String targetType) {
+    }
+
+    record CaseExpr(String predicate, String thenExpr, String elseExpr) {
     }
 }

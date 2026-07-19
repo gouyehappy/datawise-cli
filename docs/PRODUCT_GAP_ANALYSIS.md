@@ -69,10 +69,10 @@
 
 | # | 能力 | 状态 | 现状 | 补强目标 |
 |---|------|------|------|----------|
-| S1 | 按主键 / 唯一键的**数据增量同步** | partial | 结构同步已闭环；数据迁移 PK_UPSERT + 冲突策略（MySQL/PG）+ 生产目标审批门控；**行级 Diff 预览**；向导预检 **源行数估算 + 全表扫描/无主键警告**；进度卡 **暂停/取消**（取消不可续传）+ 断点续传。缺更细批次内中断 | Compare → 勾选 → 冲突策略 → 进度可中断 → 可走审批 |
-| S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限 + hasMore；Grace hash 落盘；残差谓词/函数目录已闭环（含 **CAST**）；**控制台/网格限流提示** + **提高 maxRows 重跑**；**源窗口分批**；**截断导出 INCOMPLETE 标记**。见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 限流 / 溢出策略 / 文档化边界；可选下推 |
+| S1 | 按主键 / 唯一键的**数据增量同步** | partial | 结构同步已闭环；数据迁移 PK_UPSERT + 冲突策略（MySQL/PG）+ 生产目标审批门控；**行级 Diff 预览**；向导预检 **源行数估算 + 全表扫描/无主键警告**；进度卡 **暂停/取消**（取消不可续传）+ 断点续传；**批次写入前 + throttle 睡眠中轮询取消**。缺更细事务内中断 | Compare → 勾选 → 冲突策略 → 进度可中断 → 可走审批 |
+| S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限 + hasMore；Grace hash 落盘；残差谓词/函数目录已闭环（含 **CAST** / **CASE WHEN…THEN…ELSE…END**）；**控制台/网格限流提示** + **提高 maxRows 重跑**；**源窗口分批**；**截断导出 INCOMPLETE 标记**。见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 限流 / 溢出策略 / 文档化边界；可选下推 |
 | S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：LakehouseLineageParser 规范化 + 硬特性软剥离/表级回退；Trino/Presto SELECT 仍 COMPLETE，**UNNEST … WITH ORDINALITY** / **TRY_CAST** / **GROUPING SETS·CUBE·ROLLUP** 软剥离为 PARTIAL；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite / sidecar 仍缺 | 关键方言到可用 complete/partial，失败诚实降级 |
-| S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL + **复制 SQL / 用 AI 精炼 / 在控制台运行**；画布上字段自由布局仍浅 | 画布级字段自由布局 / 更强与 AI 联动 |
+| S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL + **复制 SQL / 用 AI 精炼 / 在控制台运行**；画布 **节点自由拖拽排布**（可重置） | 更强与 AI 联动 / 字段级画布编辑 |
 | S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列 + **批量 DROP / ADD / MODIFY / RENAME 列 DDL**（多选/行解析预览/复制/控制台）；列级仍非画布内联编辑 | 图上内联改列 / 更完整批量 DDL 编排 |
 | S6 | 连接器市场深度 | partial | 浏览 catalog + `manifest.json` + 远程一键安装 + **热加载** + **重装/升级** + **SHA mismatch 升级提示**；缺签名通道 / 远程目录托管 | 远程安装 / 签名通道 / 一键升级 |
 
@@ -169,6 +169,9 @@
 | 2026-07-19、G5 dotenv | dwsecret:dotenv:path#KEY 读取 .env 风格密钥包 |
 | 2026-07-19、G10 工单 URL | insight.action 回传 ticketUrl；GitHub labels；AI 导出 toast 展示链接 |
 | 2026-07-19、G11 升级徽章 | 连接器市场 SHA mismatch + downloadUrl 时 Upgrade available |
+| 2026-07-19、S2 CASE WHEN | 联邦残差 WHERE 支持 CASE WHEN…THEN…ELSE…END（比较时建议加括号） |
+| 2026-07-19、S4 画布拖拽 | VQB JOIN 画布节点自由拖拽排布 + 重置布局 |
+| 2026-07-19、S1 批次内取消 | 迁移 insert 前检查 + throttle 睡眠中轮询 cancel/pause |
 
 | 2026-07-18、S2 残差 IN | 联邦 JOIN 残差 WHERE 支持 IN / NOT IN 字面量列表 |
 | 2026-07-18、S2 残差 OR | 联邦 JOIN 残差 WHERE 支持跨别名 OR |

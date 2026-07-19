@@ -51,6 +51,8 @@ export default {
         canvasMain: 'Main',
         canvasJoin: 'Join {n}',
         canvasSelectJoin: 'Click a join node to configure its ON condition below',
+        canvasDragNodesHint: 'Drag nodes to rearrange. Edges follow automatically.',
+        canvasResetLayout: 'Reset layout',
         addJoin: 'Add join',
         addAnotherJoin: 'Add another join',
         removeJoin: 'Remove',
