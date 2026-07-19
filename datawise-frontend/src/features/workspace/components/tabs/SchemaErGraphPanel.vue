@@ -41,6 +41,7 @@ import {
   supportsAlterColumnWizard,
   buildBatchAlterColumnDdl,
   parseBatchAddColumnLines,
+  parseBatchModifyColumnLines,
   type AlterColumnOperation,
 } from '@/features/workspace/services/alter-column-ddl.service'
 import {executeAlterColumnSql} from '@/features/workspace/services/execute-alter-column.service'
@@ -375,6 +376,34 @@ function openBatchAddDdl() {
     t('workspace.schemaEr.batchAlterAddSummaryTable', {table: target.table, count: columns.length}),
     ...columns.map((column) =>
         t('workspace.schemaEr.batchAlterAddSummaryColumn', {
+          column: column.name,
+          type: column.dataType,
+        }),
+    ),
+  ]
+  batchDdlOpen.value = true
+}
+
+function openBatchModifyDdl() {
+  const target = selectedColumnTarget.value
+  if (!target || !canAlterColumn.value) return
+  const columns = parseBatchModifyColumnLines(batchAddDraft.value)
+  const sql = buildBatchAlterColumnDdl('modify', {
+    dbType: dbType.value,
+    tableName: target.table,
+    database: databaseName.value,
+    columns,
+  })
+  if (!sql?.trim()) {
+    workspace.setStatus(t('workspace.schemaEr.batchAlterModifyEmpty'))
+    return
+  }
+  batchDdlTitle.value = t('workspace.schemaEr.batchAlterModifyTitle')
+  batchDdlSql.value = sql
+  batchDdlSummary.value = [
+    t('workspace.schemaEr.batchAlterModifySummaryTable', {table: target.table, count: columns.length}),
+    ...columns.map((column) =>
+        t('workspace.schemaEr.batchAlterModifySummaryColumn', {
           column: column.name,
           type: column.dataType,
         }),
@@ -945,15 +974,26 @@ onUnmounted(() => {
               :placeholder="t('workspace.schemaEr.batchAlterAddPlaceholder')"
           />
         </label>
-        <DwButton
-            variant="secondary"
-            size="sm"
-            type="button"
-            :disabled="!canAlterColumn"
-            @click="openBatchAddDdl"
-        >
-          {{ t('workspace.schemaEr.batchAlterAddAction') }}
-        </DwButton>
+        <div class="schema-er-graph__inspector-actions">
+          <DwButton
+              variant="secondary"
+              size="sm"
+              type="button"
+              :disabled="!canAlterColumn"
+              @click="openBatchAddDdl"
+          >
+            {{ t('workspace.schemaEr.batchAlterAddAction') }}
+          </DwButton>
+          <DwButton
+              variant="secondary"
+              size="sm"
+              type="button"
+              :disabled="!canAlterColumn"
+              @click="openBatchModifyDdl"
+          >
+            {{ t('workspace.schemaEr.batchAlterModifyAction') }}
+          </DwButton>
+        </div>
       </aside>
 
       <aside v-else-if="selectedEdge && selectedEdgeDraft" class="schema-er-graph__inspector">

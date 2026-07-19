@@ -273,6 +273,14 @@ function applyVisualQuerySql(generatedSql: string, mode: 'replace' | 'insert') {
   layout.showSuccessToast(t('console.visualQuery.appliedInsert'))
 }
 
+function applyAndRunVisualQuerySql(generatedSql: string) {
+  const next = generatedSql.trim()
+  if (!next) return
+  setConsoleSql(next)
+  layout.showSuccessToast(t('console.visualQuery.appliedAndRun'))
+  executeSql(next, {perfSource: 'vqb'})
+}
+
 function onVisualQueryTextToSql(prompt: string) {
   const text = prompt.trim()
   if (!text) return
@@ -1183,6 +1191,7 @@ onMounted(async () => {
         :connection-id="connectionId || tab.connectionId"
         :database="databaseName"
         @apply="applyVisualQuerySql"
+        @apply-and-run="applyAndRunVisualQuerySql"
         @text-to-sql="onVisualQueryTextToSql"
     />
 

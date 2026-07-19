@@ -324,6 +324,7 @@ requireTenantId()
 - [x] 平台超管租户管理 UI（设置 → 租户管理：开通/冻结/软删 + 成员邀请与角色，仅 multi + platformAdmin）
 - [x] 注册开户流（可选）：`allow-registration` + `POST /api/auth/register`；multi 且 `allow-tenant-create` 时可自助建组织；登录框按 `login-options` 切换注册
 - [x] AI 调用配额：`max-ai-calls-per-tenant-per-day`；`AiController` chat/analyze/sql 入口硬顶（`TENANT_AI_QUOTA_EXCEEDED`）
+- [x] AI 用量快照导出：Settings → 租户管理卡片 **Copy JSON / Download CSV**（当日 calls/limit/remaining）
 
 **验收：** 两租户同实例互不可见；同用户可属两租户并切换。
 

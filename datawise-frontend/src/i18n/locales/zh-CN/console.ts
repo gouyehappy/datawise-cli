@@ -103,6 +103,8 @@ export default {
         copySql: '复制 SQL',
         copySqlDone: '已复制 SQL',
         copySqlFailed: '复制 SQL 失败',
+        runInConsole: '在控制台运行',
+        appliedAndRun: '已应用 SQL，正在执行…',
         back: '上一步',
         next: '下一步',
         insert: '追加到编辑器',

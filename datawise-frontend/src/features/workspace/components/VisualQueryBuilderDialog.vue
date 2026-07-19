@@ -38,6 +38,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:open': [value: boolean]
   apply: [sql: string, mode: 'replace' | 'insert']
+  'apply-and-run': [sql: string]
   'text-to-sql': [prompt: string]
 }>()
 
@@ -521,6 +522,12 @@ function apply(mode: 'replace' | 'insert') {
   close()
 }
 
+function runInConsole() {
+  if (!canApply.value) return
+  emit('apply-and-run', previewSql.value)
+  close()
+}
+
 const limitModel = computed({
   get: () => (state.value.limit == null ? '' : String(state.value.limit)),
   set: (value: string) => {
@@ -973,12 +980,20 @@ const scopeLabel = computed(() => {
             {{ t('console.visualQuery.insert') }}
           </DwButton>
           <DwButton
-              variant="primary"
+              variant="secondary"
               type="button"
               :disabled="!canApply"
               @click="apply('replace')"
           >
             {{ t('console.visualQuery.replace') }}
+          </DwButton>
+          <DwButton
+              variant="primary"
+              type="button"
+              :disabled="!canApply"
+              @click="runInConsole"
+          >
+            {{ t('console.visualQuery.runInConsole') }}
           </DwButton>
         </div>
       </div>

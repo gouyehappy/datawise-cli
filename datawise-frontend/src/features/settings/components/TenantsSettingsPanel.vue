@@ -12,6 +12,10 @@ import {localizeTenantRoleName} from '@/features/auth/services/tenant-role-label
 import {resolveDisplayApiErrorMessage} from '@/shared/api/http/api-error-message'
 import type {TenantAiUsage, TenantMember, TenantSummary} from '@/shared/api/types'
 import type {UserPermissionSummary} from '@/features/auth/types/feature-permission.types'
+import {
+  downloadTenantAiUsageExport,
+  formatTenantAiUsageJson,
+} from '@/features/settings/services/tenant-ai-usage-export.service'
 
 const {t} = useI18n()
 const toast = useAppToast()
@@ -178,6 +182,28 @@ async function reloadAiUsage() {
     aiUsage.value = null
   } finally {
     aiUsageLoading.value = false
+  }
+}
+
+async function copyAiUsage() {
+  const usage = aiUsage.value
+  if (!usage) return
+  try {
+    await navigator.clipboard.writeText(formatTenantAiUsageJson(usage))
+    toast.success(t('settings.tenants.aiUsageCopied'))
+  } catch (error) {
+    toast.error(apiErrorMessage(error, 'settings.tenants.aiUsageExportFailed'))
+  }
+}
+
+function downloadAiUsage() {
+  const usage = aiUsage.value
+  if (!usage) return
+  try {
+    downloadTenantAiUsageExport(usage, 'csv')
+    toast.success(t('settings.tenants.aiUsageDownloaded'))
+  } catch (error) {
+    toast.error(apiErrorMessage(error, 'settings.tenants.aiUsageExportFailed'))
   }
 }
 
@@ -404,6 +430,16 @@ onMounted(async () => {
                   <span class="tn-ai-usage__fill" :style="{width: `${aiUsagePct}%`}"/>
                 </div>
                 <p v-if="aiUsageNearLimit" class="tn-ai-usage__warn">{{ t('settings.tenants.aiUsageNearLimit') }}</p>
+                <div class="tn-ai-usage__actions">
+                  <DwButton variant="ghost" size="sm" type="button" @click="copyAiUsage">
+                    <DwIcon name="copy" size="sm" :stroke-width="1.35"/>
+                    {{ t('settings.tenants.aiUsageCopy') }}
+                  </DwButton>
+                  <DwButton variant="ghost" size="sm" type="button" @click="downloadAiUsage">
+                    <DwIcon name="export" size="sm" :stroke-width="1.35"/>
+                    {{ t('settings.tenants.aiUsageDownload') }}
+                  </DwButton>
+                </div>
               </template>
               <p v-else class="hint">{{ t('settings.tenants.aiUsageLoadFailed') }}</p>
             </div>
@@ -740,6 +776,13 @@ onMounted(async () => {
   margin: var(--dw-space-2) 0 0;
   color: var(--dw-warning, #b45309);
   font-size: var(--dw-text-xs);
+}
+
+.tn-ai-usage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-space-2);
+  margin-top: var(--dw-space-3);
 }
 
 .tn-invite {

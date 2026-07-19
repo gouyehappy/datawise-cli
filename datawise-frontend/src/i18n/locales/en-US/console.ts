@@ -103,6 +103,8 @@ export default {
         copySql: 'Copy SQL',
         copySqlDone: 'SQL copied',
         copySqlFailed: 'Failed to copy SQL',
+        runInConsole: 'Run in console',
+        appliedAndRun: 'SQL applied — running…',
         back: 'Back',
         next: 'Next',
         insert: 'Append to editor',

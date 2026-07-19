@@ -106,6 +106,11 @@ export default {
         aiUsageProgress: '{calls} / {limit}',
         aiUsageNearLimit: 'Over 80% used — approaching the daily cap.',
         aiUsageLoadFailed: 'Failed to load AI usage',
+        aiUsageCopy: 'Copy JSON',
+        aiUsageDownload: 'Download CSV',
+        aiUsageCopied: 'AI usage copied',
+        aiUsageDownloaded: 'AI usage CSV downloaded',
+        aiUsageExportFailed: 'Failed to export AI usage',
     },
     userPermissions: {
         title: 'User permissions',

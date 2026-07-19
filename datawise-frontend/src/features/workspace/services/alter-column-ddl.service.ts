@@ -154,7 +154,7 @@ export function buildAlterColumnSql(
     return `ALTER TABLE ${qualified} MODIFY COLUMN ${formatMysqlColumnDefinition(options.dbType, options.column)};`
 }
 
-export type BatchAlterColumnOperation = 'drop' | 'add'
+export type BatchAlterColumnOperation = 'drop' | 'add' | 'modify'
 
 /** Concatenate per-column ALTER statements for a batch preview (no execution). */
 export function buildBatchAlterColumnDdl(
@@ -192,7 +192,7 @@ export function buildBatchAlterColumnDdl(
     if (columns.length === 0) return null
     const statements: string[] = []
     for (const column of columns) {
-        const sql = buildAlterColumnSql('add', {
+        const sql = buildAlterColumnSql(operation === 'modify' ? 'modify' : 'add', {
             dbType: options.dbType,
             tableName,
             database: options.database,
@@ -209,7 +209,7 @@ export function buildBatchAlterColumnDdl(
     return statements.length > 0 ? statements.join('\n') : null
 }
 
-/** Parse lines like {@code note VARCHAR(64)} or {@code flag INT NOT NULL} into add specs. */
+/** Parse lines like {@code note VARCHAR(64)} or {@code flag INT NOT NULL} into add/modify specs. */
 export function parseBatchAddColumnLines(text: string): AlterColumnSpec[] {
     const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
     const columns: AlterColumnSpec[] = []
@@ -222,4 +222,9 @@ export function parseBatchAddColumnLines(text: string): AlterColumnSpec[] {
         columns.push({name: match[1]!, dataType, nullable})
     }
     return columns
+}
+
+/** Same line format as {@link parseBatchAddColumnLines} — used for batch MODIFY previews. */
+export function parseBatchModifyColumnLines(text: string): AlterColumnSpec[] {
+    return parseBatchAddColumnLines(text)
 }

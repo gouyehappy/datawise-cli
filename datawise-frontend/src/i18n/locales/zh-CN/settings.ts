@@ -106,6 +106,11 @@ export default {
         aiUsageProgress: '{calls} / {limit}',
         aiUsageNearLimit: '已用超过 80%，接近日配额上限。',
         aiUsageLoadFailed: 'AI 用量加载失败',
+        aiUsageCopy: '复制 JSON',
+        aiUsageDownload: '下载 CSV',
+        aiUsageCopied: '已复制 AI 用量',
+        aiUsageDownloaded: '已下载 AI 用量 CSV',
+        aiUsageExportFailed: '导出 AI 用量失败',
     },
     userPermissions: {
         title: '账号权限',

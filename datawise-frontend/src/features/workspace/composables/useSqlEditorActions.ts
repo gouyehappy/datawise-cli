@@ -43,7 +43,7 @@ import {
     runPluginBeforeExecute,
 } from '@/features/plugin/services/plugin-hook.service'
 
-export type SqlRunPerfSource = 'toolbar' | 'gutter' | 'shortcut' | 'context-menu' | 'explain' | 'editor'
+export type SqlRunPerfSource = 'toolbar' | 'gutter' | 'shortcut' | 'context-menu' | 'explain' | 'editor' | 'vqb'
 
 export type SqlRunOptions = {
     /** 结果区刷新：仅更新指定结果 Tab，不替换其它 Tab */

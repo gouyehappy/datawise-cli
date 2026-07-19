@@ -24,6 +24,9 @@ All notable product-level changes for DataWise are documented in this file.
 - JDBC team / connection / OIDC / webhook / AI usage / SQL history snapshots when `storage.backend=jdbc`.
 - Settings → Tenants panel for platform admins in multi mode; member invite/role UI; custom tenant roles.
 - Team APIs reject cross-tenant IDs (IDOR guard).
+- Wave D G12 deepen: Settings → Tenants **AI usage Copy JSON / Download CSV** for the current day’s quota snapshot.
+- Wave D S5 deepen: ER diagram **batch MODIFY column DDL** — same `name TYPE [NOT NULL]` lines as batch ADD, preview concatenated ALTER, copy or open in console.
+- Wave D S4 deepen: Visual Query Builder **Run in console** — replace editor SQL and execute in one step.
 - Wave B S1 deepen: migration **Cancel** (`POST /api/migration/jobs/{id}/cancel`) — batch-boundary stop with `cancelled` status (not resumable); pause still supports checkpoint resume.
 - Wave C G15 deepen: data-quality catalog **Copy / Download gate JSON** after release or multi-env gate runs.
 - Wave B S3 deepen: lakehouse lineage treats Trino/Presto **`UNNEST … WITH ORDINALITY`** as a hard feature (soft-strip → `PARTIAL`).

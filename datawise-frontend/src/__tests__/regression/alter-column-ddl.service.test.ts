@@ -132,4 +132,27 @@ describe('alter-column-ddl.service', () => {
         assert.equal(parsed[0]?.name, 'note')
         assert.equal(parsed[1]?.nullable, false)
     })
+
+    it('builds batch modify column DDL', () => {
+        const sql = buildBatchAlterColumnDdl('modify', {
+            dbType: 'mysql',
+            tableName: 'orders',
+            database: 'shop',
+            columns: [
+                {name: 'note', dataType: 'VARCHAR(128)', nullable: true},
+                {name: 'flag', dataType: 'BIGINT', nullable: false},
+            ],
+        })
+        assert.equal(
+            sql,
+            'ALTER TABLE `shop`.`orders` MODIFY COLUMN `note` VARCHAR(128);\nALTER TABLE `shop`.`orders` MODIFY COLUMN `flag` BIGINT NOT NULL;',
+        )
+        const pg = buildBatchAlterColumnDdl('modify', {
+            dbType: 'postgresql',
+            tableName: 'orders',
+            columns: [{name: 'note', dataType: 'TEXT', nullable: true}],
+        })
+        assert.ok(pg?.includes('ALTER COLUMN'))
+        assert.ok(pg?.includes('TYPE TEXT'))
+    })
 })
