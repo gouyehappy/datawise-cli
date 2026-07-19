@@ -5,6 +5,16 @@ DataWise exposes a thin two-way bridge for external orchestrators, plus optional
 
 ## Outbound: scheduled task type `http_trigger`
 
+### Form presets
+
+In the platform catalog task form, pick a **Preset** to fill example URL / headers / body / `statusUrlTemplate`:
+
+- **Airflow DAG run** — POST `/api/v1/dags/{dag_id}/dagRuns` + status template with `{dag_run_id}`
+- **dbt Cloud job run** — POST job run API with Token auth
+- **Generic webhook** — simple JSON POST
+
+Replace hosts, IDs, and secrets before enabling the schedule.
+
 Create a scheduled task with type `http_trigger`. Payload:
 
 ```json
