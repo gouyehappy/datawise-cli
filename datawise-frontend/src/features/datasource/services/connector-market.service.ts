@@ -85,6 +85,18 @@ export function canRemoteReinstallConnector(
     return Boolean(isAdmin && entry.available && entry.downloadUrl?.trim())
 }
 
+/**
+ * Manifest SHA no longer matches the installed JAR (or similar integrity drift) and a remote
+ * download URL is published — admins can reinstall to upgrade.
+ */
+export function isConnectorUpgradeAvailable(entry: ConnectorMarketEntry): boolean {
+    return Boolean(
+        entry.available
+        && entry.downloadUrl?.trim()
+        && entry.integrityStatus === 'mismatch',
+    )
+}
+
 export function formatConnectorIntegrityLabel(
     status: string | null | undefined,
     t: (key: string) => string,

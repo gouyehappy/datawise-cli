@@ -6,6 +6,7 @@ import {
     canRemoteReinstallConnector,
     filterConnectorMarketEntries,
     formatConnectorIntegrityLabel,
+    isConnectorUpgradeAvailable,
     summarizeConnectorMarket,
 } from '@/features/datasource/services/connector-market.service'
 import type {ConnectorMarketEntry} from '@/features/datasource/types/datasource.types'
@@ -78,5 +79,25 @@ describe('connector-market.service', () => {
         assert.equal(canRemoteReinstallConnector(installedWithUrl, false), false)
         assert.equal(canRemoteReinstallConnector(sampleEntries[0]!, true), false)
         assert.equal(canRemoteReinstallConnector(sampleEntries[1]!, true), false)
+    })
+
+    it('flags upgrade when installed JAR SHA mismatches manifest and downloadUrl exists', () => {
+        assert.equal(
+            isConnectorUpgradeAvailable({
+                ...sampleEntries[0]!,
+                downloadUrl: 'https://example.com/mysql.jar',
+                integrityStatus: 'mismatch',
+            }),
+            true,
+        )
+        assert.equal(
+            isConnectorUpgradeAvailable({
+                ...sampleEntries[0]!,
+                downloadUrl: 'https://example.com/mysql.jar',
+                integrityStatus: 'verified',
+            }),
+            false,
+        )
+        assert.equal(isConnectorUpgradeAvailable(sampleEntries[1]!), false)
     })
 })

@@ -521,6 +521,8 @@ export default {
         copyInstall: '复制安装步骤',
         installRemote: '从 URL 安装',
         reinstallRemote: '重装 / 升级',
+        upgradeRemote: '立即升级',
+        upgradeAvailable: '有可用更新（manifest SHA 与本地 JAR 不一致）',
         installing: '安装中…',
         installSuccess: '插件 JAR 已安装并热加载（无需重启）。',
         reinstallSuccess: '插件 JAR 已重装并热加载。',

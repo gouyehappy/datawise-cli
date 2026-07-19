@@ -521,6 +521,8 @@ export default {
         copyInstall: 'Copy install steps',
         installRemote: 'Install from URL',
         reinstallRemote: 'Reinstall / upgrade',
+        upgradeRemote: 'Upgrade now',
+        upgradeAvailable: 'Update available (manifest SHA differs)',
         installing: 'Installing…',
         installSuccess: 'Plugin JAR installed and loaded (no restart needed).',
         reinstallSuccess: 'Plugin JAR reinstalled and reloaded.',

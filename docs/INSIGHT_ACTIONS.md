@@ -32,11 +32,17 @@ Content-Type: application/json
 {
   "title": "Investigate negative order amounts",
   "body": "Digest showed 12 rows with amount < 0.",
-  "data": { "source": "analysis-canvas", "canvasId": "…" }
+  "data": {
+    "source": "analysis-canvas",
+    "canvasId": "…",
+    "labels": ["datawise", "insight"]
+  }
 }
 ```
 
 Publishes `insight.action` to matching tenant outbound hooks (so a `github_issue`, `gitlab_issue`, or `jira_issue` subscription opens the ticket).
+
+Response includes `ticketUrl` / `ticketUrls` when an issue channel returns a browseable link (`html_url` / `web_url` / Jira browse URL). GitHub also accepts optional `data.labels` (string array) on create.
 
 ## Manual: AI workbench
 
@@ -46,7 +52,7 @@ On analysis replies in **AI Workbench**, use **Create ticket** / **导出工单*
 - **body** — reply text plus fenced SQL when present
 - **data** — `{ "source": "ai-workbench", "sessionId": "<chat session>", "mode": "analysis" }`
 
-Success shows the outbound event id in a toast; configure hooks under **Settings → Integrations** (see above).
+Success toast shows the ticket URL when an issue channel returns one; otherwise the outbound event id. Configure hooks under **Settings → Integrations** (see above).
 
 ## Still out of scope
 

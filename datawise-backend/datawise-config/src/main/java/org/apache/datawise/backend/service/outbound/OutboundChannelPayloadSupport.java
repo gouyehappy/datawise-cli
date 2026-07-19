@@ -8,7 +8,9 @@ import javax.crypto.spec.SecretKeySpec;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -227,6 +229,18 @@ final class OutboundChannelPayloadSupport {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("title", issueTitle(event));
         body.put("body", formatIssueBody(event));
+        Object labels = event.data() != null ? event.data().get("labels") : null;
+        if (labels instanceof Collection<?> collection && !collection.isEmpty()) {
+            List<String> labelNames = new ArrayList<>();
+            for (Object item : collection) {
+                if (item != null && !String.valueOf(item).isBlank()) {
+                    labelNames.add(String.valueOf(item).trim());
+                }
+            }
+            if (!labelNames.isEmpty()) {
+                body.put("labels", labelNames);
+            }
+        }
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("Authorization", "Bearer " + secret.trim());
         headers.put("Accept", "application/vnd.github+json");

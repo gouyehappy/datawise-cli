@@ -52,6 +52,7 @@ export default {
         refFile: '从配置目录下文件读取（相对路径）',
         refJsonFile: '从配置目录下 JSON 对象文件读取字段',
         refProperties: '从配置目录下 Java .properties 文件读取键',
+        refDotenv: '从配置目录下 .env 风格文件读取 KEY',
         refVault: '从 HashiCorp Vault KV 读取字段（VAULT_ADDR / VAULT_TOKEN）',
         refsNote: 'AWS KMS / Azure Key Vault 仍缺；env、file、json-file、properties、Vault 引用已可用。',
     },

@@ -41,16 +41,18 @@ public class InsightActionController {
             throw new IllegalArgumentException("title is required");
         }
         Long userId = UserContext.getUserId();
-        String eventId = outboundNotifySupport.insightAction(
+        OutboundNotifySupport.InsightActionPublishResult published = outboundNotifySupport.insightAction(
                 request.title(),
                 request.body(),
                 request.data(),
                 userId
         );
         return ApiResponse.ok(new InsightActionResultDto(
-                eventId,
+                published.eventId(),
                 OutboundEventType.INSIGHT_ACTION,
-                request.title().trim()
+                request.title().trim(),
+                published.primaryTicketUrl(),
+                published.ticketUrls()
         ));
     }
 }

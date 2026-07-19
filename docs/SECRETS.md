@@ -1,6 +1,6 @@
 # Secrets & master key (G5)
 
-DataWise encrypts sensitive fields (connection passwords, SSH keys, AI API keys) with a local AES-256 master key. This document covers portable master key, external secret references (`env` / `file` / **json-file** / **properties** / **Vault**), and what remains for cloud KMS.
+DataWise encrypts sensitive fields (connection passwords, SSH keys, AI API keys) with a local AES-256 master key. This document covers portable master key, external secret references (`env` / `file` / **json-file** / **properties** / **dotenv** / **Vault**), and what remains for cloud KMS.
 
 ## Master key
 
@@ -27,6 +27,7 @@ Instead of storing a password (plain or encrypted), put a reference in the passw
 | `dwsecret:file:/absolute/path` | Absolute file path |
 | `dwsecret:json-file:secrets/bundle.json#dbPassword` | Field from a JSON object file under the config directory |
 | `dwsecret:properties:secrets/bundle.properties#db.password` | Key from a Java `.properties` file under the config directory |
+| `dwsecret:dotenv:secrets/.env#DB_PASSWORD` | `KEY=value` from a `.env`-style file (`export`, quotes, `#` comments supported) |
 | `dwsecret:vault:secret/data/myapp/db#password` | HashiCorp Vault KV — GET `{VAULT_ADDR}/v1/secret/data/myapp/db`, field `password` |
 
 ### Vault

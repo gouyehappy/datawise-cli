@@ -41,10 +41,11 @@ public class SecretsController {
                         SecretReferenceResolver.SCHEME_FILE,
                         SecretReferenceResolver.SCHEME_JSON_FILE,
                         SecretReferenceResolver.SCHEME_PROPERTIES,
+                        SecretReferenceResolver.SCHEME_DOTENV,
                         SecretReferenceResolver.SCHEME_VAULT
                 ),
                 "Store dwsecret:env:NAME, dwsecret:file:path, dwsecret:json-file:path#field, "
-                        + "dwsecret:properties:path#key, or dwsecret:vault:path#field "
+                        + "dwsecret:properties:path#key, dwsecret:dotenv:path#KEY, or dwsecret:vault:path#field "
                         + "(Vault KV via VAULT_ADDR/VAULT_TOKEN) instead of plaintext in connections.xml"
         ));
     }

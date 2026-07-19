@@ -20,6 +20,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -76,6 +77,40 @@ public class OutboundEventPublisher {
         } catch (RuntimeException ex) {
             ExceptionLogging.recoverable(log, "outbound.publish tenantId=" + tenantId + " type=" + event.type(), ex);
         }
+    }
+
+    /**
+     * Delivers to matching tenant hooks and collects ticket browse URLs from issue-channel responses.
+     */
+    public List<String> publishCollectingTicketUrls(OutboundEvent event) {
+        if (event == null) {
+            return List.of();
+        }
+        String tenantId = TenantIds.normalizeOrDefault(UserContext.getTenantId());
+        List<String> urls = new ArrayList<>();
+        try {
+            List<OutboundWebhookEntity> hooks = webhookStore.listByTenantId(tenantId);
+            for (OutboundWebhookEntity webhook : hooks) {
+                if (!webhook.isEnabled()) {
+                    continue;
+                }
+                if (!matchesEvent(webhook, event.type())) {
+                    continue;
+                }
+                DeliveryResult result = post(webhook, event, tenantId, true);
+                if (!result.ok()) {
+                    continue;
+                }
+                String url = OutboundTicketUrlSupport.extractTicketUrl(webhook.getChannel(), result.responseBody());
+                if (url != null && !url.isBlank() && !urls.contains(url)) {
+                    urls.add(url);
+                }
+            }
+        } catch (RuntimeException ex) {
+            ExceptionLogging.recoverable(log, "outbound.publishCollectingTicketUrls tenantId=" + tenantId
+                    + " type=" + event.type(), ex);
+        }
+        return List.copyOf(urls);
     }
 
     public DeliveryResult deliverOnce(String tenantId, OutboundWebhookEntity webhook, OutboundEvent event) {
@@ -162,7 +197,7 @@ public class OutboundEventPublisher {
                         if (persistStatus) {
                             markSuccess(tenantId, webhook);
                         }
-                        return DeliveryResult.ok(status);
+                        return DeliveryResult.ok(status, response.body());
                     }
                     lastError = new IllegalStateException("HTTP " + status);
                 } catch (Exception ex) {
@@ -235,13 +270,17 @@ public class OutboundEventPublisher {
         webhookStore.save(tenantId, webhook);
     }
 
-    public record DeliveryResult(boolean ok, int statusCode, String message) {
+    public record DeliveryResult(boolean ok, int statusCode, String message, String responseBody) {
         public static DeliveryResult ok(int statusCode) {
-            return new DeliveryResult(true, statusCode, "ok");
+            return ok(statusCode, null);
+        }
+
+        public static DeliveryResult ok(int statusCode, String responseBody) {
+            return new DeliveryResult(true, statusCode, "ok", responseBody);
         }
 
         public static DeliveryResult failed(int statusCode, String message) {
-            return new DeliveryResult(false, statusCode, message);
+            return new DeliveryResult(false, statusCode, message, null);
         }
     }
 }

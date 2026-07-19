@@ -39,7 +39,7 @@
 | G2 | 企业 IdP / 组织同步 | partial | OIDC 组 claim → 租户角色同步 + 缺组时停用 membership / 吊销会话（Settings → Integrations）；**scopes 缺 groups 时警告 + 一键补全 + claim map 预览**。缺完整 SCIM / 组织树 / LDAP | 账号生命周期不可运营 |
 | G3 | 外发通知通道 | done（Webhook+飞书/钉钉/邮件） | 通用 Webhook + HMAC；飞书/钉钉机器人；**邮件** `channel=email`（HTTP 邮件网关 / `mailto:` + `DATAWISE_MAIL_WEBHOOK_URL`）。原生 SMTP 客户端仍缺 | 审批、漂移、定时失败可外发闭环 |
 | G4 | 合规审计导出 | done（导出+Webhook） | 服务端 CSV/JSON 导出 + `audit.appended`；完整 SIEM/哈希链仍缺 | 「可证明合规」不足 |
-| G5 | 集中密钥（Vault / KMS） | partial | 主密钥可来自 DATAWISE_MASTER_KEY；连接字段支持 dwsecret:env: / dwsecret:file: / **dwsecret:json-file:path#field** / **dwsecret:properties:path#key** / **dwsecret:vault:path#field**；Settings 密钥中心。缺 AWS/Azure KMS | 多机 / 集中部署故事弱 |
+| G5 | 集中密钥（Vault / KMS） | partial | 主密钥可来自 DATAWISE_MASTER_KEY；连接字段支持 dwsecret:env: / dwsecret:file: / **json-file** / **properties** / **dotenv** / **vault**；Settings 密钥中心。缺 AWS/Azure KMS | 多机 / 集中部署故事弱 |
 | G6 | Mac / Linux 正式桌面包 | partial | Windows NSIS/便携已稳；macOS Apple Silicon：`dist:desktop:mac` + [DESKTOP_MAC.md](./DESKTOP_MAC.md)；Linux AppImage：`dist:desktop:linux` + [DESKTOP_LINUX.md](./DESKTOP_LINUX.md)；About 显示桌面平台。缺签名/公证与 CI 产物 | 研发侧 macOS/Linux 用户门槛高 |
 
 ### 3.2 价值外溢与运营
@@ -49,13 +49,13 @@
 | G7 | 洞察 / Dashboard 订阅外发 | partial | 定时 SQL/画布任务可选 digest → insight.digest Webhook（截断行/画布摘要）；SQL 与 **画布任务均可配 digestMaxRows（1–50）**（画布按比例截断摘要）；非全量 BI 订阅中心 | AI 画布价值留在桌面内 |
 | G8 | 只读分享看板 / 嵌入链接 | partial | Dashboard 图表冻结快照分享（**可选 7/14/30/90 天过期**）+ **Copy embed iframe** + 公开页过期横幅；设置菜单管理/撤销（过期态）；非实时嵌入 | 分析师路径断在工作台 |
 | G9 | AI 成本与配额治理 | partial | 租户日调用硬顶 + Settings 用量卡 + **AI 工作台** near-limit / exhausted 提示（禁用发送）+ 出站 **`ai.quota.near_limit` / `ai.quota.exhausted`**；未做人/团队账单 | 开 AI 后运维会怕滥用 |
-| G10 | Insight → 工单 / PR / Runbook | partial | 出站通道 `github_issue` / `gitlab_issue` / `jira_issue` + `POST /api/platform/insight-actions`（`insight.action`）；**AI 工作台**分析回复 **导出工单**；见 [INSIGHT_ACTIONS.md](./INSIGHT_ACTIONS.md)。缺自动开 PR / 状态回写 | 洞察难变成组织动作 |
+| G10 | Insight → 工单 / PR / Runbook | partial | 出站通道 `github_issue` / `gitlab_issue` / `jira_issue` + `POST /api/platform/insight-actions`（`insight.action`）；**AI 工作台**分析回复 **导出工单**；响应回传 **ticketUrl**（GitHub/GitLab/Jira）；GitHub 支持 `data.labels`。见 [INSIGHT_ACTIONS.md](./INSIGHT_ACTIONS.md)。缺自动开 PR / 状态回写 | 洞察难变成组织动作 |
 
 ### 3.3 平台与生态规模化
 
 | # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
 |---|------|------|------|------------------|
-| G11 | 真·连接器远程市场 | partial | 浏览 / 安装引导 + 本地 `manifest.json`；管理员一键安装 + **热加载** + **已装插件可重装/升级**（有 downloadUrl 时）；缺远程目录托管 / 签名通道 | 生态难自运转 |
+| G11 | 真·连接器远程市场 | partial | 浏览 / 安装引导 + 本地 `manifest.json`；管理员一键安装 + **热加载** + **已装插件可重装/升级**；**SHA mismatch 时 Upgrade available 徽章**。缺远程目录托管 / 签名通道 | 生态难自运转 |
 | G12 | 多租户 / 托管 SaaS | partial | Dual-mode 已落地（	enancy.mode=single|multi）：租户隔离、RBAC、OIDC 映射、配额硬顶、成员邀请；Settings **AI 用量 Copy JSON / Download CSV**；见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。缺完整计费/发票与对象存储 | 托管商业化与计费仍弱 |
 | G13 | 组织级数据发现 | done | 命令面板跨库搜表 + GET /api/discovery/search（offset 分页 + **服务端分面** kind/connection/owner/tag）；**数据目录 Tab** + 血缘跳转 + 标签分面 + Load more + **列预览侧栏**（schema 缓存 / Explorer 树，最多 40 列）；见 [DISCOVERY.md](./DISCOVERY.md) | 语义层发现体验已可用 |
 | G14 | 编排生态对接 | partial | 定时任务 http_trigger + 入站 trigger + orchestration.* Webhook + DAG 状态回写 + **Airflow/dbt/通用 HTTP 预设**；见 [ORCHESTRATION.md](./ORCHESTRATION.md)。缺原生算子 / 多引擎状态适配器 | Yarn 可看，闭环不足 |
@@ -74,7 +74,7 @@
 | S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：LakehouseLineageParser 规范化 + 硬特性软剥离/表级回退；Trino/Presto SELECT 仍 COMPLETE，**UNNEST … WITH ORDINALITY** / **TRY_CAST** / **GROUPING SETS·CUBE·ROLLUP** 软剥离为 PARTIAL；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite / sidecar 仍缺 | 关键方言到可用 complete/partial，失败诚实降级 |
 | S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL + **复制 SQL / 用 AI 精炼 / 在控制台运行**；画布上字段自由布局仍浅 | 画布级字段自由布局 / 更强与 AI 联动 |
 | S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列 + **批量 DROP / ADD / MODIFY / RENAME 列 DDL**（多选/行解析预览/复制/控制台）；列级仍非画布内联编辑 | 图上内联改列 / 更完整批量 DDL 编排 |
-| S6 | 连接器市场深度 | partial | 浏览 catalog + `manifest.json` + 远程一键安装 + **热加载** + **重装/升级**；缺签名通道 / 远程目录托管 | 远程安装 / 签名通道 / 一键升级 |
+| S6 | 连接器市场深度 | partial | 浏览 catalog + `manifest.json` + 远程一键安装 + **热加载** + **重装/升级** + **SHA mismatch 升级提示**；缺签名通道 / 远程目录托管 | 远程安装 / 签名通道 / 一键升级 |
 
 对标细节仍见 [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)（结构同步数据侧、VQB、ER 等条目）。
 
@@ -166,6 +166,9 @@
 | 2026-07-19、S3 TRY_CAST/GROUPING | 湖仓血缘软剥离 TRY_CAST→CAST、GROUPING SETS/CUBE/ROLLUP → PARTIAL |
 | 2026-07-19、G7 画布 digestMaxRows | 定时画布任务可配 digestMaxRows，按比例截断 insight.digest 摘要 |
 | 2026-07-19、S5 批量 RENAME | ER 图批量重命名列 DDL（old new / old -> new） |
+| 2026-07-19、G5 dotenv | dwsecret:dotenv:path#KEY 读取 .env 风格密钥包 |
+| 2026-07-19、G10 工单 URL | insight.action 回传 ticketUrl；GitHub labels；AI 导出 toast 展示链接 |
+| 2026-07-19、G11 升级徽章 | 连接器市场 SHA mismatch + downloadUrl 时 Upgrade available |
 
 | 2026-07-18、S2 残差 IN | 联邦 JOIN 残差 WHERE 支持 IN / NOT IN 字面量列表 |
 | 2026-07-18、S2 残差 OR | 联邦 JOIN 残差 WHERE 支持跨别名 OR |

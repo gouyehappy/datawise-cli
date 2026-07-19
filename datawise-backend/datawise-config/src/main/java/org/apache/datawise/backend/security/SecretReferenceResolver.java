@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   <li>{@code dwsecret:file:path} — file contents (relative paths resolve under config dir)</li>
  *   <li>{@code dwsecret:json-file:path#field} — JSON object file field (relative under config dir)</li>
  *   <li>{@code dwsecret:properties:path#key} — Java {@code .properties} file key (relative under config dir)</li>
+ *   <li>{@code dwsecret:dotenv:path#KEY} — {@code .env}-style {@code KEY=value} file (relative under config dir)</li>
  *   <li>{@code dwsecret:vault:mount/data/path#field} — HashiCorp Vault KV v2
  *       ({@code VAULT_ADDR} / {@code VAULT_TOKEN}, or {@code DATAWISE_VAULT_ADDR} / {@code DATAWISE_VAULT_TOKEN})</li>
  * </ul>
@@ -40,6 +41,7 @@ public class SecretReferenceResolver {
     public static final String SCHEME_FILE = "file";
     public static final String SCHEME_JSON_FILE = "json-file";
     public static final String SCHEME_PROPERTIES = "properties";
+    public static final String SCHEME_DOTENV = "dotenv";
     public static final String SCHEME_VAULT = "vault";
 
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -87,6 +89,7 @@ public class SecretReferenceResolver {
             case SCHEME_FILE -> resolveFile(name, stored);
             case SCHEME_JSON_FILE -> resolveJsonFile(name, stored);
             case SCHEME_PROPERTIES -> resolveProperties(name, stored);
+            case SCHEME_DOTENV -> resolveDotenv(name, stored);
             case SCHEME_VAULT -> resolveVault(name, stored);
             default -> throw new IllegalArgumentException("Unsupported secret reference scheme: " + scheme);
         };
@@ -204,6 +207,98 @@ public class SecretReferenceResolver {
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to read secret properties file: " + path, ex);
         }
+    }
+
+    /**
+     * {@code path#KEY} → load a {@code .env}-style file and return the KEY value
+     * (supports optional {@code export}, quotes, and {@code #} comments).
+     */
+    private String resolveDotenv(String pathAndKey, String stored) {
+        int hash = pathAndKey.lastIndexOf('#');
+        if (hash <= 0 || hash >= pathAndKey.length() - 1) {
+            throw new IllegalArgumentException(
+                    "Dotenv secret reference must be dwsecret:dotenv:<path>#<KEY> (from " + stored + ")"
+            );
+        }
+        String pathName = pathAndKey.substring(0, hash).trim();
+        String key = pathAndKey.substring(hash + 1).trim();
+        if (pathName.isEmpty() || key.isEmpty()) {
+            throw new IllegalArgumentException("Dotenv path/key is empty: " + stored);
+        }
+        Path path = Path.of(pathName);
+        if (!path.isAbsolute()) {
+            path = configDirectory.resolve(pathName).normalize();
+        }
+        if (!Files.isRegularFile(path)) {
+            throw new IllegalStateException("Secret dotenv file not found: " + path + " (from " + stored + ")");
+        }
+        try {
+            String value = readDotenvKey(Files.readString(path, StandardCharsets.UTF_8), key);
+            if (value == null) {
+                throw new IllegalStateException("Secret dotenv key not found: " + key + " (from " + stored + ")");
+            }
+            String text = value.trim();
+            if (text.isEmpty()) {
+                throw new IllegalStateException("Secret dotenv key is empty: " + key);
+            }
+            return text;
+        } catch (IllegalStateException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read secret dotenv file: " + path, ex);
+        }
+    }
+
+    /** Package-visible for unit tests. */
+    static String readDotenvKey(String fileBody, String key) {
+        if (fileBody == null || key == null || key.isBlank()) {
+            return null;
+        }
+        String target = key.trim();
+        for (String rawLine : fileBody.split("\\R")) {
+            String line = rawLine.trim();
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            if (line.regionMatches(true, 0, "export ", 0, 7)) {
+                line = line.substring(7).trim();
+            }
+            int eq = line.indexOf('=');
+            if (eq <= 0) {
+                continue;
+            }
+            String name = line.substring(0, eq).trim();
+            if (!name.equals(target)) {
+                continue;
+            }
+            String value = line.substring(eq + 1).trim();
+            if ((value.startsWith("\"") && value.endsWith("\"") && value.length() >= 2)
+                    || (value.startsWith("'") && value.endsWith("'") && value.length() >= 2)) {
+                value = value.substring(1, value.length() - 1);
+            }
+            int comment = indexOfUnquotedHash(value);
+            if (comment >= 0) {
+                value = value.substring(0, comment).trim();
+            }
+            return value;
+        }
+        return null;
+    }
+
+    private static int indexOfUnquotedHash(String value) {
+        boolean inSingle = false;
+        boolean inDouble = false;
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '\'' && !inDouble) {
+                inSingle = !inSingle;
+            } else if (c == '"' && !inSingle) {
+                inDouble = !inDouble;
+            } else if (c == '#' && !inSingle && !inDouble) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**

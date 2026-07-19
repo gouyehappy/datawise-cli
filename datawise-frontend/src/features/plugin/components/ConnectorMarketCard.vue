@@ -12,6 +12,7 @@ import {
     CONNECTOR_PLUGIN_DIR,
     formatConnectorCapabilityLabel,
     formatConnectorIntegrityLabel,
+    isConnectorUpgradeAvailable,
 } from '@/features/datasource/services/connector-market.service'
 import {datasourcesApi} from '@/api/modules/datasources'
 import {connectorMarketAccentVars} from '@/features/datasource/services/connector-market-theme.service'
@@ -48,6 +49,7 @@ const installing = ref(false)
 const canCreateConnection = computed(() => canMutateConnectionCatalog(auth.isGuest))
 const canRemoteInstall = computed(() => canRemoteInstallConnector(props.entry, auth.isAdmin))
 const canRemoteReinstall = computed(() => canRemoteReinstallConnector(props.entry, auth.isAdmin))
+const upgradeAvailable = computed(() => isConnectorUpgradeAvailable(props.entry))
 
 const capLimit = props.standalone ? (props.lead ? 6 : 5) : 4
 
@@ -209,6 +211,12 @@ function openNewConnection(event?: Event) {
     >
       {{ integrityLabel }}
     </div>
+    <div
+        v-if="upgradeAvailable"
+        class="connector-card__integrity connector-card__integrity--mismatch"
+    >
+      {{ t('plugin.connectorMarket.upgradeAvailable') }}
+    </div>
 
     <footer v-if="standalone" class="connector-card__footer">
       <span
@@ -239,7 +247,13 @@ function openNewConnection(event?: Event) {
             :disabled="installing"
             @click="installRemote($event, true)"
         >
-          {{ installing ? t('plugin.connectorMarket.installing') : t('plugin.connectorMarket.reinstallRemote') }}
+          {{
+            installing
+                ? t('plugin.connectorMarket.installing')
+                : (upgradeAvailable
+                    ? t('plugin.connectorMarket.upgradeRemote')
+                    : t('plugin.connectorMarket.reinstallRemote'))
+          }}
         </button>
       </div>
 

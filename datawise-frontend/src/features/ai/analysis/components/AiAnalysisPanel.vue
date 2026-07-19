@@ -87,7 +87,13 @@ async function createTicket() {
       defaultTitle: t('ai.analysis.insightActionDefaultTitle'),
     })
     const result = await platformApi.createInsightAction(request)
-    layout.showSuccessToast(t('ai.analysis.createTicketDone', {eventId: result.eventId}))
+    if (result.ticketUrl) {
+      layout.showSuccessToast(
+          t('ai.analysis.createTicketDoneWithUrl', {eventId: result.eventId, url: result.ticketUrl}),
+      )
+    } else {
+      layout.showSuccessToast(t('ai.analysis.createTicketDone', {eventId: result.eventId}))
+    }
   } catch (error) {
     layout.showErrorToast(error instanceof Error ? error.message : String(error))
   } finally {

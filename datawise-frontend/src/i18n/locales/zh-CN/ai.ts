@@ -108,6 +108,7 @@ export default {
         saveAsCanvasDefaultTitle: '分析画布',
         createTicket: '导出工单',
         createTicketDone: '洞察已导出（事件 {eventId}）',
+        createTicketDoneWithUrl: '工单已创建：{url}',
         insightActionDefaultTitle: 'AI 洞察',
         rowCount: '{count} 行',
         previewShown: '展示前 {shown} / {total} 行',

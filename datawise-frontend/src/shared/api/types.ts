@@ -301,6 +301,8 @@ export interface InsightActionResult {
     eventId: string
     type: string
     title: string
+    ticketUrl?: string | null
+    ticketUrls?: string[]
 }
 
 export interface UserAdminApi {

@@ -52,6 +52,7 @@ export default {
         refFile: 'Read from a file under the config directory (relative path)',
         refJsonFile: 'Read a field from a JSON object file under the config directory',
         refProperties: 'Read a key from a Java .properties file under the config directory',
+        refDotenv: 'Read a KEY from a .env-style file under the config directory',
         refVault: 'Fetch a HashiCorp Vault KV field (VAULT_ADDR / VAULT_TOKEN)',
         refsNote: 'AWS KMS / Azure Key Vault providers are still open; env, file, json-file, properties, and Vault refs are available now.',
     },

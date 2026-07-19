@@ -72,6 +72,30 @@ class SecretReferenceResolverTest {
     }
 
     @Test
+    void resolvesDotenvKey() throws Exception {
+        Path secrets = temp.resolve("secrets");
+        Files.createDirectories(secrets);
+        Files.writeString(
+                secrets.resolve(".env"),
+                """
+                        # comment
+                        DB_PASSWORD=p@ss
+                        export API_KEY="quoted-k"
+                        OTHER=1 # trailing
+                        """,
+                StandardCharsets.UTF_8
+        );
+        ConfigDirectoryService configDirectory = new ConfigDirectoryService(temp);
+        SecretReferenceResolver resolver = new SecretReferenceResolver(configDirectory);
+
+        assertEquals("p@ss", resolver.resolve("dwsecret:dotenv:secrets/.env#DB_PASSWORD"));
+        assertEquals("quoted-k", resolver.resolve("dwsecret:dotenv:secrets/.env#API_KEY"));
+        assertEquals("1", resolver.resolve("dwsecret:dotenv:secrets/.env#OTHER"));
+        assertThrows(IllegalStateException.class, () ->
+                resolver.resolve("dwsecret:dotenv:secrets/.env#MISSING"));
+    }
+
+    @Test
     void rejectsMissingEnv() {
         ConfigDirectoryService configDirectory = new ConfigDirectoryService(temp);
         SecretReferenceResolver resolver = new SecretReferenceResolver(configDirectory);

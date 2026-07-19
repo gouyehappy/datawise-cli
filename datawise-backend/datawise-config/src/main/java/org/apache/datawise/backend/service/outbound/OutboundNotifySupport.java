@@ -155,10 +155,10 @@ public class OutboundNotifySupport {
     }
 
     /**
-     * Publish {@link OutboundEventType#INSIGHT_ACTION} so GitHub/GitLab issue channels (or webhooks)
-     * can open a ticket / runbook follow-up from an insight.
+     * Publish {@link OutboundEventType#INSIGHT_ACTION} so GitHub/GitLab/Jira issue channels (or webhooks)
+     * can open a ticket / runbook follow-up from an insight. Returns any ticket browse URLs from responses.
      */
-    public String insightAction(String title, String body, Map<String, Object> details, Long userId) {
+    public InsightActionPublishResult insightAction(String title, String body, Map<String, Object> details, Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("user is required");
         }
@@ -177,8 +177,18 @@ public class OutboundNotifySupport {
                 resolvedBody,
                 data
         );
-        publisher.publishForUsers(event, List.of(userId));
-        return eventId;
+        List<String> ticketUrls = publisher.publishCollectingTicketUrls(event);
+        return new InsightActionPublishResult(eventId, ticketUrls);
+    }
+
+    public record InsightActionPublishResult(String eventId, List<String> ticketUrls) {
+        public InsightActionPublishResult {
+            ticketUrls = ticketUrls != null ? List.copyOf(ticketUrls) : List.of();
+        }
+
+        public String primaryTicketUrl() {
+            return ticketUrls.isEmpty() ? null : ticketUrls.get(0);
+        }
     }
 
     public void dataQuality(boolean ok, String ruleName, String message, Map<String, Object> details, Long userId) {

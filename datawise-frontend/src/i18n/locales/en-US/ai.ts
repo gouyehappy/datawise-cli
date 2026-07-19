@@ -108,6 +108,7 @@ export default {
         saveAsCanvasDefaultTitle: 'Analysis canvas',
         createTicket: 'Create ticket',
         createTicketDone: 'Insight exported (event {eventId})',
+        createTicketDoneWithUrl: 'Ticket created: {url}',
         insightActionDefaultTitle: 'AI insight',
         rowCount: '{count} rows',
         previewShown: 'Showing {shown} of {total} rows',
