@@ -658,6 +658,10 @@
   background: var(--dw-bg);
 }
 
+.preflight-scan-banner {
+  margin: 0;
+}
+
 .preflight-inspector__head {
   display: flex;
   align-items: center;

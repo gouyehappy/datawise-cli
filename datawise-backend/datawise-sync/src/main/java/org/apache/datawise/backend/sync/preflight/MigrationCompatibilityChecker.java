@@ -65,6 +65,7 @@ public class MigrationCompatibilityChecker {
                 : null;
 
         List<String> watermarkColumns = TableMigrationPreflightSupport.suggestWatermarkColumns(sourceColumns);
+        List<String> primaryKeyColumns = TableMigrationPreflightSupport.extractPrimaryKeyColumns(sourceColumns);
 
         var ddlPreview = sourceExists && sourceProps != null
                 ? connectorFacade.ddl().preview(
@@ -87,6 +88,7 @@ public class MigrationCompatibilityChecker {
                 compare.missingOnTarget(),
                 compare.extraOnTarget(),
                 watermarkColumns,
+                primaryKeyColumns,
                 status.status(),
                 status.issues(),
                 ddlPreview != null ? ddlPreview.columnMappings() : List.of(),

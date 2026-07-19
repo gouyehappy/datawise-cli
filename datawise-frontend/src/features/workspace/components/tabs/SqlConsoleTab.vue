@@ -724,6 +724,17 @@ function refreshActiveResult(payload?: QueryResultRefreshRequest) {
   executeSql(payload.sql, {refreshResultIndex: payload.resultIndex, skipDangerousCheck: true})
 }
 
+function onRaiseMaxRows(maxRows: number) {
+  const view = consoleQuery.value.activeView
+  const result = consoleQuery.value.results[view]
+  if (!result?.sql?.trim()) return
+  executeSql(result.sql, {
+    refreshResultIndex: view,
+    skipDangerousCheck: true,
+    maxRowsOverride: maxRows,
+  })
+}
+
 async function onLoadMoreResult(index: number) {
   const result = consoleQuery.value.results[index]
   if (!result?.cursorId || cursorLoading.value) return
@@ -1117,6 +1128,7 @@ onMounted(async () => {
           @open-cross-env-compare="openCrossEnvCompareFromResult"
           @refresh="refreshActiveResult"
           @load-more="onLoadMoreResult"
+          @raise-max-rows="onRaiseMaxRows"
       />
       <button
           v-if="!isEditorFullscreen && !showResultPanel"

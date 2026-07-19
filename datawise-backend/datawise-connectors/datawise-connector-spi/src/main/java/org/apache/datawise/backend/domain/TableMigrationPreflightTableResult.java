@@ -13,6 +13,7 @@ public record TableMigrationPreflightTableResult(
         List<String> missingOnTarget,
         List<String> extraOnTarget,
         List<String> suggestedWatermarkColumns,
+        List<String> primaryKeyColumns,
         String status,
         List<String> issues,
         List<MigrationColumnTypeMapping> columnMappings,

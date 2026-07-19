@@ -24,6 +24,7 @@ import {
 } from '@/features/team/services/connection-access.service'
 import {splitSqlStatements} from '@/features/workspace/services/split-sql-statements'
 import {resolveClientMaxResultRows, resolveSqlPageSize} from '@/features/settings/services/query-limit.service'
+import {resolveFederatedMaxRows} from '@/features/platform/services/federated-max-rows.service'
 import {resolveExecutableSql as pickExecutableSql} from '@/features/workspace/services/resolve-executable-sql'
 import {
     buildErrorQueryResultItem,
@@ -51,6 +52,8 @@ export type SqlRunOptions = {
     skipDangerousCheck?: boolean
     /** PERF 日志来源（行内运行、工具栏、快捷键等） */
     perfSource?: SqlRunPerfSource
+    /** 单次执行覆盖 maxRows（如联邦截断后提高上限）；仍受联邦硬顶约束 */
+    maxRowsOverride?: number
 }
 
 export interface SqlEditorActionsOptions {
@@ -224,7 +227,10 @@ export function useSqlEditorActions(options: SqlEditorActionsOptions) {
                 workspace.setConsoleQueryResults(tabId, [])
             }
             const pageSize = resolveSqlPageSize(options.getProductionPerfActive?.() ?? false)
-            const maxRows = resolveClientMaxResultRows(options.getProductionPerfActive?.() ?? false)
+            const clientMaxRows = resolveClientMaxResultRows(options.getProductionPerfActive?.() ?? false)
+            const maxRows = runOptions?.maxRowsOverride != null
+                ? resolveFederatedMaxRows(runOptions.maxRowsOverride)
+                : clientMaxRows
             const connection = {
                 connectionId,
                 database: options.getDatabase(),

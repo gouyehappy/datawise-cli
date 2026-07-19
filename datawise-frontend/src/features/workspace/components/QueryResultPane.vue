@@ -24,6 +24,11 @@ import {getResultTabMenu} from '@/features/workspace/constants/tab-context-menu'
 import {resolveQueryResultRefreshRequest} from '@/features/workspace/services/query-result-refresh.service'
 import type {QueryResultRefreshRequest} from '@/features/workspace/services/query-result-refresh.service'
 import {isResultTruncatedAtCap} from '@/features/workspace/services/query-result-truncation'
+import {
+    FEDERATED_DEFAULT_MAX_ROWS,
+    canRaiseFederatedMaxRows,
+    nextFederatedMaxRows,
+} from '@/features/platform/services/federated-max-rows.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {useGridViewState} from '@/features/workspace/composables/useGridViewState'
@@ -140,6 +145,7 @@ const emit = defineEmits<{
   'close-ai-explain': []
   'open-cross-env-compare': [index: number]
   'generate-fake-data': []
+  'raise-max-rows': [maxRows: number]
 }>()
 
 const layout = useLayoutStore()
@@ -494,6 +500,14 @@ const gridTruncatedCapRows = computed(() => {
   return result?.pageSize ?? (result?.total ? result.total : undefined)
 })
 
+const federatedCapRows = computed(
+    () => gridTruncatedCapRows.value ?? FEDERATED_DEFAULT_MAX_ROWS,
+)
+
+const canRaiseMaxRows = computed(
+    () => gridTruncatedAtCap.value && canRaiseFederatedMaxRows(federatedCapRows.value),
+)
+
 const gridCursorLoading = computed(() => props.cursorLoading ?? false)
 
 const gridCursorTrimmedRows = computed(
@@ -506,6 +520,12 @@ function onLoadMoreRows() {
     return
   }
   emit('load-more', activeResultIndex.value)
+}
+
+function onRaiseMaxRows() {
+  const next = nextFederatedMaxRows(federatedCapRows.value)
+  if (next == null) return
+  emit('raise-max-rows', next)
 }
 
 function onRequestAiFix() {
@@ -890,12 +910,14 @@ watch(
           :has-more="gridHasMore"
           :truncated-at-cap="gridTruncatedAtCap"
           :truncated-cap-rows="gridTruncatedCapRows"
+          :can-raise-max-rows="canRaiseMaxRows"
           :cursor-loading="gridCursorLoading"
           :cursor-trimmed-rows="gridCursorTrimmedRows"
           :production-perf-active="props.productionPerfActive"
           @exported="onExported"
           @refresh="onRefreshGrid"
           @load-more="onLoadMoreRows"
+          @raise-max-rows="onRaiseMaxRows"
           @generate-dml="onGenerateDml"
       >
         <template v-if="canShowFakeData || canRequestAiSummary || canShowResultChart" #toolbar-extra>

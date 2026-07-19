@@ -1262,3 +1262,72 @@ export function summarizeMigrationResults(results: TableMigrationResult[]): {
 export function selectPreflightTableName(_current: string | null, tableName: string): string {
     return tableName
 }
+
+export type MigrationPreflightScanVariant = 'info' | 'warning'
+
+export interface MigrationPreflightScanSummary {
+    variant: MigrationPreflightScanVariant
+    messageKey: string
+    totalSourceRows: number | null
+    countedTables: number
+    uncountedTables: number
+    tablesWithoutPrimaryKey: string[]
+}
+
+const LARGE_SCAN_ROW_THRESHOLD = 1_000_000
+
+/** Preflight scan scope: row-count estimate + mode/PK scan warnings for the wizard banner. */
+export function summarizeMigrationPreflightScan(
+    mode: MigrationMode,
+    preflight: TableMigrationPreflightResult | null,
+    selectedTables: string[],
+): MigrationPreflightScanSummary | null {
+    if (!preflight || !selectedTables.length) return null
+
+    let totalSourceRows = 0
+    let countedTables = 0
+    let uncountedTables = 0
+    const tablesWithoutPrimaryKey: string[] = []
+
+    forEachPreflightTable(preflight, selectedTables, (item) => {
+        if (item.sourceExists && item.sourceRowCount != null) {
+            totalSourceRows += Math.max(0, item.sourceRowCount)
+            countedTables += 1
+        } else if (item.sourceExists) {
+            uncountedTables += 1
+        }
+        const pkColumns = item.primaryKeyColumns ?? []
+        if (item.sourceExists && pkColumns.length === 0) {
+            tablesWithoutPrimaryKey.push(item.tableName)
+        }
+    })
+
+    const isFullCopyMode = mode === 'FULL_APPEND' || mode === 'FULL_REPLACE'
+    const missingPk = mode === 'PK_UPSERT' && tablesWithoutPrimaryKey.length > 0
+
+    let messageKey = 'explorer.tableMigrationWizard.scanBannerIncr'
+    if (missingPk) {
+        messageKey = 'explorer.tableMigrationWizard.scanBannerNoPk'
+    } else if (isFullCopyMode) {
+        messageKey = 'explorer.tableMigrationWizard.scanBannerFullScan'
+    } else if (mode === 'PK_UPSERT') {
+        messageKey = 'explorer.tableMigrationWizard.scanBannerPkUpsert'
+    }
+
+    let variant: MigrationPreflightScanVariant = 'info'
+    if (missingPk || isFullCopyMode) {
+        variant = 'warning'
+    }
+    if (totalSourceRows >= LARGE_SCAN_ROW_THRESHOLD) {
+        variant = 'warning'
+    }
+
+    return {
+        variant,
+        messageKey,
+        totalSourceRows: countedTables > 0 ? totalSourceRows : null,
+        countedTables,
+        uncountedTables,
+        tablesWithoutPrimaryKey,
+    }
+}

@@ -856,6 +856,7 @@ export interface TableMigrationPreflightTableResult {
     missingOnTarget: string[]
     extraOnTarget: string[]
     suggestedWatermarkColumns: string[]
+    primaryKeyColumns?: string[]
     status: 'ready' | 'warn' | 'blocked' | string
     issues: string[]
     columnMappings: MigrationColumnTypeMapping[]

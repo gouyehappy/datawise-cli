@@ -23,6 +23,7 @@ import AnalysisCanvasRerunDialog from '@/features/platform/components/AnalysisCa
 import SchemaDriftReportDialog from '@/features/platform/components/SchemaDriftReportDialog.vue'
 import type {SchemaDriftReport} from '@/features/platform/types/platform.types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import DataQualitySharedTemplatesDialog from '@/features/platform/components/DataQualitySharedTemplatesDialog.vue'
 import FederatedViewWizardDialog from '@/features/platform/components/FederatedViewWizardDialog.vue'
 import PlatformCatalogFormDialog from '@/features/workspace/components/PlatformCatalogFormDialog.vue'
 import {usePlatformCatalog} from '@/features/workspace/composables/usePlatformCatalog'
@@ -30,6 +31,11 @@ import ReleaseHighlightsCards from '@/features/layout/components/ReleaseHighligh
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import type {ReleaseHighlightAction} from '@/features/layout/services/release-highlights.service'
+import {
+    FEDERATED_DEFAULT_MAX_ROWS,
+    nextFederatedMaxRows,
+    resolveFederatedMaxRows,
+} from '@/features/platform/services/federated-max-rows.service'
 
 const props = defineProps<{ tab: WorkspaceTab }>()
 const {t} = useI18n()
@@ -53,6 +59,9 @@ const multiEnvPairByName = ref(true)
 const canvasRerunId = ref<string | null>(null)
 const driftReportOpen = ref(false)
 const driftReport = ref<SchemaDriftReport | null>(null)
+const federatedMaxRows = ref(FEDERATED_DEFAULT_MAX_ROWS)
+const federatedTruncated = ref(false)
+const dqSharedTemplatesOpen = ref(false)
 
 const feature = computed(() => props.tab.platformFeature ?? 'semantic_metrics')
 const isSemanticMetrics = computed(() => feature.value === 'semantic_metrics')
@@ -67,6 +76,11 @@ const singleSelectedId = computed(() =>
 )
 
 const canRunAction = computed(() => Boolean(singleSelectedId.value) && !runningAction.value)
+
+const federatedRetryMaxRows = computed(() => {
+  if (!federatedTruncated.value) return null
+  return nextFederatedMaxRows(federatedMaxRows.value)
+})
 
 const canAutoGenerate = computed(() =>
     Boolean(props.tab.connectionId?.trim() && props.tab.database?.trim()),
@@ -272,6 +286,14 @@ function openMultiEnvGateDialog() {
   multiEnvOpen.value = true
 }
 
+function openDqSharedTemplatesDialog() {
+  dqSharedTemplatesOpen.value = true
+}
+
+function onDqSharedTemplateDeleted() {
+  layout.showSuccessToast(t('platform.dq.sharedTemplatesDeleted'))
+}
+
 async function confirmMultiEnvGate() {
   if (runningAction.value) return
   const connectionId = props.tab.connectionId?.trim()
@@ -319,16 +341,24 @@ async function confirmMultiEnvGate() {
   }
 }
 
-async function executeFederatedView() {
+async function executeFederatedView(overrideMaxRows?: number) {
   const id = singleSelectedId.value
   if (!id || runningAction.value) return
   runningAction.value = true
-  const maxRows = 1000
+  const maxRows = resolveFederatedMaxRows(overrideMaxRows ?? federatedMaxRows.value)
+  federatedMaxRows.value = maxRows
+  federatedTruncated.value = false
   try {
     const result = await platformApi.executeFederatedView({viewId: id, maxRows})
     const rows = result.rowCount ?? 0
     if (result.hasMore) {
-      layout.showWarningToast(t('platform.federated.executeTruncated', {rows, limit: maxRows}))
+      federatedTruncated.value = true
+      const next = nextFederatedMaxRows(maxRows)
+      if (next != null) {
+        layout.showWarningToast(t('platform.federated.executeTruncatedRaise', {rows, limit: maxRows, next}))
+      } else {
+        layout.showWarningToast(t('platform.federated.executeTruncated', {rows, limit: maxRows}))
+      }
     } else {
       layout.showSuccessToast(t('platform.federated.executeDone', {rows}))
     }
@@ -337,6 +367,11 @@ async function executeFederatedView() {
   } finally {
     runningAction.value = false
   }
+}
+
+function retryFederatedAtNextLimit() {
+  const next = federatedRetryMaxRows.value
+  if (next != null) void executeFederatedView(next)
 }
 
 function runReleaseAction(action: ReleaseHighlightAction) {
@@ -417,6 +452,15 @@ function runReleaseAction(action: ReleaseHighlightAction) {
       <button
           v-if="isDataQuality"
           type="button"
+          :disabled="loading"
+          @click="openDqSharedTemplatesDialog"
+      >
+        <DwIcon name="settings" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.dq.manageSharedTemplates') }}
+      </button>
+      <button
+          v-if="isDataQuality"
+          type="button"
           :disabled="loading || runningAction"
           @click="runDataQualityGate"
       >
@@ -436,10 +480,19 @@ function runReleaseAction(action: ReleaseHighlightAction) {
           v-if="isFederatedViews"
           type="button"
           :disabled="loading || !canRunAction"
-          @click="executeFederatedView"
+          @click="executeFederatedView()"
       >
         <DwIcon name="run" size="sm" :stroke-width="1.35"/>
         {{ t('platform.federated.execute') }}
+      </button>
+      <button
+          v-if="isFederatedViews && federatedRetryMaxRows"
+          type="button"
+          :disabled="loading || runningAction"
+          @click="retryFederatedAtNextLimit"
+      >
+        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+        {{ t('platform.federated.retryAtLimit', {limit: federatedRetryMaxRows}) }}
       </button>
       <button
           v-if="isSemanticMetrics"
@@ -484,6 +537,11 @@ function runReleaseAction(action: ReleaseHighlightAction) {
   <SchemaDriftReportDialog
       v-model:open="driftReportOpen"
       :report="driftReport"
+  />
+
+  <DataQualitySharedTemplatesDialog
+      v-model:open="dqSharedTemplatesOpen"
+      @deleted="onDqSharedTemplateDeleted"
   />
 
   <AppModal

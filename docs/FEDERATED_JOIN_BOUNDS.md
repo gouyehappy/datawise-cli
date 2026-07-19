@@ -53,6 +53,8 @@ Probe rows stay in memory (already capped by `maxRows` / hard cap). Spill reduce
 
 The SQL console result grid shows a **truncation hint** when `hasMore` is true but there is **no** `cursorId` (federated JOIN cannot page further). Prefer tighter `WHERE` / source filters, or raise request `maxRows` up to the hard cap.
 
+When truncated below the hard cap, the grid shows **Raise limit and re-run** (SQL console re-executes the active statement with the next step: 1 000 → 5 000 → 10 000). Platform catalog → Federated Views → Execute uses the same steps and offers **Retry at {limit}** after a truncated run.
+
 When a source hits `maxRows` or the join stops early at the output cap, `ExecuteSqlResult.hasMore` is `true` and `pageSize` carries the effective `maxRows`. The UI should treat this as a partial result, not a full join.
 
 ## Practical guidance

@@ -51,6 +51,7 @@ export default {
     productionPerfActive: 'Production perf mode: stricter row limits applied',
     truncatedAtCap: '{count} rows shown — hit the federated / result row cap (incomplete). Tighten filters or raise maxRows (hard cap 10 000).',
     truncatedAtCapWithLimit: '{count} rows shown — truncated at {limit} (incomplete). Tighten filters or raise maxRows (hard cap 10 000).',
+    raiseMaxRows: 'Raise limit and re-run',
     audit: {
         title: 'Change history (time-travel)',
         loading: 'Loading audit entries…',

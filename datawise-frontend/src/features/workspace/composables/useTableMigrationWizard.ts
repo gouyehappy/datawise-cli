@@ -34,6 +34,7 @@ import {
     runTableMigrationPreflight,
     runTableMigrationRowDiff,
     selectPreflightTableName,
+    summarizeMigrationPreflightScan,
     summarizeMigrationResults,
     toggleOrderByColumn,
     type MigrationLogLine,
@@ -230,6 +231,14 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         if (preflightStatusFilter.value === 'all') return tables
         return tables.filter((item) => item.status === preflightStatusFilter.value)
     })
+
+    const preflightScanSummary = computed(() =>
+        summarizeMigrationPreflightScan(
+            form.value.mode,
+            preflightResult.value,
+            form.value.selectedTables,
+        ),
+    )
 
     const truncateLockedByMode = computed(() => form.value.mode === 'FULL_REPLACE')
 
@@ -1019,6 +1028,7 @@ export function useTableMigrationWizard(tab: WorkspaceTab) {
         showAdvancedOptions,
         preflightStatusFilter,
         filteredPreflightTables,
+        preflightScanSummary,
         truncateLockedByMode,
         modeDescriptionKey,
         canStartMigration,

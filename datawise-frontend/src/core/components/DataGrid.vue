@@ -131,6 +131,8 @@ const props = withDefaults(
       truncatedAtCap?: boolean
       /** Effective row cap when truncatedAtCap (pageSize / maxRows). */
       truncatedCapRows?: number
+      /** Show raise-limit action when truncated at cap (federated / hard maxRows). */
+      canRaiseMaxRows?: boolean
       /** 生产环境性能模式已收紧行数策略 */
       productionPerfActive?: boolean
       showDmlActions?: boolean
@@ -156,6 +158,7 @@ const props = withDefaults(
       enableRowDocumentView: false,
       truncatedAtCap: false,
       truncatedCapRows: undefined,
+      canRaiseMaxRows: false,
     },
 )
 
@@ -181,6 +184,7 @@ const emit = defineEmits<{
   refresh: []
   exported: [fileName: string]
   'load-more': []
+  'raise-max-rows': []
   'generate-dml': [rows: TableRow[]]
 }>()
 
@@ -1168,6 +1172,14 @@ function dismissColumnStats() {
               : t('dataGrid.truncatedAtCap', {count: gridRows.length})
           }}
         </span>
+        <button
+            v-if="truncatedAtCap && canRaiseMaxRows"
+            class="dw-text-btn dw-text-btn--accent"
+            type="button"
+            @click="emit('raise-max-rows')"
+        >
+          {{ t('dataGrid.raiseMaxRows') }}
+        </button>
         <button
             v-if="hasMore && !truncatedAtCap"
             class="dw-text-btn dw-text-btn--accent"

@@ -36,6 +36,7 @@ import {
     filterMigrationLogsForDisplay,
     shouldAppendBatchProgressLog,
     MIGRATION_BATCH_LOG_ROW_INTERVAL,
+    summarizeMigrationPreflightScan,
 } from '@/features/explorer/services/table-migration.service'
 import type {TableMigrationPreflightResult} from '@/shared/api/types'
 import type {SchemaScope} from '@/features/schema-compare/types/schema-compare.types'
@@ -648,5 +649,75 @@ describe('table-migration.service (FB-092)', () => {
         assert.ok(filtered.length < logs.length)
         assert.equal(filtered[0].event, 'run_start')
         assert.equal(filtered[filtered.length - 1].rowsMigrated, 200 * 500)
+    })
+
+    it('summarizeMigrationPreflightScan warns on full-copy modes with row totals', () => {
+        const preflight: TableMigrationPreflightResult = {
+            readyCount: 1,
+            warnCount: 0,
+            blockedCount: 0,
+            canProceed: true,
+            tables: [{
+                tableName: 'orders',
+                sourceExists: true,
+                targetExists: true,
+                sourceRowCount: 250_000,
+                targetRowCount: 0,
+                sourceColumnCount: 3,
+                targetColumnCount: 3,
+                missingOnTarget: [],
+                extraOnTarget: [],
+                suggestedWatermarkColumns: ['id'],
+                primaryKeyColumns: ['id'],
+                status: 'ready',
+                issues: [],
+                columnMappings: [],
+                mappingWarnings: [],
+            }],
+        }
+        const form = createDefaultTableMigrationForm(['orders'])
+        form.mode = 'FULL_APPEND'
+
+        const summary = summarizeMigrationPreflightScan(form.mode, preflight, form.selectedTables)
+
+        assert.ok(summary)
+        assert.equal(summary?.variant, 'warning')
+        assert.equal(summary?.messageKey, 'explorer.tableMigrationWizard.scanBannerFullScan')
+        assert.equal(summary?.totalSourceRows, 250_000)
+    })
+
+    it('summarizeMigrationPreflightScan flags PK_UPSERT without primary key', () => {
+        const preflight: TableMigrationPreflightResult = {
+            readyCount: 1,
+            warnCount: 0,
+            blockedCount: 0,
+            canProceed: true,
+            tables: [{
+                tableName: 'events',
+                sourceExists: true,
+                targetExists: true,
+                sourceRowCount: 42,
+                targetRowCount: 0,
+                sourceColumnCount: 2,
+                targetColumnCount: 2,
+                missingOnTarget: [],
+                extraOnTarget: [],
+                suggestedWatermarkColumns: ['created_at'],
+                primaryKeyColumns: [],
+                status: 'ready',
+                issues: [],
+                columnMappings: [],
+                mappingWarnings: [],
+            }],
+        }
+        const form = createDefaultTableMigrationForm(['events'])
+        form.mode = 'PK_UPSERT'
+
+        const summary = summarizeMigrationPreflightScan(form.mode, preflight, form.selectedTables)
+
+        assert.ok(summary)
+        assert.equal(summary?.variant, 'warning')
+        assert.equal(summary?.messageKey, 'explorer.tableMigrationWizard.scanBannerNoPk')
+        assert.deepEqual(summary?.tablesWithoutPrimaryKey, ['events'])
     })
 })

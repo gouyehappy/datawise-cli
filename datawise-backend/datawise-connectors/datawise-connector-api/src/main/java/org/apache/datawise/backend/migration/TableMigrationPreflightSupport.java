@@ -64,6 +64,23 @@ public final class TableMigrationPreflightSupport {
         return new ColumnCompareResult(missing, extra);
     }
 
+    /** 源表主键列名（按列顺序，大小写保留）。 */
+    public static List<String> extractPrimaryKeyColumns(List<TableColumnDetail> columns) {
+        if (columns == null || columns.isEmpty()) {
+            return List.of();
+        }
+        List<String> primaryKeys = new ArrayList<>();
+        for (TableColumnDetail column : columns) {
+            if (column == null || column.name() == null || column.name().isBlank()) {
+                continue;
+            }
+            if (isPrimaryKeyColumn(column)) {
+                primaryKeys.add(column.name().trim());
+            }
+        }
+        return List.copyOf(primaryKeys);
+    }
+
     /** 推荐水位列：主键 → 时间类型/时间列名 → 自增数值列。 */
     public static List<String> suggestWatermarkColumns(List<TableColumnDetail> columns) {
         if (columns == null || columns.isEmpty()) {

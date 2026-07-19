@@ -56,6 +56,19 @@ class TableMigrationPreflightSupportTest {
     }
 
     @Test
+    void extractPrimaryKeyColumnsReturnsPriAndPkMarkers() {
+        List<TableColumnDetail> columns = List.of(
+                column("tenant_id", "PRI"),
+                column("order_id", "PK", "bigint"),
+                column("name", null, "varchar")
+        );
+
+        List<String> primaryKeys = TableMigrationPreflightSupport.extractPrimaryKeyColumns(columns);
+
+        assertEquals(List.of("tenant_id", "order_id"), primaryKeys);
+    }
+
+    @Test
     void suggestWatermarkColumnsPrefersPrimaryKeyAndUpdatedAt() {
         List<TableColumnDetail> columns = List.of(
                 column("id", "PRI"),

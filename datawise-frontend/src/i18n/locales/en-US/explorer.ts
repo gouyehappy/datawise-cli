@@ -423,6 +423,16 @@ export default {
         preflightStatus: 'Status',
         preflightSourceRows: 'Source rows',
         preflightTargetRows: 'Target rows',
+        scanBannerFullScan:
+            'About {rows} source rows across {counted} table(s). Full append/replace reads the entire table in batches (full table scan — no primary-key shortcut).',
+        scanBannerPkUpsert:
+            'About {rows} source rows. PK upsert reconciles by primary key; reads are keyed lookups rather than a blind full export.',
+        scanBannerIncr:
+            'About {rows} matching source rows ({counted} table(s) counted). Incremental mode reads only rows newer than the watermark.',
+        scanBannerNoPk:
+            '{count} table(s) have no primary key ({tables}). PK upsert requires a primary key and may fail or fall back to a broader scan.',
+        scanBannerRowsUnknown: 'unknown',
+        scanBannerUncountedSuffix: '{uncounted} table(s) could not be counted — treat scan scope as uncertain.',
         preflightIssues: 'Issues',
         preflightWatermark: 'Suggested watermark',
         statusReady: 'Ready',

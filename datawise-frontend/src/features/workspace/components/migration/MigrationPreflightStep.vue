@@ -1,10 +1,32 @@
 <script setup lang="ts">
+import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {DwButton, DwPanelState, DwSelect, StatusPill} from '@/core/components'
+import {DwButton, DwInlineAlert, DwPanelState, DwSelect, StatusPill} from '@/core/components'
 import {useMigrationWizard} from '@/features/workspace/composables/useMigrationWizardInject'
 
 const {t} = useI18n()
 const w = useMigrationWizard()
+
+const preflightScanBannerMessage = computed(() => {
+    const summary = w.preflightScanSummary
+    if (!summary) return ''
+    const rowsLabel = summary.totalSourceRows != null
+        ? w.formatRowCount(summary.totalSourceRows)
+        : t('explorer.tableMigrationWizard.scanBannerRowsUnknown')
+    let message = t(summary.messageKey, {
+        rows: rowsLabel,
+        counted: summary.countedTables,
+        uncounted: summary.uncountedTables,
+        tables: summary.tablesWithoutPrimaryKey.join(', '),
+        count: summary.tablesWithoutPrimaryKey.length,
+    })
+    if (summary.uncountedTables > 0) {
+        message += ` ${t('explorer.tableMigrationWizard.scanBannerUncountedSuffix', {
+            uncounted: summary.uncountedTables,
+        })}`
+    }
+    return message
+})
 </script>
 
 <template>
@@ -35,6 +57,14 @@ const w = useMigrationWizard()
     </DwPanelState>
 
     <section v-else-if="w.preflightResult" class="preflight-inspector">
+      <DwInlineAlert
+          v-if="w.preflightScanSummary"
+          density="banner"
+          :variant="w.preflightScanSummary.variant"
+          class="preflight-scan-banner"
+          :message="preflightScanBannerMessage"
+      />
+
       <header class="preflight-inspector__head">
         <h3>{{ t('explorer.tableMigrationWizard.preflightTitle') }}</h3>
         <div class="preflight-inspector__summary">

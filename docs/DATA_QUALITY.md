@@ -40,6 +40,8 @@ When creating a rule (Explorer → AI → **Data quality** → Add), pick a buil
 
 Templates include five **built-in** presets, a **user-saved library** (localStorage, per registered user), and **tenant-shared templates** stored on the server (`tenants/{tenantId}/data-quality-templates.json`). From the Add form: pick a template to prefill, **Save as local template** / **Save as shared template**, or delete when a local/shared entry is selected.
 
+**Manage shared templates** (Data quality catalog toolbar) opens a list of tenant-shared entries with assertion summary and **Delete**. Rename a shared template by selecting it in the Add form, editing the name, and saving again (same `id`). The Add form reloads shared templates each time it opens.
+
 ### Shared template APIs
 
 ```http
@@ -71,6 +73,7 @@ Omit `id` to create; include `id` to update. Requires a registered user session.
 Explorer → AI → **Data quality** opens the catalog for the current connection/database. Actions:
 
 - **Add** — create a rule (optional Cron, optional blocking)
+- **Manage shared templates** — list / delete tenant-shared rule templates
 - **Run** — run the selected rule now
 - **Run release gate** — evaluate the gate suite (selection = those IDs; otherwise all **blocking** rules in scope)
 

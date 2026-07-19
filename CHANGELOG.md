@@ -27,6 +27,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave C spillover MVP: tenant AI usage card (`GET /api/tenants/mine/ai-usage`); scheduled SQL/canvas `digest` → `insight.digest` webhook; Dashboard chart read-only share links (`/share/{token}`).
 - Wave B S1 slice: table migration mode `PK_UPSERT` with conflict strategies OVERWRITE / SKIP / FAIL (MySQL `ON DUPLICATE KEY` / PostgreSQL `ON CONFLICT`); production-target migration plans go through team approval (approve records consent; managers run the wizard).
 - Wave B S2 slice: federated JOIN hard caps (`FederatedJoinLimits`), hash join for equality ON, cross-product rejection, `hasMore` truncation; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
+- Wave B S2 UX: raise `maxRows` when federated results truncate — result grid **Raise limit and re-run** (console) and platform federated **Retry at {limit}** (1k → 5k → 10k hard cap); see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S3 slice: lakehouse lineage front door (`LakehouseLineageParser`) — normalize stripable Hive clauses, honest PARTIAL for LATERAL VIEW / MATCH_RECOGNIZE / Flink window TVFs; see [docs/LAKEHOUSE_LINEAGE.md](./docs/LAKEHOUSE_LINEAGE.md).
 - Wave C G6 slice: macOS Apple Silicon desktop packaging (`dist:desktop:mac`, electron-builder DMG/zip, host-aware `build.mjs`); see [docs/DESKTOP_MAC.md](./docs/DESKTOP_MAC.md). Unsigned / no CI release yet.
 - Wave D S4 slice: Visual Query Builder field board (drag-in / reorder / remove SELECT columns) + Text-to-SQL side panel that opens AI with the prompt.
@@ -64,10 +65,12 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave D G15 deepen: **user-saved data-quality rule templates** (local library + Save/Delete in Add form). See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G15 deepen: multi-env gate **pair rules by name** (`pairByName`, default on) with unpaired failures + `pairs[]` in the response. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave D G15 deepen: **tenant-shared data-quality rule templates** (`GET/PUT/DELETE /api/platform/data-quality/templates`, file `tenants/{id}/data-quality-templates.json`) alongside local templates in the Add form. See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
+- Wave D G15 deepen: **shared template management UI** — Data quality catalog → Manage shared templates (list, assertion summary, delete). See [docs/DATA_QUALITY.md](./docs/DATA_QUALITY.md).
 - Wave B S2 deepen: federated WHERE **single-alias OR** pushdown (documented + tested) and residual **`IS [NOT] NULL`**. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual / pushdown **`[NOT] LIKE`** with literal `%` / `_` patterns. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual / pushdown unary **`UPPER` / `LOWER`** on comparisons and LIKE. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B UX: migration wizard **in-card Pause** with pause-requested banner; federated / capped results show a **truncation hint** in the result grid when `hasMore` has no cursor. See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
+- Wave B S1 deepen: migration wizard preflight **source row-count estimate** + **full-scan / missing-PK warning banner** (uses existing preflight `COUNT(*)` + `primaryKeyColumns`).
 - Wave B S2 deepen: close residual WHERE **expression function catalog** — `LENGTH`/`CHAR_LENGTH`, `ABS`, `COALESCE`, `NULLIF`, `CONCAT`/`||`, `SUBSTR`/`SUBSTRING` (plus existing string/trim helpers). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual / pushdown **`[NOT] BETWEEN`** (inclusive; `AND` split keeps BETWEEN bounds). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual / pushdown **`TRIM` / `LTRIM` / `RTRIM`** (whitespace-both / leading / trailing). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).

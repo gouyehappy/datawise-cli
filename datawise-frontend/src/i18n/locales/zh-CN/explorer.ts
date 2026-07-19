@@ -425,6 +425,16 @@ export default {
         preflightStatus: '状态',
         preflightSourceRows: '源行数',
         preflightTargetRows: '目标行数',
+        scanBannerFullScan:
+            '约 {rows} 行源数据（{counted} 张表）。全量追加/覆盖将分批读取整表（全表扫描，无法按主键缩小范围）。',
+        scanBannerPkUpsert:
+            '约 {rows} 行源数据。主键 Upsert 按主键对齐，读取以键查找为主，而非盲目全表导出。',
+        scanBannerIncr:
+            '约 {rows} 行匹配源数据（已统计 {counted} 张表）。增量模式仅读取水位线之后的行。',
+        scanBannerNoPk:
+            '{count} 张表缺少主键（{tables}）。主键 Upsert 需要主键，否则可能失败或退化为更广扫描。',
+        scanBannerRowsUnknown: '未知',
+        scanBannerUncountedSuffix: '另有 {uncounted} 张表无法统计行数，扫描范围不确定。',
         preflightIssues: '问题',
         preflightWatermark: '推荐增量字段',
         statusReady: '就绪',
