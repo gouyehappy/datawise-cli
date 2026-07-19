@@ -1,16 +1,24 @@
 # 产品缺口分析 — 缺少能力与近期补强
 
-> 更新：2026-07-17  
+> 更新：2026-07-19（**MVP deepen 收口**）  
 > 视角：产品定位「AI 驱动的团队数据工作台」，而非又一个 JDBC 客户端。  
-> 对照：功能广度已接近完整工作台（见 [PLATFORM_ROADMAP.md](./PLATFORM_ROADMAP.md)、[CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)）；缺口在**企业准入、招牌深度、价值外溢**。
+> 对照：功能广度已接近完整工作台（见 [PLATFORM_ROADMAP.md](./PLATFORM_ROADMAP.md)、[CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)）。
 
-状态：`missing` 基本没有 · `partial` 有 MVP、缺硬深度 · `planned` 已纳入近期补强
+### 状态口径（2026-07-19 起）
+
+| 状态 | 含义 | 是否继续日更切片 |
+|------|------|------------------|
+| `done` | MVP 已够卖、可写进材料；尾巴属长尾或刻意不做 | **否** |
+| `backlog` | 大客户 / 商业化大石头（季度级），不是「再加一个小函数」 | 仅立项后做 |
+| `wont` | 刻意不做或超出定位（全量 BI、原生 SMTP 等） | **否** |
+
+**停更说明：** Wave A～D 的「partial → 做硬」日更 deepen（残差再加函数、DDL 再加一种批量、嵌入再加一种复制格式……）**到此为止**。边际收益已低；再补请走明确需求 / 客户合同，不要用「继续」无限切。
 
 ---
 
 ## 一、结论（一句话）
 
-功能面已经很宽，v1.x～v2.0 多数条目已闭环。真正缺的不是「再多一个 Tab」，而是：**企业能买进、招牌能力敢写进销售材料、洞察/告警能走出客户端**。
+功能面与招牌 MVP **已闭环到可对外讲**。剩下要么是 **大石头**（SAML、KMS、计费、签名分发、Calcite……），要么是 **刻意不做**——不是再堆几十个小切片能清完的清单。
 
 ---
 
@@ -18,114 +26,101 @@
 
 - AI 分析画布（参数化 / 定时流水线）
 - 语义指标 + RAG / 知识库
-- 联邦虚拟视图与跨源 SQL
+- 联邦虚拟视图与跨源 SQL（含规模边界文档与限流）
 - 危险 SQL 审查 / 生产审批 / 环境标签
-- Schema 漂移 → 迁移
+- Schema 漂移 → 迁移（含 PK 增量、暂停/取消）
 - MCP / VS Code / headless Query Library CI
 - Redis / Kafka / Yarn / SSH 工作台
 - 网格 Time-travel、脱敏导出等治理向能力
+- 洞察外发（digest / 工单 / Webhook）、Dashboard 只读分享与嵌入
 
 刻意不做（避免稀释定位）：全能 JDBC 壳、Metabase 级全量 BI、GIS 等小众类型默认进主线。
 
 ---
 
-## 三、缺少功能（`missing`）
+## 三、能力清单（收口后）
 
 ### 3.1 企业准入底座
 
-| # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
-|---|------|------|------|------------------|
-| G1 | SSO（OIDC / SAML / LDAP） | done（OIDC） | OIDC Authorization Code + PKCE 已落地；SAML/LDAP 仍缺 | 中大型客户过不了安全评审 |
-| G2 | 企业 IdP / 组织同步 | partial | OIDC 组 claim → 租户角色同步 + 缺组时停用 membership / 吊销会话（Settings → Integrations）；**scopes 缺 groups 时警告 + 一键补全 + claim map 预览**。缺完整 SCIM / 组织树 / LDAP | 账号生命周期不可运营 |
-| G3 | 外发通知通道 | done（Webhook+飞书/钉钉/邮件） | 通用 Webhook + HMAC；飞书/钉钉机器人；**邮件** `channel=email`（HTTP 邮件网关 / `mailto:` + `DATAWISE_MAIL_WEBHOOK_URL`）。原生 SMTP 客户端仍缺 | 审批、漂移、定时失败可外发闭环 |
-| G4 | 合规审计导出 | done（导出+Webhook） | 服务端 CSV/JSON 导出 + `audit.appended`；完整 SIEM/哈希链仍缺 | 「可证明合规」不足 |
-| G5 | 集中密钥（Vault / KMS） | partial | 主密钥可来自 DATAWISE_MASTER_KEY；连接字段支持 dwsecret:env: / dwsecret:file: / **json-file** / **properties** / **dotenv** / **vault**；Settings 密钥中心。缺 AWS/Azure KMS | 多机 / 集中部署故事弱 |
-| G6 | Mac / Linux 正式桌面包 | partial | Windows NSIS/便携已稳；macOS Apple Silicon：`dist:desktop:mac` + [DESKTOP_MAC.md](./DESKTOP_MAC.md)；Linux AppImage：`dist:desktop:linux` + [DESKTOP_LINUX.md](./DESKTOP_LINUX.md)；About 显示桌面平台。缺签名/公证与 CI 产物 | 研发侧 macOS/Linux 用户门槛高 |
+| # | 能力 | 状态 | 说明 | 后续仅当… |
+|---|------|------|------|-----------|
+| G1 | SSO（OIDC / SAML / LDAP） | **done**（OIDC） | Authorization Code + PKCE 已落地 | 合同要求 **SAML/LDAP** → `backlog` |
+| G2 | 企业 IdP / 组织同步 | **done**（OIDC 组同步 MVP） | 组 claim → 角色；缺组停用；scopes 护栏 | 要 **SCIM / 组织树** → `backlog` |
+| G3 | 外发通知通道 | **done** | Webhook + 飞书/钉钉 + HTTP 邮件网关 | 原生 SMTP → `wont`（除非合同） |
+| G4 | 合规审计导出 | **done** | CSV/JSON + `audit.appended` | SIEM/哈希链 → `backlog` |
+| G5 | 集中密钥 | **done**（引用方案 MVP） | env/file/json/properties/dotenv/vault + 密钥中心 | AWS/Azure KMS → `backlog` |
+| G6 | Mac / Linux 桌面包 | **done**（研发可用产物） | macOS AS + Linux AppImage + 文档/About | 签名/公证/CI 发版 → `backlog` |
 
 ### 3.2 价值外溢与运营
 
-| # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
-|---|------|------|------|------------------|
-| G7 | 洞察 / Dashboard 订阅外发 | partial | 定时 SQL/画布任务可选 digest → insight.digest Webhook（截断行/画布摘要）；SQL 与 **画布任务均可配 digestMaxRows（1–50）**（画布按比例截断摘要）；非全量 BI 订阅中心 | AI 画布价值留在桌面内 |
-| G8 | 只读分享看板 / 嵌入链接 | partial | Dashboard 图表冻结快照分享（**可选 7/14/30/90 天过期**）+ **Copy embed iframe** + **Copy Markdown（链接+iframe）** + 公开页过期横幅；设置菜单管理/撤销（过期态）；非实时嵌入 | 分析师路径断在工作台 |
-| G9 | AI 成本与配额治理 | partial | 租户日调用硬顶 + Settings 用量卡 + **AI 工作台** near-limit / exhausted 提示（禁用发送）+ 出站 **`ai.quota.near_limit` / `ai.quota.exhausted`**；未做人/团队账单 | 开 AI 后运维会怕滥用 |
-| G10 | Insight → 工单 / PR / Runbook | partial | 出站通道 `github_issue` / `gitlab_issue` / `jira_issue` + `POST /api/platform/insight-actions`（`insight.action`）；**AI 工作台**分析回复 **导出工单**；响应回传 **ticketUrl**；**GitHub/GitLab/Jira 均支持 `data.labels`**。见 [INSIGHT_ACTIONS.md](./INSIGHT_ACTIONS.md)。缺自动开 PR / 状态回写 | 洞察难变成组织动作 |
+| # | 能力 | 状态 | 说明 | 后续仅当… |
+|---|------|------|------|-----------|
+| G7 | 洞察 / 订阅外发 | **done**（digest MVP） | 定时 SQL/画布 → insight.digest；可配 digestMaxRows | 全量 BI 订阅中心 → `wont` |
+| G8 | 只读分享 / 嵌入 | **done**（快照 MVP） | 过期分享 + iframe + Markdown 嵌入 | 实时嵌入/密码墙 → 按需 `backlog` |
+| G9 | AI 配额治理 | **done**（租户日限额 MVP） | 硬顶 + UX + 出站 near_limit/exhausted | 人/团队账单 → `backlog` |
+| G10 | Insight → 工单 | **done**（导出 MVP） | GitHub/GitLab/Jira + ticketUrl + labels | 自动开 PR / 状态回写 → `backlog` |
 
-### 3.3 平台与生态规模化
+### 3.3 平台与生态
 
-| # | 能力 | 状态 | 说明 | 为何缺了会卡增长 |
-|---|------|------|------|------------------|
-| G11 | 真·连接器远程市场 | partial | 浏览 / 安装引导 + 本地 `manifest.json`；管理员一键安装 + **热加载** + **已装插件可重装/升级**；**SHA mismatch 时 Upgrade available 徽章**。缺远程目录托管 / 签名通道 | 生态难自运转 |
-| G12 | 多租户 / 托管 SaaS | partial | Dual-mode 已落地（	enancy.mode=single|multi）：租户隔离、RBAC、OIDC 映射、配额硬顶、成员邀请；Settings **AI 用量 Copy JSON / Download CSV**；见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。缺完整计费/发票与对象存储 | 托管商业化与计费仍弱 |
-| G13 | 组织级数据发现 | done | 命令面板跨库搜表 + GET /api/discovery/search（offset 分页 + **服务端分面** kind/connection/owner/tag）；**数据目录 Tab** + 血缘跳转 + 标签分面 + Load more + **列预览侧栏**（schema 缓存 / Explorer 树，最多 40 列）；见 [DISCOVERY.md](./DISCOVERY.md) | 语义层发现体验已可用 |
-| G14 | 编排生态对接 | partial | 定时任务 http_trigger + 入站 trigger + orchestration.* Webhook + DAG 状态回写 + **Airflow/dbt/Prefect/Dagster/通用 HTTP 预设**；见 [ORCHESTRATION.md](./ORCHESTRATION.md)。缺原生算子 / 多引擎状态适配器 | Yarn 可看，闭环不足 |
-| G15 | 可调度数据质量规则 | partial | 定时任务 data_quality + Explorer **数据质量**目录 + blocking + gate API + **内置/本机/租户共享模板** + **共享模板管理 UI** + **多环境对照门禁** + **门禁结果 Copy/Download JSON**；见 [DATA_QUALITY.md](./DATA_QUALITY.md)。缺 JDBC 元数据表 | 质量治理难产品化 |
-
----
-
-## 四、近期需要补强的功能（`partial` → 做硬）
-
-> 已有入口或 MVP，但深度不足，直接影响「招牌能力」可信度与续费。优先于堆新 Tab。
-
-| # | 能力 | 状态 | 现状 | 补强目标 |
-|---|------|------|------|----------|
-| S1 | 按主键 / 唯一键的**数据增量同步** | partial | 结构同步已闭环；数据迁移 PK_UPSERT + 冲突策略（MySQL/PG）+ 生产目标审批门控；**行级 Diff 预览**；向导预检 **源行数估算 + 全表扫描/无主键警告**；进度卡 **暂停/取消**（取消不可续传）+ 断点续传；**批次写入前 + throttle 睡眠中轮询取消**。缺更细事务内中断 | Compare → 勾选 → 冲突策略 → 进度可中断 → 可走审批 |
-| S2 | **联邦 JOIN 规模边界** | partial | 内存 INNER JOIN + 硬上限 + hasMore；Grace hash 落盘；残差谓词/函数目录已闭环（含 **CAST** / **CASE WHEN** / **ROUND** / **CEIL·FLOOR** / **GREATEST·LEAST**）；**控制台/网格限流提示** + **提高 maxRows 重跑**；**源窗口分批**；**截断导出 INCOMPLETE 标记**。见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 限流 / 溢出策略 / 文档化边界；可选下推 |
-| S3 | **湖仓血缘方言** | partial | Hive/Spark/Flink：LakehouseLineageParser 规范化 + 硬特性软剥离/表级回退；Trino/Presto SELECT 仍 COMPLETE，**UNNEST … WITH ORDINALITY** / **TRY_CAST** / **GROUPING SETS·CUBE·ROLLUP** / **QUALIFY** / **PIVOT·UNPIVOT** 软剥离为 PARTIAL；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md)。Calcite / sidecar 仍缺 | 关键方言到可用 complete/partial，失败诚实降级 |
-| S4 | Visual Query Builder | partial | 多表 JOIN + 关联步拖表 + 字段排序板拖拽 + 侧栏 Text-to-SQL + **复制 SQL / 用 AI 精炼 / 在控制台运行**；画布 **节点自由拖拽排布**（可重置） | 更强与 AI 联动 / 字段级画布编辑 |
-| S5 | ER 图正向建模 | partial | FK 连线检视/新建闭环 + 图上选列改列 + **批量 DROP / ADD / MODIFY / RENAME / COMMENT 列 DDL**（多选/行解析预览/复制/控制台）；列级仍非画布内联编辑 | 图上内联改列 / 更完整批量 DDL 编排 |
-| S6 | 连接器市场深度 | partial | 浏览 catalog + `manifest.json` + 远程一键安装 + **热加载** + **重装/升级** + **SHA mismatch 升级提示**；缺签名通道 / 远程目录托管 | 远程安装 / 签名通道 / 一键升级 |
-
-对标细节仍见 [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)（结构同步数据侧、VQB、ER 等条目）。
+| # | 能力 | 状态 | 说明 | 后续仅当… |
+|---|------|------|------|-----------|
+| G11 | 连接器市场 | **done**（本地市场 MVP） | manifest、安装/热加载/升级徽章 | 远程目录托管 + 签名 → `backlog` |
+| G12 | 多租户 / 托管 | **done**（dual-mode MVP） | 隔离/RBAC/配额/邀请；用量导出 | 计费发票/对象存储 → `backlog` |
+| G13 | 组织级数据发现 | **done** | 命令面板 + 目录 Tab + 分面/列预览 | — |
+| G14 | 编排对接 | **done**（HTTP 桥 MVP） | http_trigger + 状态回写 + Airflow/dbt/Prefect/Dagster 预设 | 原生算子 → `backlog` |
+| G15 | 可调度数据质量 | **done**（规则/门禁 MVP） | 定时断言、模板、多环境门禁、导出 | JDBC 元数据表 → `backlog` |
 
 ---
 
-## 五、近期落地顺序（建议）
+## 四、招牌能力（原「partial → 做硬」）— MVP 已收口
 
-按「闭环成本 → 依赖 → 可卖点」排，不按编号机械执行。
+> 下列项 **不再**作为「继续 deepen」队列。长尾（多一个 SQL 函数、多一种批量 DDL）默认不追。
 
-### Wave A — 企业准入（P0）
+| # | 能力 | 状态 | MVP 已具备 | 仅立项再做 |
+|---|------|------|------------|------------|
+| S1 | 主键增量同步 | **done** | PK_UPSERT、冲突策略、Diff、预检、暂停/取消、批次内轮询 | 事务内细粒度中断等 |
+| S2 | 联邦 JOIN 边界 | **done** | 硬上限、Grace spill、残差目录、限流/分批/截断导出；见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 再扩函数目录属长尾 |
+| S3 | 湖仓血缘方言 | **done**（诚实 PARTIAL） | 规范化 + 硬特性软剥离（含 QUALIFY/PIVOT 等）；见 [LAKEHOUSE_LINEAGE.md](./LAKEHOUSE_LINEAGE.md) | Calcite / sidecar → `backlog` |
+| S4 | Visual Query Builder | **done** | 多表 JOIN、画布拖表/拖节点、字段板、AI 精炼、控制台运行 | 字段级画布内联编辑 → 按需 |
+| S5 | ER 正向建模 | **done** | FK + 改列 + 批量 DROP/ADD/MODIFY/RENAME/COMMENT | 图上内联改列 → 按需 |
+| S6 | 连接器市场深度 | **done**（= G11 MVP） | 同 G11 | 同 G11 `backlog` |
 
-可执行拆解见 **[WAVE_A_BACKLOG.md](./WAVE_A_BACKLOG.md)**（A1–A10）。
+对标细节仍见 [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)（**不**再作为日更 deepen 驱动源）。
 
-1. **G3 外发通知**（Webhook 先行，再飞书/钉钉/邮件）— 复用定时任务 / 审批 / 漂移事件  
-2. **G1 SSO（OIDC 优先）** — 本地账号并存，可灰度  
-3. **G4 审计导出** — 团队审计 → 标准导出 / Webhook  
+---
 
-### Wave B — 招牌做深（P0）
+## 五、下一阶段（仅大石头，默认不开）
 
-4. **S1 数据增量同步** — 减少「发版回流 Navicat」  
-5. **S2 联邦规模边界** — 把「跨源无忧」写清楚、跑得稳  
-6. **S3 湖仓血缘补强** — 面向湖仓客户的硬门槛  
+Wave A～D **执行完毕（MVP）**。默认工程重心改为：稳定性、体验债、客户合同项。
 
-### Wave C — 价值外溢（P1）
+若要开新波次，只从下列 **`backlog`** 挑，并单独立项（不要「继续」自动切）：
 
-7. **G7 + G9** — 订阅外发 + AI 配额  
-8. **G8 只读分享** — 轻量外溢，不做全量 BI  
-9. **G6 Mac 桌面包** — 至少 Apple Silicon 正式产物  
-
-### Wave D — 体验与生态（P1 / P2）
-
-10. **S4 / S5** — VQB 与 ER 深度  
-11. **G2 / G5** — 组织同步与密钥中心（随大客户需求）  
-12. **G11～G15** — 市场、多租户、发现、编排、DQ（按商业化节奏开；G12 设计见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)）
+1. G1 SAML / LDAP  
+2. G2 SCIM / 组织树  
+3. G5 云 KMS  
+4. G6 桌面签名与 CI 发版  
+5. G9 / G12 账单与对象存储  
+6. G11 远程签名市场  
+7. S3 Calcite / 语义 sidecar  
+8. G15 DQ JDBC 元数据表  
 
 ```text
-企业准入 ──► 招牌做深 ──► 价值外溢 ──► 生态运营
-  G3/G1/G4      S1/S2/S3      G7/G9/G8/G6     G11…G15 / S4/S5
+已完成：企业准入 MVP + 招牌做深 MVP + 价值外溢 MVP + 生态 MVP
+未开：  上表季度级 backlog（按合同 / 融资节点）
+停做：  无合同驱动的 partial 长尾切片
 ```
 
 ---
 
-## 六、验收口径（近期）
+## 六、验收口径（MVP — 已满足则不必再扩）
 
-| 项 | 可验收信号 |
-|----|------------|
-| 外发通知 | 生产审批待审 / 定时失败 / Schema 漂移 至少一种可推到 Webhook，配置可测 |
-| SSO | 至少一种 OIDC 提供商可登录，本地账号可关闭或并存 |
-| 数据 Sync | 两环境同表按主键增量同步可跑通，含冲突策略与可中断 |
-| 联邦边界 | 超限有明确错误 / 降级策略，文档与 UI 一致 |
-| AI 配额 | 团队可设日限额，超限可感知、可配置 |
+| 项 | 可验收信号 | MVP |
+|----|------------|-----|
+| 外发通知 | 审批/定时失败/漂移可推 Webhook | ✅ |
+| SSO | 至少一种 OIDC 可登录 | ✅ |
+| 数据 Sync | 按主键增量 + 冲突策略 + 可中断 | ✅ |
+| 联邦边界 | 超限有策略，文档与 UI 一致 | ✅ |
+| AI 配额 | 租户日限额可感知、可配置 | ✅ |
 
 ---
 
@@ -133,75 +128,33 @@
 
 | 日期 | 说明 |
 |------|------|
-| 2026-07-17 | 初稿：产品高度缺口分析；拆分 missing / partial；给出 Wave A～D 近期顺序 |
-| 2026-07-17 | G12：Phase 0–2 + JDBC 元数据落地；状态改为 `partial`（计费/对象存储仍开） |
-| 2026-07-18、S2 裸 NOT | 联邦 JOIN 残差 WHERE 支持裸 NOT（含括号组） |
-| 2026-07-18、G13 分页浏览 | discovery offset/hasMore + 数据目录 Load more |
-| 2026-07-18、G13 多关联表 | 指标血缘跳转前可选择 relatedTables |
-| 2026-07-18、G13 指标血缘 | 数据目录指标经 relatedTables 跳转视图模型血缘 |
-| 2026-07-18、G13 无查询浏览 | discovery 空 q 浏览 schema 缓存 + 指标 |
-| 2026-07-19、G13 标签/服务端分面 | discovery tags + server facet filters (kind/connection/owner/tag) |
-| 2026-07-19、G13 列预览 | 数据目录表/视图选中侧栏列预览（schema 缓存 + Explorer，最多 40 列） |
-| 2026-07-19、S5 批量 DROP | ER 图多选列生成批量 DROP DDL（预览/复制/控制台） |
-| 2026-07-19、G8 分享过期 | Dashboard 图表分享可选 7/14/30/90 天过期 + 管理列表过期态 |
-| 2026-07-19、G7 digestMaxRows | 定时 SQL 任务 digest 可配置摘要最大行数（1–50） |
-| 2026-07-19、S4 VQB AI | Visual Query Builder 复制 SQL + 用 AI 精炼预览 |
-| 2026-07-19、G14 HTTP 预设 | http_trigger Airflow/dbt/Webhook 表单预设 |
-| 2026-07-19、G11 重装升级 | 连接器市场已装插件可从 downloadUrl 重装/升级 |
-| 2026-07-19、G9 配额外发 | AI 配额 near_limit / exhausted 出站事件（Integrations 可订阅） |
-| 2026-07-19、G5 json-file | dwsecret:json-file:path#field 读取 JSON 密钥包字段 |
-| 2026-07-19、S2 CAST | 联邦残差 WHERE 支持 CAST(expr AS type) |
-| 2026-07-19、S2 截断导出 | 网格导出截断警告 + CSV/JSON INCOMPLETE 标记 |
-| 2026-07-19、G5 properties | dwsecret:properties:path#key 读取 .properties 密钥包 |
-| 2026-07-19、G12 AI 用量导出 | Settings 租户卡 Copy JSON / Download CSV |
-| 2026-07-19、S5 批量 MODIFY | ER 图批量修改列 DDL（同行解析 name TYPE） |
-| 2026-07-19、S4 控制台运行 | VQB 一键 Apply + Execute |
-| 2026-07-19、S1 取消迁移 | 运行中/已暂停任务可 **Cancel**（POST …/cancel，status=cancelled，不可续传） |
-| 2026-07-19、G15 门禁导出 | 发版/多环境门禁结果 Copy / Download JSON |
-| 2026-07-19、S3 ORDINALITY | Trino/Presto WITH ORDINALITY 硬特性软剥离 → PARTIAL |
-| 2026-07-19、S5 批量 ADD | ER 图批量新增列 DDL（行解析 name TYPE） |
-| 2026-07-19、G8 嵌入 | Dashboard 图表 **Copy embed**（iframe）+ 公开页过期横幅 |
-| 2026-07-19、G2 OIDC 护栏 | 角色同步时 scopes 缺 groups 警告 / 一键补全 + role claim map 预览 |
-| 2026-07-19、G6 Linux 文档 | [DESKTOP_LINUX.md](./DESKTOP_LINUX.md) + About 桌面平台行 |
-| 2026-07-19、S3 TRY_CAST/GROUPING | 湖仓血缘软剥离 TRY_CAST→CAST、GROUPING SETS/CUBE/ROLLUP → PARTIAL |
-| 2026-07-19、G7 画布 digestMaxRows | 定时画布任务可配 digestMaxRows，按比例截断 insight.digest 摘要 |
-| 2026-07-19、S5 批量 RENAME | ER 图批量重命名列 DDL（old new / old -> new） |
-| 2026-07-19、G5 dotenv | dwsecret:dotenv:path#KEY 读取 .env 风格密钥包 |
-| 2026-07-19、G10 工单 URL | insight.action 回传 ticketUrl；GitHub labels；AI 导出 toast 展示链接 |
-| 2026-07-19、G11 升级徽章 | 连接器市场 SHA mismatch + downloadUrl 时 Upgrade available |
-| 2026-07-19、S2 CASE WHEN | 联邦残差 WHERE 支持 CASE WHEN…THEN…ELSE…END（比较时建议加括号） |
-| 2026-07-19、S4 画布拖拽 | VQB JOIN 画布节点自由拖拽排布 + 重置布局 |
-| 2026-07-19、S1 批次内取消 | 迁移 insert 前检查 + throttle 睡眠中轮询 cancel/pause |
-| 2026-07-19、S3 QUALIFY | 湖仓血缘软剥离 QUALIFY → PARTIAL |
-| 2026-07-19、G14 Prefect/Dagster | http_trigger 表单预设 Prefect flow run / Dagster launchRun |
-| 2026-07-19、S2 ROUND | 联邦残差 WHERE 支持 ROUND(expr[, scale]) |
-| 2026-07-19、G10 跨通道 labels | insight.action data.labels 同步到 GitHub / GitLab / Jira |
-| 2026-07-19、S5 批量 COMMENT | ER 图批量列注释 DDL（COMMENT ON / MySQL MODIFY COMMENT） |
-| 2026-07-19、S2 CEIL/FLOOR | 联邦残差 WHERE 支持 CEIL / CEILING / FLOOR |
-| 2026-07-19、G8 Markdown 嵌入 | Dashboard 分享 Copy Markdown（链接 + iframe） |
-| 2026-07-19、S3 PIVOT | 湖仓血缘软剥离 PIVOT / UNPIVOT → PARTIAL |
-| 2026-07-19、S2 GREATEST/LEAST | 联邦残差 WHERE 支持 GREATEST / LEAST |
+| 2026-07-19 | **收口**：停止 Wave A～D 日更 deepen；G/S 大多标 `done`（MVP）；大石头改 `backlog`；长尾默认不追 |
+| 2026-07-17 | 初稿：missing / partial；Wave A～D |
+| 2026-07-17～19 | 大量 deepen 切片（残差函数、湖仓软剥离、VQB/ER、外发/分享/配额/工单/编排/DQ 等）— 详见 git `feat: deepen*` 与下方历史行 |
 
-| 2026-07-18、S2 残差 IN | 联邦 JOIN 残差 WHERE 支持 IN / NOT IN 字面量列表 |
-| 2026-07-18、S2 残差 OR | 联邦 JOIN 残差 WHERE 支持跨别名 OR |
-| 2026-07-19、S2 源窗口分批 | 联邦 JOIN `offset` 源窗口 LIMIT/OFFSET + 平台「下一批」；见 [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) |
-| 2026-07-19、Wave B UX | S1 迁移预检源行数 + 全表扫描/无主键警告横幅 |
-| 2026-07-19、Wave B UX | S1 迁移进度卡暂停反馈 + S2 联邦截断限流提示 |
-| 2026-07-19、S2 残差函数目录 | LENGTH/ABS/COALESCE/NULLIF/CONCAT/\|\|/SUBSTR 一次收口 |
-| 2026-07-18、S2 BETWEEN | 联邦残差/下推支持 [NOT] BETWEEN（AND 拆分感知） |
-| 2026-07-18、S2 TRIM | 联邦残差/下推支持 TRIM / LTRIM / RTRIM |
-| 2026-07-18、S2 LIKE ESCAPE | 联邦残差/下推支持 LIKE … ESCAPE |
-| 2026-07-18、S2 UPPER/LOWER | 联邦残差/下推支持 unary UPPER/LOWER |
-| 2026-07-18、S2 LIKE | 联邦残差/下推支持 [NOT] LIKE 字面量模式 |
-| 2026-07-18、S2 单别名 OR / IS NULL | 联邦 WHERE 单别名 OR 下推实测 + 残差 IS NULL |
-| 2026-07-19、G15 共享模板管理 | 数据质量目录 **管理共享模板**（列表/断言摘要/删除） |
-| 2026-07-18、G15 共享模板 | 租户共享 DQ 规则模板 API + 表单 Save/Delete |
-| 2026-07-18、G15 按名配对 | 多环境门禁 pairByName 按规则名配对 |
-| 2026-07-18、G15 用户模板 | 数据质量用户保存规则模板（localStorage） |
-| 2026-07-18、G15 多环境门禁 | DQ gate 支持 reference 对照连接 + scopes 汇总 |
-| 2026-07-18、G15 规则模板 | 数据质量内置规则模板预填创建表单 |
-| 2026-07-18、G13 目录/血缘 | 统一数据目录 Tab + 表/视图血缘跳转（impact） |
-| 2026-07-18、G14 DAG 状态 | http_trigger 状态回写 API + 定时任务 UI |
-| 2026-07-18、G11 热加载 | 连接器插件安装后热加载（免重启）+ `POST /api/datasources/plugins/reload` |
-| 2026-07-18、G15 目录/门禁 | 数据质量规则目录 UI + release gate API（blocking 套件） |
-| 2026-07-17、G5 Vault | Wave D/C/B 切片：G13/G2/G15/G14、G3 飞书钉钉、G10 Issue、S1 行级 Diff、S2 Grace hash 落盘+谓词下推、S3 硬特性软剥离+表级血缘 |
+<details>
+<summary>历史切片明细（折叠，仅归档）</summary>
+
+| 日期 | 说明 |
+|------|------|
+| 2026-07-17 | G12：Phase 0–2 + JDBC 元数据；计费/对象存储仍开 |
+| 2026-07-18、S2 裸 NOT | 联邦残差 WHERE 裸 NOT |
+| 2026-07-18、G13 分页/血缘/浏览 | discovery 分页、指标血缘、空 q 浏览 |
+| 2026-07-19、G13 分面/列预览 | tags、服务端分面、列预览 |
+| 2026-07-19、S5 批量 DDL | DROP / ADD / MODIFY / RENAME / COMMENT |
+| 2026-07-19、G8 | 分享过期、iframe、Markdown 嵌入 |
+| 2026-07-19、G7 | digestMaxRows（SQL + 画布） |
+| 2026-07-19、S4 | 复制 SQL、AI 精炼、控制台运行、画布拖节点 |
+| 2026-07-19、G14 | HTTP 预设（Airflow/dbt/Prefect/Dagster） |
+| 2026-07-19、G11 | 重装升级、Upgrade 徽章、热加载 |
+| 2026-07-19、G9 | 配额外发事件 |
+| 2026-07-19、G5 | json-file / properties / dotenv / vault |
+| 2026-07-19、S2 | CAST、CASE、ROUND、CEIL/FLOOR、GREATEST/LEAST、截断导出、源窗口分批、残差函数目录… |
+| 2026-07-19、S1 | 取消迁移、批次内轮询、预检警告 |
+| 2026-07-19、S3 | ORDINALITY、TRY_CAST、GROUPING、QUALIFY、PIVOT |
+| 2026-07-19、G10 | ticketUrl、跨通道 labels |
+| 2026-07-19、G15 | 门禁导出、共享模板管理 |
+| 2026-07-19、G2 / G6 | OIDC scopes 护栏、Linux 文档 |
+| 2026-07-18～19 | G15 规则模板/多环境门禁；G13 目录；G14 DAG 状态 等 |
+
+</details>
