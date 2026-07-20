@@ -88,6 +88,8 @@ const props = withDefaults(
       gridStateScope?: string
       resultHasMore?: boolean
       cursorLoading?: boolean
+      /** 表数据等：首次加载中 */
+      loading?: boolean
       cursorTrimmedRows?: number
       productionPerfActive?: boolean
       enableDmlGenerate?: boolean
@@ -911,6 +913,7 @@ watch(
           :truncated-at-cap="gridTruncatedAtCap"
           :truncated-cap-rows="gridTruncatedCapRows"
           :can-raise-max-rows="canRaiseMaxRows"
+          :loading="props.loading"
           :cursor-loading="gridCursorLoading"
           :cursor-trimmed-rows="gridCursorTrimmedRows"
           :production-perf-active="props.productionPerfActive"

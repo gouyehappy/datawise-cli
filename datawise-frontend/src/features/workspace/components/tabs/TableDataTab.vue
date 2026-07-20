@@ -49,6 +49,7 @@ const {
   primaryKeyColumns,
   submitChanges,
   tableHasMore,
+  loading,
   cursorLoading,
   productionPerfActive,
   loadMore,
@@ -193,6 +194,7 @@ function onRequestAiSummary() {
         :export-suggest-mask="exportSuggestMask"
         :on-submit-changes="onSubmitChanges"
         :result-has-more="tableHasMore"
+        :loading="loading"
         :cursor-loading="cursorLoading"
         :cursor-trimmed-rows="tableData.cursorTrimmedRows"
         :production-perf-active="productionPerfActive"

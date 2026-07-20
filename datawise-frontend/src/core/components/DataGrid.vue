@@ -121,6 +121,8 @@ const props = withDefaults(
       tableAutoIncrement?: string | null
       onSubmitChanges?: (batch: GridPendingBatch) => Promise<boolean>
       hasMore?: boolean
+      /** 首次拉取表/查询结果中（无列时展示加载态） */
+      loading?: boolean
       cursorLoading?: boolean
       /** 滑动窗口丢弃的最早行数，用于行号顺延 */
       cursorTrimmedRows?: number
@@ -133,7 +135,7 @@ const props = withDefaults(
       truncatedCapRows?: number
       /** Show raise-limit action when truncated at cap (federated / hard maxRows). */
       canRaiseMaxRows?: boolean
-      /** 生产环境性能模式已收紧行数策略 */
+      /** 生产环境已启用较低的返回行数上限 */
       productionPerfActive?: boolean
       showDmlActions?: boolean
       connectionId?: string
@@ -159,8 +161,13 @@ const props = withDefaults(
       truncatedAtCap: false,
       truncatedCapRows: undefined,
       canRaiseMaxRows: false,
+      loading: false,
     },
 )
+
+const showInitialLoading = computed(() => props.loading && !gridColumns.value.length)
+const GRID_SKELETON_COLS = [72, 128, 96, 112, 88, 140] as const
+const GRID_SKELETON_ROWS = 9
 
 const pageSizeModel = ref(resolveGridPageSizeOption(CONSOLE_GRID_PAGE_SIZE_OPTIONS))
 const currentPage = ref(1)
@@ -1145,7 +1152,12 @@ function dismissColumnStats() {
           <DwIcon class="grid-glyph" name="table" fit :stroke-width="1.5"/>
         </IconButton>
         <template v-if="fullToolbar">
-          <IconButton class="grid-action-neutral" :title="t('dataGrid.refresh')" @click="emit('refresh')">
+          <IconButton
+              class="grid-action-neutral"
+              :title="t('dataGrid.refresh')"
+              :disabled="loading"
+              @click="emit('refresh')"
+          >
             <DwIcon class="grid-glyph" name="refresh" fit :stroke-width="1.5"/>
           </IconButton>
           <button
@@ -1318,7 +1330,54 @@ function dismissColumnStats() {
           </div>
         </div>
 
-        <div ref="gridBodyRef" class="grid-body" :class="{ 'grid-body--form': layoutMode === 'form' }">
+        <div
+            v-if="showInitialLoading"
+            class="grid-body-state"
+            role="status"
+            aria-live="polite"
+            :aria-label="t('dataGrid.loadingTitle')"
+        >
+          <div class="grid-skeleton" aria-hidden="true">
+            <div class="grid-skeleton__head">
+              <span class="grid-skeleton__cell grid-skeleton__cell--index"/>
+              <span
+                  v-for="(width, colIndex) in GRID_SKELETON_COLS"
+                  :key="`h-${colIndex}`"
+                  class="grid-skeleton__cell grid-skeleton__cell--head"
+                  :style="{width: `${width}px`}"
+              />
+            </div>
+            <div
+                v-for="rowIndex in GRID_SKELETON_ROWS"
+                :key="`r-${rowIndex}`"
+                class="grid-skeleton__row"
+                :style="{'--sk-delay': `${(rowIndex - 1) * 45}ms`}"
+            >
+              <span class="grid-skeleton__cell grid-skeleton__cell--index"/>
+              <span
+                  v-for="(width, colIndex) in GRID_SKELETON_COLS"
+                  :key="`c-${rowIndex}-${colIndex}`"
+                  class="grid-skeleton__cell"
+                  :style="{
+                    width: `${Math.max(48, width - ((rowIndex + colIndex) % 3) * 14)}px`,
+                  }"
+              />
+            </div>
+          </div>
+          <div class="grid-skeleton__status">
+            <span class="grid-skeleton__spinner" aria-hidden="true"/>
+            <div class="grid-skeleton__copy">
+              <strong>{{ t('dataGrid.loadingTitle') }}</strong>
+              <span>{{ t('dataGrid.loadingHint') }}</span>
+            </div>
+          </div>
+        </div>
+        <div
+            v-else
+            ref="gridBodyRef"
+            class="grid-body"
+            :class="{ 'grid-body--form': layoutMode === 'form' }"
+        >
       <GridRowFormView
           v-if="layoutMode === 'form'"
           :columns="displayColumns"
@@ -1903,6 +1962,157 @@ th.is-stats-active .th-label {
   --dw-grid-zebra: color-mix(in srgb, var(--dw-text) 3.2%, var(--dw-bg-editor));
   --dw-grid-accent: color-mix(in srgb, var(--dw-info) 72%, var(--dw-info-fg));
   --dw-grid-accent-soft: var(--dw-info-soft);
+}
+
+.grid-body-state {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background:
+      radial-gradient(
+          120% 80% at 50% 0%,
+          color-mix(in srgb, var(--dw-primary) 6%, transparent),
+          transparent 58%
+      ),
+      var(--dw-bg-editor);
+}
+
+.grid-skeleton {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  padding: var(--dw-space-2) 0 var(--dw-space-8);
+  opacity: 0.92;
+  mask-image: linear-gradient(180deg, #000 42%, transparent 96%);
+}
+
+.grid-skeleton__head,
+.grid-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-5);
+  min-height: var(--dw-control-h-sm);
+  padding: 0 var(--dw-space-5);
+  border-bottom: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
+}
+
+.grid-skeleton__head {
+  min-height: var(--dw-control-h);
+  background: color-mix(in srgb, var(--dw-text) 3.5%, var(--dw-bg-panel));
+}
+
+.grid-skeleton__row:nth-child(even) {
+  background: color-mix(in srgb, var(--dw-text) 2.2%, var(--dw-bg-editor));
+}
+
+.grid-skeleton__cell {
+  display: block;
+  flex: 0 0 auto;
+  height: var(--dw-space-4);
+  border-radius: var(--dw-radius-sm);
+  background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--dw-border-light) 42%, transparent) 0%,
+      color-mix(in srgb, var(--dw-primary) 10%, var(--dw-border-light)) 48%,
+      color-mix(in srgb, var(--dw-border-light) 42%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: grid-skeleton-shimmer 1.35s ease-in-out infinite;
+  animation-delay: var(--sk-delay, 0ms);
+}
+
+.grid-skeleton__cell--head {
+  height: var(--dw-space-5);
+  background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--dw-text) 8%, transparent) 0%,
+      color-mix(in srgb, var(--dw-text) 14%, transparent) 48%,
+      color-mix(in srgb, var(--dw-text) 8%, transparent) 100%
+  );
+  background-size: 200% 100%;
+}
+
+.grid-skeleton__cell--index {
+  width: var(--dw-space-8);
+  height: var(--dw-space-4);
+}
+
+.grid-skeleton__status {
+  position: absolute;
+  inset: auto 0 28%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dw-gap-md);
+  width: max-content;
+  max-width: calc(100% - var(--dw-space-12));
+  margin: 0 auto;
+  padding: var(--dw-space-5) var(--dw-space-8);
+  border: 1px solid color-mix(in srgb, var(--dw-border-light) 70%, transparent);
+  border-radius: var(--dw-radius-lg);
+  background: color-mix(in srgb, var(--dw-bg-panel) 92%, transparent);
+  box-shadow: var(--dw-shadow-sm);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.grid-skeleton__spinner {
+  flex: 0 0 auto;
+  width: var(--dw-control-h-xs);
+  height: var(--dw-control-h-xs);
+  border: 2px solid color-mix(in srgb, var(--dw-primary) 22%, transparent);
+  border-top-color: var(--dw-primary);
+  border-radius: var(--dw-radius-full);
+  animation: grid-skeleton-spin 0.75s linear infinite;
+}
+
+.grid-skeleton__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--dw-space-1);
+  min-width: 0;
+  text-align: left;
+}
+
+.grid-skeleton__copy strong {
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-sm);
+  font-weight: 600;
+  line-height: var(--dw-leading-snug);
+}
+
+.grid-skeleton__copy span {
+  color: var(--dw-text-muted);
+  font-size: var(--dw-text-xs);
+  line-height: var(--dw-leading-snug);
+}
+
+@keyframes grid-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes grid-skeleton-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grid-skeleton__cell,
+  .grid-skeleton__spinner {
+    animation: none;
+  }
 }
 
 .grid-body--form {

@@ -557,7 +557,7 @@ onMounted(async () => {
           :rows="previewRows"
           :total="previewRows.length"
           :result-label="viewModelTitle"
-          :cursor-loading="previewLoading"
+          :loading="previewLoading"
           :show-export="false"
       />
       <DwInlineAlert :message="previewErrorMessage && !isEditorFullscreen && showPreview ? previewErrorMessage : null"/>
