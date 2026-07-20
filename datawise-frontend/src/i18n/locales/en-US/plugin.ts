@@ -143,7 +143,7 @@ export default {
         },
         developer: {
             label: 'Developer',
-            hint: 'AI, snippets, EXPLAIN, fake data, DML, and grid edit tooling',
+            hint: 'AI, snippets, EXPLAIN, test data, DML, and grid edit tooling',
             applied: 'Developer preset applied',
         },
         minimal: {
@@ -377,8 +377,8 @@ export default {
             description: 'Compare a result tab with the previous one; highlight cell changes.',
         },
         'p-fake-data': {
-            name: 'Fake data',
-            description: 'Generate test INSERT rows or export fake-data SQL from table tabs.',
+            name: 'Test data',
+            description: 'Generate test INSERT rows or export SQL from table tabs.',
         },
         'p-ai-index-suggest': {
             name: 'AI index suggest',
@@ -475,7 +475,7 @@ export default {
     connectorMarket: {
         eyebrow: 'Community',
         title: 'Connector marketplace',
-        subtitle: 'Browse built-in and plugin connectors; admins can one-click install from manifest downloadUrl (SHA-256 verified).',
+        subtitle: 'Browse built-in and plugin connectors; admins can install from manifest downloadUrl with SHA-256 verification.',
         open: 'Open marketplace',
         ctaHint: 'Browse ready and pending connectors in a dedicated view.',
         backToCenter: 'Back to plugin center',

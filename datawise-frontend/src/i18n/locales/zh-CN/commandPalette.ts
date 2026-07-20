@@ -2,7 +2,7 @@ export default {
     title: '命令面板',
     placeholder: '搜索模块、插件、书签、最近 SQL…（对象搜索：Ctrl+Shift+O）',
     empty: '没有匹配的命令',
-    pluginsSearchHint: '输入插件名称或 ID 可聚焦插件卡片或快速启/关（如 grid、mysql、AI）',
+    pluginsSearchHint: '输入插件名称或 ID 可聚焦插件卡片或切换启停（如 grid、mysql、AI）',
     groups: {
         navigation: '导航',
         actions: '操作',

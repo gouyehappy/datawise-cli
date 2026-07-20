@@ -91,7 +91,7 @@ node scripts/pre-commit-check.mjs
 | 文档 | 说明 |
 |------|------|
 | [PLATFORM_ROADMAP.md](./PLATFORM_ROADMAP.md) | 平台功能路线图与完成度 |
-| [PRODUCT_GAP_ANALYSIS.md](./PRODUCT_GAP_ANALYSIS.md) | 产品缺口：缺少能力与近期补强优先级 |
+| [PRODUCT_GAP_ANALYSIS.md](./PRODUCT_GAP_ANALYSIS.md) | 产品缺口：能力边界与后续优先级 |
 | [WAVE_A_BACKLOG.md](./WAVE_A_BACKLOG.md) | Wave A 企业准入可执行 backlog（Webhook / OIDC / 审计导出） |
 | [WAVE_A_INTEGRATIONS.md](./WAVE_A_INTEGRATIONS.md) | Wave A 对接说明（Webhook 验签、OIDC、审计导出） |
 | [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md) | 多租户 + 角色权限（SaaS / 本地 dual-mode）数据模型与迁移清单 |

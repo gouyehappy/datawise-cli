@@ -114,10 +114,10 @@ export default {
     },
     splashKicker: '本地数据库工作台',
     splashTagline: '连接、查询、分析、导出 — 一站完成',
-    splashDesc: '面向数据开发与探索的一体化 SQL 工作台，将连接管理、智能问数与结果导出整合在同一界面。',
+    splashDesc: '面向数据开发与探索的一体化 SQL 工作台，将连接管理、智能查询与结果导出整合在同一界面。',
     splashLoading: '正在启动…',
     splashVersion: '版本号：V{version}',
-    splashFooter: '正在为您准备 SQL 控制台与数据探索环境',
+    splashFooter: '正在准备 SQL 控制台与数据探索环境',
     splashHighlightsTitle: '产品亮点',
     splashSteps: {
         backend: '连接服务',
@@ -132,15 +132,15 @@ export default {
     splashHighlights: {
         console: {
             title: '专业 SQL 控制台',
-            desc: '多 Tab 编辑、语法高亮、执行历史与结果网格，贴近 IDE 的查询体验。',
+            desc: '多 Tab 编辑、语法高亮、执行历史与结果网格，提供接近 IDE 的查询体验。',
         },
         connect: {
             title: '多源数据连接',
-            desc: 'MySQL、PostgreSQL、Redis 等统一管理，连接树一目了然，健康状态实时可见。',
+            desc: '统一管理 MySQL、PostgreSQL、Redis 等数据源，连接树结构清晰，健康状态实时可见。',
         },
         ai: {
             title: 'AI 数据分析',
-            desc: '自然语言生成 SQL、智能解读查询结果，问数与分析流程可对话完成。',
+            desc: '自然语言生成 SQL、智能解读查询结果，查询与分析流程可在对话中完成。',
         },
         explorer: {
             title: '可视化资源浏览',
@@ -148,11 +148,11 @@ export default {
         },
         export: {
             title: '灵活结果导出',
-            desc: '查询结果一键导出 CSV / JSON / SQL，配合插件扩展更多格式。',
+            desc: '查询结果可导出 CSV / JSON / SQL，并通过插件扩展更多格式。',
         },
         workspace: {
             title: '工作区持久化',
-            desc: '控制台脚本、打开 Tab 与布局偏好自动恢复，跨会话继续上次工作。',
+            desc: '控制台脚本、打开 Tab 与布局偏好自动恢复，跨会话延续上次工作。',
         },
     },
     splashFeatures: {

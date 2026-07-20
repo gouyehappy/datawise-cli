@@ -1,7 +1,7 @@
 export default {
     gettingStarted: '新手入门',
     intro:
-        '这是一个数据库工作台，当前通过<strong>后端 API</strong>连接数据源、执行查询与导出。',
+        '数据库工作台：通过<strong>后端 API</strong>连接数据源、执行查询与导出。',
     docsHint:
         '详细说明见仓库 <code>README.md</code> 与 <code>docs/README.md</code>。',
     readGuide: '建议阅读顺序',
@@ -10,7 +10,7 @@ export default {
         appShell: '整体布局壳',
         mainContent: '主内容区切换逻辑',
         workspaceArea: 'Tab 动态组件机制',
-        sqlConsole: 'SQL 控制台（最复杂）',
+        sqlConsole: 'SQL 控制台',
     },
     actions: {
         search: '搜索连接树',

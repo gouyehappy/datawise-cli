@@ -1,6 +1,6 @@
 export default {
     title: 'Getting started',
-    subtitle: 'Follow the spotlight to learn the essentials',
+    subtitle: 'A guided tour of the core workspace areas',
     stepOf: 'Step {current} of {total}',
     skip: 'Skip',
     back: 'Back',
@@ -9,16 +9,16 @@ export default {
     steps: {
         welcome: {
             title: 'Welcome',
-            body: 'We will highlight key areas on screen — connect to data, write SQL, and use AI in just a few steps.',
+            body: 'This tour highlights key areas of the interface so you can connect data, write SQL, and use AI analysis with confidence.',
         },
         home: {
             title: 'Your profile',
-            body: 'Tap Home to open the menu: sign in, profile, settings, and reopen this tour anytime.',
-            hint: 'Look here',
+            body: 'Open Home to access sign-in, profile, settings, and reopen this tour anytime.',
+            hint: 'Profile menu',
         },
         database: {
             title: 'Database workbench',
-            body: 'Your daily starting point. Opens the database module: connection tree on the left, SQL workspace on the right.',
+            body: 'Your primary workspace. Opens the database module: connection tree on the left, SQL workspace on the right.',
             hint: 'Left rail',
         },
         explorer: {
@@ -28,12 +28,12 @@ export default {
         },
         workspace: {
             title: 'SQL workspace',
-            body: 'Create consoles, write and run SQL, view results in the grid below. Drop .sql files to open them.',
+            body: 'Create consoles, write and run SQL, and review results in the grid below. Drop .sql files to open them.',
             hint: 'Main editor',
         },
         ai: {
             title: 'AI assistant',
-            body: 'Switch to AI for natural-language SQL, explain/optimize, and DataAgent smart analysis with charts.',
+            body: 'Switch to AI for natural-language SQL, explain/optimize, and DataAgent analysis with charts.',
             hint: 'AI entry',
         },
         terminal: {
@@ -42,26 +42,26 @@ export default {
             hint: 'Terminal button',
         },
         tips: {
-            title: 'Pro tip',
-            body: 'Press Ctrl+K for the command palette — jump modules or create a console instantly. Customize shortcuts in Settings.',
+            title: 'Productivity tip',
+            body: 'Press Ctrl+K for the command palette — jump between modules or create a console quickly. Customize shortcuts in Settings.',
         },
         insightWelcome: {
-            title: 'Connection ready — get insight in 30 seconds',
-            body: 'Great, your first connection is live. Follow this 3-step path: pick scope, ask AI, and get a result fast.',
+            title: 'Connection ready — start your first insight',
+            body: 'Your first connection is configured. Follow these 3 steps: select a table, ask a question, and review the result.',
         },
         insightExplorer: {
-            title: 'Pick your core table in Explorer',
-            body: 'Start with one business table (orders, users, payments). AI SQL quality improves with focused context.',
-            hint: 'Choose data scope first',
+            title: 'Select a target table in Explorer',
+            body: 'Start with one primary business table (orders, users, payments). Focused context improves AI SQL quality.',
+            hint: 'Choose data scope',
         },
         insightAi: {
-            title: 'Ask AI a business question',
-            body: 'Try: "Show order trend and anomalies for the last 7 days." You get SQL, summary, and chart in one flow.',
-            hint: 'Ask one business question',
+            title: 'Switch to AI and ask a business question',
+            body: 'For example: "Show order trends and anomalies for the last 7 days." You get SQL, a summary, and a chart — results can be sent to the console.',
+            hint: 'Ask a business question',
         },
         insightDone: {
-            title: 'You completed the first insight loop',
-            body: 'Next best step: save as analysis canvas and schedule rerun for automatic weekly insights.',
+            title: 'First insight complete',
+            body: 'Next: save the result as an analysis canvas and schedule a rerun so insights stay up to date.',
         },
     },
 }

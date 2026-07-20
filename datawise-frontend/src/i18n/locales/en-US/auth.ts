@@ -4,7 +4,7 @@ export default {
     heroDesc:
         'SQL console, connection management, and AI assistance for daily data work.',
     featureConsoleTitle: 'SQL console',
-    featureConsoleDesc: 'Monaco editor, execution plans, and result grids with an IDE-like feel.',
+    featureConsoleDesc: 'Monaco editor, execution plans, and result grids with an IDE-comparable experience.',
     featureConnectTitle: 'Multi-source connections',
     featureConnectDesc: 'Manage MySQL, PostgreSQL, and other engines from one place.',
     featureAiTitle: 'AI assistance',

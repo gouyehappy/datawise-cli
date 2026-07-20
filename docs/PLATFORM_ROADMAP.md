@@ -1,25 +1,25 @@
 # Platform Roadmap — 完成度追踪
 
-> AI 驱动的团队数据工作台：连接、SQL、AI 分析、迁移、审批的可沉淀链路。
+> AI 驱动的团队数据工作台：连接、SQL、AI 分析、迁移、审批构成可沉淀的完整链路。
 
 状态说明：**done** 已实现 · **partial** 有 MVP、缺深度集成 · **todo** 未开始 · **in_progress** 开发中
 
 客户端对标传统 IDE（Chat2DB / DBeaver / Navicat 等）的可调整点、竞品优势与对本系统帮助，见 [CLIENT_IDE_OPTIMIZATION_BACKLOG.md](./CLIENT_IDE_OPTIMIZATION_BACKLOG.md)。
 
-v2.0 之后的产品缺口（企业准入、招牌深度、价值外溢）与近期补强队列，见 [PRODUCT_GAP_ANALYSIS.md](./PRODUCT_GAP_ANALYSIS.md)。多租户 / 角色权限 dual-mode 设计见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。
+v2.0 之后的产品缺口（企业准入、核心能力深度、价值外溢）与后续优先级，见 [PRODUCT_GAP_ANALYSIS.md](./PRODUCT_GAP_ANALYSIS.md)。多租户 / 角色权限 dual-mode 设计见 [TENANT_RBAC_DESIGN.md](./TENANT_RBAC_DESIGN.md)。
 
 版本主题（对外叙事）：
 
 | 版本 | 主题 | 一句话 |
 |------|------|--------|
-| **v1.2** | 跨源无忧 | 用一句话 JOIN 两个库的数据 |
-| **v1.3** | 分析自动化 | 画布定时跑，结果自动推给你 |
-| **v1.4** | 对话式看板 | 跟 Dashboard 说话，Widget 自己长出来 |
-| **v2.0** | 团队实时协作 | 像 Google Docs 一样一起写 SQL |
+| **v1.2** | 跨源联邦查询 | 跨库 JOIN，统一查询多数据源 |
+| **v1.3** | 分析自动化 | 分析画布按计划执行，结果自动推送 |
+| **v1.4** | 对话式看板 | 自然语言生成 Dashboard 组件 |
+| **v2.0** | 团队实时协作 | 多人协同编辑 SQL，冲突可见可解 |
 
 ---
 
-## 一、招牌功能
+## 一、核心能力
 
 | # | 功能 | 状态 | 版本 | 说明 |
 |---|------|------|------|------|
@@ -42,7 +42,7 @@ v2.0 之后的产品缺口（企业准入、招牌深度、价值外溢）与近
 | 12 | 版本更新亮点卡片 | done | v1.3 | Dashboard / Platform Hub 展示本版本新功能，支持一键跳转能力入口 |
 | 13 | 统一产品版本号 + CHANGELOG | done | v1.3 | 根目录 CHANGELOG，子包版本对齐 |
 
-## 三、v1.2 待实现（跨源无忧）
+## 三、v1.2 待实现（跨源联邦查询）
 
 | # | 功能 | 状态 | 说明 |
 |---|------|------|------|
@@ -57,7 +57,7 @@ v2.0 之后的产品缺口（企业准入、招牌深度、价值外溢）与近
 | 17 | 自然语言 Dashboard Widget | done | Dashboard 支持自然语言生成组件建议，并一键落位到指定列 |
 | 18 | 指标血缘与口径变更告警 | done | 指标支持上游指标血缘字段、口径版本递增与变更通知 |
 
-## 五、v2.0 锦上添花（未排期）
+## 五、v2.0 扩展能力（未排期）
 
 | 功能 | 状态 |
 |------|------|

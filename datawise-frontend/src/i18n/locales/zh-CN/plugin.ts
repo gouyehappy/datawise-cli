@@ -26,7 +26,7 @@ export default {
     layout: {
         eyebrow: '扩展能力',
         referencePreset: '对照预设',
-        presetHint: '一键应用常用组合，在现有开关之上合并。',
+        presetHint: '应用常用组合，在现有开关之上合并。',
         config: '配置管理',
         presetMismatch: '与对照不一致',
         showing: '显示 {count} / {total}',
@@ -81,7 +81,7 @@ export default {
         presetExpectedOff: '预设期望：关闭',
         presetMatch: '与预设一致',
         presetMismatch: '与预设不一致',
-        presetMismatchHint: '「{preset}」期望与当前「{actual}」不符，可在差异区一键对齐。',
+        presetMismatchHint: '「{preset}」期望与当前「{actual}」不符，可在差异区对齐。',
         presetAlign: '对齐「{preset}」期望',
         presetAlignAll: '对齐全部 {count} 项差异',
         presetAlignSuccess: '已对齐「{preset}」期望开关',
@@ -143,7 +143,7 @@ export default {
         },
         developer: {
             label: '开发者',
-            hint: 'AI、片段、EXPLAIN、假数据、DML 与网格编辑等全套工具',
+            hint: 'AI、片段、EXPLAIN、测试数据、DML 与网格编辑等全套工具',
             applied: '已应用开发者组合',
         },
         minimal: {
@@ -178,11 +178,11 @@ export default {
         },
         'p-sql-format': {
             name: 'SQL 格式化',
-            description: '控制台工具栏一键格式化当前脚本。',
+            description: '控制台工具栏格式化当前脚本。',
         },
         'p-ai-workbench': {
             name: 'AI 数据分析',
-            description: '独立 AI 模块：多轮问数、SQL 生成与结果解读。',
+            description: '独立 AI 模块：多轮对话查询、SQL 生成与结果解读。',
         },
         'p-console-ai': {
             name: '控制台 AI 助手',
@@ -377,7 +377,7 @@ export default {
             description: '结果 Tab 右键与上一结果对比，高亮差异单元格。',
         },
         'p-fake-data': {
-            name: '假数据生成',
+            name: '测试数据生成',
             description: '表 Tab 右键生成测试数据 INSERT 或导出 SQL。',
         },
         'p-ai-index-suggest': {
@@ -436,7 +436,7 @@ export default {
     },
     usage: {
         title: '本地使用统计',
-        description: '记录本机手动开关次数（不离开浏览器）；预设批量应用不计入。',
+        description: '记录本机手动开关次数；预设批量应用不计入。',
         empty: '暂无切换记录',
         emptyHint: '在卡片上切换插件开关后会在此排行',
         toggleBadge: '切换 {count} 次',
@@ -475,7 +475,7 @@ export default {
     connectorMarket: {
         eyebrow: '社区',
         title: 'Connector 社区市场',
-        subtitle: '浏览内置与插件连接器；管理员可按 manifest downloadUrl 一键安装（SHA-256 校验）。',
+        subtitle: '浏览内置与插件连接器；管理员可按 manifest downloadUrl 安装（SHA-256 校验）。',
         open: '打开市场',
         ctaHint: '在独立页面浏览可用与待安装的连接器。',
         backToCenter: '返回插件中心',
@@ -512,7 +512,7 @@ export default {
         emptyHint: '换个关键词或清空筛选。',
         loadedJars: '运行时已加载 {count} 个连接器 JAR',
         noRuntimeJars: '尚未加载连接器插件 JAR',
-        noRuntimeJarsHint: '将插件 JAR 放入 config/plugins/，然后点「热加载插件」（或重启后端）。',
+        noRuntimeJarsHint: '将插件 JAR 放入 config/plugins/，然后点击「热加载插件」（或重启后端）。',
         pendingBannerTitle: '还有 {count} 个连接器待安装插件',
         pendingBannerHint: '在待安装卡片上复制安装步骤，或切换到「待安装」筛选。',
         pendingBannerAction: '查看待安装',

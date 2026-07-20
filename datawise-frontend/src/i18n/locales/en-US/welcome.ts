@@ -10,7 +10,7 @@ export default {
         appShell: 'Layout shell',
         mainContent: 'Main content switching',
         workspaceArea: 'Tab component mechanism',
-        sqlConsole: 'SQL console (most complex)',
+        sqlConsole: 'SQL console',
     },
     actions: {
         search: 'Search connection tree',

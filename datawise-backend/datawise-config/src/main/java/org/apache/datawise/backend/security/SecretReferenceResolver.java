@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.security;
 
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -52,6 +53,7 @@ public class SecretReferenceResolver {
     private final HttpClient httpClient;
     private final Function<String, String> envLookup;
 
+    @Autowired
     public SecretReferenceResolver(ConfigDirectoryService configDirectory) {
         this(configDirectory, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build(), System::getenv);
     }

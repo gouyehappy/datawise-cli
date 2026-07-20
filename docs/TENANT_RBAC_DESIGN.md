@@ -2,11 +2,11 @@
 
 > 状态：Phase 0–2 完成；Phase 3 元数据 `file|jdbc` 已覆盖身份 / teams / connections / OIDC / webhooks / AI usage / SQL history；个人工作区文件按 `users/{id}/tenants/{tenantId}/` 隔离（`app.xml` 仍用户全局）；对象存储未开始  
 > 产品取向：**偏 SaaS 多租户**，同时支持 **本地 / 私有化单体**（`tenancy.mode=single`）。  
-> 相关：缺口 G12（[PRODUCT_GAP_ANALYSIS.md](./PRODUCT_GAP_ANALYSIS.md)，状态 `partial`）、Wave A 企业准入（[WAVE_A_BACKLOG.md](./WAVE_A_BACKLOG.md)）。
+> 相关：缺口 G12（[PRODUCT_GAP_ANALYSIS.md](./PRODUCT_GAP_ANALYSIS.md)，状态 `done`）、Wave A 企业准入（[WAVE_A_BACKLOG.md](./WAVE_A_BACKLOG.md)）。
 
 ### 评审锁定（2026-07-17）
 
-相对初稿的必要调整已拍板，不再阻塞开工：
+相对初稿的必要调整已确认，不再阻塞启动：
 
 | # | 调整 | 决定 |
 |---|------|------|
@@ -34,7 +34,7 @@
 
 ### 非目标（本设计不覆盖）
 
-- 完整计费 / 发票（Phase 2+ 配额可先做硬顶）
+- 完整计费 / 发票（Phase 2+ 配额可先落地硬性上限）
 - 行级数据权限（库表行过滤）——仍靠连接可见性 + Team 共享
 - 立刻弃用文件存储 —— MVP 继续 JSON/XML；规模后再加 `StorageBackend=db`
 - 把 Team 当作 Tenant（禁止）
@@ -320,10 +320,10 @@ requireTenantId()
 - [x] 邀请入租户（`POST /api/tenants/{id}/members`；`GET` 列表 / `DELETE` 移除；最后一个 tenant_admin 受保护）；org 切换：`POST /api/auth/switch-tenant` + 个人菜单 UI（`tenancyMode=multi` 且 ≥2 组织时显示）
 - [x] 平台超管：`datawise.tenancy.platform-admin-user-ids`；single 与 tenant_admin 合并；multi 白名单空时回退首个注册用户
 - [x] OIDC 多租户映射：`tenantClaim` + `tenantClaimMap`；回调自动 membership；未映射拒绝 `OIDC_TENANT_UNMAPPED`
-- [x] 配额：连接数硬顶 `max-connections-per-tenant`；迁移并发槽按产品 `tenantId`（`TenantConcurrencyKeys`）
+- [x] 配额：连接数硬性上限 `max-connections-per-tenant`；迁移并发槽按产品 `tenantId`（`TenantConcurrencyKeys`）
 - [x] 平台超管租户管理 UI（设置 → 租户管理：开通/冻结/软删 + 成员邀请与角色，仅 multi + platformAdmin）
 - [x] 注册开户流（可选）：`allow-registration` + `POST /api/auth/register`；multi 且 `allow-tenant-create` 时可自助建组织；登录框按 `login-options` 切换注册
-- [x] AI 调用配额：`max-ai-calls-per-tenant-per-day`；`AiController` chat/analyze/sql 入口硬顶（`TENANT_AI_QUOTA_EXCEEDED`）
+- [x] AI 调用配额：`max-ai-calls-per-tenant-per-day`；`AiController` chat/analyze/sql 入口硬性上限（`TENANT_AI_QUOTA_EXCEEDED`）
 - [x] AI 用量快照导出：Settings → 租户管理卡片 **Copy JSON / Download CSV**（当日 calls/limit/remaining）
 
 **验收：** 两租户同实例互不可见；同用户可属两租户并切换。
@@ -382,7 +382,7 @@ requireTenantId()
 | 误把 Team 当租户 | 文档与 API 命名严格区分 `tenantId` vs `teamId` |
 | SaaS 未做路径隔离就上 multi | Phase 1 验收未过禁止默认 `multi` |
 
-**已锁定（见文首「评审锁定」）；历史「Phase 2 再议」已收口：**
+**已锁定（见文首「评审锁定」）；历史「Phase 2 再议」项已确认：**
 
 1. Username：`single`/`multi` 均保持**全局唯一**（email 策略可后续加唯一约束，不阻塞）。  
 2. Outbound Webhook：**租户级**（已落地）。  
@@ -394,7 +394,7 @@ requireTenantId()
 
 ```text
 Wave A（已完成）→ 本设计 Phase 0（RBAC + default tenant）
-                 → Wave B 招牌深度可并行
+                 → Wave B 核心能力加深可并行
                  → Phase 1 隔离硬化（上 multi 的前置条件）
                  → Phase 2 SaaS 产品面（对应 G12）
 ```
