@@ -332,6 +332,7 @@ function resolveColumnsFromExplorerTree(
     hit: DiscoveryHit,
     explorerTree: readonly TreeNode[],
 ): DiscoveryColumnPeek[] {
+    if (hit.kind !== 'table' && hit.kind !== 'view') return []
     const connection = findNodeById(explorerTree, hit.connectionId)
     if (!connection) return []
     const scopeNode = findExplorerScopeNode(connection, connection.dbType, hit.database)

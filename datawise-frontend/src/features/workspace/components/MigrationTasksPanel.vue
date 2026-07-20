@@ -196,6 +196,7 @@ watch(
                     throttleMs: current.options.throttleMs,
                     truncateTarget: current.options.truncateTarget,
                     targetMissingPolicy: current.options.targetMissingPolicy,
+                    conflictStrategy: current.options.conflictStrategy ?? 'OVERWRITE',
                 },
                 tablesPlanned: current.tablesPlanned,
                 results: outcome.paused || outcome.cancelled ? current.results : outcome.results,

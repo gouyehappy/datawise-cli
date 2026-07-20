@@ -18,9 +18,9 @@ cp config/users.json.example config/users.json
 | `connections.xml` | 数据源连接（含加密密码）；启动后迁至 `tenants/default/connections.xml` |
 | `teams.json` | 团队快照；启动后迁至 `tenants/default/teams.json` |
 | `oidc.json` | OIDC / 本地登录开关；启动后迁至 `tenants/default/oidc.json` |
-| `tenants/` | 租户索引、角色/成员、以及租户作用域配置（见 [TENANT_RBAC_DESIGN.md](../docs/TENANT_RBAC_DESIGN.md)） |
+| `tenants/` | 租户索引、角色/成员、以及租户作用域配置 |
 | `tenants/{id}/outbound-webhooks.json` | 租户出站 Webhook（首次访问时合并迁移旧用户级文件） |
-| `tenants/{id}/data-quality-templates.json` | 租户共享数据质量规则模板（file；见 [DATA_QUALITY.md](../docs/DATA_QUALITY.md)） |
+| `tenants/{id}/data-quality-templates.json` | 租户共享数据质量规则模板 |
 | `tenants/{id}/ai-usage.json` | 租户当日 AI 调用计数（`max-ai-calls-per-tenant-per-day`）；`jdbc` 时为 `dw_tenant_ai_usage` |
 | `users.json` / `sessions.json` / `api-tokens.json` | 身份元数据（`storage.backend=file`）；`jdbc` 模式下可一次性导入库 |
 | `tenants/{id}/oidc.json` / `outbound-webhooks.json` / `teams.json` / `connections.xml` | 租户配置（file）；`jdbc` 时对应 `dw_oidc_configs` / `dw_outbound_webhook_snapshots` / `dw_team_snapshots` / `dw_connection_snapshots` |

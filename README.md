@@ -68,13 +68,15 @@ Screenshots from the Vue client (mocked API). Regenerate:
 npm run capture:demos --prefix datawise-frontend
 ```
 
+Chinese user manual (chapters + captions): [docs/user-manual/](./docs/user-manual/). Shot list: [MANIFEST.md](./docs/assets/screenshots/MANIFEST.md).
+
 | Dashboard | Explorer | SQL console |
 |:---:|:---:|:---:|
 | ![Dashboard](docs/assets/screenshots/01-dashboard.png) | ![Explorer](docs/assets/screenshots/02-explorer.png) | ![SQL console](docs/assets/screenshots/03-sql-console.png) |
 
-| AI analysis |
-|:---:|
-| ![AI analysis](docs/assets/screenshots/04-ai-analysis.png) |
+| AI analysis | Settings | Analysis canvas |
+|:---:|:---:|:---:|
+| ![AI analysis](docs/assets/screenshots/04-ai-analysis.png) | ![Settings](docs/assets/screenshots/06-settings-basic.png) | ![Canvas](docs/assets/screenshots/10-platform-canvas.png) |
 
 **SQL editor** ([`@datawise/sql-editor`](./sql-editor/)) — grammar completion, schema hints, JOIN snippets:
 

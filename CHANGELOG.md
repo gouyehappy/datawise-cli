@@ -54,7 +54,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave C G8 deepen: Dashboard chart **Copy Markdown** (link + iframe) embed snippet.
 - Wave B S3 deepen: lakehouse lineage softens **`PIVOT` / `UNPIVOT`** (strip → `PARTIAL`).
 - Wave B S2 deepen: federated residual **`GREATEST` / `LEAST`** (NULL args ignored).
-- **Product gap freeze (2026-07-19):** stop Wave A–D day-to-day MVP deepen; retag G/S items as `done` (MVP) vs `backlog` (enterprise rocks) in [docs/PRODUCT_GAP_ANALYSIS.md](./docs/PRODUCT_GAP_ANALYSIS.md). Long-tail slices are out of default scope.
+- **Product gap freeze (2026-07-19):** stop Wave A–D day-to-day MVP deepen; retag G/S items as `done` (MVP) vs `backlog` (enterprise rocks). Long-tail slices are out of default scope.
 - Wave B S1 slice: table migration mode `PK_UPSERT` with conflict strategies OVERWRITE / SKIP / FAIL (MySQL `ON DUPLICATE KEY` / PostgreSQL `ON CONFLICT`); production-target migration plans go through team approval (approve records consent; managers run the wizard).
 - Wave B S2 slice: federated JOIN hard caps (`FederatedJoinLimits`), hash join for equality ON, cross-product rejection, `hasMore` truncation; see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 UX: raise `maxRows` when federated results truncate — result grid **Raise limit and re-run** (console) and platform federated **Retry at {limit}** (1k → 5k → 10k hard cap); see [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
@@ -118,7 +118,7 @@ All notable product-level changes for DataWise are documented in this file.
 - Wave B S2 deepen: federated residual / pushdown **`[NOT] BETWEEN`** (inclusive; `AND` split keeps BETWEEN bounds). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated residual / pushdown **`TRIM` / `LTRIM` / `RTRIM`** (whitespace-both / leading / trailing). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
 - Wave B S2 deepen: federated **`LIKE … ESCAPE`** (literal escape char for `%` / `_`). See [docs/FEDERATED_JOIN_BOUNDS.md](./docs/FEDERATED_JOIN_BOUNDS.md).
-- Design: [docs/TENANT_RBAC_DESIGN.md](./docs/TENANT_RBAC_DESIGN.md).
+- Design: multi-tenant RBAC dual-mode (SaaS / local).
 
 ### Still open
 - Object storage backend; remaining file-only assets (plugins JARs, some desktop caches) as needed.

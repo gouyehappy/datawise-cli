@@ -312,7 +312,11 @@ function truncateText(value: string, max: number): string {
   return `${value.slice(0, max - 1)}…`
 }
 
-function columnTypeLabel(column: TableRelationGraphColumn): string {
+function columnTypeLabel(column: {
+  dataType: string
+  keyType?: string | null
+  highlighted?: boolean
+}): string {
   if (column.keyType === 'PRI') return 'PK'
   if (column.highlighted && column.keyType !== 'PRI') return 'FK'
   return column.dataType

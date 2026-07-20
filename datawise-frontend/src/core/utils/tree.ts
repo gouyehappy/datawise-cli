@@ -2,7 +2,7 @@ import type {TreeNode, TreeNodeType} from '@/core/types'
 
 /** 深度优先遍历树；visitor 返回 true 时提前结束 */
 export function walkTree(
-    nodes: TreeNode[],
+    nodes: readonly TreeNode[],
     visitor: (node: TreeNode, parents: TreeNode[]) => boolean | void,
 ): boolean {
     const stack: { node: TreeNode; parents: TreeNode[] }[] = nodes.map((node) => ({node, parents: []}))
@@ -18,7 +18,7 @@ export function walkTree(
     return false
 }
 
-export function findNodeById(nodes: TreeNode[], nodeId: string): TreeNode | null {
+export function findNodeById(nodes: readonly TreeNode[], nodeId: string): TreeNode | null {
     for (const node of nodes) {
         if (node.id === nodeId) return node
         if (node.children?.length) {
