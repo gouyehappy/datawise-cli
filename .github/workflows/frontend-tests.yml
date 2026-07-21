@@ -37,6 +37,7 @@ jobs:
       - run: npm run test:analysis-stream
       - run: npx playwright install chromium --with-deps
       - run: npm run test:e2e:analysis
+      - run: npm run test:e2e -- e2e/core-paths.spec.ts e2e/workspace-main-path.spec.ts
 
   plugin-catalog-audit:
     runs-on: ubuntu-latest

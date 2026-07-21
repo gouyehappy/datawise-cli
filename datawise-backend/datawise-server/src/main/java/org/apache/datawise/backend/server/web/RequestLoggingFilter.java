@@ -72,6 +72,11 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         message.append(" status=").append(response.getStatus());
         message.append(" took=").append(System.currentTimeMillis() - startedAt).append("ms");
 
+        String requestId = org.slf4j.MDC.get(CorrelationIdFilter.MDC_KEY);
+        if (requestId != null && !requestId.isBlank()) {
+            message.append(" requestId=").append(requestId);
+        }
+
         String sessionId = request.getHeader(SessionAuthFilter.SESSION_HEADER);
         if (sessionId != null && !sessionId.isBlank()) {
             message.append(" session=").append(maskSessionId(sessionId.trim()));

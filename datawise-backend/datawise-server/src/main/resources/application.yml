@@ -12,10 +12,12 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,metrics
+        include: health,metrics,prometheus
   endpoint:
     health:
       show-details: never
+    prometheus:
+      enabled: true
   metrics:
     tags:
       application: ${spring.application.name}
@@ -64,8 +66,23 @@ datawise:
       sliding-renewal: true
   security:
     connection-probe:
-      # 允许连接测试探测内网地址（10.x / 192.168.x 等）；内网部署保持 true
-      allow-private-networks: true
+      # 默认拒绝探测私网/元数据地址（防 SSRF）。桌面/本地 profile 会覆盖为 true
+      allow-private-networks: false
+    auth:
+      # 受保护路由默认拒绝匿名；公开路径见 public-path-prefixes
+      require-authentication: true
+      public-path-prefixes:
+        - /login
+        - /signOut
+        - /api/auth/register
+        - /api/auth/login-options
+        - /api/auth/oidc/login
+        - /api/auth/oidc/callback
+        - /api/health
+        - /actuator/health
+        - /actuator/prometheus
+        - /v3/api-docs
+        - /swagger-ui
   logging:
     # 统一运行日志：config/logs/datawise.log（含异常堆栈）
     dir: config/logs
@@ -88,11 +105,11 @@ datawise:
     plugins-dir: plugins
     # AppCDS 训练可设 false，避免把插件 ClassLoader 类打进 jsa 导致运行时刷屏
     load-plugins: true
-    # When true, reject plugin JARs whose SHA-256 does not match config/plugins/manifest.json
-    require-manifest-integrity: false
+    # 拒绝 SHA-256 与 config/plugins/manifest.json 不一致的插件 JAR
+    require-manifest-integrity: true
   query:
-    # 服务端默认最大返回行数；0 表示不限制（客户端可在设置中进一步收紧）
-    max-result-rows: 0
+    # 服务端默认最大返回行数；0 表示不限制（仅建议本地显式开启）
+    max-result-rows: 10000
   sql:
     rewrite:
       # 控制台执行前自动为表名/字段名加引号（基于 sqlparser + 连接 dbType）
@@ -152,6 +169,7 @@ datawise:
       throttle-penalty: 1
   task-concurrency:
     enabled: true
+    # 单机桌面默认内存；多实例请改 jdbc（需 storage.backend=jdbc）并粘滞 SSE
     store-type: in-memory
     global-max-concurrent: 6
     lease-ttl: 30m
@@ -165,7 +183,7 @@ datawise:
   ai:
     rag:
       enabled: true
-      # 向量库：none | memory | pgvector
+      # 向量库：none | memory | pgvector — 生产推荐 pgvector + openai embedding（见 docs/AI_PRODUCTION.md）
       vector-store: none
       pgvector:
         jdbc-url:
@@ -175,7 +193,7 @@ datawise:
       max-snippets: 12
       max-glossary-hits: 6
       embedding:
-        # hash — 离线确定性向量；openai — OpenAI 兼容 embedding API
+        # hash — 离线确定性向量（开发）；生产用 openai 兼容 embedding API
         provider: hash
         base-url:
         api-key:
@@ -185,7 +203,8 @@ datawise:
       checkpoint:
         # memory | file — file 持久化 SQL 确认 interrupt 会话（config/ai-checkpoints/）
         storage: file
-      semantic-check: lenient
+      # off | lenient | strict — 生产推荐 strict
+      semantic-check: strict
       retry:
         max-sql-validation-retries: 2
         max-sql-execute-attempts: 2
@@ -199,6 +218,7 @@ datawise:
         report: true
     python:
       enabled: true
+      # simulated 仅开发；生产推荐 docker（见 docs/AI_PRODUCTION.md）
       executor: simulated
       sandbox-enabled: true
       python-command: python

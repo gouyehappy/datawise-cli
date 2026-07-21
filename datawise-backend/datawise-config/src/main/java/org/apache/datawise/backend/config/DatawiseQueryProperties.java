@@ -8,7 +8,8 @@ public class DatawiseQueryProperties {
     /**
      * 服务端默认最大返回行数；0 表示不限制
      */
-    private int maxResultRows = 0;
+    /** 默认 10000；0 表示不限制（仅建议显式本地开启）。 */
+    private int maxResultRows = 10_000;
 
     public int getMaxResultRows() {
         return maxResultRows;

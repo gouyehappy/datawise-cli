@@ -524,7 +524,7 @@ export default {
         previewHint: 'Preview updates as you change settings',
         tipsTitle: 'Tips',
         maxResultRows: 'Max result rows',
-        maxResultRowsHint: 'Maximum rows returned when opening a table or running SQL in the console. 0 means unlimited.',
+        maxResultRowsHint: 'Maximum rows returned when opening a table or running SQL. Server default cap is 10000; the client may tighten further. 0 means unlimited (only if the server also allows it).',
         maxResultRowsUnlimited: 'Unlimited',
         defaultGridPageSize: 'Default page size',
         defaultGridPageSizeAuto: 'Auto (use minimum)',

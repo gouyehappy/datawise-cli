@@ -18,7 +18,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-/** 运行中迁移 job 的 SSE 订阅与事件广播。 */
+/** 运行中迁移 job 的 SSE 订阅与事件广播。
+ * <p>
+ * Subscribers are process-local ({@link ConcurrentHashMap}). Multi-instance deployments must
+ * use sticky sessions (or a shared pub/sub bridge) so clients reconnect to the node that owns
+ * the job. Pair with {@code datawise.task-concurrency.store-type=jdbc} for cluster-safe
+ * admission control — see {@code docs/DEPLOYMENT.md}.
+ */
 @Component
 public class MigrationJobStreamHub {
 

@@ -14,7 +14,7 @@ public class ConnectionProbeProperties {
      * link-local hosts such as {@code 10.x.x.x}. Set to {@code false} only on
      * internet-exposed deployments where probe SSRF must be blocked.
      */
-    private boolean allowPrivateNetworks = true;
+    private boolean allowPrivateNetworks = false;
 
     public boolean isAllowPrivateNetworks() {
         return allowPrivateNetworks;

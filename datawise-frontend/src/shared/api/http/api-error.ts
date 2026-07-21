@@ -12,7 +12,14 @@ export class ApiError extends Error {
 export function isUnauthorizedApiError(error: unknown): boolean {
     if (!(error instanceof ApiError)) return false
     const message = error.message.trim()
-    return message === 'UNAUTHORIZED' || message === 'HTTP 401'
+    if (message === 'UNAUTHORIZED' || message === 'HTTP 401') {
+        return true
+    }
+    if (error.data && typeof error.data === 'object') {
+        const code = (error.data as {errorCode?: unknown}).errorCode
+        return code === 'UNAUTHORIZED'
+    }
+    return false
 }
 
 export function shouldRecoverStaleSession(error: unknown): boolean {

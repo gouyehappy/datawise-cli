@@ -42,3 +42,4 @@ datawise-frontend/node/**
 datawise-backend/datawise-sqlflow/lib/extracted/**
 datawise-backend/datawise-sqlflow/lib/*.jar
 datawise-backend/datawise-sqlflow/lib/*.zip
+docs/todolist/*

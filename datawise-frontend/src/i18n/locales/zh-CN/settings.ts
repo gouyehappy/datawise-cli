@@ -524,7 +524,7 @@ export default {
         previewHint: '右侧预览随上方设置实时更新',
         tipsTitle: '使用提示',
         maxResultRows: '最大返回行数',
-        maxResultRowsHint: '打开表与 SQL 控制台查询的单次最大返回行数；0 表示不限制',
+        maxResultRowsHint: '打开表与 SQL 控制台查询的单次最大返回行数；服务端默认上限 10000，客户端可更严；0 表示不限制（需服务端同步允许）',
         maxResultRowsUnlimited: '不限制',
         defaultGridPageSize: '默认每页条数',
         defaultGridPageSizeAuto: '自动（使用最小值）',

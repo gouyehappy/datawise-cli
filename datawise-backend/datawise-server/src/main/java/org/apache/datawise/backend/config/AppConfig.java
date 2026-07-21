@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.config;
 
 import org.apache.datawise.backend.configstore.SessionStore;
+import org.apache.datawise.backend.server.web.CorrelationIdFilter;
 import org.apache.datawise.backend.server.web.SessionAuthFilter;
 import org.apache.datawise.backend.server.web.RequestLoggingFilter;
 import org.apache.datawise.backend.service.ApiTokenService;
@@ -20,12 +21,22 @@ public class AppConfig {
     }
 
     @Bean
+    public FilterRegistrationBean<CorrelationIdFilter> correlationIdFilterRegistration() {
+        FilterRegistrationBean<CorrelationIdFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new CorrelationIdFilter());
+        registration.addUrlPatterns("/*");
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
+    }
+
+    @Bean
     public FilterRegistrationBean<SessionAuthFilter> sessionAuthFilterRegistration(
             SessionStore sessionStore,
-            ApiTokenService apiTokenService
+            ApiTokenService apiTokenService,
+            AuthSecurityProperties authSecurityProperties
     ) {
         FilterRegistrationBean<SessionAuthFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new SessionAuthFilter(sessionStore, apiTokenService));
+        registration.setFilter(new SessionAuthFilter(sessionStore, apiTokenService, authSecurityProperties));
         registration.addUrlPatterns("/*");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
         return registration;

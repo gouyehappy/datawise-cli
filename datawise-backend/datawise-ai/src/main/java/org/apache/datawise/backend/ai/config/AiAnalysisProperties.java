@@ -15,7 +15,7 @@ public class AiAnalysisProperties {
     /**
      * lenient | strict | off — 表引用语义校验；列名校验在 lenient 下也会阻断
      */
-    private String semanticCheck = "lenient";
+    private String semanticCheck = "strict";
 
     public Checkpoint getCheckpoint() {
         return checkpoint;
@@ -38,7 +38,7 @@ public class AiAnalysisProperties {
     }
 
     public void setSemanticCheck(String semanticCheck) {
-        this.semanticCheck = semanticCheck != null ? semanticCheck.trim() : "lenient";
+        this.semanticCheck = semanticCheck != null ? semanticCheck.trim() : "strict";
     }
 
     public boolean isSemanticCheckStrict() {

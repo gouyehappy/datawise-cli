@@ -1,10 +1,5 @@
 package org.apache.datawise.backend.common;
 
-import org.apache.datawise.backend.common.ConnectionAccessDeniedException;
-import org.apache.datawise.backend.common.DatabaseServiceException;
-import org.apache.datawise.backend.common.ExplorerConnectionException;
-import org.apache.datawise.backend.common.TableDataException;
-import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.ddl.DdlException;
 import org.apache.datawise.backend.common.support.ExceptionLogging;
 import org.apache.datawise.backend.security.ClientErrorMessageSupport;
@@ -35,101 +30,132 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleSqlExecution(SqlExecutionException ex) {
         ExceptionLogging.warn(log, "SqlExecutionException", ex);
         Map<String, Object> data = new LinkedHashMap<>();
+        data.put("errorCode", DatawiseErrorCodes.SQL_EXECUTION_FAILED);
         if (ex.getErrorLine() != null) {
             data.put("errorLine", ex.getErrorLine());
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>(-1, ClientErrorMessageSupport.sqlExecutionMessage(ex.getMessage()), data.isEmpty() ? null : data));
+                .body(new ApiResponse<>(-1, ClientErrorMessageSupport.sqlExecutionMessage(ex.getMessage()), data));
     }
 
     @ExceptionHandler(DdlException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleDdlException(DdlException ex) {
         ExceptionLogging.warn(log, "DdlException [" + ex.errorCode() + "]", ex);
         Map<String, Object> data = new LinkedHashMap<>();
-        if (ex.errorCode() != null) {
-            data.put("errorCode", ex.errorCode().name());
-        }
+        data.put("errorCode", ex.errorCode() != null ? ex.errorCode().name() : DatawiseErrorCodes.DDL);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>(-1, ex.getMessage(), data.isEmpty() ? null : data));
+                .body(new ApiResponse<>(-1, ex.getMessage(), data));
     }
 
     @ExceptionHandler(ExplorerConnectionException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleExplorerConnection(ExplorerConnectionException ex) {
         ExceptionLogging.warn(log, "ExplorerConnectionException [" + ex.getErrorCode() + "]", ex);
+        Map<String, Object> data = ex.toResponseData();
+        if (data == null) {
+            data = new LinkedHashMap<>();
+        } else {
+            data = new LinkedHashMap<>(data);
+        }
+        data.putIfAbsent("errorCode", ex.getErrorCode() != null ? ex.getErrorCode() : DatawiseErrorCodes.EXPLORER_CONNECTION);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>(-1, ex.getMessage(), ex.toResponseData()));
+                .body(new ApiResponse<>(-1, ex.getMessage(), data));
     }
 
     @ExceptionHandler(TableDataException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleTableData(TableDataException ex) {
         ExceptionLogging.warn(log, "TableDataException [" + ex.getErrorCode() + "]", ex);
+        Map<String, Object> data = ex.toResponseData();
+        if (data == null) {
+            data = new LinkedHashMap<>();
+        } else {
+            data = new LinkedHashMap<>(data);
+        }
+        data.putIfAbsent("errorCode", ex.getErrorCode() != null ? ex.getErrorCode() : DatawiseErrorCodes.TABLE_DATA);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>(-1, ex.getMessage(), ex.toResponseData()));
+                .body(new ApiResponse<>(-1, ex.getMessage(), data));
     }
 
     @ExceptionHandler(DatabaseServiceException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleDatabaseService(DatabaseServiceException ex) {
         ExceptionLogging.warn(log, "DatabaseServiceException [" + ex.getErrorCode() + "]", ex);
+        Map<String, Object> data = ex.toResponseData();
+        if (data == null) {
+            data = new LinkedHashMap<>();
+        } else {
+            data = new LinkedHashMap<>(data);
+        }
+        data.putIfAbsent("errorCode", ex.getErrorCode() != null ? ex.getErrorCode() : DatawiseErrorCodes.DATABASE_SERVICE);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>(-1, ex.getMessage(), ex.toResponseData()));
+                .body(new ApiResponse<>(-1, ex.getMessage(), data));
     }
 
     @ExceptionHandler(ConnectionAccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleConnectionAccessDenied(ConnectionAccessDeniedException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleConnectionAccessDenied(ConnectionAccessDeniedException ex) {
         ExceptionLogging.warn(log, "connection.access.denied", ex);
+        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.CONNECTION_ACCESS_DENIED);
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.fail(ConnectionAccessDeniedException.CODE));
+                .body(new ApiResponse<>(-1, ConnectionAccessDeniedException.CODE, data));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleUnauthorized(UnauthorizedException ex) {
+        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.UNAUTHORIZED);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.fail(UnauthorizedException.CODE));
+                .body(new ApiResponse<>(-1, UnauthorizedException.CODE, data));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleIllegalArgument(IllegalArgumentException ex) {
         ExceptionLogging.warn(log, "IllegalArgumentException", ex);
         if (HeadlessMigrationAuth.API_TOKEN_FORBIDDEN.equals(ex.getMessage())
                 || UserAdminPolicy.ADMIN_REQUIRED.equals(ex.getMessage())
                 || UserPermissionPolicy.PERMISSION_DENIED.equals(ex.getMessage())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.fail(ex.getMessage()));
+            Map<String, Object> data = Map.of("errorCode", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse<>(-1, ex.getMessage(), data));
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.fail(ClientErrorMessageSupport.forClient(ex.getMessage())));
+        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.BAD_REQUEST);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse<>(-1, ClientErrorMessageSupport.forClient(ex.getMessage()), data));
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalState(IllegalStateException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleIllegalState(IllegalStateException ex) {
         ExceptionLogging.error(log, "IllegalStateException", ex);
+        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.INTERNAL_ERROR);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.fail(INTERNAL_ERROR_MESSAGE));
+                .body(new ApiResponse<>(-1, INTERNAL_ERROR_MESSAGE, data));
     }
 
     @ExceptionHandler(SQLException.class)
-    public ResponseEntity<ApiResponse<Void>> handleSqlException(SQLException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleSqlException(SQLException ex) {
         ExceptionLogging.error(log, "Unhandled SQLException (should be converted in service layer)", ex);
+        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.SQL_EXECUTION_FAILED);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(JdbcConnectionErrors.toUserMessage(ex)));
+                .body(new ApiResponse<>(-1, JdbcConnectionErrors.toUserMessage(ex), data));
     }
 
     @ExceptionHandler(IOException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIOException(IOException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleIOException(IOException ex) {
         ExceptionLogging.warn(log, "IOException", ex);
+        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.IO_ERROR);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(ClientErrorMessageSupport.ioMessage()));
+                .body(new ApiResponse<>(-1, ClientErrorMessageSupport.ioMessage(), data));
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<Void>> handleRuntime(RuntimeException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleRuntime(RuntimeException ex) {
         ExceptionLogging.error(log, "RuntimeException", ex);
+        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.INTERNAL_ERROR);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.fail(INTERNAL_ERROR_MESSAGE));
+                .body(new ApiResponse<>(-1, INTERNAL_ERROR_MESSAGE, data));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleGeneric(Exception ex) {
         ExceptionLogging.error(log, "Unhandled exception", ex);
+        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.INTERNAL_ERROR);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.fail(INTERNAL_ERROR_MESSAGE));
+                .body(new ApiResponse<>(-1, INTERNAL_ERROR_MESSAGE, data));
     }
 }

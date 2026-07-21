@@ -14,16 +14,32 @@ export function resolveApiErrorMessage(error: unknown): string {
     return HTTP_NOT_READY
 }
 
+function extractStableErrorCode(error: unknown): string | null {
+    if (error instanceof ApiError && error.data && typeof error.data === 'object') {
+        const code = (error.data as {errorCode?: unknown}).errorCode
+        if (typeof code === 'string' && code.trim()) {
+            return code.trim()
+        }
+    }
+    if (error instanceof ApiError) {
+        return error.message?.trim() || null
+    }
+    if (error instanceof Error) {
+        return error.message?.trim() || null
+    }
+    return null
+}
+
 /** 将稳定错误码映射为本地化文案；未知码回退 raw message。 */
 export function resolveDisplayApiErrorMessage(
     error: unknown,
     translate: (key: string) => string,
 ): string {
-    const raw = resolveApiErrorMessage(error)
-    const i18nKey = stableApiErrorI18nKey(raw)
+    const code = extractStableErrorCode(error)
+    const i18nKey = stableApiErrorI18nKey(code)
     if (i18nKey) {
         const localized = translate(i18nKey)
         if (localized && localized !== i18nKey) return localized
     }
-    return raw
+    return resolveApiErrorMessage(error)
 }

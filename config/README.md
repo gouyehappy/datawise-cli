@@ -11,6 +11,17 @@ cp config/users.json.example config/users.json
 
 按需将 connector JAR 放入 `plugins/`，JDBC 驱动放入 `drivers/`。说明见 [plugins/README.md](./plugins/README.md)。
 
+生产 / 服务器部署（JDBC 元数据、鉴权、Prometheus、多实例）见 [docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)。
+
+## 安全相关默认（application.yml）
+
+| 配置 | 默认（无 profile） | dev / desktop |
+|------|-------------------|---------------|
+| `datawise.query.max-result-rows` | `10000` | 同左（可覆盖） |
+| `datawise.security.auth.require-authentication` | `true` | `true` |
+| `datawise.security.connection-probe.allow-private-networks` | `false` | `true` |
+| `datawise.connectors.require-manifest-integrity` | `true` | `false` |
+
 ## 常见文件（均不入库）
 
 | 路径 | 说明 |

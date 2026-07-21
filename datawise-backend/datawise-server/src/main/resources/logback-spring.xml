@@ -5,9 +5,9 @@
     <springProperty scope="context" name="LOG_DIR" source="datawise.logging.dir" defaultValue="config/logs"/>
 
     <property name="FILE_LOG_PATTERN"
-              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %-40logger{39} | %msg%n%wEx"/>
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId:-}] %-40logger{39} | %msg%n%wEx"/>
     <property name="CONSOLE_LOG_PATTERN"
-              value="%d{HH:mm:ss.SSS} %-5level %-24logger{0} | %msg%n%nopex"/>
+              value="%d{HH:mm:ss.SSS} %-5level [%X{requestId:-}] %-24logger{0} | %msg%n%nopex"/>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/datawise.log</file>

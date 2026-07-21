@@ -1,5 +1,11 @@
 /** 后端稳定错误码 → i18n key（与 GlobalExceptionHandler / UserPermissionPolicy 对齐）。 */
 export const STABLE_API_ERROR_I18N: Record<string, string> = {
+    UNAUTHORIZED: 'auth.unauthorized',
+    INTERNAL_ERROR: 'auth.errors.INTERNAL_ERROR',
+    BAD_REQUEST: 'auth.errors.BAD_REQUEST',
+    SQL_EXECUTION_FAILED: 'auth.errors.SQL_EXECUTION_FAILED',
+    IO_ERROR: 'auth.errors.IO_ERROR',
+    FORBIDDEN: 'auth.permissionDenied',
     PERMISSION_DENIED: 'auth.permissionDenied',
     GUEST_NOT_ALLOWED: 'auth.guestNotAllowed',
     ADMIN_REQUIRED: 'auth.adminRequired',

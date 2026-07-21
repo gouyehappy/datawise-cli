@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.server.web;
 
 import jakarta.servlet.FilterChain;
+import org.apache.datawise.backend.config.AuthSecurityProperties;
 import org.apache.datawise.backend.configstore.SessionStore;
 import org.apache.datawise.backend.model.ApiTokenEntity;
 import org.apache.datawise.backend.model.SessionEntity;
@@ -8,20 +9,20 @@ import org.apache.datawise.backend.security.ApiTokenScopes;
 import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.ApiTokenService;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,8 +36,15 @@ class SessionAuthFilterTest {
     @Mock
     private FilterChain filterChain;
 
-    @InjectMocks
     private SessionAuthFilter filter;
+    private AuthSecurityProperties authSecurityProperties;
+
+    @BeforeEach
+    void setUp() {
+        authSecurityProperties = new AuthSecurityProperties();
+        authSecurityProperties.setRequireAuthentication(true);
+        filter = new SessionAuthFilter(sessionStore, apiTokenService, authSecurityProperties);
+    }
 
     @AfterEach
     void tearDown() {
@@ -51,13 +59,14 @@ class SessionAuthFilterTest {
         session.setGuest(false);
         when(sessionStore.authenticate("session-1")).thenReturn(Optional.of(session));
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/explorer/tree");
         request.addHeader(SessionAuthFilter.SESSION_HEADER, "session-1");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilter(request, response, filterChain);
 
         verify(filterChain).doFilter(request, response);
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -68,7 +77,7 @@ class SessionAuthFilterTest {
         session.setGuest(true);
         when(sessionStore.authenticate("session-2")).thenReturn(Optional.of(session));
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/explorer/tree");
         request.addHeader(SessionAuthFilter.SESSION_HEADER, "session-2");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -79,18 +88,61 @@ class SessionAuthFilterTest {
     }
 
     @Test
-    void ignoresExpiredSession() throws Exception {
-        SessionEntity session = new SessionEntity();
-        session.setId("session-expired");
-        session.setUserId(3L);
-        session.setExpiresAt(Instant.now().minusSeconds(60));
+    void rejectsExpiredSessionOnProtectedPath() throws Exception {
         when(sessionStore.authenticate("session-expired")).thenReturn(Optional.empty());
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/explorer/tree");
         request.addHeader(SessionAuthFilter.SESSION_HEADER, "session-expired");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        filter.doFilter(request, response, (req, res) -> assertNull(UserContext.getUserId()));
+        filter.doFilter(request, response, filterChain);
+
+        assertEquals(401, response.getStatus());
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void rejectsAnonymousOnProtectedPath() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/explorer/tree");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, filterChain);
+
+        assertEquals(401, response.getStatus());
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void allowsAnonymousOnPublicHealthPath() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/health");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    void rejectsAnonymousOnProtectedAuthSessionPath() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/auth/session");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, filterChain);
+
+        assertEquals(401, response.getStatus());
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void allowsAnonymousGuestLogin() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/login/guest");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -101,7 +153,7 @@ class SessionAuthFilterTest {
         token.setScopes(List.of(ApiTokenScopes.MIGRATION));
         when(apiTokenService.authenticate("dw_secret")).thenReturn(Optional.of(token));
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/migration/jobs");
         request.addHeader(SessionAuthFilter.API_TOKEN_HEADER, "dw_secret");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -119,7 +171,7 @@ class SessionAuthFilterTest {
         session.setGuest(false);
         when(sessionStore.authenticate("session-1")).thenReturn(Optional.of(session));
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/explorer/tree");
         request.addHeader(SessionAuthFilter.SESSION_HEADER, "session-1");
         request.addHeader(SessionAuthFilter.API_TOKEN_HEADER, "dw_secret");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -132,7 +184,10 @@ class SessionAuthFilterTest {
 
     @Test
     void clearsUserContextAfterRequest() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest();
+        authSecurityProperties.setRequireAuthentication(false);
+        filter = new SessionAuthFilter(sessionStore, apiTokenService, authSecurityProperties);
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/explorer/tree");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilter(request, response, filterChain);

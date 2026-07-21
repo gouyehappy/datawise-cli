@@ -27,10 +27,26 @@ logging:
     org.apache.thrift: WARN
     org.apache.hive: WARN
 
+# 桌面包不需要 OpenAPI UI，避免启动期扫描 Controllers
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 datawise:
+  security:
+    connection-probe:
+      # 桌面客户端连接内网库是主场景
+      allow-private-networks: true
+  connectors:
+    require-manifest-integrity: false
   jdbc:
     # 驱动在首次连接时再加载，避免启动扫描 config/drivers/
     preload-drivers-on-startup: false
+  ai:
+    analysis:
+      semantic-check: lenient
   migration:
     task-concurrency-priority:
       small-table-threshold: 1
