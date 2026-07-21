@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.springframework.beans.factory.ObjectProvider;
+
 import java.nio.file.Path;
 import java.util.List;
 
@@ -28,7 +30,14 @@ class SchemaCacheStoreTest {
         ConfigDirectoryService configDirectory = mock(ConfigDirectoryService.class);
         when(configDirectory.resolve(org.mockito.ArgumentMatchers.anyString()))
                 .thenAnswer(invocation -> tempDir.resolve(invocation.getArgument(0, String.class)));
-        store = new SchemaCacheStore(configDirectory, new ObjectMapper());
+        @SuppressWarnings("unchecked")
+        ObjectProvider<org.apache.datawise.backend.service.discovery.DiscoverySearchIndexStore> indexProvider =
+                mock(ObjectProvider.class);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<ConnectionStore> connectionProvider = mock(ObjectProvider.class);
+        when(indexProvider.getIfAvailable()).thenReturn(null);
+        when(connectionProvider.getIfAvailable()).thenReturn(null);
+        store = new SchemaCacheStore(configDirectory, new ObjectMapper(), indexProvider, connectionProvider);
         UserContext.set(7L, false, "session-a");
     }
 

@@ -89,6 +89,16 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>(-1, ex.getMessage(), data));
     }
 
+    @ExceptionHandler(ProductionWriteBlockedException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleProductionWriteBlocked(
+            ProductionWriteBlockedException ex
+    ) {
+        ExceptionLogging.warn(log, "production.write.blocked", ex);
+        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.SQL_PRODUCTION_APPROVAL_REQUIRED);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ApiResponse<>(-1, ProductionWriteBlockedException.CODE, data));
+    }
+
     @ExceptionHandler(ConnectionAccessDeniedException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleConnectionAccessDenied(ConnectionAccessDeniedException ex) {
         ExceptionLogging.warn(log, "connection.access.denied", ex);

@@ -49,4 +49,20 @@ class HeadlessMigrationAuthTest {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, HeadlessMigrationAuth::requireMigrationAccess);
         assertEquals(HeadlessMigrationAuth.API_TOKEN_FORBIDDEN, ex.getMessage());
     }
+
+    @Test
+    void rejectsApiTokenWithoutMigrationScopeForConfigLayout() {
+        UserContext.setApiToken(1L, "tok-1", Set.of("other"));
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> HeadlessMigrationAuth.requireConfigLayoutMigrationAccess(null)
+        );
+        assertEquals(HeadlessMigrationAuth.API_TOKEN_FORBIDDEN, ex.getMessage());
+    }
+
+    @Test
+    void allowsApiTokenWithMigrationScopeForConfigLayout() {
+        UserContext.setApiToken(1L, "tok-1", Set.of(ApiTokenScopes.MIGRATION));
+        assertDoesNotThrow(() -> HeadlessMigrationAuth.requireConfigLayoutMigrationAccess(null));
+    }
 }

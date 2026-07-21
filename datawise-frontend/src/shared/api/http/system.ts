@@ -1,7 +1,7 @@
 import type {ApiResponse, SystemMetricsSnapshot} from '@/shared/api/types'
 import {readApiBaseUrl} from '@/shared/api/mode'
 import {API_PATHS} from '@/shared/api/http/paths'
-import {getJson} from '@/shared/api/http/request'
+import {getJson, postJson} from '@/shared/api/http/request'
 
 const HEALTH_TIMEOUT_MS = 5000
 
@@ -96,6 +96,15 @@ export function createHttpSystemApi() {
         pingAt: pingHealthAt,
         resolveEndpointLabel: resolveBackendEndpointLabel,
         fetchMetrics: () => getJson<SystemMetricsSnapshot>(API_PATHS.metrics),
+        fetchDeploymentProfile: () =>
+            getJson<import('@/shared/api/types').DeploymentProfileSnapshot>(API_PATHS.deploymentProfile),
+        fetchConfigMigrationStatus: () =>
+            getJson<import('@/shared/api/types').LegacyConfigMigrationStatus>(API_PATHS.configMigration),
+        applyConfigMigration: () =>
+            postJson<import('@/shared/api/types').LegacyConfigMigrationStatus>(
+                API_PATHS.configMigrationApply,
+                {},
+            ),
         fetchSecretsStatus: () => getJson<SecretsStatus>(API_PATHS.secrets),
     }
 }

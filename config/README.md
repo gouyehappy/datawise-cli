@@ -13,6 +13,8 @@ cp config/users.json.example config/users.json
 
 生产 / 服务器部署（JDBC 元数据、鉴权、Prometheus、多实例）见 [docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)。
 
+从旧布局（根目录 `connections.xml` / `users/{id}/*.json`）迁到租户作用域路径，见 [docs/CONFIG_MIGRATION.md](../docs/CONFIG_MIGRATION.md)（`datawise config migrate`）。
+
 ## 安全相关默认（application.yml）
 
 | 配置 | 默认（无 profile） | dev / desktop |

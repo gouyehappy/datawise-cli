@@ -62,6 +62,10 @@ export default {
         bannerTitle: 'Cross-database analysis',
         bannerHint: '{count} data sources selected. Merged results may include a __dw_source__ column.',
     },
+    pythonSimulated: {
+        bannerTitle: 'Python executor is simulated',
+        bannerHint: 'datawise.ai.python.executor is simulated — Python insights are mocked. Use docker for production (Settings → System metrics → Deployment mode).',
+    },
     history: {
         title: 'Chat history',
         newChat: 'New chat',

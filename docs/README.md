@@ -23,11 +23,13 @@ cd datawise-frontend && npm install && npm run dev                   # → :2841
 
 | 文档 | 何时需要 |
 |------|----------|
+| [GOVERNANCE.md](./GOVERNANCE.md) | 生产写操作治理入口矩阵（UI / CLI / MCP / 定时任务） |
 | [SECRETS.md](./SECRETS.md) | 配置主密钥 / `dwsecret:` 引用密码 |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | 团队服务器 / JDBC 元数据 / 多实例 |
 | [AI_PRODUCTION.md](./AI_PRODUCTION.md) | AI RAG / 语义校验 / Python 生产配置 |
 | [OPENAPI.md](./OPENAPI.md) | API 契约导出与客户端生成 |
 | [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 联邦跨源 JOIN 行数与截断行为 |
+| [CONFIG_MIGRATION.md](./CONFIG_MIGRATION.md) | Deprecated 配置路径 → 租户作用域迁移 |
 | [DESKTOP_MAC.md](./DESKTOP_MAC.md) | 打 macOS 桌面包 |
 | [DESKTOP_LINUX.md](./DESKTOP_LINUX.md) | 打 Linux AppImage |
 | [todolist/](./todolist/README.md) | 产品级硬化待办 |

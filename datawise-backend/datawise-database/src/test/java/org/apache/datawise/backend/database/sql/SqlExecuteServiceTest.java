@@ -14,6 +14,7 @@ import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.jdbc.session.JdbcManualSessionStore.ManagedSession;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.service.ConnectionAccessService;
+import org.apache.datawise.backend.service.ProductionWriteGuardService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +47,8 @@ class SqlExecuteServiceTest {
     @Mock
     private ConnectionAccessService connectionAccessService;
     @Mock
+    private ProductionWriteGuardService productionWriteGuardService;
+    @Mock
     private SqlCursorService sqlCursorService;
     @Mock
     private ConnectorJdbcAccess jdbcAccess;
@@ -72,6 +75,7 @@ class SqlExecuteServiceTest {
                 connectorFacade,
                 new QueryLimitResolver(unlimitedQueryProperties()),
                 connectionAccessService,
+                productionWriteGuardService,
                 sqlCursorService,
                 sqlExecutionHookRunner
         );

@@ -10,6 +10,11 @@ import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {extractConnectionsFromTree} from '@/features/explorer/utils/tree-targets'
 import {useModalFeedback} from '@/core/composables/useModalFeedback'
 import {
+    presentFederatedJoinRisk,
+    type FederatedJoinRiskPresentation,
+} from '@/features/platform/services/federated-join-risk.service'
+import type {FederatedJoinRiskHints} from '@/features/platform/types/platform.types'
+import {
     buildInitialFederatedWizardSources,
     canAccessFederatedWizardStep,
     createDefaultFederatedWizardForm,
@@ -44,6 +49,22 @@ const saving = ref(false)
 const generating = ref(false)
 const error = ref('')
 const dragIndex = ref<number | null>(null)
+const riskHints = ref<FederatedJoinRiskHints | null>(null)
+let riskAnalyzeTimer: ReturnType<typeof setTimeout> | null = null
+let riskAnalyzeSeq = 0
+
+const riskPresentation = computed<FederatedJoinRiskPresentation | null>(() =>
+    presentFederatedJoinRisk(riskHints.value, {
+        equalityJoin: t('platform.federated.risk.equalityJoin'),
+        nonEqualityJoin: t('platform.federated.risk.nonEqualityJoin'),
+    }),
+)
+
+const riskMessage = computed(() => {
+    const presented = riskPresentation.value
+    if (!presented) return ''
+    return t(`platform.federated.risk.${presented.summaryKey}`, presented.params)
+})
 
 const form = reactive<FederatedViewWizardForm>(createDefaultFederatedWizardForm())
 
@@ -219,6 +240,40 @@ function onDragEnd() {
     dragIndex.value = null
 }
 
+async function refreshRiskHints(sql: string) {
+    const trimmed = sql.trim()
+    if (!trimmed) {
+        riskHints.value = null
+        return
+    }
+    const seq = ++riskAnalyzeSeq
+    try {
+        const hints = await platformApi.analyzeFederatedJoinRisk({sql: trimmed})
+        if (seq === riskAnalyzeSeq) {
+            riskHints.value = hints
+        }
+    } catch {
+        if (seq === riskAnalyzeSeq) {
+            riskHints.value = null
+        }
+    }
+}
+
+function scheduleRiskAnalyze(sql: string) {
+    if (riskAnalyzeTimer) clearTimeout(riskAnalyzeTimer)
+    riskAnalyzeTimer = setTimeout(() => {
+        riskAnalyzeTimer = null
+        void refreshRiskHints(sql)
+    }, 400)
+}
+
+watch(
+    () => form.sql,
+    (sql) => {
+        scheduleRiskAnalyze(sql)
+    },
+)
+
 async function generateSql() {
     if (!form.prompt.trim() || generating.value) return
     const sources = toFederatedViewSources(form.sources)
@@ -235,6 +290,7 @@ async function generateSql() {
             sources,
         })
         form.sql = result.sql
+        await refreshRiskHints(result.sql)
         showSuccess(t('platform.federated.generateDone'))
     } catch (err) {
         error.value = err instanceof Error ? err.message : String(err)
@@ -404,6 +460,12 @@ async function save() {
           />
         </template>
       </FormField>
+      <DwInlineAlert
+          v-if="riskMessage"
+          density="banner"
+          :variant="riskPresentation?.tone ?? 'info'"
+          :message="riskMessage"
+      />
     </section>
 
     <section v-else class="federated-wizard__panel">
@@ -427,6 +489,12 @@ async function save() {
         <h4>{{ t('platform.common.sql') }}</h4>
         <pre class="federated-wizard__sql-preview">{{ form.sql }}</pre>
       </div>
+      <DwInlineAlert
+          v-if="riskMessage"
+          density="banner"
+          :variant="riskPresentation?.tone ?? 'info'"
+          :message="riskMessage"
+      />
     </section>
 
     <DwInlineAlert v-if="error" :message="error"/>

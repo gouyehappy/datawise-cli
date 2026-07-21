@@ -2,13 +2,16 @@ package org.apache.datawise.backend.server.controller.system;
 
 import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.configstore.ConfigDirectoryService;
+import org.apache.datawise.backend.configstore.LegacyConfigPathMigrationService;
 import org.apache.datawise.backend.controller.system.HealthController;
 import org.apache.datawise.backend.domain.HealthStatusDto;
 import org.apache.datawise.backend.domain.SystemMetricsDto;
 import org.apache.datawise.backend.security.UserContext;
+import org.apache.datawise.backend.server.deployment.DeploymentProfileService;
 import org.apache.datawise.backend.server.metrics.SystemMetricsService;
 import org.apache.datawise.backend.service.InstanceWorkspaceService;
 import org.apache.datawise.backend.service.UserAccessPolicy;
+import org.apache.datawise.backend.service.UserAdminPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,9 +36,15 @@ class HealthControllerTest {
     @Mock
     private SystemMetricsService systemMetricsService;
     @Mock
+    private DeploymentProfileService deploymentProfileService;
+    @Mock
     private ConfigDirectoryService configDirectoryService;
     @Mock
     private UserAccessPolicy userAccessPolicy;
+    @Mock
+    private UserAdminPolicy userAdminPolicy;
+    @Mock
+    private LegacyConfigPathMigrationService legacyConfigPathMigrationService;
 
     @InjectMocks
     private HealthController controller;

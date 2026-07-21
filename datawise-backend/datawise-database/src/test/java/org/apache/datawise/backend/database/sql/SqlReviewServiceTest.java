@@ -1,10 +1,13 @@
 package org.apache.datawise.backend.database.sql;
 
+import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.domain.SqlReviewRequest;
 import org.apache.datawise.backend.domain.SqlReviewResultDto;
-import org.apache.datawise.backend.domain.ExecuteSqlResult;
 import org.apache.datawise.backend.model.ConnectionEntity;
+import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.ConnectionVisibilityService;
+import org.apache.datawise.backend.service.ProductionWriteGuardService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -15,16 +18,26 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class SqlReviewServiceTest {
 
+    @AfterEach
+    void tearDown() {
+        UserContext.clear();
+    }
+
     @Test
     void blocksDeleteWithoutWhere() {
         ConnectionVisibilityService visibility = mock(ConnectionVisibilityService.class);
         when(visibility.resolveConnectionEntity(anyString())).thenReturn(Optional.empty());
-        SqlReviewService service = new SqlReviewService(visibility, mock(SqlService.class));
+        SqlReviewService service = new SqlReviewService(
+                visibility,
+                mock(ProductionWriteGuardService.class),
+                mock(SqlService.class)
+        );
 
         SqlReviewResultDto result = service.review(new SqlReviewRequest(
                 "DELETE FROM users",
@@ -38,12 +51,17 @@ class SqlReviewServiceTest {
 
     @Test
     void flagsProductionWriteApproval() {
+        UserContext.set(2L, false, "session-user");
         ConnectionVisibilityService visibility = mock(ConnectionVisibilityService.class);
         ConnectionEntity prod = new ConnectionEntity();
         prod.setId("conn-prod");
         prod.setEnv("prod");
         when(visibility.resolveConnectionEntity("conn-prod")).thenReturn(Optional.of(prod));
-        SqlReviewService service = new SqlReviewService(visibility, mock(SqlService.class));
+
+        ProductionWriteGuardService guard = mock(ProductionWriteGuardService.class);
+        when(guard.requiresProductionApproval(eq(2L), eq(prod), anyString())).thenReturn(true);
+
+        SqlReviewService service = new SqlReviewService(visibility, guard, mock(SqlService.class));
 
         SqlReviewResultDto result = service.review(new SqlReviewRequest(
                 "UPDATE users SET active = 1 WHERE id = 1",
@@ -52,6 +70,7 @@ class SqlReviewServiceTest {
         ));
 
         assertTrue(result.requiresApproval());
+        assertTrue(result.findings().stream().anyMatch(f -> "PROD_APPROVAL".equals(f.code())));
     }
 
     @Test
@@ -77,7 +96,11 @@ class SqlReviewServiceTest {
                 null
         ));
 
-        SqlReviewService service = new SqlReviewService(visibility, sqlService);
+        SqlReviewService service = new SqlReviewService(
+                visibility,
+                mock(ProductionWriteGuardService.class),
+                sqlService
+        );
         SqlReviewResultDto result = service.review(new SqlReviewRequest(
                 "SELECT * FROM users",
                 "conn-mysql",

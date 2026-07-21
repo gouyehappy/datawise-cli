@@ -32,7 +32,10 @@ public class AuthSecurityProperties {
             "/actuator/health",
             "/actuator/prometheus",
             "/v3/api-docs",
-            "/swagger-ui"
+            "/swagger-ui",
+            // Browser WebSocket cannot send X-DW-Session-Id; handshake authenticates via ?dwSession=
+            "/ws/ssh-shell",
+            "/ws/terminal"
     ));
 
     public boolean isRequireAuthentication() {

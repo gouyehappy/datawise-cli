@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {Command} from 'commander'
+import {registerConfigMigrateCommand} from './commands/config-migrate.js'
 import {registerMigrateRunCommand} from './commands/migrate-run.js'
 import {registerQueryLibraryCommand} from './commands/query-library.js'
 import {registerSqlExecCommand} from './commands/sql-exec.js'
@@ -17,6 +18,7 @@ const sql = program.command('sql').description('SQL execution commands')
 registerSqlExecCommand(sql)
 
 registerQueryLibraryCommand(program)
+registerConfigMigrateCommand(program)
 
 program.parseAsync(process.argv).catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error)

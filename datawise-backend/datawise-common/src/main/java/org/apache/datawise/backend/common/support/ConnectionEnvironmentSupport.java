@@ -47,6 +47,19 @@ public final class ConnectionEnvironmentSupport {
         entity.setEnvCustom(normalized.envCustom());
     }
 
+    /** Whether the connection is tagged as production (incl. custom labels containing "prod"). */
+    public static boolean isProduction(ConnectionEntity entity) {
+        if (entity == null) {
+            return false;
+        }
+        NormalizedEnvironment normalized = normalize(entity.getEnv(), entity.getEnvCustom());
+        if (PROD.equals(normalized.env())) {
+            return true;
+        }
+        String custom = normalized.envCustom();
+        return custom != null && custom.toLowerCase(Locale.ROOT).contains("prod");
+    }
+
     private static String sanitizeCustom(String value) {
         if (value == null) {
             return null;

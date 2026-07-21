@@ -9,7 +9,9 @@ import org.apache.datawise.backend.domain.SqlReviewFindingDto;
 import org.apache.datawise.backend.domain.SqlReviewRequest;
 import org.apache.datawise.backend.domain.SqlReviewResultDto;
 import org.apache.datawise.backend.model.ConnectionEntity;
+import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.ConnectionVisibilityService;
+import org.apache.datawise.backend.service.ProductionWriteGuardService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -35,13 +37,16 @@ public class SqlReviewService {
     );
 
     private final ConnectionVisibilityService connectionVisibilityService;
+    private final ProductionWriteGuardService productionWriteGuardService;
     private final SqlService sqlService;
 
     public SqlReviewService(
             ConnectionVisibilityService connectionVisibilityService,
+            ProductionWriteGuardService productionWriteGuardService,
             SqlService sqlService
     ) {
         this.connectionVisibilityService = connectionVisibilityService;
+        this.productionWriteGuardService = productionWriteGuardService;
         this.sqlService = sqlService;
     }
 
@@ -117,11 +122,13 @@ public class SqlReviewService {
         if (request.connectionId() == null || request.connectionId().isBlank()) {
             return false;
         }
-        if (!SqlWriteClassifier.requiresWriteAccess(sql)) {
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
             return false;
         }
-        return connectionVisibilityService.resolveConnectionEntity(request.connectionId())
-                .map(this::isProductionConnection)
+        Optional<ConnectionEntity> connection = connectionVisibilityService.resolveConnectionEntity(request.connectionId());
+        return connection
+                .map(entity -> productionWriteGuardService.requiresProductionApproval(userId, entity, sql))
                 .orElse(false);
     }
 
@@ -297,19 +304,6 @@ public class SqlReviewService {
         } catch (NumberFormatException ex) {
             return 0L;
         }
-    }
-
-    private boolean isProductionConnection(ConnectionEntity connection) {
-        String env = connection.getEnv();
-        if (env == null || env.isBlank()) {
-            return false;
-        }
-        String normalized = env.trim().toLowerCase(Locale.ROOT);
-        if ("prod".equals(normalized) || "production".equals(normalized)) {
-            return true;
-        }
-        String custom = connection.getEnvCustom();
-        return custom != null && custom.toLowerCase(Locale.ROOT).contains("prod");
     }
 
     private static boolean isMissingWhereDml(String sql) {

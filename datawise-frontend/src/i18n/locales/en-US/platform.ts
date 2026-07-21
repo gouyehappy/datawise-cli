@@ -65,6 +65,13 @@ export default {
         retryAtLimit: 'Retry at {limit}',
         nextBatch: 'Next batch · offset {offset}',
         boundsHint: 'Federated JOINs: default 1,000 rows per source/result (hard limit 10,000). Use Next batch to advance the source window (OFFSET) when truncated, or Retry at limit to raise maxRows. Equality JOINs spill to disk above 512 rows. Single-alias WHERE filters are pushed to source SQL; cross-alias conditions filter in memory. Oversized cross joins without ON are rejected. See docs/FEDERATED_JOIN_BOUNDS.md.',
+        risk: {
+            equalityJoin: 'equality JOIN',
+            nonEqualityJoin: 'non-equality / cross-product risk',
+            ok: 'Risk summary: {pushed} pushable filter(s), {residual} residual, {joinKind}. Default max {defaultMaxRows} rows (hard limit {hardMaxRows}); if truncated, narrow filters or use Raise limit and run again.',
+            elevated: 'Risk summary: {pushed} pushable filter(s), {residual} residual, {joinKind}. Cross-alias residuals filter in memory and often truncate at {defaultMaxRows} (hard limit {hardMaxRows}). Tighten source WHERE filters, or after execute use Retry at N / Raise limit and run again.',
+            unparseable: 'Cannot parse federated JOIN SQL: {parseError}',
+        },
         sourcesJson: 'Sources JSON',
         generatePrompt: 'Natural language description',
         generatePromptPlaceholder: 'e.g. join orders from primary with users from secondary on user_id',

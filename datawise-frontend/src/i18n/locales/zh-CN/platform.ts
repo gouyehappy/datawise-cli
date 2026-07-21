@@ -65,6 +65,13 @@ export default {
         retryAtLimit: '以 {limit} 行重试',
         nextBatch: '下一批 · 偏移 {offset}',
         boundsHint: '联邦 JOIN：每源与结果默认最多 1000 行（硬性上限 10000）。截断时可用「下一批」推进源窗口（OFFSET），或用「以 N 行重试」提高 maxRows。等值 JOIN 超过 512 行时会分桶落盘。单别名 WHERE 条件下推到源 SQL；跨别名条件在内存过滤。无 ON 的过大笛卡尔积将被拒绝。详见 FEDERATED_JOIN_BOUNDS。',
+        risk: {
+            equalityJoin: '等值 JOIN',
+            nonEqualityJoin: '非等值 / 笛卡尔风险',
+            ok: '风险摘要：可下推 filter {pushed}，residual {residual}，{joinKind}。默认最多 {defaultMaxRows} 行（硬性上限 {hardMaxRows}）；截断后请缩小过滤或使用「提高上限并重跑」。',
+            elevated: '风险摘要：可下推 filter {pushed}，residual {residual}，{joinKind}。跨别名 residual 在内存过滤，易在 {defaultMaxRows} 行截断（硬性上限 {hardMaxRows}）。请收紧源侧 WHERE，或执行后使用「以 N 行重试 / 提高上限并重跑」。',
+            unparseable: '无法解析联邦 JOIN SQL：{parseError}',
+        },
         sourcesJson: '数据源 JSON',
         generatePrompt: '自然语言描述',
         generatePromptPlaceholder: '例如：关联 primary 的订单与 secondary 的用户，按 user_id 连接',

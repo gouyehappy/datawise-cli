@@ -22,6 +22,8 @@ class AuthSecurityPropertiesTest {
         assertTrue(props.isPublicPath("/v3/api-docs"));
         assertTrue(props.isPublicPath("/swagger-ui.html"));
         assertTrue(props.isPublicPath("/swagger-ui/index.html"));
+        assertTrue(props.isPublicPath("/ws/ssh-shell"));
+        assertTrue(props.isPublicPath("/ws/terminal"));
     }
 
     @Test
@@ -35,6 +37,8 @@ class AuthSecurityPropertiesTest {
         assertFalse(props.isPublicPath("/api/explorer/tree"));
         assertFalse(props.isPublicPath("/api/sql/execute"));
         assertFalse(props.isPublicPath("/api/system/metrics"));
+        assertFalse(props.isPublicPath("/ws/other"));
+        assertFalse(props.isPublicPath("/ws"));
     }
 
     @Test

@@ -4,6 +4,7 @@ import org.apache.datawise.backend.database.sql.SqlExecuteService;
 import org.apache.datawise.backend.domain.ExecuteSqlRequest;
 import org.apache.datawise.backend.domain.TeamProductionApprovalDetailDto;
 import org.apache.datawise.backend.model.TeamProductionApprovalEntity;
+import org.apache.datawise.backend.service.ProductionWriteGuardService;
 import org.apache.datawise.backend.service.TeamService;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +34,7 @@ public class ProductionApprovalService {
                     pending.getConnectionId(),
                     pending.getDatabase(),
                     null,
-                    "prod-approval-" + pending.getId(),
+                    ProductionWriteGuardService.APPROVAL_SESSION_PREFIX + pending.getId(),
                     null,
                     null,
                     null

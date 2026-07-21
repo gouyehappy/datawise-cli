@@ -6,5 +6,8 @@ export const settingsApi = {
     pingHealthAt: (baseUrl: string) => api.system.pingAt(baseUrl),
     resolveBackendEndpointLabel: () => api.system.resolveEndpointLabel(),
     fetchMetrics: () => api.system.fetchMetrics(),
+    fetchDeploymentProfile: () => api.system.fetchDeploymentProfile(),
+    fetchConfigMigrationStatus: () => api.system.fetchConfigMigrationStatus(),
+    applyConfigMigration: () => api.system.applyConfigMigration(),
     fetchSecretsStatus: () => api.system.fetchSecretsStatus(),
 }

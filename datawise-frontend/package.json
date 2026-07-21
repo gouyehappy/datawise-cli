@@ -34,6 +34,7 @@
     "test:analysis-stream": "tsx --import ./scripts/test-setup.mjs --test src/__tests__/regression/analysis-stream*.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:analysis": "playwright test e2e/analysis-stream.spec.ts",
+    "test:e2e:backend": "playwright test -c playwright.backend.config.ts",
     "gen:sql-snippets": "npm run gen:snippets --prefix ../sql-editor",
     "audit:plugin-catalog": "tsx --import ./scripts/test-setup.mjs scripts/audit-plugin-catalog.ts",
     "audit:plugin-catalog:strict": "tsx --import ./scripts/test-setup.mjs scripts/audit-plugin-catalog.ts --strict",

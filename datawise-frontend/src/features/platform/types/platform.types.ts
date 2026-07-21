@@ -190,6 +190,22 @@ export interface GenerateFederatedSqlResult {
     summary?: string | null
 }
 
+export interface AnalyzeFederatedJoinRiskRequest {
+    sql: string
+}
+
+export interface FederatedJoinRiskHints {
+    parseable: boolean
+    parseError?: string | null
+    joinStepCount: number
+    pushedFilterCount: number
+    residualFilterCount: number
+    equalityJoin: boolean
+    truncationRiskElevated: boolean
+    defaultMaxRows: number
+    hardMaxRows: number
+}
+
 export interface FederatedViewSource {
     alias?: string | null
     connectionId?: string | null

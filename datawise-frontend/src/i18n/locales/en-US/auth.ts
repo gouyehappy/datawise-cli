@@ -69,6 +69,8 @@ export default {
         INTERNAL_ERROR: 'Internal server error. Retry later or contact an administrator.',
         BAD_REQUEST: 'Invalid request',
         SQL_EXECUTION_FAILED: 'SQL execution failed',
+        SQL_PRODUCTION_APPROVAL_REQUIRED:
+            'Production writes require team approval. Submit an approval request or contact a team admin.',
         IO_ERROR: 'I/O error',
         TENANCY_MULTI_REQUIRED: 'This action requires multi-tenant mode',
         TENANT_ACCESS_DENIED: 'You do not have access to this organization',

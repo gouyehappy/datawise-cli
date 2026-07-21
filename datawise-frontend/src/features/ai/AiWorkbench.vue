@@ -4,6 +4,7 @@ import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
 import AiChatMain from '@/features/ai/chat/components/AiChatMain.vue'
 import AiSideExplorer from '@/features/ai/datasource/components/AiSideExplorer.vue'
+import AiPythonSimulatedBanner from '@/features/ai/analysis/components/AiPythonSimulatedBanner.vue'
 import ShortcutRail from '@/features/layout/components/ShortcutRail.vue'
 import TerminalPane from '@/features/layout/components/TerminalPane.vue'
 import ResizeHandle from '@/core/components/ResizeHandle.vue'
@@ -25,6 +26,7 @@ import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useTeamStore} from '@/features/team/stores/team-store'
+import {settingsApi} from '@/api'
 import {
     EXPLORER_PANEL_RESIZE_MIN,
     useSidePanelResizeBounds,
@@ -43,6 +45,7 @@ const {min: explorerResizeMin, max: explorerResizeMax} = useSidePanelResizeBound
 
 const input = ref('')
 const chatMainRef = ref<InstanceType<typeof AiChatMain>>()
+const pythonSimulated = ref(false)
 
 const taggedScope = provideAiTaggedScope()
 
@@ -110,6 +113,13 @@ function resolveInitialTargetIds() {
 onMounted(() => {
   aiChat.ensureInitialized(resolveInitialTargetIds())
   void refreshTenantAiUsage()
+  void settingsApi.fetchDeploymentProfile()
+      .then((profile) => {
+        pythonSimulated.value = Boolean(profile.pythonSimulated)
+      })
+      .catch(() => {
+        pythonSimulated.value = false
+      })
 })
 
 watch(activeSessionId, () => {
@@ -205,6 +215,7 @@ async function shareSessionToTeam(sessionId: string) {
     </div>
 
     <div class="workbench-center">
+      <AiPythonSimulatedBanner :visible="pythonSimulated"/>
       <AiChatMain
           ref="chatMainRef"
           v-model:input="input"

@@ -69,6 +69,19 @@ When truncated below the hard cap, the grid shows **Raise limit and re-run** (SQ
 
 When a source hits `maxRows` or the join stops early at the output cap, `ExecuteSqlResult.hasMore` is `true`, `pageSize` carries the effective `maxRows`, and `pageOffset` carries the request offset. The UI should treat this as a partial result, not a full join.
 
+## Editor risk hints
+
+`POST /api/platform/federated-views/analyze-risk` (`FederatedJoinRiskAnalyzer`) parses the SQL and returns:
+
+| Field | Meaning |
+|-------|---------|
+| `pushedFilterCount` | Single-alias outer WHERE conjuncts that would be pushed to source SQL |
+| `residualFilterCount` | Cross-alias (or unqualified) conjuncts kept for in-memory filtering |
+| `equalityJoin` | Every `ON` clause is equality (`a = b` / `AND` of equalities) |
+| `truncationRiskElevated` | Non-equality JOIN and/or residual filters remain |
+
+The federated view wizard shows this summary next to the SQL editor, using the same truncation language as the result grid (**Raise limit and run again** / **Retry at {limit}**).
+
 ## Practical guidance
 
 1. Prefer `ON alias.col = other.col` (equality + `AND` only).

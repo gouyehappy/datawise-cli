@@ -42,7 +42,9 @@ import type {
     AutoGenerateSemanticMetricsRequest,
     DiscoveryHit,
     DiscoverySearchPage,
+    AnalyzeFederatedJoinRiskRequest,
     ExecuteFederatedViewRequest,
+    FederatedJoinRiskHints,
     FederatedViewDetail,
     FederatedViewSummary,
     GenerateFederatedSqlRequest,
@@ -1624,6 +1626,36 @@ export interface SystemMetricsSnapshot {
     jdbcPools: SystemJdbcPoolMetrics[]
 }
 
+export interface DeploymentCheck {
+    id: string
+    currentValue: string
+    recommendedValue: string
+    status: 'ok' | 'warn' | 'info' | string
+    docsHint?: string
+}
+
+export interface DeploymentProfileSnapshot {
+    activeProfiles: string[]
+    mode: string
+    checks: DeploymentCheck[]
+    okCount: number
+    warnCount: number
+    infoCount: number
+    pythonSimulated: boolean
+}
+
+export interface LegacyConfigMigrationItem {
+    legacyRelativePath: string
+    targetRelativePath: string
+    kind: string
+}
+
+export interface LegacyConfigMigrationStatus {
+    pendingCount: number
+    pending: LegacyConfigMigrationItem[]
+    migrated: LegacyConfigMigrationItem[]
+}
+
 export interface SystemApi {
     ping(): Promise<HealthSnapshot>
 
@@ -1633,6 +1665,12 @@ export interface SystemApi {
     resolveEndpointLabel(): string
 
     fetchMetrics(): Promise<SystemMetricsSnapshot>
+
+    fetchDeploymentProfile(): Promise<DeploymentProfileSnapshot>
+
+    fetchConfigMigrationStatus(): Promise<LegacyConfigMigrationStatus>
+
+    applyConfigMigration(): Promise<LegacyConfigMigrationStatus>
 
     fetchSecretsStatus(): Promise<import('@/shared/api/http/system').SecretsStatus>
 }
@@ -1748,6 +1786,8 @@ export interface PlatformApi {
     executeFederatedView(request: ExecuteFederatedViewRequest): Promise<ExecuteSqlResult>
 
     generateFederatedSql(request: GenerateFederatedSqlRequest): Promise<GenerateFederatedSqlResult>
+
+    analyzeFederatedJoinRisk(request: AnalyzeFederatedJoinRiskRequest): Promise<FederatedJoinRiskHints>
 
     listSchemaDriftMonitors(): Promise<SchemaDriftMonitor[]>
 

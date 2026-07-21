@@ -3,8 +3,11 @@ package org.apache.datawise.backend.controller.platform;
 import org.apache.datawise.backend.common.ApiResponse;
 import org.apache.datawise.backend.ai.federated.FederatedSqlGeneratorService;
 import org.apache.datawise.backend.database.federated.FederatedQueryService;
+import org.apache.datawise.backend.database.federated.FederatedJoinRiskAnalyzer;
+import org.apache.datawise.backend.domain.AnalyzeFederatedJoinRiskRequest;
 import org.apache.datawise.backend.domain.ExecuteFederatedViewRequest;
 import org.apache.datawise.backend.domain.ExecuteSqlResult;
+import org.apache.datawise.backend.domain.FederatedJoinRiskHintsDto;
 import org.apache.datawise.backend.domain.FederatedViewDetailDto;
 import org.apache.datawise.backend.domain.FederatedViewSummaryDto;
 import org.apache.datawise.backend.domain.GenerateFederatedSqlRequest;
@@ -68,5 +71,12 @@ public class FederatedQueryController {
     public ApiResponse<GenerateFederatedSqlResult> generateSql(@RequestBody GenerateFederatedSqlRequest request) {
         HeadlessSqlAuth.requireSqlAccess();
         return ApiResponse.ok(federatedSqlGeneratorService.generate(request));
+    }
+
+    @PostMapping("/analyze-risk")
+    public ApiResponse<FederatedJoinRiskHintsDto> analyzeRisk(@RequestBody AnalyzeFederatedJoinRiskRequest request) {
+        HeadlessSqlAuth.requireSqlAccess();
+        String sql = request != null ? request.sql() : null;
+        return ApiResponse.ok(FederatedJoinRiskAnalyzer.analyze(sql));
     }
 }

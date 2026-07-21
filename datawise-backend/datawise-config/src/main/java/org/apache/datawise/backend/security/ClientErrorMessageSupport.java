@@ -1,6 +1,7 @@
 package org.apache.datawise.backend.security;
 
 import org.apache.datawise.backend.common.ConnectionAccessDeniedException;
+import org.apache.datawise.backend.common.ProductionWriteBlockedException;
 import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.service.UserAccessPolicy;
 import org.apache.datawise.backend.service.UserAdminPolicy;
@@ -51,7 +52,8 @@ public final class ClientErrorMessageSupport {
                 || UserPermissionPolicy.PERMISSION_DENIED.equals(message)
                 || UserAccessPolicy.GUEST_NOT_ALLOWED.equals(message)
                 || ConnectionAccessDeniedException.CODE.equals(message)
-                || UnauthorizedException.CODE.equals(message);
+                || UnauthorizedException.CODE.equals(message)
+                || ProductionWriteBlockedException.CODE.equals(message);
     }
 
     private static boolean isValidationMessage(String message) {

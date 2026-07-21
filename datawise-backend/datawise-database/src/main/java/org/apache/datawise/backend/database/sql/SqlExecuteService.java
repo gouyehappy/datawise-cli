@@ -2,6 +2,7 @@ package org.apache.datawise.backend.database.sql;
 
 import org.apache.datawise.backend.database.context.ConnectionExecutionContext;
 import org.apache.datawise.backend.service.ConnectionAccessService;
+import org.apache.datawise.backend.service.ProductionWriteGuardService;
 
 
 
@@ -56,6 +57,8 @@ public class SqlExecuteService {
 
     private final ConnectionAccessService connectionAccessService;
 
+    private final ProductionWriteGuardService productionWriteGuardService;
+
     private final SqlCursorService sqlCursorService;
 
     private final SqlExecutionHookRunner sqlExecutionHookRunner;
@@ -70,6 +73,8 @@ public class SqlExecuteService {
 
             ConnectionAccessService connectionAccessService,
 
+            ProductionWriteGuardService productionWriteGuardService,
+
             SqlCursorService sqlCursorService,
 
             SqlExecutionHookRunner sqlExecutionHookRunner
@@ -83,6 +88,8 @@ public class SqlExecuteService {
         this.queryLimitResolver = queryLimitResolver;
 
         this.connectionAccessService = connectionAccessService;
+
+        this.productionWriteGuardService = productionWriteGuardService;
 
         this.sqlCursorService = sqlCursorService;
 
@@ -132,6 +139,12 @@ public class SqlExecuteService {
         ConnectionEntity entity = resolved.entity();
 
         connectionAccessService.requireSqlWriteAccess(userId, request.connectionId(), trimmed);
+        productionWriteGuardService.requireProductionWriteAllowed(
+                userId,
+                entity,
+                trimmed,
+                request.sessionKey()
+        );
 
         ConnectorCapabilityGuard.requireSqlExecute(connectorFacade, entity);
 

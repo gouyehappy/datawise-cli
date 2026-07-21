@@ -5,6 +5,7 @@ const e2eOrigin = `http://127.0.0.1:${ports.frontendE2e}`
 
 export default defineConfig({
     testDir: './e2e',
+    testIgnore: ['**/backend/**'],
     timeout: 90_000,
     fullyParallel: true,
     forbidOnly: Boolean(process.env.CI),

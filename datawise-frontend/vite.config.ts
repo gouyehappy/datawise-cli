@@ -115,6 +115,8 @@ export default defineConfig(async () => {
                 '/login': {target: backendOrigin, changeOrigin: true},
                 '/signOut': {target: backendOrigin, changeOrigin: true},
                 '/api': {target: backendOrigin, changeOrigin: true},
+                // SSH / local PTY terminal WebSockets (browser cannot set custom auth headers)
+                '/ws': {target: backendOrigin, changeOrigin: true, ws: true},
             },
         },
     }

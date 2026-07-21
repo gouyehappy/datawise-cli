@@ -2,6 +2,7 @@ package org.apache.datawise.backend.security;
 
 import org.apache.datawise.backend.common.UnauthorizedException;
 import org.apache.datawise.backend.service.UserAccessPolicy;
+import org.apache.datawise.backend.service.UserAdminPolicy;
 
 public final class HeadlessMigrationAuth {
 
@@ -20,5 +21,20 @@ public final class HeadlessMigrationAuth {
         if (UserContext.isApiTokenAuth() && !UserContext.hasApiTokenScope(ApiTokenScopes.MIGRATION)) {
             throw new IllegalArgumentException(API_TOKEN_FORBIDDEN);
         }
+    }
+
+    /**
+     * Config-layout migration touches tenant-root and cross-user files.
+     * Session callers must be tenant admin; API tokens need the {@code migration} scope (CLI).
+     */
+    public static void requireConfigLayoutMigrationAccess(UserAdminPolicy adminPolicy) {
+        if (UserContext.isApiTokenAuth()) {
+            requireMigrationAccess();
+            return;
+        }
+        if (adminPolicy == null) {
+            throw new UnauthorizedException();
+        }
+        adminPolicy.requireAdminUser();
     }
 }

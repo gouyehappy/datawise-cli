@@ -32,6 +32,18 @@ export interface TableMigrationResult {
     message?: string
 }
 
+export interface LegacyConfigMigrationItem {
+    legacyRelativePath: string
+    targetRelativePath: string
+    kind: string
+}
+
+export interface LegacyConfigMigrationStatus {
+    pendingCount: number
+    pending: LegacyConfigMigrationItem[]
+    migrated: LegacyConfigMigrationItem[]
+}
+
 export interface MigrationBatchReport {
     mode: string
     totalTables: number

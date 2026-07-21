@@ -314,6 +314,9 @@ export const API_PATHS = {
     },
     health: '/api/health',
     metrics: '/api/system/metrics',
+    deploymentProfile: '/api/system/deployment-profile',
+    configMigration: '/api/system/config-migration',
+    configMigrationApply: '/api/system/config-migration/apply',
     secrets: '/api/system/secrets',
     lineage: {
         viewModels: '/api/lineage/view-models',
@@ -402,6 +405,7 @@ export const API_PATHS = {
         federatedViews: '/api/platform/federated-views',
         federatedViewsExecute: '/api/platform/federated-views/execute',
         federatedViewsGenerateSql: '/api/platform/federated-views/generate-sql',
+        federatedViewsAnalyzeRisk: '/api/platform/federated-views/analyze-risk',
         schemaDriftMonitors: '/api/platform/schema-drift/monitors',
         schemaDriftCompare: '/api/platform/schema-drift/compare',
         schemaDriftMonitorRun: (id: string) =>

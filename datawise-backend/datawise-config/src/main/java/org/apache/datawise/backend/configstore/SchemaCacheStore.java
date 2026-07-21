@@ -3,9 +3,12 @@ package org.apache.datawise.backend.configstore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.datawise.backend.domain.TenantIds;
 import org.apache.datawise.backend.domain.TreeNode;
+import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.security.UserContext;
+import org.apache.datawise.backend.service.discovery.DiscoverySearchIndexStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -31,10 +34,19 @@ public class SchemaCacheStore {
     private final ConcurrentHashMap<String, Long> versions = new ConcurrentHashMap<>();
     private final ConfigDirectoryService configDirectory;
     private final ObjectMapper objectMapper;
+    private final ObjectProvider<DiscoverySearchIndexStore> discoveryIndexStore;
+    private final ObjectProvider<ConnectionStore> connectionStore;
 
-    public SchemaCacheStore(ConfigDirectoryService configDirectory, ObjectMapper objectMapper) {
+    public SchemaCacheStore(
+            ConfigDirectoryService configDirectory,
+            ObjectMapper objectMapper,
+            ObjectProvider<DiscoverySearchIndexStore> discoveryIndexStore,
+            ObjectProvider<ConnectionStore> connectionStore
+    ) {
         this.configDirectory = configDirectory;
         this.objectMapper = objectMapper;
+        this.discoveryIndexStore = discoveryIndexStore;
+        this.connectionStore = connectionStore;
     }
 
     public List<TreeNode> load(String connectionId) {
@@ -54,6 +66,7 @@ public class SchemaCacheStore {
             cache.remove(key, entry);
             versions.remove(key);
             deleteDiskSnapshot(connectionId);
+            clearDiscoveryIndex(connectionId);
             return List.of();
         }
         return copyNodes(entry.nodes());
@@ -70,6 +83,7 @@ public class SchemaCacheStore {
         } else {
             deleteDiskSnapshot(connectionId);
         }
+        refreshDiscoveryIndex(connectionId, nodes);
     }
 
     public long version(String connectionId) {
@@ -82,6 +96,7 @@ public class SchemaCacheStore {
         cache.remove(key);
         versions.remove(key);
         deleteDiskSnapshot(connectionId);
+        clearDiscoveryIndex(connectionId);
     }
 
     public void clearSession(String sessionId) {
@@ -96,6 +111,39 @@ public class SchemaCacheStore {
             versions.remove(key);
             return true;
         });
+        DiscoverySearchIndexStore indexStore = discoveryIndexStore.getIfAvailable();
+        if (indexStore != null) {
+            indexStore.clearSession(sessionId);
+        }
+    }
+
+    private void refreshDiscoveryIndex(String connectionId, List<TreeNode> nodes) {
+        DiscoverySearchIndexStore indexStore = discoveryIndexStore.getIfAvailable();
+        if (indexStore == null) {
+            return;
+        }
+        if (nodes == null || nodes.isEmpty()) {
+            indexStore.clear(connectionId);
+            return;
+        }
+        ConnectionStore connections = connectionStore.getIfAvailable();
+        if (connections == null) {
+            indexStore.clear(connectionId);
+            return;
+        }
+        ConnectionEntity connection = connections.findConnectionById(connectionId).orElse(null);
+        if (connection == null) {
+            indexStore.clear(connectionId);
+            return;
+        }
+        indexStore.rebuild(connectionId, connection, nodes);
+    }
+
+    private void clearDiscoveryIndex(String connectionId) {
+        DiscoverySearchIndexStore indexStore = discoveryIndexStore.getIfAvailable();
+        if (indexStore != null) {
+            indexStore.clear(connectionId);
+        }
     }
 
     private CacheEntry hydrateFromDisk(String connectionId) {
@@ -121,6 +169,7 @@ public class SchemaCacheStore {
             if (payload.version() > 0) {
                 versions.put(cacheKey(connectionId), payload.version());
             }
+            refreshDiscoveryIndex(connectionId, entry.nodes());
             return entry;
         } catch (IOException ex) {
             log.warn("Failed to hydrate schema cache from disk connectionId={}: {}", connectionId, ex.toString());

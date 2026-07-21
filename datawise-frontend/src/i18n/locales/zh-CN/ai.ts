@@ -62,6 +62,10 @@ export default {
         bannerTitle: '跨库分析',
         bannerHint: '已选择 {count} 个数据源，查询结果可能包含来源列 __dw_source__ 以标识数据来源。',
     },
+    pythonSimulated: {
+        bannerTitle: 'Python 执行器为模拟模式',
+        bannerHint: '当前 datawise.ai.python.executor=simulated，分析结果中的 Python 洞察为模拟输出。生产环境请改用 docker（见设置 → 系统监控 → 部署模式）。',
+    },
     history: {
         title: '聊天记录',
         newChat: '新建聊天',

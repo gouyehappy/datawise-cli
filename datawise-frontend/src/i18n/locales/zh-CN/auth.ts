@@ -68,6 +68,7 @@ export default {
         INTERNAL_ERROR: '服务内部错误，请稍后重试或联系管理员',
         BAD_REQUEST: '请求参数无效',
         SQL_EXECUTION_FAILED: 'SQL 执行失败',
+        SQL_PRODUCTION_APPROVAL_REQUIRED: '生产环境写操作需要团队审批，请提交审批或联系团队管理员',
         IO_ERROR: '读写失败',
         TENANCY_MULTI_REQUIRED: '当前为单租户模式，无法执行此操作',
         TENANT_ACCESS_DENIED: '无权访问该组织',

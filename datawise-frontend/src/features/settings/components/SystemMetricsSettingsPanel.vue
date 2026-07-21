@@ -2,25 +2,37 @@
 import {computed, onMounted, onUnmounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {settingsApi, type HealthSnapshot, type SystemMetricsSnapshot} from '@/api'
+import type {DeploymentProfileSnapshot, LegacyConfigMigrationStatus} from '@/shared/api/types'
 import {
     formatBytes,
     formatDuration,
     formatMetricTime,
     formatPercent,
 } from '@/features/settings/services/system-metrics-format.service'
+import {
+    deploymentCheckLabelKey,
+    deploymentModeLabelKey,
+    deploymentStatusTone,
+    sortDeploymentChecks,
+} from '@/features/settings/services/deployment-profile.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
+import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {DwButton, DwInlineAlert} from '@/core/components'
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 
 const REFRESH_INTERVAL_MS = 15_000
 
-const {t} = useI18n()
+const {t, te} = useI18n()
 const layout = useLayoutStore()
+const auth = useAuthStore()
 
 const loading = ref(false)
 const autoRefresh = ref(true)
 const metrics = ref<SystemMetricsSnapshot | null>(null)
 const health = ref<HealthSnapshot | null>(null)
+const deployment = ref<DeploymentProfileSnapshot | null>(null)
+const configMigration = ref<LegacyConfigMigrationStatus | null>(null)
+const migratingConfig = ref(false)
 const lastError = ref<string | null>(null)
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null
@@ -48,21 +60,53 @@ const heapTone = computed(() => {
     return 'ok'
 })
 
+const deploymentChecks = computed(() => sortDeploymentChecks(deployment.value?.checks ?? []))
+
+const deploymentModeLabel = computed(() => {
+    const mode = deployment.value?.mode ?? 'default'
+    return t(deploymentModeLabelKey(mode))
+})
+
+function checkLabel(id: string): string {
+    const key = deploymentCheckLabelKey(id)
+    return te(key) ? t(key) : id
+}
+
 async function refreshMetrics() {
     if (loading.value) return
     loading.value = true
     lastError.value = null
     try {
-        const [nextMetrics, nextHealth] = await Promise.all([
+        const [nextMetrics, nextHealth, nextDeployment, nextMigration] = await Promise.all([
             settingsApi.fetchMetrics(),
             settingsApi.pingHealth(),
+            settingsApi.fetchDeploymentProfile().catch(() => null),
+            settingsApi.fetchConfigMigrationStatus().catch(() => null),
         ])
         metrics.value = nextMetrics
         health.value = nextHealth
+        deployment.value = nextDeployment
+        configMigration.value = nextMigration
     } catch (error) {
         lastError.value = error instanceof Error ? error.message : String(error)
     } finally {
         loading.value = false
+    }
+}
+
+async function applyConfigMigration() {
+    if (migratingConfig.value) return
+    migratingConfig.value = true
+    lastError.value = null
+    try {
+        configMigration.value = await settingsApi.applyConfigMigration()
+        layout.showSuccessToast(t('settings.systemMetrics.configMigration.applied', {
+            count: configMigration.value.migrated?.length ?? 0,
+        }))
+    } catch (error) {
+        lastError.value = error instanceof Error ? error.message : String(error)
+    } finally {
+        migratingConfig.value = false
     }
 }
 
@@ -135,6 +179,60 @@ function showRefreshToast() {
     <DwInlineAlert :message="lastError"/>
 
     <div class="settings-groups">
+      <section v-if="configMigration" class="setting-block metrics-section">
+        <div class="section-head">
+          <h3>{{ t('settings.systemMetrics.configMigration.title') }}</h3>
+          <span class="section-meta">
+            {{ t('settings.systemMetrics.configMigration.pending', {count: configMigration.pendingCount}) }}
+          </span>
+        </div>
+        <p class="deployment-hint">{{ t('settings.systemMetrics.configMigration.hint') }}</p>
+        <div v-if="auth.isAdmin && configMigration.pendingCount > 0" class="panel-actions">
+          <DwButton
+              variant="secondary"
+              :loading="migratingConfig"
+              :disabled="migratingConfig"
+              @click="applyConfigMigration"
+          >
+            {{ t('settings.systemMetrics.configMigration.apply') }}
+          </DwButton>
+        </div>
+      </section>
+
+      <section v-if="deployment" class="setting-block metrics-section">
+        <div class="section-head">
+          <h3>{{ t('settings.systemMetrics.deployment.title') }}</h3>
+          <span class="section-meta">
+            {{ deploymentModeLabel }}
+            · {{ t('settings.systemMetrics.deployment.summary', {
+              ok: deployment.okCount,
+              warn: deployment.warnCount,
+              info: deployment.infoCount,
+            }) }}
+          </span>
+        </div>
+        <p class="deployment-hint">{{ t('settings.systemMetrics.deployment.hint') }}</p>
+        <ul class="deployment-list">
+          <li
+              v-for="check in deploymentChecks"
+              :key="check.id"
+              class="deployment-row"
+              :data-tone="deploymentStatusTone(check.status)"
+          >
+            <div class="deployment-row__main">
+              <strong>{{ checkLabel(check.id) }}</strong>
+              <span class="deployment-row__status">
+                {{ t(`settings.systemMetrics.deployment.status.${deploymentStatusTone(check.status)}`) }}
+              </span>
+            </div>
+            <div class="deployment-row__values">
+              <span>{{ t('settings.systemMetrics.deployment.current', {value: check.currentValue || '—'}) }}</span>
+              <span>{{ t('settings.systemMetrics.deployment.recommended', {value: check.recommendedValue}) }}</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+
       <section class="setting-block setting-block--compact">
         <div class="metrics-grid">
         <article class="metric-card" :class="healthOk ? 'tone-ok' : 'tone-danger'">
@@ -259,3 +357,65 @@ function showRefreshToast() {
     </div>
   </SettingsPageShell>
 </template>
+
+<style scoped>
+.deployment-hint {
+  margin: 0 0 var(--dw-space-3);
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-secondary);
+  line-height: var(--dw-leading);
+}
+
+.deployment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+}
+
+.deployment-row {
+  border: 1px solid var(--dw-border-light);
+  border-radius: var(--dw-radius-md);
+  padding: var(--dw-space-3);
+  background: var(--dw-bg-panel);
+}
+
+.deployment-row[data-tone='warn'] {
+  border-color: color-mix(in srgb, var(--dw-warning, #c47b16) 45%, var(--dw-border-light));
+  background: color-mix(in srgb, var(--dw-warning, #c47b16) 8%, var(--dw-bg-panel));
+}
+
+.deployment-row[data-tone='ok'] {
+  border-color: color-mix(in srgb, var(--dw-success, #2f8f5b) 35%, var(--dw-border-light));
+}
+
+.deployment-row__main {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--dw-space-3);
+  align-items: baseline;
+}
+
+.deployment-row__main strong {
+  font-size: var(--dw-text-sm);
+  color: var(--dw-text);
+}
+
+.deployment-row__status {
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.deployment-row__values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-space-2) var(--dw-space-4);
+  margin-top: var(--dw-space-2);
+  font-size: var(--dw-text-xs);
+  color: var(--dw-text-secondary);
+}
+</style>

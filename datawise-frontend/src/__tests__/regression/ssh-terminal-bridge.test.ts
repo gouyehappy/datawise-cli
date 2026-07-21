@@ -27,7 +27,7 @@ describe('ssh-terminal.bridge', () => {
 
         globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
         globalThis.localStorage = {
-            getItem: () => null,
+            getItem: (key: string) => (key === 'dw-cli-session-id' ? 'test-session' : null),
             setItem: () => {},
             removeItem: () => {},
             clear: () => {},
@@ -63,6 +63,7 @@ describe('ssh-terminal.bridge', () => {
             const chunks: string[] = []
             bridge.onOutput(sessionId, (data) => chunks.push(data))
             assert.deepEqual(chunks, ['root@host:~# '])
+            await bridge.destroy(sessionId)
         } finally {
             globalThis.WebSocket = originalWebSocket
         }

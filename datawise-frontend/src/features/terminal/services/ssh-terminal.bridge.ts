@@ -108,11 +108,21 @@ export function createSshTerminalBridge(
         async create(sessionId, opts) {
             ensureHandlers(sessionId)
             intentionalClose.delete(sessionId)
+            const authSession = typeof localStorage !== 'undefined'
+                ? localStorage.getItem('dw-cli-session-id')
+                : null
+            if (!authSession) {
+                return {
+                    ok: false,
+                    error: 'SSH terminal requires a signed-in session (missing dw-cli-session-id)',
+                }
+            }
             const socket = new WebSocket(resolveWebSocketUrl(path, connectionId))
             sockets.set(sessionId, socket)
 
             const result = await new Promise<NativeTerminalCreateResult>((resolve) => {
                 let settled = false
+                let opened = false
                 let timeoutId: ReturnType<typeof setTimeout> | null = null
                 const settle = (value: NativeTerminalCreateResult) => {
                     if (settled) return
@@ -138,6 +148,7 @@ export function createSshTerminalBridge(
                 }, CREATE_TIMEOUT_MS)
 
                 socket.addEventListener('open', () => {
+                    opened = true
                     send(socket, {
                         type: 'create',
                         sessionId,
@@ -197,10 +208,15 @@ export function createSshTerminalBridge(
                 })
 
                 socket.addEventListener('error', () => {
-                    settle({ok: false, error: 'WebSocket connection failed'})
+                    settle({
+                        ok: false,
+                        error: opened
+                            ? 'SSH WebSocket error after connect'
+                            : 'WebSocket connection failed (check Vite /ws proxy, backend SSH WS, and session)',
+                    })
                 })
 
-                socket.addEventListener('close', () => {
+                socket.addEventListener('close', (event) => {
                     stopPing(sessionId)
                     const wasIntentional = intentionalClose.has(sessionId)
                     intentionalClose.delete(sessionId)
@@ -208,7 +224,19 @@ export function createSshTerminalBridge(
                     if (!wasIntentional) {
                         emitExit(sessionId, 0)
                     }
-                    settle({ok: false, error: 'WebSocket closed'})
+                    if (opened) {
+                        settle({ok: false, error: 'WebSocket closed'})
+                        return
+                    }
+                    const code = typeof event === 'object' && event && 'code' in event
+                        ? Number((event as CloseEvent).code)
+                        : 0
+                    settle({
+                        ok: false,
+                        error: code === 1006 || code === 1002 || code === 1003
+                            ? 'WebSocket handshake rejected (auth, IP allowlist, or SSH terminal disabled)'
+                            : 'WebSocket connection failed (check Vite /ws proxy, backend SSH WS, and session)',
+                    })
                 })
             })
 

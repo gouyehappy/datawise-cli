@@ -18,6 +18,7 @@ public final class DatawiseErrorCodes {
     public static final String DATABASE_SERVICE = "DATABASE_SERVICE";
     public static final String DDL = "DDL";
     public static final String CONNECTION_ACCESS_DENIED = ConnectionAccessDeniedException.CODE;
+    public static final String SQL_PRODUCTION_APPROVAL_REQUIRED = ProductionWriteBlockedException.CODE;
 
     private DatawiseErrorCodes() {
     }

@@ -65,9 +65,6 @@ datawise:
       ttl-minutes: 60
       sliding-renewal: true
   security:
-    connection-probe:
-      # 默认拒绝探测私网/元数据地址（防 SSRF）。桌面/本地 profile 会覆盖为 true
-      allow-private-networks: false
     auth:
       # 受保护路由默认拒绝匿名；公开路径见 public-path-prefixes
       require-authentication: true
@@ -83,6 +80,12 @@ datawise:
         - /actuator/prometheus
         - /v3/api-docs
         - /swagger-ui
+        # WebSocket：浏览器无法带 X-DW-Session-Id，由 HandshakeInterceptor 校验 ?dwSession=
+        - /ws/ssh-shell
+        - /ws/terminal
+    connection-probe:
+      # 默认拒绝探测私网/元数据地址（防 SSRF）。桌面/本地 profile 会覆盖为 true
+      allow-private-networks: false
   logging:
     # 统一运行日志：config/logs/datawise.log（含异常堆栈）
     dir: config/logs
@@ -135,6 +138,14 @@ datawise:
     server-alive-interval-ms: 15000
     server-alive-count-max: 3
     idle-ttl-minutes: 30
+    terminal:
+      websocket:
+        # 浏览器经 ?dwSession= 握手鉴权（路径已在 security.auth.public-path-prefixes）
+        enabled: true
+        path: /ws/ssh-shell
+        # 非空时仅允许所列 IP / IPv4 CIDR；本地留空
+        allowed-ips: []
+        trusted-proxy-ips: []
   explorer:
     schema-session:
       # Explorer 懒加载树复用的 JDBC schema 会话空闲回收时间（毫秒）

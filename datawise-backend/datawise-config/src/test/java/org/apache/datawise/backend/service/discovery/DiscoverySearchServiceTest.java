@@ -31,7 +31,12 @@ class DiscoverySearchServiceTest {
         visibility = mock(ConnectionVisibilityService.class);
         schemaCacheStore = mock(SchemaCacheStore.class);
         metricStore = mock(SemanticMetricStore.class);
-        service = new DiscoverySearchService(visibility, schemaCacheStore, metricStore);
+        service = new DiscoverySearchService(
+                visibility,
+                schemaCacheStore,
+                new DiscoverySearchIndexStore(),
+                metricStore
+        );
     }
 
     @Test
@@ -246,6 +251,43 @@ class DiscoverySearchServiceTest {
         table.setChildren(List.of(columnsFolder));
 
         assertTrue(DiscoverySearchService.extractColumnPeek(table).isEmpty());
+    }
+
+    @Test
+    void indexedSearchMatchesColdWalkResults() {
+        ConnectionEntity connection = new ConnectionEntity();
+        connection.setId("conn-1");
+        connection.setName("Shop DB");
+        connection.setDbType("mysql");
+
+        when(visibility.visibleCatalogForCurrentUser())
+                .thenReturn(new ConnectionVisibilityService.VisibleCatalog(List.of(), List.of(connection)));
+
+        TreeNode database = node("db-shop", "shop", "database");
+        TreeNode table = node("tbl-orders", "orders", "table");
+        table.setComment("fulfillment #ops");
+        TreeNode view = node("vw-customers", "customers_v", "view");
+        database.setChildren(List.of(table, view));
+        when(schemaCacheStore.load("conn-1")).thenReturn(List.of(database));
+        when(metricStore.listAll()).thenReturn(List.of());
+
+        DiscoverySearchIndexStore indexStore = new DiscoverySearchIndexStore();
+        DiscoverySearchService cold = new DiscoverySearchService(
+                visibility, schemaCacheStore, indexStore, metricStore
+        );
+        List<DiscoveryHitDto> coldHits = cold.search("orders", 20).hits();
+
+        // Warm index explicitly, then search again without loading schema cache again.
+        indexStore.rebuild("conn-1", connection, List.of(database));
+        when(schemaCacheStore.load("conn-1")).thenReturn(List.of());
+        List<DiscoveryHitDto> warmHits = cold.search("orders", 20).hits();
+
+        assertEquals(1, coldHits.size());
+        assertEquals(1, warmHits.size());
+        assertEquals(coldHits.get(0).name(), warmHits.get(0).name());
+        assertEquals(coldHits.get(0).qualifiedLabel(), warmHits.get(0).qualifiedLabel());
+        assertEquals(coldHits.get(0).score(), warmHits.get(0).score());
+        assertEquals(coldHits.get(0).tags(), warmHits.get(0).tags());
     }
 
     private static TreeNode node(String id, String label, String type) {

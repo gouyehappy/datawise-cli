@@ -2,9 +2,11 @@ import type {PlatformApi} from '@/shared/api/types'
 import type {
     AnalysisCanvasDetail,
     AnalysisCanvasSummary,
+    AnalyzeFederatedJoinRiskRequest,
     AutoGenerateSemanticMetricsRequest,
     DiscoverySearchPage,
     ExecuteFederatedViewRequest,
+    FederatedJoinRiskHints,
     FederatedViewDetail,
     FederatedViewExecuteResult,
     GenerateFederatedSqlRequest,
@@ -108,6 +110,9 @@ export function createHttpPlatformApi(): PlatformApi {
 
         generateFederatedSql: (request) =>
             postJson<GenerateFederatedSqlResult>(paths.federatedViewsGenerateSql, request),
+
+        analyzeFederatedJoinRisk: (request: AnalyzeFederatedJoinRiskRequest) =>
+            postJson<FederatedJoinRiskHints>(paths.federatedViewsAnalyzeRisk, request),
 
         listSchemaDriftMonitors: () =>
             getJson<SchemaDriftMonitor[]>(paths.schemaDriftMonitors),

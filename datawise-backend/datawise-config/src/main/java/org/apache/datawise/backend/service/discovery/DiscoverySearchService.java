@@ -22,31 +22,31 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Cross-connection discovery over schema cache + semantic metrics (no live JDBC).
+ * Prefers {@link DiscoverySearchIndexStore}; falls back to walking schema trees when the index is cold.
  */
 @Service
 public class DiscoverySearchService {
 
     private static final int DEFAULT_LIMIT = 40;
     private static final int MAX_LIMIT = 100;
-    private static final int MAX_COLUMN_PEEK = 40;
-    private static final Pattern HASHTAG = Pattern.compile("#([\\p{L}\\p{N}_-]+)");
 
     private final ConnectionVisibilityService connectionVisibilityService;
     private final SchemaCacheStore schemaCacheStore;
+    private final DiscoverySearchIndexStore discoverySearchIndexStore;
     private final SemanticMetricStore metricStore;
 
     public DiscoverySearchService(
             ConnectionVisibilityService connectionVisibilityService,
             SchemaCacheStore schemaCacheStore,
+            DiscoverySearchIndexStore discoverySearchIndexStore,
             SemanticMetricStore metricStore
     ) {
         this.connectionVisibilityService = connectionVisibilityService;
         this.schemaCacheStore = schemaCacheStore;
+        this.discoverySearchIndexStore = discoverySearchIndexStore;
         this.metricStore = metricStore;
     }
 
@@ -84,13 +84,7 @@ public class DiscoverySearchService {
         Set<String> seen = new HashSet<>();
 
         for (ConnectionEntity connection : catalog.connections()) {
-            List<TreeNode> roots = schemaCacheStore.load(connection.getId());
-            if (roots.isEmpty()) {
-                continue;
-            }
-            for (TreeNode root : roots) {
-                walkTables(root, List.of(), connection, tokens, browse, hits, seen);
-            }
+            collectConnectionHits(connection, tokens, browse, hits, seen);
         }
 
         for (SemanticMetricEntry metric : metricStore.listAll()) {
@@ -122,6 +116,72 @@ public class DiscoverySearchService {
                 .toList();
         boolean hasMore = skip + page.size() < total;
         return new DiscoverySearchPageDto(page, total, skip, cap, hasMore, facets);
+    }
+
+    private void collectConnectionHits(
+            ConnectionEntity connection,
+            List<String> tokens,
+            boolean browse,
+            List<DiscoveryHitDto> hits,
+            Set<String> seen
+    ) {
+        DiscoverySearchIndexStore.ConnectionIndex index = discoverySearchIndexStore.find(connection.getId())
+                .orElse(null);
+        List<DiscoveryIndexedRelation> relations;
+        if (index != null) {
+            relations = index.candidates(tokens);
+        } else {
+            List<TreeNode> roots = schemaCacheStore.load(connection.getId());
+            if (roots.isEmpty()) {
+                return;
+            }
+            relations = DiscoverySchemaIndexBuilder.build(connection, roots);
+            discoverySearchIndexStore.rebuild(connection.getId(), relations);
+            if (!browse && !tokens.isEmpty()) {
+                relations = DiscoverySearchIndexStore.ConnectionIndex.from(relations).candidates(tokens);
+            }
+        }
+        for (DiscoveryIndexedRelation relation : relations) {
+            DiscoveryHitDto hit = scoreIndexedRelation(relation, tokens, browse);
+            if (hit == null) {
+                continue;
+            }
+            String key = hit.kind() + "|" + hit.connectionId() + "|" + hit.database() + "|" + hit.name();
+            if (seen.add(key)) {
+                hits.add(hit);
+            }
+        }
+    }
+
+    private DiscoveryHitDto scoreIndexedRelation(
+            DiscoveryIndexedRelation relation,
+            List<String> tokens,
+            boolean browse
+    ) {
+        int score;
+        if (browse) {
+            score = 1;
+        } else {
+            score = scoreTokens(relation.name(), relation.qualifiedLabel(), relation.searchText(), tokens);
+            if (score < 0) {
+                return null;
+            }
+        }
+        return new DiscoveryHitDto(
+                relation.kind(),
+                relation.id(),
+                relation.name(),
+                relation.qualifiedLabel(),
+                relation.connectionId(),
+                relation.connectionLabel(),
+                relation.database(),
+                null,
+                relation.comment(),
+                score,
+                List.of(),
+                relation.columns() != null ? relation.columns() : List.of(),
+                relation.tags() != null ? relation.tags() : List.of()
+        );
     }
 
     private DiscoveryFacetsDto buildFacets(
@@ -310,87 +370,6 @@ public class DiscoverySearchService {
                 .orElse(connectionId);
     }
 
-    private void walkTables(
-            TreeNode node,
-            List<TreeNode> parents,
-            ConnectionEntity connection,
-            List<String> tokens,
-            boolean browse,
-            List<DiscoveryHitDto> hits,
-            Set<String> seen
-    ) {
-        String type = node.getType();
-        if ("table".equals(type) || "view".equals(type)) {
-            DiscoveryHitDto hit = scoreTable(node, parents, connection, tokens, browse);
-            if (hit != null) {
-                String key = hit.kind() + "|" + hit.connectionId() + "|" + hit.database() + "|" + hit.name();
-                if (seen.add(key)) {
-                    hits.add(hit);
-                }
-            }
-        }
-        List<TreeNode> nextParents = new ArrayList<>(parents);
-        nextParents.add(node);
-        List<TreeNode> children = node.getChildren();
-        if (children == null || children.isEmpty()) {
-            return;
-        }
-        for (TreeNode child : children) {
-            walkTables(child, nextParents, connection, tokens, browse, hits, seen);
-        }
-    }
-
-    private DiscoveryHitDto scoreTable(
-            TreeNode node,
-            List<TreeNode> parents,
-            ConnectionEntity connection,
-            List<String> tokens,
-            boolean browse
-    ) {
-        String database = resolveDatabaseLabel(parents, connection.getDbType());
-        String name = node.getLabel() != null ? node.getLabel() : "";
-        String qualified = database.isBlank() ? name : database + "." + name;
-        String connectionLabel = connection.getName() != null ? connection.getName() : connection.getId();
-        List<String> tags = extractHashtags(node.getComment());
-        String searchText = joinLower(
-                name,
-                qualified,
-                connectionLabel,
-                database,
-                node.getType(),
-                node.getMeta(),
-                node.getComment(),
-                String.join(" ", tags)
-        );
-        int score;
-        if (browse) {
-            score = 1;
-        } else {
-            score = scoreTokens(name, qualified, searchText, tokens);
-            if (score < 0) {
-                return null;
-            }
-        }
-        String id = node.getId() != null && !node.getId().isBlank()
-                ? node.getId()
-                : connection.getId() + ":" + qualified;
-        return new DiscoveryHitDto(
-                node.getType(),
-                id,
-                name,
-                qualified,
-                connection.getId(),
-                connectionLabel,
-                database,
-                null,
-                trimOrNull(node.getComment()),
-                score,
-                List.of(),
-                extractColumnPeek(node),
-                tags
-        );
-    }
-
     private DiscoveryHitDto scoreMetric(
             SemanticMetricEntry metric,
             String connectionLabel,
@@ -459,64 +438,11 @@ public class DiscoverySearchService {
     }
 
     static List<DiscoveryColumnPeekDto> extractColumnPeek(TreeNode tableOrViewNode) {
-        if (tableOrViewNode == null || tableOrViewNode.getChildren() == null) {
-            return List.of();
-        }
-        TreeNode columnsFolder = null;
-        for (TreeNode child : tableOrViewNode.getChildren()) {
-            if ("columns".equals(child.getType())) {
-                columnsFolder = child;
-                break;
-            }
-        }
-        if (columnsFolder == null || columnsFolder.getChildren() == null || columnsFolder.getChildren().isEmpty()) {
-            return List.of();
-        }
-        List<DiscoveryColumnPeekDto> out = new ArrayList<>();
-        for (TreeNode columnNode : columnsFolder.getChildren()) {
-            String columnType = columnNode.getType();
-            if (!"column".equals(columnType) && !"primary_key".equals(columnType)) {
-                continue;
-            }
-            String columnName = columnNode.getLabel();
-            if (columnName == null || columnName.isBlank()) {
-                continue;
-            }
-            out.add(new DiscoveryColumnPeekDto(columnName.trim(), normalizeColumnType(columnNode.getMeta())));
-            if (out.size() >= MAX_COLUMN_PEEK) {
-                break;
-            }
-        }
-        return List.copyOf(out);
-    }
-
-    private static String normalizeColumnType(String meta) {
-        if (meta == null || meta.isBlank()) {
-            return null;
-        }
-        String trimmed = meta.trim();
-        String lower = trimmed.toLowerCase(Locale.ROOT);
-        if (lower.endsWith(" · pk")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 4).trim();
-        } else if ("pk".equals(lower)) {
-            return null;
-        }
-        return trimmed.isEmpty() ? null : trimmed;
+        return DiscoverySchemaIndexBuilder.extractColumnPeek(tableOrViewNode);
     }
 
     static List<String> extractHashtags(String comment) {
-        if (comment == null || comment.isBlank()) {
-            return List.of();
-        }
-        LinkedHashSet<String> tags = new LinkedHashSet<>();
-        Matcher matcher = HASHTAG.matcher(comment);
-        while (matcher.find()) {
-            String tag = matcher.group(1).toLowerCase(Locale.ROOT);
-            if (!tag.isBlank()) {
-                tags.add(tag);
-            }
-        }
-        return List.copyOf(tags);
+        return DiscoverySchemaIndexBuilder.extractHashtags(comment);
     }
 
     static List<String> normalizeTags(List<String> tags) {
@@ -538,36 +464,6 @@ public class DiscoverySearchService {
             out.add(trimmed.toLowerCase(Locale.ROOT));
         }
         return List.copyOf(out);
-    }
-
-    private static String resolveDatabaseLabel(List<TreeNode> parents, String dbType) {
-        TreeNode database = findType(parents, "database");
-        TreeNode schema = findType(parents, "schema");
-        if (database == null) {
-            return schema != null && schema.getLabel() != null ? schema.getLabel() : "";
-        }
-        String dbLabel = database.getLabel() != null ? database.getLabel() : "";
-        if (isCatalogSchemaDbType(dbType) && schema != null && schema.getLabel() != null) {
-            return dbLabel + "." + schema.getLabel();
-        }
-        return dbLabel;
-    }
-
-    private static TreeNode findType(List<TreeNode> parents, String type) {
-        for (TreeNode parent : parents) {
-            if (type.equals(parent.getType())) {
-                return parent;
-            }
-        }
-        return null;
-    }
-
-    private static boolean isCatalogSchemaDbType(String dbType) {
-        if (dbType == null || dbType.isBlank()) {
-            return false;
-        }
-        String normalized = dbType.trim().toLowerCase(Locale.ROOT);
-        return "trino".equals(normalized) || "presto".equals(normalized) || "hive".equals(normalized);
     }
 
     private static List<String> tokenize(String query) {

@@ -7,6 +7,7 @@ export const STABLE_API_ERROR_I18N: Record<string, string> = {
     IO_ERROR: 'auth.errors.IO_ERROR',
     FORBIDDEN: 'auth.permissionDenied',
     PERMISSION_DENIED: 'auth.permissionDenied',
+    SQL_PRODUCTION_APPROVAL_REQUIRED: 'auth.errors.SQL_PRODUCTION_APPROVAL_REQUIRED',
     GUEST_NOT_ALLOWED: 'auth.guestNotAllowed',
     ADMIN_REQUIRED: 'auth.adminRequired',
     PLATFORM_ADMIN_REQUIRED: 'auth.platformAdminRequired',
