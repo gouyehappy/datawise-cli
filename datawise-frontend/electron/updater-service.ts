@@ -3,8 +3,11 @@
  * Packaged builds only; unpackaged / web fall back to “no update”.
  */
 import {app, BrowserWindow, ipcMain} from 'electron'
-import {autoUpdater, type ProgressInfo, type UpdateInfo} from 'electron-updater'
+import electronUpdater from 'electron-updater'
+import type {ProgressInfo, UpdateInfo} from 'electron-updater'
 import {markAppQuitting} from './tray-service'
+
+const {autoUpdater} = electronUpdater
 
 export interface UpdatePreferences {
     notifyOnUpdate: boolean
