@@ -65,6 +65,16 @@ describe('order_by complete column ref', () => {
         assert.equal(ctx.signals.after_complete_column_ref, true)
     })
 
+    it('partial ORDER BY prefix is not complete (still pick column)', () => {
+        const sql = 'SELECT * FROM flink_job ORDER BY c'
+        const ctx = analyzeSqlCompletionContext(sql, sql.length, ['flink_job'], {
+            flink_job: [{name: 'create_time'}, {name: 'id'}, {name: 'status'}],
+        })
+        assert.equal(ctx.slot, 'order_by')
+        assert.equal(ctx.signals.after_complete_column_ref, false)
+        assert.equal(ctx.signals.order_by_after_column, false)
+    })
+
     it('does not trigger after ASC', () => {
         const sql = 'SELECT status FROM orders ORDER BY status ASC'
         const offset = sql.length

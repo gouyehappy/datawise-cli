@@ -21,6 +21,7 @@ import {localeT, typeT} from './collector-locale'
 import type {SqlCompletionSlot} from '@sql-editor/types'
 import {getActiveSqlEditorRuntime} from '@sql-editor/runtime/sql-editor-runtime'
 import {resolveSqlDialectFile} from '@sql-editor/completion/dialect-aliases'
+import {suggestRangeReplacingTypedPrefix} from '../range'
 
 const CHAIN_CONNECTOR_KEYWORDS = new Set([
     'AND',
@@ -32,7 +33,7 @@ const CHAIN_CONNECTOR_KEYWORDS = new Set([
     'OFFSET',
 ])
 
-/** 列/表达式槽位：注入方言函数补全（与 keywordPhase 解耦） */
+/** 表达式槽位：注入方言函数。ORDER BY / GROUP BY 以列优先，不在此注入（避免 c → COUNT 抢选）。 */
 const FUNCTION_SUGGESTION_SLOTS = new Set([
     'select_list',
     'column_ref',
@@ -40,8 +41,6 @@ const FUNCTION_SUGGESTION_SLOTS = new Set([
     'having',
     'on',
     'set',
-    'group_by',
-    'order_by',
 ])
 
 export function collectKeywordSuggestions(
@@ -67,6 +66,8 @@ export function collectKeywordSuggestions(
     const lineBefore = editor.lineBeforeCursor
 
     const slot = effectiveCompletionSlot(ctx)
+    // Keywords always replace the full handwritten prefix (wh → WHERE, ord → ORDER BY).
+    const keywordRange = suggestRangeReplacingTypedPrefix(range, prefix)
 
     // 先提供「函数」提示：按方言配置，主要用于 SELECT / predicate 中的输入前缀补全
     if (
@@ -85,7 +86,7 @@ export function collectKeywordSuggestions(
                 insertText: buildFunctionInsertSnippet(fn),
                 insertTextRules: SUGGEST_INSERT_AS_SNIPPET,
                 filterText: functionFilterText(fn.name),
-                range,
+                range: keywordRange,
                 sortText: completionSort('function', fnIndex++),
                 preselect: !fnPreselected,
             })
@@ -122,7 +123,7 @@ export function collectKeywordSuggestions(
             insertText: afterClause ? `${keyword} ` : keyword,
             detail: localeT('completion.keyword'),
             filterText: keywordFilterText(keyword),
-            range,
+            range: keywordRange,
             sortText: completionSort('keyword', index),
             preselect,
         })
@@ -182,7 +183,8 @@ export function collectSnippetSuggestions(
                 presentation.sqlPreview,
                 snippetType,
             ]),
-            range,
+            // Same rule as keywords: replace the full typed trigger (e.g. ord → ORDER BY …)
+            range: suggestRangeReplacingTypedPrefix(range, prefix),
             sortText: completionSort('snippet', index++),
             command: {id: 'editor.action.triggerSuggest', title: 'Trigger Suggest'},
         })

@@ -40,6 +40,38 @@ function cursorInsertRange(position: monaco.Position): monaco.IRange {
     }
 }
 
+/**
+ * Range that replaces the full handwritten prefix ending at the cursor.
+ * Used so accepting a keyword (WHERE / ORDER BY / …) never leaves a typed tail
+ * like `oORDER BY` or `whWHERE`.
+ */
+export function rangeReplacingTypedPrefix(
+    position: Pick<monaco.Position, 'lineNumber' | 'column'>,
+    typedPrefix: string,
+): monaco.IRange {
+    const partial = typedPrefix ?? ''
+    return {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: Math.max(1, position.column - partial.length),
+        endColumn: position.column,
+    }
+}
+
+/** Suggest-layer helper: expand/collapse an existing range to cover `typedPrefix`. */
+export function suggestRangeReplacingTypedPrefix(
+    range: {startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number},
+    typedPrefix: string,
+): {startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number} {
+    const partial = typedPrefix ?? ''
+    return {
+        startLineNumber: range.endLineNumber,
+        endLineNumber: range.endLineNumber,
+        startColumn: Math.max(1, range.endColumn - partial.length),
+        endColumn: range.endColumn,
+    }
+}
+
 function fromJoinTablePartial(before: string): string | null {
     const match =
         before.match(/(?:FROM|JOIN)\s+([`"']?[\w$]+(?:\.[`"']?[\w$]+)*)$/i) ??
@@ -202,12 +234,7 @@ export function effectiveCompletionInput(
     if (ctx.fromJoin?.joinKeywordPrefix) {
         const partial = ctx.fromJoin.joinKeywordPrefix
         return {
-            range: {
-                startLineNumber: position.lineNumber,
-                endLineNumber: position.lineNumber,
-                startColumn: position.column - partial.length,
-                endColumn: position.column,
-            },
+            range: rangeReplacingTypedPrefix(position, partial),
             prefix: partial,
         }
     }
@@ -215,33 +242,36 @@ export function effectiveCompletionInput(
     if (ctx.fromJoin?.clauseKeywordPrefix) {
         const partial = ctx.fromJoin.clauseKeywordPrefix
         return {
-            range: {
-                startLineNumber: position.lineNumber,
-                endLineNumber: position.lineNumber,
-                startColumn: position.column - partial.length,
-                endColumn: position.column,
-            },
+            range: rangeReplacingTypedPrefix(position, partial),
             prefix: partial,
         }
     }
 
     if (ctx.fromJoin?.awaitingTableName || ctx.fromJoin?.awaitingJoinTable) {
         return {
-            range: {
-                startLineNumber: position.lineNumber,
-                endLineNumber: position.lineNumber,
-                startColumn: position.column,
-                endColumn: position.column,
-            },
+            range: cursorInsertRange(position),
             prefix: '',
         }
     }
 
+    // Table/alias complete: next tokens are clause keywords (WHERE / ORDER BY / …).
+    // If the user is already typing a prefix, replace that whole word — never zero-width insert.
     if (ctx.fromJoin?.tableClauseComplete && !ctx.fromJoin.aliasOnLineAfterCursor) {
-        prefix = ''
+        const word = model.getWordUntilPosition(position)
+        if (word.word) {
+            return {
+                range: {
+                    startLineNumber: position.lineNumber,
+                    endLineNumber: position.lineNumber,
+                    startColumn: word.startColumn,
+                    endColumn: word.endColumn,
+                },
+                prefix: word.word,
+            }
+        }
         return {
             range: cursorInsertRange(position),
-            prefix,
+            prefix: '',
         }
     }
 

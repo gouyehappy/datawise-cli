@@ -13,6 +13,7 @@ import {
     completionItemKind,
 } from '../completion-labels'
 import {collectGroupByColumnSuggestions, collectOrderByColumnSuggestions} from '../clause-columns'
+import {orderBySelectItems} from '../select-list'
 import {buildFilterText, columnFilterText, matchesCompletionPrefix as matchPrefix} from '../filter-text'
 import {completionSort} from './sort-state'
 import type {SuggestItem, SuggestTextRange} from '../suggest-types'
@@ -119,7 +120,8 @@ export function collectColumnSuggestions(
     }
     if (ctx.slot === 'order_by') {
         collectOrderByColumnSuggestions(ctx, push, range, prefix)
-        return
+        // SELECT * 等无具体 SELECT 项时，回退到 FROM 表字段（ORDER BY 可用底层列）
+        if (orderBySelectItems(ctx.segment).length > 0) return
     }
 
     const schema = getSchemaContext()

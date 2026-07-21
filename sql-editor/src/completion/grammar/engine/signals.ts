@@ -1,6 +1,7 @@
 import type {SqlCompletionSlot} from '@sql-editor/types'
 import type {FromJoinTableState} from '../../from-join'
 import {isKeywordFirstContext} from '../../keyword-first'
+import {orderBySelectItems} from '../../select-list'
 import type {TransitionId} from '../definitions/types'
 import {detectAfterCompleteGroupByList} from '../transitions/clause'
 import {
@@ -75,6 +76,49 @@ function detectAfterComma(segment: string, slot: SqlCompletionSlot): boolean {
     return /,\s*[\w$`"']*$/.test(segment) || /,\s*$/.test(segment)
 }
 
+const SORT_DIRECTION_PREFIX = /^(?:a(?:sc?)?|d(?:e(?:sc?)?)?)$/i
+
+/** 剥离正在输入的 ASC/DESC 前缀，避免误伤未写完的排序列 */
+function stripTrailingSortDirectionPrefix(orderList: string): string {
+    const trimmed = orderList.trimEnd()
+    const match = /\s+([A-Za-z_][\w$]*)$/i.exec(trimmed)
+    if (!match?.[1] || !SORT_DIRECTION_PREFIX.test(match[1])) return trimmed
+    return trimmed.slice(0, match.index).trimEnd()
+}
+
+function unquoteIdent(value: string): string {
+    return value.replace(/^[`"'\[]|[`"'\]]$/g, '')
+}
+
+/** ORDER BY 末尾是否已是完整排序键（已知列 / 别名 / 序号），而非输入中的前缀 */
+function isCompleteOrderBySortKey(
+    orderList: string,
+    segment: string,
+    knownColumnNames: Set<string>,
+): boolean {
+    const list = stripTrailingSortDirectionPrefix(orderList)
+    if (!list || /,\s*$/.test(list)) return false
+
+    if (/\b\d+\s*$/.test(list)) return true
+
+    const qualMatch = /\b([\w$]+)\.([`"'\[]?[\w$]+[`"'\]]?)\s*$/i.exec(list)
+    if (qualMatch) {
+        return isKnownColumnName(unquoteIdent(qualMatch[2]), knownColumnNames)
+    }
+
+    const bareMatch = /(?:^|,)\s*([`"'\[]?[A-Za-z_][\w$]*[`"'\]]?)\s*$/i.exec(list)
+    if (!bareMatch?.[1]) return false
+    const name = unquoteIdent(bareMatch[1])
+    if (isKnownColumnName(name, knownColumnNames)) return true
+
+    const lower = name.toLowerCase()
+    for (const item of orderBySelectItems(segment)) {
+        if (item.alias?.toLowerCase() === lower) return true
+        if (item.expression.toLowerCase() === lower) return true
+    }
+    return false
+}
+
 function detectAfterCompleteColumnRef(input: ComputeSignalsInput): boolean {
     const {segment, slot, columnPrefix, resolvedTable, knownColumns, knownColumnNames} = input
     if (segmentEndsWithOperator(segment)) return false
@@ -105,8 +149,7 @@ function detectAfterCompleteColumnRef(input: ComputeSignalsInput): boolean {
         if (/\b(ASC|DESC)\s*$/i.test(tail)) return false
         const match = /\bORDER BY\s+(.+)$/i.exec(tail)
         if (!match?.[1]?.trim()) return false
-        const orderList = match[1].trimEnd()
-        return /\b[`"'\[]?[\w$]+[`"'\]]?\s*$/i.test(orderList)
+        return isCompleteOrderBySortKey(match[1], segment, knownColumnNames)
     }
 
     return false

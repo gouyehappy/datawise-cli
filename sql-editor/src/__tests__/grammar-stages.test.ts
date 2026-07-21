@@ -73,6 +73,15 @@ describe('grammar stages', () => {
         assert.equal(plan.collectors.includes('keywords'), false)
     })
 
+    it('ORDER BY 部分前缀 → 仍 pick_column，不进 ASC/DESC', () => {
+        const {stage, plan, ctx} = at('SELECT * FROM cdp_tag ORDER BY c|')
+        assert.equal(ctx.slot, 'order_by')
+        assert.equal(stage, 'order_by.pick_column')
+        assert.equal(plan.collectors.includes('columns'), true)
+        assert.equal(plan.collectors.includes('keywords'), false)
+        assert.equal(ctx.signals.order_by_after_column, false)
+    })
+
     it('SELECT COUNT 后 → select_list.after_aggregate', () => {
         const {stage, plan} = at('SELECT status, COUNT|')
         assert.equal(stage, 'select_list.after_aggregate')

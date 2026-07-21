@@ -31,6 +31,19 @@ describe('completion/from-join', () => {
         assert.equal(state?.joinKeywordPrefix, null)
     })
 
+    it('FROM table + ord (no alias) stays tableClauseComplete for keyword replace', () => {
+        const sql = 'SELECT * FROM flink_job ord'
+        const state = analyzeFromJoinTableState(
+            'from',
+            sql,
+            sql,
+            sql.length,
+            ['flink_job'],
+        )
+        assert.equal(state?.tableClauseComplete, true)
+        assert.equal(state?.resolvedTable, 'flink_job')
+    })
+
     it('FROM catalog.schema.table alias + whe → WHERE keyword slot', () => {
         const sql = 'SELECT * FROM hive.a003.test t whe'
         const state = analyzeFromJoinTableState(
