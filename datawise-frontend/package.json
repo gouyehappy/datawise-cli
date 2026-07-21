@@ -18,6 +18,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "build:electron": "cross-env ELECTRON=true vue-tsc --noEmit && cross-env ELECTRON=true vite build",
     "dist:desktop": "npm run gen:icons && node scripts/desktop/build.mjs",
+    "dist:desktop:publish": "npm run gen:icons && node scripts/desktop/build.mjs --publish",
     "dist:desktop:clean": "npm run gen:icons && node scripts/desktop/build.mjs --clean",
     "dist:desktop:mac": "npm run gen:icons && node scripts/desktop/build.mjs --mac --arm64",
     "dist:desktop:linux": "npm run gen:icons && node scripts/desktop/build.mjs --linux",

@@ -2,7 +2,7 @@
  * Build DataWise desktop executable (Windows / macOS / Linux).
  *
  * Usage:
- *   node scripts/desktop/build.mjs [--clean] [--skip-backend] [--dir]
+ *   node scripts/desktop/build.mjs [--clean] [--skip-backend] [--dir] [--publish]
  *     [--win] [--mac] [--linux] [--arm64] [--x64] [--ide-target]
  *
  * npm scripts:
@@ -25,6 +25,7 @@ function parseArgs(argv) {
         clean: argv.includes('--clean'),
         skipBackend: argv.includes('--skip-backend'),
         dir: argv.includes('--dir'),
+        publish: argv.includes('--publish'),
         includeIdeTarget: argv.includes('--ide-target'),
         win: argv.includes('--win'),
         mac: argv.includes('--mac'),
@@ -67,6 +68,11 @@ function runElectronBuilder(extraArgs) {
 async function main() {
     const opts = parseArgs(process.argv.slice(2))
 
+    if (opts.publish && !process.env.GH_TOKEN && !process.env.GITHUB_TOKEN) {
+        console.error('[build-desktop] --publish requires GH_TOKEN (or GITHUB_TOKEN) with repo release scope')
+        process.exit(1)
+    }
+
     if (opts.clean) {
         await cleanDesktop('all', {includeIdeTarget: opts.includeIdeTarget})
     }
@@ -87,8 +93,12 @@ async function main() {
         process.exit(1)
     }
 
+    if (opts.publish) {
+        builderArgs.push('--publish', 'always')
+    }
+
     runElectronBuilder(builderArgs)
-    log('build-desktop', 'done')
+    log('build-desktop', opts.publish ? 'done (published)' : 'done')
 }
 
 await main()
