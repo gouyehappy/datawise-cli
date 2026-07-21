@@ -40,6 +40,23 @@ desktop mvn  →  datawise-backend/**/target-desktop/  →  resources/desktop/  
 
 **Output:** `release/` (or `release-<timestamp>/` if the folder is locked).
 
+## Publishing auto-updates
+
+Desktop clients resolve updates from:
+
+`https://github.com/gouyehappy/datawise-cli/releases/latest/download/latest.yml`
+
+A git tag alone is **not** enough. Publish a non-draft GitHub Release that includes the electron-builder artifacts (`latest.yml`, NSIS/portable, etc.):
+
+```bash
+# requires GH_TOKEN / GitHub auth with repo release scope
+npx electron-builder --win --publish always
+# or after a local dist:
+# upload release/* for the matching tag via GitHub Releases UI
+```
+
+The packaged app uses the **generic** feed URL (not GitHubProvider JSON `/releases/latest`) to avoid GitHub’s intermittent HTTP 406 on `Accept: application/json`.
+
 ## Maven policy
 
 Desktop packaging **always skips tests** (`-Dmaven.test.skip=true` / `-DskipTests`).

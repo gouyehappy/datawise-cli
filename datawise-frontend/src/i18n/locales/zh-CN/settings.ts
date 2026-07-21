@@ -1163,7 +1163,7 @@ export default {
         changelogTitle: '更新日志',
         softwareUpdate: '软件更新',
         intro:
-            '桌面版通过 GitHub Releases 检查并下载更新。发现新版本时可自动下载，下载完成后重启即可完成安装。',
+            '桌面版通过 GitHub Releases 的 latest.yml 检查更新。需要已发布的正式 Release，并附带安装包与 latest.yml（electron-builder --publish）。仅推送 git tag 不够。',
         autoUpdateTitle: '自动更新',
         autoUpdateDesc:
             '开启自动下载后，检查到新版本会在后台拉取安装包；下载完成后可一键安装并重启。',

@@ -6,8 +6,15 @@ import {app, BrowserWindow, ipcMain} from 'electron'
 import electronUpdater from 'electron-updater'
 import type {ProgressInfo, UpdateInfo} from 'electron-updater'
 import {markAppQuitting} from './tray-service'
+import {humanizeUpdaterError} from './updater-errors'
+
+export {humanizeUpdaterError} from './updater-errors'
 
 const {autoUpdater} = electronUpdater
+
+/** Stable redirect for latest.yml / installers — avoids GitHubProvider /releases/latest JSON 406. */
+export const GITHUB_LATEST_DOWNLOAD_URL =
+    'https://github.com/gouyehappy/datawise-cli/releases/latest/download'
 
 export interface UpdatePreferences {
     notifyOnUpdate: boolean
@@ -78,7 +85,7 @@ async function downloadIfAllowed(): Promise<void> {
         await autoUpdater.downloadUpdate()
     } catch (error) {
         downloading = false
-        const message = error instanceof Error ? error.message : String(error)
+        const message = humanizeUpdaterError(error instanceof Error ? error.message : String(error))
         emitStatus({
             phase: 'error',
             currentVersion: currentVersion(),
@@ -92,6 +99,16 @@ function configureAutoUpdater() {
     autoUpdater.autoDownload = false
     autoUpdater.autoInstallOnAppQuit = true
     autoUpdater.allowDowngrade = false
+
+    // electron-updater's GitHubProvider calls /releases/latest with Accept: application/json,
+    // which GitHub now often answers with 406 — breaking checkForUpdates even when releases exist.
+    // The generic provider only needs .../releases/latest/download/latest.yml (works as a redirect).
+    if (app.isPackaged) {
+        autoUpdater.setFeedURL({
+            provider: 'generic',
+            url: GITHUB_LATEST_DOWNLOAD_URL,
+        })
+    }
 
     autoUpdater.on('update-available', (info) => {
         latestInfo = info
@@ -142,7 +159,7 @@ function configureAutoUpdater() {
             phase: 'error',
             currentVersion: currentVersion(),
             latestVersion: latestInfo?.version ?? currentVersion(),
-            error: error?.message || String(error),
+            error: humanizeUpdaterError(error?.message || String(error)),
         })
     })
 }
@@ -178,7 +195,7 @@ async function checkForUpdatesInternal(silent: boolean): Promise<UpdateCheckResu
         }
         return toCheckResult()
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
+        const message = humanizeUpdaterError(error instanceof Error ? error.message : String(error))
         if (!silent) {
             emitStatus({
                 phase: 'error',
@@ -223,7 +240,7 @@ export function registerUpdaterIpc(getWindow: () => BrowserWindow | null) {
             return toCheckResult()
         } catch (error) {
             downloading = false
-            const message = error instanceof Error ? error.message : String(error)
+            const message = humanizeUpdaterError(error instanceof Error ? error.message : String(error))
             return toCheckResult({error: message})
         }
     })

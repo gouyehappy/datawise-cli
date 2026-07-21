@@ -1163,7 +1163,7 @@ export default {
         changelogTitle: 'Changelog',
         softwareUpdate: 'Software update',
         intro:
-            'The desktop app checks GitHub Releases for updates. New versions can download automatically; restart to finish installing.',
+            'The desktop app checks GitHub Releases via latest.yml. A published (non-draft) release with installer assets is required — a git tag alone is not enough (use electron-builder --publish).',
         autoUpdateTitle: 'Auto update',
         autoUpdateDesc:
             'With auto-download enabled, new releases are fetched in the background. When ready, install and restart in one click.',
