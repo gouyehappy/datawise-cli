@@ -12,6 +12,11 @@ public record ConnectorMarketEntryDto(
         String version,
         String jarName,
         String integrityStatus,
-        String downloadUrl
+        String downloadUrl,
+        /**
+         * True when a plugin JAR exists on disk but the live connector comes from the application
+         * classpath (IDE / fat classpath). UI can offer “clean redundant JAR”.
+         */
+        boolean redundantOnDisk
 ) {
 }

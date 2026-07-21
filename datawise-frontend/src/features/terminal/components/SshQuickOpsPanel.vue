@@ -292,7 +292,7 @@ defineExpose({
   <section
       ref="panelRef"
       class="ssh-quick-ops"
-      :class="{'is-collapsed': collapsed, 'has-expanded': !!expandedGroup}"
+      :class="{'is-collapsed': collapsed}"
       @keydown="onPanelKeydown"
   >
     <header class="ssh-quick-ops__head">
@@ -589,16 +589,6 @@ defineExpose({
   flex-wrap: wrap;
   gap: var(--dw-gap-sm);
   min-width: 0;
-}
-
-.ssh-quick-ops__chips--groups {
-  max-height: 3.2rem;
-  overflow: hidden;
-}
-
-.ssh-quick-ops.has-expanded .ssh-quick-ops__chips--groups,
-.ssh-quick-ops__chips--groups:focus-within {
-  max-height: none;
 }
 
 .ssh-quick-ops__related {

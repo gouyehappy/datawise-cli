@@ -42,6 +42,8 @@ export interface ConnectorMarketEntry {
     /** bundled | verified | mismatch | unsigned | missing | none */
     integrityStatus?: string | null
     downloadUrl?: string | null
+    /** Disk JAR exists but live connector comes from classpath. */
+    redundantOnDisk?: boolean
 }
 
 export interface ConnectorMarketManifestSummary {
@@ -56,4 +58,83 @@ export interface ConnectorMarketBundle {
     loadedPluginJars: string[]
     pluginLoadFailures: ConnectorPluginLoadFailure[]
     manifest?: ConnectorMarketManifestSummary | null
+}
+
+export interface JdbcDriverCached {
+    fileName: string
+    relativePath: string
+    sizeBytes: number
+    loadedInMemory: boolean
+}
+
+/** Product-managed JDBC driver family (catalog + local cache). */
+export interface JdbcDriverFamily {
+    id: string
+    label: string
+    defaultMaven: string
+    driverClass: string
+    relatedDbTypes: string[]
+    /** missing | installed | loaded */
+    status: string
+    bundle: boolean
+    bundleDir?: string | null
+    jarCount: number
+    sizeBytes: number
+    jars: JdbcDriverCached[]
+}
+
+export interface JdbcDriverCatalog {
+    families: JdbcDriverFamily[]
+    orphans: JdbcDriverCached[]
+    drivers: JdbcDriverCached[]
+    totalBytes: number
+    driversDirectory: string
+}
+
+export interface InstallConnectorPluginResult {
+    connectorId: string
+    jarName: string | null
+    integrityStatus: string
+    restartRequired: boolean
+    message: string
+}
+
+export interface InstallConnectorBatchResult {
+    results: InstallConnectorPluginResult[]
+    reload: {
+        loadedJarCount: number
+        loadedConnectorIds: string[]
+        failures: Array<{jarName: string; reason: string}>
+    }
+}
+
+export interface UninstallConnectorPluginResult {
+    connectorId: string
+    jarName: string
+    deleted: boolean
+    restartRequired: boolean
+    message: string
+}
+
+export interface RuntimeOverview {
+    jre: {
+        version: string
+        vendor: string
+        home: string
+        source: string
+    }
+    connectors: {
+        installed: number
+        catalogTotal: number
+        pluginsBytes: number
+        failures: ConnectorPluginLoadFailure[]
+    }
+    drivers: {
+        cachedJars: number
+        totalBytes: number
+    }
+    workspace: {
+        configDir: string
+        diskUsageBytes: number
+    }
 }

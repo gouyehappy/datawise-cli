@@ -4,7 +4,6 @@ import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
 import {StatusPill} from '@/core/components'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
-import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {UserResource} from '@/features/auth/types/user-resource.types'
 import {useResourceWriteGuard} from '@/features/auth/composables/useResourceWriteGuard'
@@ -22,7 +21,6 @@ import {SETTINGS_PLUGIN_REFERENCE_PRESET_ANCHOR} from '@/features/plugin/service
 
 const {t, te} = useI18n()
 const pluginStore = usePluginStore()
-const appConfig = useAppConfigStore()
 const layout = useLayoutStore()
 const {settingsScrollAnchor} = storeToRefs(layout)
 const {readOnly, hint, denyIfReadOnly} = useResourceWriteGuard(UserResource.AppConfig)
@@ -61,14 +59,6 @@ function alignToReferencePreset() {
 
 function openPresetDiff() {
     pluginStore.openPluginPresetDiff()
-}
-
-function openPluginCenter() {
-    pluginStore.openPluginCenter()
-}
-
-function openPluginDevTools() {
-    pluginStore.openPluginDevTools()
 }
 
 function scrollToSettingsAnchor() {
@@ -153,17 +143,6 @@ watch(settingsScrollAnchor, scrollToSettingsAnchor)
           tone="sky"
           :badge="`${pluginStore.enabledCount}/${pluginStore.items.length}`"
       >
-        <button class="btn-secondary" type="button" @click="openPluginCenter">
-          {{ t('settings.plugins.openPluginCenter') }}
-        </button>
-        <button
-            v-if="appConfig.isPluginDevToolsVisible()"
-            class="dw-text-btn dw-text-btn--compact"
-            type="button"
-            @click="openPluginDevTools"
-        >
-          {{ t('settings.plugins.openPluginDevTools') }}
-        </button>
         <p class="field-note">
           {{ t('settings.plugins.statsNote', {
             enabled: pluginStore.enabledCount,

@@ -24,14 +24,11 @@ import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {settingsApi} from '@/api/modules/settings'
 import {
     applyConfigDirectoryAndRestart,
-    loadDataDirectorySettings,
+    loadConfigDirSettings,
     pickConfigDirectory,
     resolveConfigDirectoryPath,
 } from '@/features/settings/services/config-dir-settings.service'
-import {
-    resolveDataDirectoryLayout,
-    type ResolvedDataDirectoryLayout,
-} from '@/shared/config/data-directory-layout'
+import {DATA_DIRECTORY_SUBDIRS} from '@/shared/config/data-directory-layout'
 import {isDesktopApp} from '@/features/layout/services/desktop-chrome'
 import {buildDeepLinkExample} from '@/shared/deep-link/deep-link.service'
 import {
@@ -77,7 +74,6 @@ const canChangeConfigDir = ref(false)
 const configDirSaving = ref(false)
 const configDirError = ref('')
 const restartConfirmOpen = ref(false)
-const dataDirLayout = ref<ResolvedDataDirectoryLayout | null>(null)
 
 const apiServerMode = ref<ApiServerMode>('local')
 const apiServerRemoteUrl = ref('')
@@ -230,23 +226,19 @@ async function saveApiServer() {
 
 onMounted(async () => {
     loadApiServerDraft()
-    const settings = await loadDataDirectorySettings()
+    const settings = await loadConfigDirSettings()
     configDirInput.value = settings.configured ?? ''
     resolvedPath.value = settings.resolved
     defaultPath.value = settings.defaultPath
     canChangeConfigDir.value = settings.canChange
-    dataDirLayout.value = settings.layout
 })
 
 watch(configDirInput, async (value) => {
     if (!canChangeConfigDir.value) return
     const trimmed = value.trim()
-    const nextRoot = !trimmed
+    resolvedPath.value = !trimmed
         ? defaultPath.value
         : await resolveConfigDirectoryPath(trimmed)
-    resolvedPath.value = nextRoot
-    const scriptsPath = dataDirLayout.value?.entries.find((entry) => entry.id === 'scripts')?.resolved
-    dataDirLayout.value = resolveDataDirectoryLayout(nextRoot, scriptsPath)
 })
 
 async function browseConfigDir() {
@@ -257,8 +249,6 @@ async function browseConfigDir() {
 function resetConfigDir() {
     configDirInput.value = ''
     resolvedPath.value = defaultPath.value
-    const scriptsPath = dataDirLayout.value?.entries.find((entry) => entry.id === 'scripts')?.resolved
-    dataDirLayout.value = resolveDataDirectoryLayout(resolvedPath.value, scriptsPath)
 }
 
 async function saveConfigDir() {
@@ -471,7 +461,7 @@ async function copyDeepLinkExample() {
       </SettingsSectionCard>
 
       <SettingsSectionCard
-          v-if="resolvedPath"
+          v-if="resolvedPath || canChangeConfigDir"
           :title="t('settings.basic.workspaceRoot.title')"
           :hint="t('settings.basic.workspaceRoot.hint')"
           icon="folder"
@@ -496,34 +486,21 @@ async function copyDeepLinkExample() {
             </DwButton>
           </div>
         </FormField>
-        <p v-if="canChangeConfigDir" class="hint">{{ t('settings.basic.workspaceRoot.restartHint') }}</p>
-        <p v-if="canChangeConfigDir && desktopApp" class="hint">{{ t('settings.basic.workspaceRoot.titleBarHint') }}</p>
 
-        <dl class="config-dir-meta">
-          <div>
-            <dt>{{ t('settings.basic.workspaceRoot.resolved') }}</dt>
-            <dd><code class="config-dir-path">{{ resolvedPath }}</code></dd>
-          </div>
-          <div v-if="defaultPath">
-            <dt>{{ t('settings.basic.workspaceRoot.default') }}</dt>
-            <dd><code class="config-dir-path">{{ defaultPath }}</code></dd>
-          </div>
-        </dl>
+        <p v-if="resolvedPath" class="workspace-root__path" :title="resolvedPath">
+          <code>{{ resolvedPath }}</code>
+        </p>
 
-        <div v-if="dataDirLayout?.entries.length" class="data-dir-layout">
-          <h4 class="data-dir-layout__title">{{ t('settings.basic.workspaceRoot.layoutTitle') }}</h4>
-          <p class="hint data-dir-layout__hint">{{ t('settings.basic.workspaceRoot.layoutHint') }}</p>
-          <ul class="data-dir-layout__list">
-            <li v-for="entry in dataDirLayout.entries" :key="entry.id" class="data-dir-layout__item">
-              <div class="data-dir-layout__head">
-                <code class="data-dir-layout__segment">{{ entry.segment }}/</code>
-                <span class="data-dir-layout__label">{{ t(entry.labelKey) }}</span>
-              </div>
-              <p class="data-dir-layout__desc">{{ t(entry.hintKey) }}</p>
-              <code class="config-dir-path data-dir-layout__path">{{ entry.resolved }}</code>
-            </li>
-          </ul>
+        <div class="workspace-root__subs" :aria-label="t('settings.basic.workspaceRoot.layoutTitle')">
+          <span
+              v-for="entry in DATA_DIRECTORY_SUBDIRS"
+              :key="entry.id"
+              class="workspace-root__sub"
+          >
+            {{ entry.segment }}/
+          </span>
         </div>
+        <p class="hint workspace-root__subs-hint">{{ t('settings.basic.workspaceRoot.layoutHint') }}</p>
 
         <div v-if="canChangeConfigDir" class="config-dir-actions">
           <DwButton variant="secondary" :disabled="configDirSaving" @click="resetConfigDir">

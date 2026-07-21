@@ -5,6 +5,7 @@ import org.apache.datawise.backend.connector.ConnectorRegistry;
 import org.apache.datawise.backend.connector.DataSourceConnector;
 import org.apache.datawise.backend.connector.hook.SqlExecutionHookRunner;
 import org.apache.datawise.backend.connector.jdbc.JdbcConnectorOperations;
+import org.apache.datawise.backend.connector.spi.ConnectorDialectContributions;
 import org.apache.datawise.backend.connector.spi.ConnectorPluginContext;
 import org.apache.datawise.backend.domain.ConnectorPluginReloadResultDto;
 import org.slf4j.Logger;
@@ -15,8 +16,9 @@ import java.util.List;
 /**
  * Reloads {@code config/plugins} JARs into the live {@link ConnectorRegistry} without a process restart.
  * <p>
- * Replacing an already-loaded JAR may still fail on Windows (file lock) until restart; new installs
- * typically hot-load cleanly.
+ * Plugin JARs are loaded from a runtime copy so the source file under {@code config/plugins}
+ * can be deleted without a Windows file lock. {@link #unload()} drops live registry references
+ * before closing classloaders.
  */
 public class ConnectorPluginRuntime {
 
@@ -62,5 +64,17 @@ public class ConnectorPluginRuntime {
                 ids,
                 pluginLoader.failedPluginLoads()
         );
+    }
+
+    /**
+     * Drops plugin-backed connectors from the live registry, then closes plugin classloaders.
+     * Call before deleting JAR files on Windows so the JVM releases file handles.
+     */
+    public synchronized void unload() {
+        connectorRegistry.replaceAll(classpathConnectors);
+        contributionHolder.setContributions(ConnectorDialectContributions.EMPTY);
+        sqlExecutionHookRunner.replaceHooks(List.of());
+        pluginLoader.unloadAll();
+        log.info("Unloaded connector plugins; registry kept {} classpath connector(s)", classpathConnectors.size());
     }
 }

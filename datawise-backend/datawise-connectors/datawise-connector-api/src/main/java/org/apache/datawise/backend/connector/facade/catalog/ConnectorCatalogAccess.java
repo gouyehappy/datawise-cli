@@ -13,6 +13,7 @@ import org.apache.datawise.backend.domain.TreeNode;
 import org.apache.datawise.backend.model.ConnectionEntity;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
@@ -100,5 +101,22 @@ public class ConnectorCatalogAccess {
     /** Reloads plugin JARs into the live registry (no process restart). */
     public ConnectorPluginReloadResultDto reloadPlugins() {
         return pluginRuntime.reload();
+    }
+
+    /**
+     * Drops plugin connectors from the live registry and closes classloaders
+     * (required before deleting a JAR on Windows).
+     */
+    public void unloadPlugins() {
+        pluginRuntime.unload();
+    }
+
+    /**
+     * Deletes a plugin JAR with retries / pending-delete rename (Windows file locks).
+     *
+     * @return {@code true} if removed or marked pending-delete
+     */
+    public boolean deletePluginJar(Path jarPath) throws IOException {
+        return pluginLoader.deletePluginJar(jarPath);
     }
 }

@@ -3,7 +3,7 @@ import {computed, nextTick, onMounted, ref, watch} from 'vue'
 import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
 import type {PluginItem} from '@/core/types'
-import {CollapsibleSection, EmptyState, StatusPill} from '@/core/components'
+import {CollapsibleSection, DwButton, EmptyState, StatusPill} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import PluginDetailDialog from '@/features/plugin/components/PluginDetailDialog.vue'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
@@ -38,11 +38,7 @@ import {useReferenceConflictBannerDismiss} from '@/features/plugin/composables/u
 import {useAppToast} from '@/features/layout/composables/useAppToast'
 import {useTeamStore} from '@/features/team/stores/team-store'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
-import {useLayoutStore} from '@/features/layout/stores/layout'
-import {
-    PLUGIN_PRESET_DIFF_ANCHOR,
-    SETTINGS_PLUGIN_REFERENCE_PRESET_ANCHOR,
-} from '@/features/plugin/services/plugin-navigation.service'
+import {PLUGIN_PRESET_DIFF_ANCHOR} from '@/features/plugin/services/plugin-navigation.service'
 import '@/features/plugin/styles/plugin-view.css'
 
 const CATEGORY_ORDER = ['ai', 'export', 'tool', 'datasource'] as const
@@ -52,7 +48,6 @@ const pluginStore = usePluginStore()
 const toast = useAppToast()
 const teamStore = useTeamStore()
 const appConfigStore = useAppConfigStore()
-const layoutStore = useLayoutStore()
 const filter = ref<'all' | 'enabled' | 'disabled'>('all')
 const sortMode = ref<'default' | 'usage' | 'recent'>('default')
 const usageRevision = ref(0)
@@ -66,10 +61,6 @@ const detailOpen = ref(false)
 const configImportInputRef = ref<HTMLInputElement>()
 
 const {highlightPluginId, pageNavigateIntent} = storeToRefs(pluginStore)
-
-const showConnectorMarketCta = computed(
-    () => category.value === 'all' || category.value === 'datasource',
-)
 
 const surfaceOptions = listPluginSurfaceIds()
 const presetIds: PluginPresetId[] = ['dba', 'readOnlyAnalysis', 'teamViewer', 'developer', 'minimal']
@@ -368,14 +359,6 @@ function scrollToPresetDiff() {
   })
 }
 
-function openPluginSettings() {
-  layoutStore.openSettingsModule('plugins', SETTINGS_PLUGIN_REFERENCE_PRESET_ANCHOR)
-}
-
-function openReferencePresetInSettings() {
-  openPluginSettings()
-}
-
 function focusRequiredPlugin(reqId: PluginId) {
   pluginStore.focusPlugin(reqId)
 }
@@ -420,14 +403,6 @@ function resetPluginConfig() {
   pluginStore.resetPluginOverrides()
 }
 
-function openPluginDevTools() {
-  pluginStore.openPluginDevTools()
-}
-
-function openConnectorMarket() {
-  pluginStore.openConnectorMarket()
-}
-
 async function onPluginToggle(plugin: PluginItem) {
   pluginStore.toggle(plugin.id)
   bumpUsageRevision()
@@ -437,8 +412,7 @@ async function onPluginToggle(plugin: PluginItem) {
 <template>
   <div class="module-page module-page--ambient-alt module-page--scroll plugin-page">
     <div class="mp-page-wrap plugin-page__wrap">
-      <header class="mp-hero mp-hero--glow plugin-hero">
-        <div class="mp-hero__glow" aria-hidden="true"/>
+      <header class="mp-hero mp-hero--compact plugin-hero">
         <div class="mp-hero__inner">
           <div class="mp-hero__copy">
             <p class="mp-hero__eyebrow">{{ t('plugin.layout.eyebrow') }}</p>
@@ -446,71 +420,13 @@ async function onPluginToggle(plugin: PluginItem) {
             <p class="mp-hero__sub">{{ t('plugin.subtitle') }}</p>
             <p class="mp-hero__hint">{{ t('plugin.persistHint') }}</p>
           </div>
-          <div class="plugin-hero__stats">
-            <div class="mp-stat mp-stat--icon mp-tone-emerald">
-              <span class="mp-stat__icon" aria-hidden="true">
-                <DwIcon name="submit" :stroke-width="1.6"/>
-              </span>
-              <span class="mp-stat__body">
-                <span class="mp-stat__value">{{ stats.enabled }}</span>
-                <span class="mp-stat__label">{{ t('plugin.enabledCount', {count: stats.enabled}) }}</span>
-              </span>
-            </div>
-            <div class="mp-stat mp-stat--icon mp-tone-sky">
-              <span class="mp-stat__icon" aria-hidden="true">
-                <DwIcon name="plugins" :stroke-width="1.6"/>
-              </span>
-              <span class="mp-stat__body">
-                <span class="mp-stat__value">{{ stats.total }}</span>
-                <span class="mp-stat__label">{{ t('plugin.totalCount', {count: stats.total}) }}</span>
-              </span>
-            </div>
-            <div
-                v-if="presetMismatchCount > 0"
-                class="mp-stat mp-stat--icon mp-stat--warn mp-tone-amber"
-            >
-              <span class="mp-stat__icon" aria-hidden="true">
-                <DwIcon name="alert-triangle" :stroke-width="1.6"/>
-              </span>
-              <span class="mp-stat__body">
-                <span class="mp-stat__value">{{ presetMismatchCount }}</span>
-                <span class="mp-stat__label">{{ t('plugin.layout.presetMismatch') }}</span>
-              </span>
-            </div>
-          </div>
-          <div class="mp-hero__actions">
-            <button class="dw-text-btn dw-text-btn--accent" type="button" @click="openPluginSettings">
-              {{ t('plugin.openSettings') }}
-            </button>
-            <button
-                v-if="showConnectorMarketCta"
-                class="dw-text-btn"
-                type="button"
-                @click="openConnectorMarket"
-            >
-              {{ t('plugin.connectorMarket.open') }}
-            </button>
-            <button
-                v-if="pluginStore.isDevToolsVisible"
-                class="dw-text-btn"
-                type="button"
-                @click="openPluginDevTools"
-            >
-              {{ t('plugin.devTools.open') }}
-              <StatusPill
-                  v-if="pluginStore.catalogAllIssueCount > 0"
-                  variant="warn"
-                  class="plugin-hero__dev-badge"
-              >
-                {{ pluginStore.catalogAllIssueCount }}
-              </StatusPill>
-            </button>
-            <button class="dw-text-btn" type="button" @click="exportPluginConfig">
+          <div class="mp-hero__actions plugin-hero__actions">
+            <DwButton size="sm" variant="ghost" @click="exportPluginConfig">
               {{ t('plugin.config.export') }}
-            </button>
-            <button class="dw-text-btn" type="button" @click="triggerImportPluginConfig">
+            </DwButton>
+            <DwButton size="sm" variant="ghost" @click="triggerImportPluginConfig">
               {{ t('plugin.config.import') }}
-            </button>
+            </DwButton>
             <input
                 ref="configImportInputRef"
                 type="file"
@@ -521,6 +437,25 @@ async function onPluginToggle(plugin: PluginItem) {
           </div>
         </div>
       </header>
+
+      <section class="plugin-status" aria-label="plugin status">
+        <div class="plugin-status__item">
+          <span class="plugin-status__label">{{ t('plugin.enabled') }}</span>
+          <strong class="plugin-status__value">{{ stats.enabled }}</strong>
+        </div>
+        <div class="plugin-status__item">
+          <span class="plugin-status__label">{{ t('plugin.total') }}</span>
+          <strong class="plugin-status__value">{{ stats.total }}</strong>
+        </div>
+        <div v-if="presetMismatchCount > 0" class="plugin-status__item plugin-status__item--warn">
+          <span class="plugin-status__label">{{ t('plugin.layout.presetMismatch') }}</span>
+          <strong class="plugin-status__value">{{ presetMismatchCount }}</strong>
+        </div>
+        <div v-else class="plugin-status__item">
+          <span class="plugin-status__label">{{ t('plugin.layout.referencePreset') }}</span>
+          <strong class="plugin-status__value">{{ t(`plugin.presets.${referencePresetId}.label`) }}</strong>
+        </div>
+      </section>
 
       <div v-if="hasAlerts" class="plugin-alerts">
         <div v-if="showTeamViewerHint" class="plugin-alert plugin-alert--info">
@@ -587,30 +522,12 @@ async function onPluginToggle(plugin: PluginItem) {
             <button class="dw-text-btn" type="button" @click="scrollToPresetDiff">
               {{ t('plugin.presets.referenceConflictViewDiff') }}
             </button>
-            <button class="dw-text-btn" type="button" @click="openReferencePresetInSettings">
-              {{ t('plugin.editReferencePresetInSettings') }}
-            </button>
             <button class="dw-text-btn" type="button" @click="dismissReferenceConflictBanner">
               {{ t('plugin.presets.referenceConflictDismiss') }}
             </button>
           </div>
         </div>
       </div>
-
-      <section v-if="showConnectorMarketCta" class="plugin-market-cta">
-        <div class="plugin-market-cta__visual" aria-hidden="true">
-          <span class="plugin-market-cta__orb plugin-market-cta__orb--a"/>
-          <span class="plugin-market-cta__orb plugin-market-cta__orb--b"/>
-          <span class="plugin-market-cta__orb plugin-market-cta__orb--c"/>
-        </div>
-        <div class="plugin-market-cta__copy">
-          <h2 class="plugin-market-cta__title">{{ t('plugin.connectorMarket.title') }}</h2>
-          <p class="plugin-market-cta__sub">{{ t('plugin.connectorMarket.ctaHint') }}</p>
-        </div>
-        <button class="dw-text-btn dw-text-btn--accent plugin-market-cta__btn" type="button" @click="openConnectorMarket">
-          {{ t('plugin.connectorMarket.open') }}
-        </button>
-      </section>
 
       <div class="plugin-layout">
         <aside class="plugin-sidebar">
@@ -651,9 +568,6 @@ async function onPluginToggle(plugin: PluginItem) {
               <button class="dw-text-btn" type="button" @click="scrollToPresetDiff">
                 {{ t('plugin.presets.referenceConflictViewDiff') }}
               </button>
-              <button class="dw-text-btn" type="button" @click="openReferencePresetInSettings">
-                {{ t('plugin.editReferencePresetInSettings') }}
-              </button>
             </div>
           </div>
 
@@ -691,9 +605,6 @@ async function onPluginToggle(plugin: PluginItem) {
             <div class="plugin-config-actions">
               <button class="dw-text-btn" type="button" @click="resetPluginConfig">
                 {{ t('plugin.config.reset') }}
-              </button>
-              <button class="dw-text-btn" type="button" @click="openPluginSettings">
-                {{ t('plugin.openSettings') }}
               </button>
             </div>
           </div>

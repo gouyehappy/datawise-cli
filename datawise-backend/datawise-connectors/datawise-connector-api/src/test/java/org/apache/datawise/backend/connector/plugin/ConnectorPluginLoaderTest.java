@@ -85,6 +85,36 @@ class ConnectorPluginLoaderTest {
         assertEquals("missing-class.jar", loader.failedPluginLoads().get(0).jarName());
     }
 
+    @Test
+    void deletePluginJar_removesSourceAndRuntimeCopy() throws IOException {
+        Path plugins = tempConfigRoot.resolve("plugins");
+        Files.createDirectories(plugins);
+        Path jar = plugins.resolve("datawise-connector-demo-1.0.0-plugin.jar");
+        Files.writeString(jar, "plugin-bytes");
+        Path runtime = plugins.resolve(".runtime").resolve(jar.getFileName().toString());
+        Files.createDirectories(runtime.getParent());
+        Files.copy(jar, runtime);
+
+        ConnectorPluginLoader loader = new ConnectorPluginLoader(tempConfigRoot.toString(), "plugins");
+        assertTrue(loader.deletePluginJar(jar));
+        assertTrue(Files.notExists(jar));
+        assertTrue(Files.notExists(runtime));
+    }
+
+    @Test
+    void loadConnectors_skipsPendingDeleteJars() throws IOException {
+        Path plugins = tempConfigRoot.resolve("plugins");
+        Files.createDirectories(plugins);
+        Files.writeString(plugins.resolve("stale.jar.pending-delete"), "locked-leftover");
+        ConnectorPluginLoader loader = new ConnectorPluginLoader(tempConfigRoot.toString(), "plugins");
+
+        assertTrue(loader.loadConnectors(
+                new ConnectorPluginContext(jdbcConnectorOperations),
+                new ConnectorPluginContributionHolder()
+        ).isEmpty());
+        assertTrue(loader.failedPluginLoads().isEmpty());
+    }
+
     private static void writeJarWithSpiEntry(Path jarPath, String providerClassName) throws IOException {
         try (JarOutputStream jar = new JarOutputStream(Files.newOutputStream(jarPath))) {
             jar.putNextEntry(new JarEntry(

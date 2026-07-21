@@ -55,6 +55,7 @@ export type SettingsSection =
     | 'layout'
     | 'connectionHealth'
     | 'systemMetrics'
+    | 'runtime'
     | 'profile'
     | 'editor'
     | 'sqlEditor'

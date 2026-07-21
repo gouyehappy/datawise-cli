@@ -14,6 +14,7 @@ import {createHttpTeamApi} from '@/shared/api/http/teams'
 import {createHttpSystemApi} from '@/shared/api/http/system'
 import {createHttpConfigApi} from '@/shared/api/http/config'
 import {createHttpDatasourcesApi} from '@/shared/api/http/datasources'
+import {createHttpRuntimeApi} from '@/shared/api/http/runtime'
 import {createHttpMigrationApi} from '@/shared/api/http/migration'
 import {createHttpPlatformApi} from '@/shared/api/http/platform'
 import {createHttpLineageApi} from '@/shared/api/http/lineage'
@@ -40,6 +41,7 @@ export function createHttpApiClient(): ApiClient {
         system: createHttpSystemApi(),
         config: createHttpConfigApi(),
         datasources: createHttpDatasourcesApi(),
+        runtime: createHttpRuntimeApi(),
         migration: createHttpMigrationApi(),
         platform: createHttpPlatformApi(),
         lineage: createHttpLineageApi(),

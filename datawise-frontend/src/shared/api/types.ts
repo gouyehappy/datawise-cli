@@ -1471,11 +1471,32 @@ export interface DatasourcesApi {
 
     resolveDriver(request: JdbcDriverResolveRequest): Promise<JdbcDriverResolveResult>
 
-    installFromMarket(connectorId: string): Promise<{
-        connectorId: string
-        jarName: string
-        integrityStatus: string
-        restartRequired: boolean
+    installDriver(request: JdbcDriverResolveRequest): Promise<JdbcDriverResolveResult>
+
+    listDrivers(): Promise<import('@/features/datasource/types/datasource.types').JdbcDriverCatalog>
+
+    deleteDriver(relativePath: string): Promise<{deleted: boolean; relativePath: string}>
+
+    deleteDriverBundle(bundleDir: string): Promise<{deletedCount: number; bundleDir: string}>
+
+    deleteDriverFamily(familyId: string): Promise<{deletedCount: number; familyId: string}>
+
+    installFromMarket(connectorId: string): Promise<
+        import('@/features/datasource/types/datasource.types').InstallConnectorPluginResult
+    >
+
+    installFromMarketBatch(connectorIds: string[]): Promise<
+        import('@/features/datasource/types/datasource.types').InstallConnectorBatchResult
+    >
+
+    uninstallFromMarket(connectorId: string): Promise<
+        import('@/features/datasource/types/datasource.types').UninstallConnectorPluginResult
+    >
+
+    cleanupRedundantPlugins(): Promise<{
+        deletedCount: number
+        deletedJars: string[]
+        failedJars: string[]
         message: string
     }>
 
@@ -1484,6 +1505,12 @@ export interface DatasourcesApi {
         loadedConnectorIds: string[]
         failures: Array<{jarName: string; reason: string}>
     }>
+}
+
+export interface RuntimeApi {
+    overview(): Promise<import('@/features/datasource/types/datasource.types').RuntimeOverview>
+
+    jre(): Promise<import('@/features/datasource/types/datasource.types').RuntimeOverview['jre']>
 }
 
 // ── Plugins & teams ─────────────────────────────────────────────────────────
@@ -1854,6 +1881,7 @@ export interface ApiClient {
     system: SystemApi
     config: ConfigApi
     datasources: DatasourcesApi
+    runtime: RuntimeApi
     migration: MigrationApi
     platform: PlatformApi
     lineage: import('@/shared/api/http/lineage').LineageApi

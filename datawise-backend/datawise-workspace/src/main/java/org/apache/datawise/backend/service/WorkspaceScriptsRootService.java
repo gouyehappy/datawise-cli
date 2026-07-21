@@ -105,7 +105,7 @@ public class WorkspaceScriptsRootService {
         String nextConfigured = request.scriptsDir().trim();
         Path nextRoot = resolveScriptsRoot(nextConfigured);
         Files.createDirectories(nextRoot);
-        configuredScriptsDir = nextConfigured;
+        configuredScriptsDir = toPersistableScriptsDir(nextRoot);
         root = nextRoot;
         if (persistChanges) {
             workspaceSettingsStore.writeScriptsDir(configuredScriptsDir);
@@ -116,6 +116,17 @@ public class WorkspaceScriptsRootService {
     private void reloadFromDisk() {
         configuredScriptsDir = workspaceSettingsStore.readScriptsDir(defaultScriptsDir);
         root = resolveScriptsRoot(configuredScriptsDir);
+        String persistable = toPersistableScriptsDir(root);
+        if (!persistable.equals(configuredScriptsDir)) {
+            configuredScriptsDir = persistable;
+            if (persistChanges) {
+                try {
+                    workspaceSettingsStore.writeScriptsDir(persistable);
+                } catch (IOException ex) {
+                    ExceptionLogging.recoverable(logger, "Failed to normalize scripts-dir under workspace root", ex);
+                }
+            }
+        }
     }
 
     private void migrateLegacySettingsIfNeeded() {
@@ -147,20 +158,37 @@ public class WorkspaceScriptsRootService {
         if (trimmed.indexOf('\0') >= 0) {
             throw new IllegalArgumentException("scriptsDir contains invalid characters");
         }
+        Path configRoot = configDirectory.getRoot().toAbsolutePath().normalize();
         Path path = Paths.get(trimmed);
         if (path.isAbsolute()) {
-            return path.normalize();
+            Path absolute = path.toAbsolutePath().normalize();
+            // Workspace is the root: scripts must live under it. Legacy absolute paths
+            // outside the workspace are remapped to {workspace}/scripts.
+            if (!absolute.startsWith(configRoot)) {
+                return configRoot.resolve("scripts").normalize();
+            }
+            return absolute;
         }
         for (Path segment : path) {
             if ("..".equals(segment.toString())) {
-                throw new IllegalArgumentException("scriptsDir must stay under the config directory");
+                throw new IllegalArgumentException("scriptsDir must stay under the workspace directory");
             }
         }
-        Path configRoot = configDirectory.getRoot();
         Path resolved = configRoot.resolve(path).normalize();
         if (!resolved.startsWith(configRoot)) {
-            throw new IllegalArgumentException("scriptsDir must stay under the config directory");
+            throw new IllegalArgumentException("scriptsDir must stay under the workspace directory");
         }
         return resolved;
+    }
+
+    /** Persist relative path under the workspace root (never an absolute escape). */
+    private String toPersistableScriptsDir(Path resolved) {
+        Path configRoot = configDirectory.getRoot().toAbsolutePath().normalize();
+        Path normalized = resolved.toAbsolutePath().normalize();
+        if (!normalized.startsWith(configRoot)) {
+            return "scripts";
+        }
+        String relative = configRoot.relativize(normalized).toString().replace('\\', '/');
+        return relative.isBlank() ? "scripts" : relative;
     }
 }

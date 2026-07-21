@@ -42,14 +42,15 @@ class WorkspaceScriptsRootServiceTest {
     }
 
     @Test
-    void updateSettingsAllowsAbsolutePathOutsideConfigRoot() throws Exception {
-        Path outside = tempDir.resolve("project-sql");
+    void updateSettingsRemapsAbsolutePathOutsideWorkspaceToScripts() throws Exception {
+        Path outside = tempDir.resolveSibling("outside-project-sql");
         WorkspaceScriptsRootService service = new WorkspaceScriptsRootService(tempDir, true);
 
         var updated = service.updateSettings(new UpdateWorkspaceSettingsRequest(outside.toString()));
 
-        assertEquals(outside.toString(), updated.scriptsDir());
-        assertEquals(outside.toAbsolutePath().normalize(), Path.of(updated.scriptsDirResolved()));
+        Path expected = tempDir.toAbsolutePath().normalize().resolve("scripts");
+        assertEquals("scripts", updated.scriptsDir());
+        assertEquals(expected, Path.of(updated.scriptsDirResolved()));
         assertTrue(Files.isDirectory(Path.of(updated.scriptsDirResolved())));
     }
 }

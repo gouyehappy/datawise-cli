@@ -14,6 +14,7 @@ const definitions = [
     {key: 'layout' as const, component: lazyPanel(() => import('@/features/settings/components/LayoutSettingsPanel.vue'))},
     {key: 'connectionHealth' as const, component: lazyPanel(() => import('@/features/settings/components/ConnectionHealthSettingsPanel.vue'))},
     {key: 'systemMetrics' as const, component: lazyPanel(() => import('@/features/settings/components/SystemMetricsSettingsPanel.vue'))},
+    {key: 'runtime' as const, component: lazyPanel(() => import('@/features/settings/components/RuntimeSettingsPanel.vue'))},
     {key: 'profile' as const, component: lazyPanel(() => import('@/features/settings/components/ProfileSettingsPanel.vue'))},
     {key: 'editor' as const, component: lazyPanel(() => import('@/features/settings/components/EditorSettingsPanel.vue'))},
     {key: 'sqlEditor' as const, component: lazyPanel(() => import('@/features/settings/components/SqlEditorShortcutsPanel.vue'))},

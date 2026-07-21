@@ -2,7 +2,12 @@ import {api} from '@/shared/api'
 import type {
     ConnectorMarketEntry,
     ConnectorMarketManifestSummary,
+    InstallConnectorBatchResult,
+    InstallConnectorPluginResult,
+    JdbcDriverCatalog,
     JdbcDriverResolveResult,
+    RuntimeOverview,
+    UninstallConnectorPluginResult,
 } from '@/features/datasource/types/datasource.types'
 
 export const datasourcesApi = {
@@ -15,6 +20,23 @@ export const datasourcesApi = {
     }> => api.datasources.market(),
     resolveDriver: (mavenCoordinates: string, driverClass: string): Promise<JdbcDriverResolveResult> =>
         api.datasources.resolveDriver({mavenCoordinates, driverClass}),
-    installFromMarket: (connectorId: string) => api.datasources.installFromMarket(connectorId),
+    installDriver: (mavenCoordinates: string, driverClass: string): Promise<JdbcDriverResolveResult> =>
+        api.datasources.installDriver({mavenCoordinates, driverClass}),
+    listDrivers: (): Promise<JdbcDriverCatalog> => api.datasources.listDrivers(),
+    deleteDriver: (relativePath: string) => api.datasources.deleteDriver(relativePath),
+    deleteDriverBundle: (bundleDir: string) => api.datasources.deleteDriverBundle(bundleDir),
+    deleteDriverFamily: (familyId: string) => api.datasources.deleteDriverFamily(familyId),
+    installFromMarket: (connectorId: string): Promise<InstallConnectorPluginResult> =>
+        api.datasources.installFromMarket(connectorId),
+    installFromMarketBatch: (connectorIds: string[]): Promise<InstallConnectorBatchResult> =>
+        api.datasources.installFromMarketBatch(connectorIds),
+    uninstallFromMarket: (connectorId: string): Promise<UninstallConnectorPluginResult> =>
+        api.datasources.uninstallFromMarket(connectorId),
+    cleanupRedundantPlugins: () => api.datasources.cleanupRedundantPlugins(),
     reloadPlugins: () => api.datasources.reloadPlugins(),
+}
+
+export const runtimeApi = {
+    overview: (): Promise<RuntimeOverview> => api.runtime.overview(),
+    jre: () => api.runtime.jre(),
 }

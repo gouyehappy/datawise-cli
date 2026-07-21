@@ -2,37 +2,36 @@
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DbTypeIcon from '@/core/components/DbTypeIcon.vue'
-import {DwIcon} from '@/core/icons'
 import {DB_TYPE_ICON_SIZE} from '@/features/connection/constants/db-type-icon-sizes'
 import type {ConnectorMarketEntry} from '@/features/datasource/types/datasource.types'
 import {
     buildConnectorInstallGuide,
     canRemoteInstallConnector,
     canRemoteReinstallConnector,
+    canUninstallConnector,
     CONNECTOR_PLUGIN_DIR,
     formatConnectorCapabilityLabel,
     formatConnectorIntegrityLabel,
     isConnectorUpgradeAvailable,
+    isRedundantPluginJar,
 } from '@/features/datasource/services/connector-market.service'
 import {datasourcesApi} from '@/api/modules/datasources'
+import {DwButton} from '@/core/components'
 import {connectorMarketAccentVars} from '@/features/datasource/services/connector-market-theme.service'
 import type {DbType} from '@/core/types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {canMutateConnectionCatalog} from '@/features/auth/services/feature-permission.service'
-import {SETTINGS_PLUGIN_REFERENCE_PRESET_ANCHOR} from '@/features/plugin/services/plugin-navigation.service'
+
+const CAP_LIMIT = 4
 
 const props = withDefaults(defineProps<{
     entry: ConnectorMarketEntry
     index?: number
-    lead?: boolean
-    dense?: boolean
     standalone?: boolean
 }>(), {
     index: 0,
-    lead: false,
-    dense: false,
     standalone: false,
 })
 
@@ -46,20 +45,20 @@ const workspace = useWorkspaceStore()
 const auth = useAuthStore()
 const copied = ref(false)
 const installing = ref(false)
+const uninstalling = ref(false)
+
 const canCreateConnection = computed(() => canMutateConnectionCatalog(auth.isGuest))
 const canRemoteInstall = computed(() => canRemoteInstallConnector(props.entry, auth.isAdmin))
 const canRemoteReinstall = computed(() => canRemoteReinstallConnector(props.entry, auth.isAdmin))
+const canUninstall = computed(() => canUninstallConnector(props.entry, auth.isAdmin))
+const redundantJar = computed(() => isRedundantPluginJar(props.entry))
 const upgradeAvailable = computed(() => isConnectorUpgradeAvailable(props.entry))
-
-const capLimit = props.standalone ? (props.lead ? 6 : 5) : 4
 
 function cardClasses() {
     return [
         'connector-card',
         props.entry.available ? 'connector-card--ready' : 'connector-card--pending',
-        props.lead ? 'connector-card--lead' : '',
-        props.dense ? 'connector-card--dense' : '',
-        props.standalone ? 'connector-card--standalone' : '',
+        props.standalone ? 'connector-card--page' : '',
     ].filter(Boolean)
 }
 
@@ -114,6 +113,27 @@ async function installRemote(event: Event, reinstall = false) {
     }
 }
 
+async function uninstallRemote(event: Event) {
+    event.stopPropagation()
+    if (uninstalling.value || !canUninstall.value) return
+    uninstalling.value = true
+    try {
+        const result = await datasourcesApi.uninstallFromMarket(props.entry.id)
+        if (result.restartRequired) {
+            layout.showWarningToast(result.message || t('plugin.connectorMarket.uninstallSuccessRestart'))
+        } else {
+            layout.showSuccessToast(result.message || t('plugin.connectorMarket.uninstallSuccess'))
+        }
+        emit('installed')
+    } catch (error) {
+        layout.showErrorToast(
+            error instanceof Error ? error.message : t('plugin.connectorMarket.uninstallFailed'),
+        )
+    } finally {
+        uninstalling.value = false
+    }
+}
+
 async function copyInstallGuide(event: Event) {
     event.stopPropagation()
     try {
@@ -136,11 +156,6 @@ async function copyPluginDir(event: Event) {
     } catch {
         layout.showErrorToast(t('plugin.connectorMarket.copyInstallFailed'))
     }
-}
-
-function openPluginSettings(event: Event) {
-    event.stopPropagation()
-    layout.openSettingsModule('plugins', SETTINGS_PLUGIN_REFERENCE_PRESET_ANCHOR)
 }
 
 function openNewConnection(event?: Event) {
@@ -171,7 +186,6 @@ function openNewConnection(event?: Event) {
         <span v-if="entry.version" class="connector-card__version">v{{ entry.version }}</span>
       </div>
       <span
-          v-if="!standalone"
           class="connector-card__badge"
           :class="entry.available ? 'connector-card__badge--ready' : 'connector-card__badge--pending'"
       >
@@ -185,7 +199,7 @@ function openNewConnection(event?: Event) {
 
     <div v-if="entry.available && entry.capabilities.length" class="connector-card__caps">
       <span
-          v-for="cap in entry.capabilities.slice(0, capLimit)"
+          v-for="cap in entry.capabilities.slice(0, CAP_LIMIT)"
           :key="`${entry.id}-${cap}`"
           class="connector-card__cap"
           :title="cap"
@@ -193,14 +207,14 @@ function openNewConnection(event?: Event) {
         {{ capabilityLabel(cap) }}
       </span>
       <span
-          v-if="entry.capabilities.length > capLimit"
+          v-if="entry.capabilities.length > CAP_LIMIT"
           class="connector-card__cap connector-card__cap--more"
       >
-        +{{ entry.capabilities.length - capLimit }}
+        +{{ entry.capabilities.length - CAP_LIMIT }}
       </span>
     </div>
 
-    <p v-else-if="!entry.available && entry.installHint && !dense" class="connector-card__hint">
+    <p v-else-if="!entry.available && entry.installHint" class="connector-card__hint">
       {{ entry.installHint }}
     </p>
 
@@ -219,73 +233,60 @@ function openNewConnection(event?: Event) {
     </div>
 
     <footer v-if="standalone" class="connector-card__footer">
-      <span
-          class="connector-card__badge connector-card__badge--inline"
-          :class="entry.available ? 'connector-card__badge--ready' : 'connector-card__badge--pending'"
-      >
-        {{
-          entry.available
-              ? t('plugin.connectorMarket.statusAvailable')
-              : t('plugin.connectorMarket.statusPending')
-        }}
-      </span>
-
       <div v-if="entry.available" class="connector-card__footer-actions">
-        <button
+        <DwButton
             v-if="canCreateConnection"
-            class="connector-card__link"
-            type="button"
+            size="sm"
             @click="openNewConnection"
         >
-          {{ dense ? t('plugin.connectorMarket.newConnectionShort') : t('plugin.connectorMarket.newConnection') }}
-          <DwIcon name="chevron-right" :size="14" :stroke-width="2"/>
-        </button>
-        <button
+          {{ t('plugin.connectorMarket.newConnection') }}
+        </DwButton>
+        <DwButton
             v-if="canRemoteReinstall"
-            class="connector-card__link"
-            type="button"
+            size="sm"
+            variant="secondary"
             :disabled="installing"
+            :loading="installing"
             @click="installRemote($event, true)"
         >
           {{
-            installing
-                ? t('plugin.connectorMarket.installing')
-                : (upgradeAvailable
-                    ? t('plugin.connectorMarket.upgradeRemote')
-                    : t('plugin.connectorMarket.reinstallRemote'))
+            upgradeAvailable
+                ? t('plugin.connectorMarket.upgradeRemote')
+                : t('plugin.connectorMarket.reinstallRemote')
           }}
-        </button>
+        </DwButton>
+        <DwButton
+            v-if="canUninstall"
+            size="sm"
+            variant="ghost"
+            :disabled="uninstalling"
+            :loading="uninstalling"
+            @click="uninstallRemote"
+        >
+          {{
+            redundantJar
+                ? t('plugin.connectorMarket.cleanRedundant')
+                : t('plugin.connectorMarket.uninstall')
+          }}
+        </DwButton>
       </div>
 
       <div v-else class="connector-card__footer-actions">
-        <button
+        <DwButton
             v-if="canRemoteInstall"
-            class="connector-card__link"
-            type="button"
+            size="sm"
             :disabled="installing"
+            :loading="installing"
             @click="installRemote($event, false)"
         >
-          {{ installing ? t('plugin.connectorMarket.installing') : t('plugin.connectorMarket.installRemote') }}
-        </button>
-        <button class="connector-card__link" type="button" @click="copyInstallGuide">
+          {{ t('plugin.connectorMarket.installRemote') }}
+        </DwButton>
+        <DwButton size="sm" variant="secondary" @click="copyInstallGuide">
           {{ copied ? t('plugin.connectorMarket.copied') : t('plugin.connectorMarket.copyInstall') }}
-        </button>
-        <button
-            v-if="!dense"
-            class="connector-card__link connector-card__link--muted"
-            type="button"
-            @click="copyPluginDir"
-        >
+        </DwButton>
+        <DwButton size="sm" variant="ghost" @click="copyPluginDir">
           {{ t('plugin.connectorMarket.copyPath') }}
-        </button>
-        <button
-            v-if="!dense"
-            class="connector-card__link connector-card__link--muted"
-            type="button"
-            @click="openPluginSettings"
-        >
-          {{ t('plugin.connectorMarket.openPluginSettings') }}
-        </button>
+        </DwButton>
       </div>
     </footer>
   </article>

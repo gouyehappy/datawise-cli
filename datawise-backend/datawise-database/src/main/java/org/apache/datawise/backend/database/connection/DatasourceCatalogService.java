@@ -5,9 +5,11 @@ import org.apache.datawise.backend.common.DbTypeCatalogEntry;
 import org.apache.datawise.backend.connector.ConnectorCapability;
 import org.apache.datawise.backend.connector.DataSourceConnector;
 import org.apache.datawise.backend.connector.facade.ConnectorFacade;
+import org.apache.datawise.backend.connector.plugin.ConnectorPluginJarLocator;
 import org.apache.datawise.backend.connector.plugin.ConnectorPluginManifestSupport;
 import org.apache.datawise.backend.connector.support.ConnectorCapabilityCatalog;
 import org.apache.datawise.backend.connector.plugin.ConnectorPluginRemoteInstallSupport;
+import org.apache.datawise.backend.domain.CleanupConnectorPluginsResultDto;
 import org.apache.datawise.backend.domain.ConnectorMarketEntryDto;
 import org.apache.datawise.backend.domain.ConnectorPluginIntegrityStatus;
 import org.apache.datawise.backend.domain.ConnectorPluginLoadFailure;
@@ -15,11 +17,14 @@ import org.apache.datawise.backend.domain.ConnectorPluginManifest;
 import org.apache.datawise.backend.domain.ConnectorPluginManifestEntry;
 import org.apache.datawise.backend.domain.DatasourceDefinitionDto;
 import org.apache.datawise.backend.domain.ConnectorPluginReloadResultDto;
+import org.apache.datawise.backend.domain.InstallConnectorBatchResultDto;
 import org.apache.datawise.backend.domain.InstallConnectorPluginResultDto;
+import org.apache.datawise.backend.domain.UninstallConnectorPluginResultDto;
 import org.apache.datawise.backend.ops.DatabaseOpsRegistry;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -50,6 +55,7 @@ public class DatasourceCatalogService {
         CatalogSnapshot snap = snapshot();
         Optional<ConnectorPluginManifest> manifest = connectorFacade.catalog().pluginManifest();
         Map<String, String> jarByConnector = connectorFacade.catalog().loadedJarByConnectorId();
+        Path pluginsDir = connectorFacade.catalog().pluginsDirectory();
         List<ConnectorMarketEntryDto> market = new ArrayList<>();
         for (DbType type : DbType.catalogListed()) {
             DbTypeCatalogEntry catalog = type.catalogEntry().orElseThrow();
@@ -59,12 +65,19 @@ public class DatasourceCatalogService {
             );
             String loadedJar = jarByConnector.get(type.id());
             boolean fromPluginJar = loadedJar != null;
+            String diskJar = ConnectorPluginJarLocator.findJarName(pluginsDir, type.id()).orElse(null);
+            String jarName = loadedJar != null
+                    ? loadedJar
+                    : (diskJar != null
+                    ? diskJar
+                    : manifestEntry.map(ConnectorPluginManifestEntry::jar).orElse(null));
+            boolean redundantOnDisk = available != null && !fromPluginJar && diskJar != null;
             if (available != null) {
                 String integrity = ConnectorPluginManifestSupport.resolveIntegrityStatus(
                         true,
                         fromPluginJar,
                         manifestEntry,
-                        connectorFacade.catalog().pluginsDirectory(),
+                        pluginsDir,
                         loadedJar
                 );
                 market.add(new ConnectorMarketEntryDto(
@@ -75,9 +88,10 @@ public class DatasourceCatalogService {
                         available.capabilities(),
                         null,
                         manifestEntry.map(ConnectorPluginManifestEntry::version).orElse(null),
-                        loadedJar != null ? loadedJar : manifestEntry.map(ConnectorPluginManifestEntry::jar).orElse(null),
+                        jarName,
                         integrity,
-                        manifestEntry.map(ConnectorPluginManifestEntry::downloadUrl).orElse(null)
+                        manifestEntry.map(ConnectorPluginManifestEntry::downloadUrl).orElse(null),
+                        redundantOnDisk
                 ));
                 continue;
             }
@@ -85,7 +99,7 @@ public class DatasourceCatalogService {
                     false,
                     false,
                     manifestEntry,
-                    connectorFacade.catalog().pluginsDirectory(),
+                    pluginsDir,
                     null
             );
             String hint = manifestEntry
@@ -99,9 +113,10 @@ public class DatasourceCatalogService {
                     List.of(),
                     hint,
                     manifestEntry.map(ConnectorPluginManifestEntry::version).orElse(null),
-                    manifestEntry.map(ConnectorPluginManifestEntry::jar).orElse(null),
+                    jarName,
                     integrity,
-                    manifestEntry.map(ConnectorPluginManifestEntry::downloadUrl).orElse(null)
+                    manifestEntry.map(ConnectorPluginManifestEntry::downloadUrl).orElse(null),
+                    false
             ));
         }
         return List.copyOf(market);
@@ -116,6 +131,194 @@ public class DatasourceCatalogService {
      * then hot-reloads plugins so the connector becomes available without a process restart when possible.
      */
     public InstallConnectorPluginResultDto installRemotePlugin(String connectorId) {
+        InstallConnectorPluginResultDto downloaded = downloadRemotePlugin(connectorId);
+        ConnectorPluginReloadResultDto reload = reloadPlugins();
+        boolean available = findById(downloaded.connectorId()).isPresent();
+        boolean restartRequired = !available || downloaded.restartRequired();
+        String message = available
+                ? "Plugin JAR installed and loaded (hot-reload). Connector is available now."
+                : "Plugin JAR installed under config/plugins, but hot-reload did not activate it"
+                + " (jar lock or load failure). Restart the backend. Failures: "
+                + reload.failures();
+        return new InstallConnectorPluginResultDto(
+                downloaded.connectorId(),
+                downloaded.jarName(),
+                downloaded.integrityStatus(),
+                restartRequired,
+                message
+        );
+    }
+
+    /**
+     * Downloads multiple marketplace connectors, then performs a single hot-reload.
+     */
+    public InstallConnectorBatchResultDto installRemotePluginsBatch(List<String> connectorIds) {
+        if (connectorIds == null || connectorIds.isEmpty()) {
+            throw new IllegalArgumentException("connectorIds is required");
+        }
+        List<InstallConnectorPluginResultDto> results = new ArrayList<>();
+        for (String connectorId : connectorIds) {
+            if (connectorId == null || connectorId.isBlank()) {
+                continue;
+            }
+            try {
+                results.add(downloadRemotePlugin(connectorId.trim()));
+            } catch (RuntimeException ex) {
+                results.add(new InstallConnectorPluginResultDto(
+                        connectorId.trim(),
+                        null,
+                        ConnectorPluginIntegrityStatus.MISSING,
+                        false,
+                        ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName()
+                ));
+            }
+        }
+        ConnectorPluginReloadResultDto reload = reloadPlugins();
+        List<InstallConnectorPluginResultDto> finalized = new ArrayList<>();
+        for (InstallConnectorPluginResultDto result : results) {
+            if (result.jarName() == null) {
+                finalized.add(result);
+                continue;
+            }
+            boolean available = findById(result.connectorId()).isPresent();
+            finalized.add(new InstallConnectorPluginResultDto(
+                    result.connectorId(),
+                    result.jarName(),
+                    result.integrityStatus(),
+                    !available,
+                    available
+                            ? "Plugin JAR installed and loaded (hot-reload). Connector is available now."
+                            : "Plugin JAR installed; hot-reload did not activate it. Restart may be required. "
+                            + reload.failures()
+            ));
+        }
+        return new InstallConnectorBatchResultDto(List.copyOf(finalized), reload);
+    }
+
+    /**
+     * Unloads plugins, deletes the connector JAR, then reloads remaining plugins.
+     * Also works for redundant on-disk JARs that never became the live plugin source.
+     */
+    public UninstallConnectorPluginResultDto uninstallPlugin(String connectorId) {
+        if (connectorId == null || connectorId.isBlank()) {
+            throw new IllegalArgumentException("connectorId is required");
+        }
+        String id = connectorId.trim();
+        String jarName = resolveInstalledJarName(id)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No installed plugin JAR found for connector: " + id
+                ));
+        Path pluginsDir = connectorFacade.catalog().pluginsDirectory();
+        Path target = pluginsDir.resolve(jarName).normalize();
+        if (!target.startsWith(pluginsDir.normalize()) || !Files.isRegularFile(target)) {
+            throw new IllegalArgumentException("Plugin JAR not found: " + jarName);
+        }
+        boolean wasLoaded = connectorFacade.catalog().loadedJarByConnectorId().containsKey(id);
+        connectorFacade.catalog().unloadPlugins();
+        boolean deleted;
+        try {
+            deleted = connectorFacade.catalog().deletePluginJar(target);
+            // Same connector may leave multiple versioned JARs on disk — remove siblings too.
+            for (String sibling : ConnectorPluginJarLocator.listJarNamesForConnector(pluginsDir, id)) {
+                if (sibling.equals(jarName)) {
+                    continue;
+                }
+                try {
+                    connectorFacade.catalog().deletePluginJar(pluginsDir.resolve(sibling));
+                } catch (IOException ignored) {
+                    // best-effort
+                }
+            }
+        } catch (IOException ex) {
+            reloadPlugins();
+            return new UninstallConnectorPluginResultDto(
+                    id,
+                    jarName,
+                    false,
+                    true,
+                    "Failed to delete plugin JAR (file lock?). Restart the backend and retry: "
+                            + target + " — " + ex.getMessage()
+            );
+        }
+        ConnectorPluginReloadResultDto reload = reloadPlugins();
+        boolean stillAvailable = findById(id).isPresent();
+        Path pendingPath = target.resolveSibling(jarName + ".pending-delete");
+        boolean pendingDelete = Files.isRegularFile(pendingPath);
+        String message;
+        if (pendingDelete) {
+            message = "Plugin marked for deletion (file was locked). It will be removed on the next reload/restart.";
+        } else if (!deleted) {
+            message = "Plugin JAR was already missing; registry reloaded.";
+        } else if (!wasLoaded && stillAvailable) {
+            message = "Removed redundant plugin JAR from config/plugins. "
+                    + "Connector remains available from the application classpath.";
+        } else if (stillAvailable) {
+            message = "Plugin JAR deleted but connector is still available (classpath or shared JAR). "
+                    + "Restart may be required.";
+        } else {
+            message = "Plugin JAR uninstalled and registry reloaded.";
+        }
+        return new UninstallConnectorPluginResultDto(
+                id,
+                jarName,
+                deleted,
+                pendingDelete || (stillAvailable && wasLoaded),
+                message + (reload.failures().isEmpty() ? "" : " Failures: " + reload.failures())
+        );
+    }
+
+    /**
+     * Deletes plugin JARs on disk that are not currently loaded into the registry
+     * (classpath-shadowed thin JARs, failed loads, leftovers).
+     */
+    public CleanupConnectorPluginsResultDto cleanupRedundantPluginJars() {
+        Path pluginsDir = connectorFacade.catalog().pluginsDirectory();
+        List<String> loaded = connectorFacade.catalog().loadedPluginJarNames();
+        List<String> onDisk = ConnectorPluginJarLocator.listAllJarNames(pluginsDir);
+        List<String> candidates = onDisk.stream()
+                .filter(name -> loaded.stream().noneMatch(loadedName -> loadedName.equalsIgnoreCase(name)))
+                .toList();
+        if (candidates.isEmpty()) {
+            return new CleanupConnectorPluginsResultDto(
+                    0,
+                    List.of(),
+                    List.of(),
+                    "No redundant plugin JARs under config/plugins."
+            );
+        }
+        connectorFacade.catalog().unloadPlugins();
+        List<String> deleted = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
+        for (String jarName : candidates) {
+            Path target = pluginsDir.resolve(jarName).normalize();
+            if (!target.startsWith(pluginsDir.normalize())) {
+                failed.add(jarName);
+                continue;
+            }
+            try {
+                if (connectorFacade.catalog().deletePluginJar(target)) {
+                    deleted.add(jarName);
+                }
+            } catch (IOException ex) {
+                failed.add(jarName);
+            }
+        }
+        reloadPlugins();
+        String message = "Deleted " + deleted.size() + " redundant plugin JAR(s)."
+                + (failed.isEmpty() ? "" : " Failed: " + failed);
+        return new CleanupConnectorPluginsResultDto(
+                deleted.size(),
+                List.copyOf(deleted),
+                List.copyOf(failed),
+                message
+        );
+    }
+
+    public long pluginsDirectoryBytes() {
+        return directorySize(connectorFacade.catalog().pluginsDirectory());
+    }
+
+    private InstallConnectorPluginResultDto downloadRemotePlugin(String connectorId) {
         if (connectorId == null || connectorId.isBlank()) {
             throw new IllegalArgumentException("connectorId is required");
         }
@@ -145,26 +348,55 @@ public class DatasourceCatalogService {
             String integrity = entry.sha256() != null && !entry.sha256().isBlank()
                     ? ConnectorPluginIntegrityStatus.VERIFIED
                     : ConnectorPluginIntegrityStatus.UNSIGNED;
-            ConnectorPluginReloadResultDto reload = reloadPlugins();
-            boolean available = findById(entry.id()).isPresent();
-            boolean restartRequired = !available;
-            String message = available
-                    ? "Plugin JAR installed and loaded (hot-reload). Connector is available now."
-                    : "Plugin JAR installed under config/plugins, but hot-reload did not activate it"
-                    + " (jar lock or load failure). Restart the backend. Failures: "
-                    + reload.failures();
             return new InstallConnectorPluginResultDto(
                     entry.id(),
                     installed.getFileName().toString(),
                     integrity,
-                    restartRequired,
-                    message
+                    false,
+                    "Plugin JAR downloaded"
             );
         } catch (IOException ex) {
             throw new IllegalStateException(
                     "Failed to download connector plugin " + connectorId + ": " + ex.getMessage(),
                     ex
             );
+        }
+    }
+
+    private Optional<String> resolveInstalledJarName(String connectorId) {
+        String loaded = connectorFacade.catalog().loadedJarByConnectorId().get(connectorId);
+        if (loaded != null && !loaded.isBlank()) {
+            return Optional.of(loaded);
+        }
+        Path pluginsDir = connectorFacade.catalog().pluginsDirectory();
+        Optional<String> onDisk = ConnectorPluginJarLocator.findJarName(pluginsDir, connectorId);
+        if (onDisk.isPresent()) {
+            return onDisk;
+        }
+        return connectorFacade.catalog().pluginManifest()
+                .or(() -> connectorFacade.catalog().reloadPluginManifest())
+                .flatMap(manifest -> ConnectorPluginManifestSupport.findById(manifest, connectorId))
+                .map(ConnectorPluginManifestEntry::jar)
+                .filter(jar -> jar != null && !jar.isBlank())
+                .filter(jar -> Files.isRegularFile(pluginsDir.resolve(jar)));
+    }
+
+    private static long directorySize(Path root) {
+        if (root == null || !Files.isDirectory(root)) {
+            return 0L;
+        }
+        try (var stream = Files.walk(root)) {
+            return stream.filter(Files::isRegularFile)
+                    .mapToLong(path -> {
+                        try {
+                            return Files.size(path);
+                        } catch (IOException ex) {
+                            return 0L;
+                        }
+                    })
+                    .sum();
+        } catch (IOException ex) {
+            return 0L;
         }
     }
 

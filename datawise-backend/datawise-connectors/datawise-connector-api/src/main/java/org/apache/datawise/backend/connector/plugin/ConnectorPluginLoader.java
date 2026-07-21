@@ -27,10 +27,12 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
@@ -38,12 +40,20 @@ import java.util.ServiceLoader;
 
 /**
  * Loads optional datasource connector plugins from {@code {configDir}/plugins/*.jar}.
+ * <p>
+ * JARs are copied into {@code plugins/.runtime/} before opening a {@link URLClassLoader},
+ * so the source file under {@code plugins/} is not locked on Windows and can be uninstalled
+ * without restarting the process.
  */
 @Component
 public class ConnectorPluginLoader {
 
     private static final Logger log = LoggerFactory.getLogger(ConnectorPluginLoader.class);
     private static final String NO_SPI_PROVIDERS = "NO_SPI_PROVIDERS";
+    private static final String RUNTIME_DIR_NAME = ".runtime";
+    private static final String PENDING_DELETE_SUFFIX = ".pending-delete";
+    private static final int DELETE_ATTEMPTS = 8;
+    private static final long DELETE_RETRY_MS = 40L;
 
     private final Path pluginsDir;
     private final boolean loadPlugins;
@@ -136,6 +146,7 @@ public class ConnectorPluginLoader {
         failedPlugins.clear();
         loadedSqlExecutionHooks.clear();
         cachedManifest = null;
+        purgePendingDeletes();
         List<DataSourceConnector> connectors = new ArrayList<>();
         ConnectorDialectContributions contributions = ConnectorDialectContributions.EMPTY;
         if (!loadPlugins) {
@@ -167,6 +178,43 @@ public class ConnectorPluginLoader {
         closeLoadedPlugins();
     }
 
+    /** Closes plugin classloaders without re-scanning the plugins directory. */
+    public synchronized void unloadAll() {
+        closeLoadedPlugins();
+        failedPlugins.clear();
+        loadedSqlExecutionHooks.clear();
+        cachedManifest = null;
+    }
+
+    /**
+     * Deletes a plugin JAR under {@code plugins/}, with retries and a Windows-friendly
+     * rename-to-{@code .pending-delete} fallback when the file is still locked.
+     *
+     * @return {@code true} if the file is gone or successfully marked pending-delete
+     */
+    public boolean deletePluginJar(Path jarPath) throws IOException {
+        if (jarPath == null || !Files.isRegularFile(jarPath)) {
+            return false;
+        }
+        Path runtimeCopy = runtimeDir().resolve(jarPath.getFileName().toString());
+        tryDeleteWithRetries(runtimeCopy);
+        if (tryDeleteWithRetries(jarPath)) {
+            return true;
+        }
+        Path pending = jarPath.resolveSibling(jarPath.getFileName().toString() + PENDING_DELETE_SUFFIX);
+        try {
+            Files.move(jarPath, pending, StandardCopyOption.REPLACE_EXISTING);
+            log.warn("Plugin JAR locked; renamed for delete on next load: {}", pending.getFileName());
+            return true;
+        } catch (IOException renameEx) {
+            throw new IOException(
+                    "Failed to delete plugin JAR (file lock?): " + jarPath
+                            + " — " + renameEx.getMessage(),
+                    renameEx
+            );
+        }
+    }
+
     private ConnectorDialectContributions loadJar(
             Path jarPath,
             ConnectorPluginContext context,
@@ -179,11 +227,10 @@ public class ConnectorPluginLoader {
             return accumulated;
         }
         URLClassLoader pluginClassLoader = null;
+        Path runtimeJar = null;
         try {
-            pluginClassLoader = new URLClassLoader(
-                    new URL[]{jarPath.toUri().toURL()},
-                    applicationClassLoader
-            );
+            runtimeJar = materializeRuntimeCopy(jarPath);
+            pluginClassLoader = openPluginClassLoader(runtimeJar);
             ServiceLoader<DataSourceConnectorProvider> providers = ServiceLoader.load(
                     DataSourceConnectorProvider.class,
                     pluginClassLoader
@@ -226,12 +273,13 @@ public class ConnectorPluginLoader {
                 log.warn("Connector plugin jar has no SPI providers: {}", jarName);
                 recordFailure(jarName, NO_SPI_PROVIDERS);
                 closeQuietly(pluginClassLoader);
+                tryDeleteQuietly(runtimeJar);
                 return accumulated;
             }
             List<String> connectorIds = jarConnectors.stream().map(DataSourceConnector::id).toList();
             connectors.addAll(jarConnectors);
             loadedSqlExecutionHooks.addAll(jarHooks);
-            loadedPlugins.add(new LoadedPlugin(jarPath, pluginClassLoader, connectorIds));
+            loadedPlugins.add(new LoadedPlugin(jarPath, runtimeJar, pluginClassLoader, connectorIds));
             jarConnectors.forEach(connector ->
                     log.info("Registered connector plugin {} from {}", connector.id(), jarName));
             jarHooks.forEach(hook ->
@@ -240,6 +288,7 @@ public class ConnectorPluginLoader {
         } catch (Exception | LinkageError | ServiceConfigurationError ex) {
             // ServiceLoader 对缺类插件抛 Error（如 NoClassDefFoundError）；单个坏插件不得阻断启动
             closeQuietly(pluginClassLoader);
+            tryDeleteQuietly(runtimeJar);
             ExceptionLogging.warn(log, "Failed to load connector plugin " + jarName, ex);
             recordFailure(jarName, ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
             return accumulated;
@@ -295,7 +344,7 @@ public class ConnectorPluginLoader {
         }
         try (var stream = Files.list(pluginsDir)) {
             return stream.filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().toLowerCase().endsWith(".jar"))
+                    .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".jar"))
                     .sorted()
                     .toList();
         } catch (IOException ex) {
@@ -304,12 +353,87 @@ public class ConnectorPluginLoader {
         }
     }
 
+    private Path runtimeDir() throws IOException {
+        Path dir = pluginsDir.resolve(RUNTIME_DIR_NAME);
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    private Path materializeRuntimeCopy(Path sourceJar) throws IOException {
+        Path dest = runtimeDir().resolve(sourceJar.getFileName().toString());
+        Files.copy(sourceJar, dest, StandardCopyOption.REPLACE_EXISTING);
+        return dest;
+    }
+
+    private URLClassLoader openPluginClassLoader(Path runtimeJar) throws IOException {
+        return new URLClassLoader(new URL[]{runtimeJar.toUri().toURL()}, applicationClassLoader);
+    }
+
+    private void purgePendingDeletes() {
+        if (!Files.isDirectory(pluginsDir)) {
+            return;
+        }
+        try (var stream = Files.list(pluginsDir)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(PENDING_DELETE_SUFFIX))
+                    .forEach(this::tryDeleteQuietly);
+        } catch (IOException ex) {
+            ExceptionLogging.warn(log, "Failed to purge pending plugin deletes in " + pluginsDir, ex);
+        }
+        Path runtime = pluginsDir.resolve(RUNTIME_DIR_NAME);
+        if (!Files.isDirectory(runtime)) {
+            return;
+        }
+        try (var stream = Files.list(runtime)) {
+            stream.filter(Files::isRegularFile).forEach(this::tryDeleteQuietly);
+        } catch (IOException ex) {
+            ExceptionLogging.warn(log, "Failed to purge runtime plugin copies in " + runtime, ex);
+        }
+    }
+
     private void closeLoadedPlugins() {
         for (LoadedPlugin plugin : loadedPlugins) {
             closeQuietly(plugin.classLoader());
+            tryDeleteQuietly(plugin.runtimeJarPath());
         }
         loadedPlugins.clear();
         loadedSqlExecutionHooks.clear();
+        // Hint the JVM to release native jar handles sooner on Windows.
+        System.gc();
+    }
+
+    private static boolean tryDeleteWithRetries(Path path) {
+        if (path == null || !Files.exists(path)) {
+            return true;
+        }
+        for (int attempt = 1; attempt <= DELETE_ATTEMPTS; attempt++) {
+            try {
+                Files.deleteIfExists(path);
+                if (!Files.exists(path)) {
+                    return true;
+                }
+            } catch (IOException ignored) {
+                // retry
+            }
+            try {
+                Thread.sleep(DELETE_RETRY_MS * attempt);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return !Files.exists(path);
+    }
+
+    private void tryDeleteQuietly(Path path) {
+        if (path == null) {
+            return;
+        }
+        try {
+            tryDeleteWithRetries(path);
+        } catch (RuntimeException ignored) {
+            // best-effort
+        }
     }
 
     private static void closeQuietly(URLClassLoader classLoader) {
@@ -385,6 +509,11 @@ public class ConnectorPluginLoader {
         return false;
     }
 
-    private record LoadedPlugin(Path jarPath, URLClassLoader classLoader, List<String> connectorIds) {
+    private record LoadedPlugin(
+            Path jarPath,
+            Path runtimeJarPath,
+            URLClassLoader classLoader,
+            List<String> connectorIds
+    ) {
     }
 }

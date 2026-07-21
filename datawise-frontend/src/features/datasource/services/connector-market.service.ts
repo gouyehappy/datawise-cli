@@ -85,6 +85,19 @@ export function canRemoteReinstallConnector(
     return Boolean(isAdmin && entry.available && entry.downloadUrl?.trim())
 }
 
+export function canUninstallConnector(
+    entry: ConnectorMarketEntry,
+    isAdmin: boolean,
+): boolean {
+    // Any on-disk plugin JAR (loaded or classpath-shadowed) can be removed by admins.
+    return Boolean(isAdmin && entry.jarName?.trim())
+}
+
+/** Prefer “clean redundant” wording when classpath still provides the connector. */
+export function isRedundantPluginJar(entry: ConnectorMarketEntry): boolean {
+    return Boolean(entry.redundantOnDisk || (entry.integrityStatus === 'bundled' && entry.jarName?.trim()))
+}
+
 /**
  * Manifest SHA no longer matches the installed JAR (or similar integrity drift) and a remote
  * download URL is published — admins can reinstall to upgrade.

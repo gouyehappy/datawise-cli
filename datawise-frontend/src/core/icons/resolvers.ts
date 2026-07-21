@@ -10,6 +10,7 @@ export function settingsSectionDwIcon(section: SettingsSection): DwIconName {
         layout: 'settings-layout',
         connectionHealth: 'settings-connection-health',
         systemMetrics: 'settings-system-metrics',
+        runtime: 'settings-plugins',
         profile: 'settings-profile',
         editor: 'settings-editor',
         sqlEditor: 'settings-sql-editor',

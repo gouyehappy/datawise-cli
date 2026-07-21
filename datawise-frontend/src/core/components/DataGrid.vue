@@ -1993,18 +1993,23 @@ th.is-stats-active .th-label {
 
 .grid-toolbar-group {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--dw-space-2);
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  max-width: 100%;
   padding: 0;
   border: none;
   background: transparent;
 }
 
-.grid-toolbar-group + .grid-toolbar-group {
-  margin-left: var(--dw-space-2);
-  padding-left: var(--dw-space-3);
-  border-left: 1px solid var(--dw-border-light);
+/* 宽工具栏时用左边线分隔分组；窄宽度换行后靠 gap 间距即可 */
+@container dw-data-grid-toolbar (min-width: 721px) {
+  .grid-toolbar-group + .grid-toolbar-group {
+    margin-left: var(--dw-space-2);
+    padding-left: var(--dw-space-3);
+    border-left: 1px solid var(--dw-border-light);
+  }
 }
 
 .grid-toolbar-group :deep(.dw-segment) {

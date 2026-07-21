@@ -527,29 +527,41 @@ watch(internalCurrentPage, () => {
 
 .dw-data-grid__toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--dw-gap);
+  gap: var(--dw-gap-sm) var(--dw-gap);
   padding: var(--dw-space-2) var(--dw-space-4);
   border-bottom: 1px solid color-mix(in srgb, var(--dw-border-light) 55%, transparent);
+  container-type: inline-size;
+  container-name: dw-data-grid-toolbar;
 }
 
 .dw-data-grid__toolbar-left,
 .dw-data-grid__toolbar-right {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--dw-gap-sm);
   min-width: 0;
+  max-width: 100%;
 }
 
 .dw-data-grid__toolbar-left {
-  flex: 1;
-  flex-wrap: wrap;
+  flex: 1 1 12rem;
 }
 
 .dw-data-grid__toolbar-right {
-  flex-shrink: 0;
+  flex: 1 1 auto;
   justify-content: flex-end;
+}
+
+@container dw-data-grid-toolbar (max-width: 720px) {
+  .dw-data-grid__toolbar-left,
+  .dw-data-grid__toolbar-right {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
 }
 
 .dw-data-grid__toolbar-divider {

@@ -14,6 +14,8 @@ export const SETTINGS_SECTION_PERMISSION_MAP: Partial<Record<SettingsSection, Fe
     sqlSnippets: FeaturePermission.SettingsSqlSnippets,
     connectionHealth: FeaturePermission.SettingsConnectionHealth,
     systemMetrics: FeaturePermission.SettingsSystemMetrics,
+    /** Runtime (connectors/drivers/JRE) shares plugins permission for now */
+    runtime: FeaturePermission.SettingsPlugins,
     ai: FeaturePermission.SettingsAi,
     dataAgent: FeaturePermission.SettingsDataAgent,
     knowledge: FeaturePermission.SettingsDataAgent,
@@ -67,6 +69,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
         items: [
             {id: 'connectionHealth', labelKey: 'settings.nav.connectionHealth'},
             {id: 'systemMetrics', labelKey: 'settings.nav.systemMetrics'},
+            {id: 'runtime', labelKey: 'settings.nav.runtime'},
         ],
     },
     {

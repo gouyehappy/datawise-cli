@@ -27,18 +27,16 @@ function joinRootSegment(root: string, segment: string): string {
     return `${trimmedRoot}${separator}${segment}`
 }
 
-/** 由工作区根路径与 health 中的 scripts 路径生成只读目录布局 */
-export function resolveDataDirectoryLayout(
-    root: string,
-    scriptsPath?: string,
-): ResolvedDataDirectoryLayout {
+/**
+ * 由工作区根路径派生固定子目录。
+ * 工作区即根目录：scripts / logs / plugins / drivers / cache 一律挂在同一根下。
+ */
+export function resolveDataDirectoryLayout(root: string): ResolvedDataDirectoryLayout {
     return {
         root,
         entries: DATA_DIRECTORY_SUBDIRS.map((entry) => ({
             ...entry,
-            resolved: entry.id === 'scripts' && scriptsPath
-                ? scriptsPath
-                : joinRootSegment(root, entry.segment),
+            resolved: joinRootSegment(root, entry.segment),
         })),
     }
 }

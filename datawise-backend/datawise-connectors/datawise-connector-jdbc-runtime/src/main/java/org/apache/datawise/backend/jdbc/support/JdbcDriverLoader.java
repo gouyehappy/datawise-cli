@@ -141,6 +141,110 @@ public class JdbcDriverLoader {
         return jarLocator.listCachedJarNames();
     }
 
+    /**
+     * Lists JARs under {@code config/drivers/} (including one-level subdirs such as {@code hive/}).
+     *
+     * @return relative path from drivers dir (e.g. {@code mysql-….jar} or {@code hive/hive-….jar})
+     */
+    public List<CachedDriverJar> listCachedDriverJars() throws IOException {
+        if (!Files.isDirectory(driversDir)) {
+            return List.of();
+        }
+        List<CachedDriverJar> jars = new ArrayList<>();
+        try (var stream = Files.walk(driversDir, 2)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".jar"))
+                    .sorted()
+                    .forEach(path -> {
+                        Path relative = driversDir.relativize(path);
+                        String relativePath = relative.toString().replace('\\', '/');
+                        boolean loaded = cache.values().stream()
+                                .anyMatch(entry -> entry.jarPath().equals(path));
+                        long size;
+                        try {
+                            size = Files.size(path);
+                        } catch (IOException ex) {
+                            size = 0L;
+                        }
+                        jars.add(new CachedDriverJar(
+                                path.getFileName().toString(),
+                                relativePath,
+                                size,
+                                loaded
+                        ));
+                    });
+        }
+        return List.copyOf(jars);
+    }
+
+    /**
+     * Deletes a cached driver JAR. {@code relativePath} must be a plain file name or a single
+     * subdirectory path under {@code config/drivers/} (e.g. {@code hive/x.jar}).
+     */
+    public boolean deleteCachedJar(String relativePath) throws IOException {
+        if (relativePath == null || relativePath.isBlank()) {
+            throw new IllegalArgumentException("relativePath is required");
+        }
+        String normalized = relativePath.trim().replace('\\', '/');
+        if (normalized.contains("..") || normalized.startsWith("/") || normalized.startsWith("\\")) {
+            throw new IllegalArgumentException("Invalid driver path: " + relativePath);
+        }
+        Path target = driversDir.resolve(normalized).normalize();
+        if (!target.startsWith(driversDir.normalize())) {
+            throw new IllegalArgumentException("Invalid driver path: " + relativePath);
+        }
+        if (!Files.isRegularFile(target)) {
+            return false;
+        }
+        cache.entrySet().removeIf(entry -> entry.getValue().jarPath().equals(target));
+        return Files.deleteIfExists(target);
+    }
+
+    /**
+     * Deletes an entire driver bundle subdirectory under {@code config/drivers/} (e.g. {@code hive}).
+     *
+     * @return number of JAR files deleted
+     */
+    public int deleteCachedBundle(String bundleDirName) throws IOException {
+        if (bundleDirName == null || bundleDirName.isBlank()) {
+            throw new IllegalArgumentException("bundleDir is required");
+        }
+        String normalized = bundleDirName.trim().replace('\\', '/');
+        if (normalized.contains("/") || normalized.contains("..") || normalized.contains("\\")) {
+            throw new IllegalArgumentException("bundleDir must be a single directory name: " + bundleDirName);
+        }
+        Path bundleDir = driversDir.resolve(normalized).normalize();
+        if (!bundleDir.startsWith(driversDir.normalize()) || !Files.isDirectory(bundleDir)) {
+            return 0;
+        }
+        int deleted = 0;
+        try (var stream = Files.list(bundleDir)) {
+            for (Path path : stream.filter(Files::isRegularFile).toList()) {
+                if (!path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".jar")) {
+                    continue;
+                }
+                cache.entrySet().removeIf(entry -> entry.getValue().jarPath().equals(path));
+                if (Files.deleteIfExists(path)) {
+                    deleted++;
+                }
+            }
+        }
+        try (var remaining = Files.list(bundleDir)) {
+            if (remaining.findAny().isEmpty()) {
+                Files.deleteIfExists(bundleDir);
+            }
+        }
+        return deleted;
+    }
+
+    public record CachedDriverJar(
+            String fileName,
+            String relativePath,
+            long sizeBytes,
+            boolean loadedInMemory
+    ) {
+    }
+
     public static boolean isMavenCoordinates(String value) {
         return JdbcDriverCoordinateSupport.isMavenCoordinates(value);
     }

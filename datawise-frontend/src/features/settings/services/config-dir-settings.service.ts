@@ -52,11 +52,10 @@ export async function loadDataDirectorySettings(): Promise<DataDirectorySettings
     }
 
     const root = settings.resolved || health?.result?.configDir || ''
-    const scriptsPath = health?.result?.scriptsDir
 
     return {
         ...settings,
-        layout: resolveDataDirectoryLayout(root, scriptsPath),
+        layout: resolveDataDirectoryLayout(root),
     }
 }
 

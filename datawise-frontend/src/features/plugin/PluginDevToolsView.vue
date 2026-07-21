@@ -97,11 +97,6 @@ onMounted(() => {
           @align-reference-preset="alignReferencePreset"
           @open-preset-diff="openPresetDiff"
       />
-      <p class="plugin-dev-page__back">
-        <button class="plugin-dev-page__back-btn" type="button" @click="pluginStore.openPluginCenter()">
-          {{ t('plugin.devTools.backToCenter') }}
-        </button>
-      </p>
     </div>
   </div>
 </template>
@@ -113,25 +108,5 @@ onMounted(() => {
 
 .plugin-dev-page :deep(.plugin-dev--standalone) {
     margin-top: 0;
-}
-
-.plugin-dev-page__back {
-    margin: var(--dw-space-10) 0 0;
-    text-align: center;
-}
-
-.plugin-dev-page__back-btn {
-    padding: var(--dw-space-4) var(--dw-space-7);
-    border: 1px solid var(--dw-border);
-    border-radius: var(--dw-radius-md);
-    background: transparent;
-    color: var(--dw-text-secondary);
-    font-size: var(--dw-text-xl);
-    cursor: pointer;
-}
-
-.plugin-dev-page__back-btn:hover {
-    color: var(--dw-primary);
-    border-color: color-mix(in srgb, var(--dw-primary) 35%, var(--dw-border));
 }
 </style>

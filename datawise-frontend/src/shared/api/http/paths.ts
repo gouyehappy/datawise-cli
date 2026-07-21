@@ -309,9 +309,23 @@ export const API_PATHS = {
         list: '/api/datasources',
         market: '/api/datasources/market',
         marketInstall: '/api/datasources/market/install',
+        marketInstallBatch: '/api/datasources/market/install-batch',
+        marketUninstall: (connectorId: string) =>
+            `/api/datasources/market/${encodeURIComponent(connectorId)}`,
+        marketCleanupRedundant: '/api/datasources/market/cleanup-redundant',
         pluginsReload: '/api/datasources/plugins/reload',
+        drivers: '/api/datasources/drivers',
+        driversInstall: '/api/datasources/drivers/install',
         resolveDriver: '/api/datasources/drivers/resolve',
+        deleteDriver: (relativePath: string) =>
+            `/api/datasources/drivers?path=${encodeURIComponent(relativePath)}`,
+        deleteDriverBundle: (bundleDir: string) =>
+            `/api/datasources/drivers/bundles/${encodeURIComponent(bundleDir)}`,
+        deleteDriverFamily: (familyId: string) =>
+            `/api/datasources/drivers/families/${encodeURIComponent(familyId)}`,
     },
+    runtime: '/api/runtime',
+    runtimeJre: '/api/runtime/jre',
     health: '/api/health',
     metrics: '/api/system/metrics',
     deploymentProfile: '/api/system/deployment-profile',
