@@ -907,6 +907,9 @@ watch(
           :on-submit-changes="onSubmitChanges"
           :show-dml-actions="canGenerateDml"
           :show-export="showExport"
+          :show-ai-summary="canRequestAiSummary"
+          :ai-summary-loading="!!aiSummaryLoading"
+          :show-fake-data="canShowFakeData"
           :enable-row-document-view="enableRowDocumentView"
           full-toolbar
           :has-more="gridHasMore"
@@ -922,25 +925,30 @@ watch(
           @load-more="onLoadMoreRows"
           @raise-max-rows="onRaiseMaxRows"
           @generate-dml="onGenerateDml"
+          @request-ai-summary="onRequestAiSummary"
+          @generate-fake-data="emit('generate-fake-data')"
       >
-        <template v-if="canShowFakeData || canRequestAiSummary || canShowResultChart" #toolbar-extra>
+        <template v-if="canShowFakeData || canShowResultChart" #toolbar-extra>
           <QueryResultViewToggle v-if="canShowResultChart" v-model="resultView"/>
           <button
               v-if="canShowFakeData"
               type="button"
-              class="dw-text-btn"
+              class="grid-label-btn"
               @click="emit('generate-fake-data')"
           >
-            {{ t('workspace.fakeData.toolbar') }}
+            <DwIcon class="grid-glyph grid-glyph--optical" name="dices" fit :stroke-width="1.5"/>
+            <span>{{ t('workspace.fakeData.toolbar') }}</span>
           </button>
+        </template>
+        <template v-if="canRequestAiSummary" #toolbar-tail>
           <button
-              v-if="canRequestAiSummary"
               type="button"
-              class="dw-text-btn dw-text-btn--accent"
-              :disabled="aiSummaryLoading"
+              class="grid-label-btn"
+              :disabled="!!aiSummaryLoading"
               @click="onRequestAiSummary"
           >
-            {{ aiSummaryLoading ? t('queryResult.aiSummaryLoading') : t('queryResult.aiSummary') }}
+            <DwIcon class="grid-glyph grid-glyph--optical" name="bot" fit :stroke-width="1.5"/>
+            <span>{{ aiSummaryLoading ? t('queryResult.aiSummaryLoading') : t('queryResult.aiSummary') }}</span>
           </button>
         </template>
       </DataGrid>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {computed, nextTick, ref, toRef, watch, watchEffect} from 'vue'
-import {useDebouncedRef} from '@/core/utils/debounced-ref'
 import {useGridVirtualWindow} from '@/core/composables/useGridVirtualWindow'
 import {useI18n} from 'vue-i18n'
 import IconButton from '@/core/components/IconButton.vue'
@@ -9,7 +8,6 @@ import {DwIcon} from '@/core/icons'
 import GridCellDetailDialog from '@/core/components/GridCellDetailDialog.vue'
 import GridRowFormView from '@/features/workspace/components/GridRowFormView.vue'
 import GridDateTimePicker from '@/features/workspace/components/GridDateTimePicker.vue'
-import type {SelectOption} from '@/core/components/select.types'
 import {
   useGridPendingEdit,
   type GridDisplayRow,
@@ -42,6 +40,12 @@ import {
   type GridExportOptions,
 } from '@/features/workspace/services/grid-export.service'
 import GridExportDialog from '@/features/workspace/components/GridExportDialog.vue'
+import GridClauseBar from '@/features/workspace/components/GridClauseBar.vue'
+import {
+  formatOrderClause,
+  parseOrderClause,
+} from '@/features/workspace/services/grid-clause-bar.service'
+import {compileWhereExpression, rowMatchesWhereExpression} from '@/features/workspace/services/grid-where-expression.service'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
 import {applyPluginRenderGrid} from '@/features/plugin/services/plugin-hook.service'
 import {ContextMenuHost} from '@/core/context-menu'
@@ -141,6 +145,11 @@ const props = withDefaults(
       connectionId?: string
       database?: string
       showExport?: boolean
+      /** 右键菜单：AI 摘要（由父组件处理） */
+      showAiSummary?: boolean
+      aiSummaryLoading?: boolean
+      /** 右键菜单：测试数据（由父组件处理） */
+      showFakeData?: boolean
       /** Mongo 等文档源：点击行号打开整行 JSON 文档 */
       enableRowDocumentView?: boolean
     }>(),
@@ -157,6 +166,9 @@ const props = withDefaults(
       showDmlActions: false,
       suggestExportMask: false,
       showExport: true,
+      showAiSummary: false,
+      aiSummaryLoading: false,
+      showFakeData: false,
       enableRowDocumentView: false,
       truncatedAtCap: false,
       truncatedCapRows: undefined,
@@ -193,6 +205,8 @@ const emit = defineEmits<{
   'load-more': []
   'raise-max-rows': []
   'generate-dml': [rows: TableRow[]]
+  'request-ai-summary': []
+  'generate-fake-data': []
 }>()
 
 const viewState = defineModel<GridViewState>('viewState')
@@ -238,6 +252,7 @@ function columnColStyle(columnKey: string): Record<string, string> {
 function patchViewLayout(next: GridViewState | ((state: GridViewState) => GridViewState)) {
     const base: GridViewState = viewState.value ?? {
         columnFilters: {},
+        whereExpression: '',
         sortColumn: null,
         sortDirection: null,
         columnWidths: {...localColumnWidths.value},
@@ -252,78 +267,163 @@ function patchViewLayout(next: GridViewState | ((state: GridViewState) => GridVi
     localColumnOrder.value = [...resolved.columnOrder]
 }
 
-const filterColumnOptions = computed(() => displayColumns.value.map((col) => col.name))
-
-const filterColumnSelectOptions = computed<SelectOption[]>(() =>
-    filterColumnOptions.value.map((name) => ({value: name, label: name})),
+const filterColumnHints = computed(() =>
+    displayColumns.value.map((col) => ({
+      name: col.name,
+      type: columnTypeLabel(col),
+    })),
 )
 
-const filterColumnName = ref('')
+const whereClauseDraft = ref('')
+const orderClauseDraft = ref('')
+const whereClauseInvalid = ref(false)
+const orderClauseInvalid = ref(false)
+const clauseBarFocused = ref(false)
+const clauseApplying = ref(false)
+/** 最近一次成功应用的文案；用于区分「未提交草稿」与可被外部同步覆盖的内容 */
+const committedWhere = ref('')
+const committedOrder = ref('')
+
+function resolveColumnByName(name: string): TableColumn | undefined {
+  const lower = name.toLowerCase()
+  return displayColumns.value.find((col) => col.name.toLowerCase() === lower)
+}
+
+function expectedWhereFromViewState(): string {
+  if (!viewState.value) return ''
+  if (viewState.value.whereExpression?.trim()) return viewState.value.whereExpression
+  const entries = Object.entries(viewState.value.columnFilters).filter(([, value]) => value.trim())
+  if (entries.length !== 1) return ''
+  const [columnKey, value] = entries[0]!
+  const column = displayColumns.value.find(
+      (entry) => columnRowKey(entry) === columnKey || entry.name === columnKey,
+  )
+  return column ? `${column.name} = ${value}` : ''
+}
+
+function expectedOrderFromViewState(): string {
+  if (!viewState.value?.sortColumn || !viewState.value.sortDirection) return ''
+  const column = displayColumns.value.find(
+      (entry) =>
+          columnRowKey(entry) === viewState.value!.sortColumn
+          || entry.name === viewState.value!.sortColumn,
+  )
+  return column ? formatOrderClause(column.name, viewState.value.sortDirection) : ''
+}
+
+/** 聚焦编辑时不同步；未提交草稿不被外部变更覆盖 */
+function syncClauseDraftsFromViewState() {
+  if (!viewState.value) {
+    whereClauseDraft.value = ''
+    orderClauseDraft.value = ''
+    committedWhere.value = ''
+    committedOrder.value = ''
+    whereClauseInvalid.value = false
+    orderClauseInvalid.value = false
+    return
+  }
+  if (clauseBarFocused.value || clauseApplying.value) return
+
+  const nextWhere = expectedWhereFromViewState()
+  const nextOrder = expectedOrderFromViewState()
+  if (whereClauseDraft.value === committedWhere.value) {
+    whereClauseDraft.value = nextWhere
+    committedWhere.value = nextWhere
+  }
+  if (orderClauseDraft.value === committedOrder.value) {
+    orderClauseDraft.value = nextOrder
+    committedOrder.value = nextOrder
+  }
+  whereClauseInvalid.value = false
+  orderClauseInvalid.value = false
+}
+
+function applyClauseBar(options?: {validate?: boolean}) {
+  if (!viewState.value) return
+  const validate = options?.validate !== false
+  clauseApplying.value = true
+  try {
+    const whereText = whereClauseDraft.value.trim()
+    const orderText = orderClauseDraft.value.trim()
+
+    let whereExpression = ''
+    let whereOk = true
+    if (whereText) {
+      const compiled = compileWhereExpression(whereText)
+      if (!compiled.ok) {
+        whereOk = false
+        if (validate) whereClauseInvalid.value = true
+      } else {
+        whereClauseInvalid.value = false
+        whereExpression = whereText
+      }
+    } else {
+      whereClauseInvalid.value = false
+    }
+
+    let sortColumn: string | null = null
+    let sortDirection: 'asc' | 'desc' | null = null
+    let orderOk = true
+    let normalizedOrder = orderText
+    if (orderText) {
+      const parsed = parseOrderClause(orderText)
+      const column = parsed ? resolveColumnByName(parsed.column) : undefined
+      if (!parsed || !column) {
+        orderOk = false
+        if (validate) orderClauseInvalid.value = true
+      } else {
+        orderClauseInvalid.value = false
+        sortColumn = columnRowKey(column)
+        sortDirection = parsed.direction
+        normalizedOrder = formatOrderClause(column.name, parsed.direction)
+      }
+    } else {
+      orderClauseInvalid.value = false
+    }
+
+    if (!whereOk || !orderOk) {
+      return
+    }
+
+    if (orderText) {
+      orderClauseDraft.value = normalizedOrder
+    }
+
+    viewState.value = {
+      ...viewState.value,
+      whereExpression,
+      columnFilters: {},
+      sortColumn,
+      sortDirection,
+    }
+    committedWhere.value = whereClauseDraft.value
+    committedOrder.value = orderClauseDraft.value
+  } finally {
+    window.setTimeout(() => {
+      clauseApplying.value = false
+    }, 0)
+  }
+}
+
+function onClauseBarFocusChange(focused: boolean) {
+  clauseBarFocused.value = focused
+}
 
 watch(
-    () => gridColumns.value,
-    (columns) => {
-        if (!columns.length) {
-            filterColumnName.value = ''
-            return
-        }
-        if (!filterColumnName.value || !columns.some((col) => col.name === filterColumnName.value)) {
-            filterColumnName.value = columns[0].name
-        }
+    () => viewState.value,
+    () => {
+      syncClauseDraftsFromViewState()
     },
-    {immediate: true},
+    {deep: true, immediate: true},
 )
+
+watch([whereClauseDraft, orderClauseDraft], () => {
+  if (clauseApplying.value) return
+  whereClauseInvalid.value = false
+  orderClauseInvalid.value = false
+})
 
 const tableColumnCount = computed(() => displayColumns.value.length + 1)
-
-function resolveFilterColumnKey(columnName: string): string {
-    const column = displayColumns.value.find((col) => col.name === columnName)
-    return column ? columnRowKey(column) : ''
-}
-
-const GRID_COLUMN_FILTER_DEBOUNCE_MS = 180
-const filterDraft = ref('')
-const debouncedFilterDraft = useDebouncedRef(filterDraft, GRID_COLUMN_FILTER_DEBOUNCE_MS)
-
-function readFilterDraftFromViewState(): string {
-    if (!viewState.value) return ''
-    const columnKey = resolveFilterColumnKey(filterColumnName.value)
-    if (!columnKey) return ''
-    return viewState.value.columnFilters[columnKey] ?? ''
-}
-
-function applyFilterDraftToViewState(value: string) {
-    if (!viewState.value) return
-    const columnKey = resolveFilterColumnKey(filterColumnName.value)
-    if (!columnKey) return
-    const trimmed = value.trim()
-    viewState.value = {
-        ...viewState.value,
-        columnFilters: trimmed ? {[columnKey]: value} : {},
-    }
-}
-
-watch(filterColumnName, () => {
-    filterDraft.value = readFilterDraftFromViewState()
-}, {immediate: true})
-
-watch(debouncedFilterDraft, (value) => {
-    applyFilterDraftToViewState(value)
-})
-
-watchEffect(() => {
-    if (!viewState.value) return
-    const columnKey = resolveFilterColumnKey(filterColumnName.value)
-    if (!columnKey) return
-    const stored = viewState.value.columnFilters[columnKey] ?? ''
-    if (stored !== debouncedFilterDraft.value && stored !== filterDraft.value) {
-        filterDraft.value = stored
-    }
-})
-
-const hasSortActive = computed(() =>
-    Boolean(viewState.value?.sortColumn && viewState.value?.sortDirection),
-)
 
 const inlineEnabled = computed(() => props.editable && props.columnDetails.length > 0)
 
@@ -377,21 +477,36 @@ function readRawDisplayRowCell(item: GridDisplayRow, column: TableColumn): unkno
 }
 
 function filterAndSortDisplayRows(rows: GridDisplayRow[], state: GridViewState): GridDisplayRow[] {
-  const activeFilters = Object.entries(state.columnFilters).filter(([, value]) => value.trim())
   let result = rows
 
-  if (activeFilters.length) {
+  const whereExpression = state.whereExpression?.trim() ?? ''
+  if (whereExpression) {
     result = result.filter((item) =>
-        activeFilters.every(([columnKey, filter]) => {
+        rowMatchesWhereExpression(whereExpression, (columnName) => {
           const column = gridColumns.value.find(
-              (entry) => columnRowKey(entry) === columnKey || entry.name === columnKey,
+              (entry) =>
+                  entry.name.toLowerCase() === columnName.toLowerCase()
+                  || columnRowKey(entry).toLowerCase() === columnName.toLowerCase(),
           )
-          if (!column) return true
-          const value = readRawDisplayRowCell(item, column)
-          const text = formatCellFullValue(value)
-          return cellMatchesFilter(text, filter)
+          if (!column) return undefined
+          return readRawDisplayRowCell(item, column)
         }),
     )
+  } else {
+    const activeFilters = Object.entries(state.columnFilters).filter(([, value]) => value.trim())
+    if (activeFilters.length) {
+      result = result.filter((item) =>
+          activeFilters.every(([columnKey, filter]) => {
+            const column = gridColumns.value.find(
+                (entry) => columnRowKey(entry) === columnKey || entry.name === columnKey,
+            )
+            if (!column) return true
+            const value = readRawDisplayRowCell(item, column)
+            const text = formatCellFullValue(value)
+            return cellMatchesFilter(text, filter)
+          }),
+      )
+    }
   }
 
   if (state.sortColumn && state.sortDirection) {
@@ -686,10 +801,22 @@ function onHeaderDragEnd() {
   dragOverKey.value = null
 }
 
+const hasClauseActive = computed(() => {
+  if (!viewState.value) return false
+  const hasExpression = Boolean(viewState.value.whereExpression?.trim())
+  const hasFilter = Object.values(viewState.value.columnFilters).some((value) => value.trim())
+  return hasExpression || hasFilter || Boolean(viewState.value.sortColumn && viewState.value.sortDirection)
+})
+
 function clearViewState() {
   if (!viewState.value) return
   viewState.value = clearGridViewState(viewState.value)
-  filterDraft.value = ''
+  whereClauseDraft.value = ''
+  orderClauseDraft.value = ''
+  committedWhere.value = ''
+  committedOrder.value = ''
+  whereClauseInvalid.value = false
+  orderClauseInvalid.value = false
 }
 
 async function onAddRowClick() {
@@ -1007,14 +1134,67 @@ const {
   close: closeCellMenu,
 } = useContextMenuAnchor<{ item: GridDisplayRow; column: TableColumn }>()
 
-const cellMenuItems = computed<ContextMenuItem[]>(() => [
-  {id: 'copy-cell', label: t('dataGrid.contextMenu.copyCell')},
-  {id: 'copy-where-equals', label: t('dataGrid.contextMenu.copyWhereEquals')},
-  {id: 'copy-where-in', label: t('dataGrid.contextMenu.copyWhereIn')},
-])
+const cellMenuItems = computed<ContextMenuItem[]>(() => {
+  const items: ContextMenuItem[] = [
+    {id: 'copy-cell', label: t('dataGrid.contextMenu.copyCell'), icon: 'copy'},
+    {id: 'copy-where-equals', label: t('dataGrid.contextMenu.copyWhereEquals'), icon: 'filter'},
+    {id: 'copy-where-in', label: t('dataGrid.contextMenu.copyWhereIn'), icon: 'filter'},
+  ]
+
+  // 与工具栏一致：按 editable 显示，不依赖 columnDetails 是否已加载
+  if (props.editable) {
+    items.push(
+        {id: 'divider-edit', label: '', divider: true},
+        {id: 'add-row', label: t('dataGrid.addRow'), icon: 'plus'},
+        {
+          id: 'delete-row',
+          label: t('dataGrid.deleteRow'),
+          icon: 'minus',
+          disabled: !deleteEnabled.value,
+          danger: true,
+        },
+    )
+  }
+
+  const hasDataActions =
+      (exportEnabled.value && props.showExport && displayColumns.value.length > 0)
+      || props.showDmlActions
+  if (hasDataActions) {
+    items.push({id: 'divider-data', label: '', divider: true})
+    if (props.showDmlActions) {
+      items.push({id: 'generate-dml', label: t('dataGrid.generateDml'), icon: 'ddl'})
+    }
+    if (exportEnabled.value && props.showExport && displayColumns.value.length > 0) {
+      items.push({id: 'export', label: t('dataGrid.export'), icon: 'export'})
+    }
+  }
+
+  if (props.showFakeData || props.showAiSummary) {
+    items.push({id: 'divider-extra', label: '', divider: true})
+    if (props.showFakeData) {
+      items.push({id: 'fake-data', label: t('workspace.fakeData.toolbar'), icon: 'dices'})
+    }
+    if (props.showAiSummary) {
+      items.push({
+        id: 'ai-summary',
+        label: props.aiSummaryLoading
+            ? t('queryResult.aiSummaryLoading')
+            : t('queryResult.aiSummary'),
+        icon: 'bot',
+        disabled: props.aiSummaryLoading,
+      })
+    }
+  }
+
+  return items
+})
 
 function onCellContextMenu(event: MouseEvent, item: GridDisplayRow, column: TableColumn) {
   event.preventDefault()
+  if (props.editable) {
+    selectRow(item)
+    activeCell.value = {rowId: item.id, column: column.name}
+  }
   openCellMenu(event, {item, column})
 }
 
@@ -1051,6 +1231,30 @@ async function onCellMenuSelect(id: string) {
   if (id === 'copy-where-in') {
     const clause = buildWhereInClause(column.name, resolveContextPageRows(), column)
     if (clause) await copyGridContextText(clause, 'whereCopied')
+    return
+  }
+  if (id === 'add-row') {
+    await onAddRowClick()
+    return
+  }
+  if (id === 'delete-row') {
+    onDeleteRowClick()
+    return
+  }
+  if (id === 'generate-dml') {
+    onGenerateDmlClick()
+    return
+  }
+  if (id === 'export') {
+    openExportDialog()
+    return
+  }
+  if (id === 'fake-data') {
+    emit('generate-fake-data')
+    return
+  }
+  if (id === 'ai-summary') {
+    emit('request-ai-summary')
   }
 }
 
@@ -1115,14 +1319,10 @@ function dismissColumnStats() {
         shell-only
         v-model:current-page="currentPage"
         v-model:page-size="pageSizeModel"
-        v-model:filter="filterDraft"
-        v-model:filter-column="filterColumnName"
         :rows="[]"
         :columns="[]"
         :selectable="false"
-        :show-search="columnFiltersEnabled"
-        column-filter
-        :filter-column-options="filterColumnSelectOptions"
+        :show-search="false"
         :show-pagination="fullToolbar"
         :total-count="Number(displayTotal)"
         :page-size-options="pageSizeOptions"
@@ -1161,7 +1361,7 @@ function dismissColumnStats() {
             <DwIcon class="grid-glyph" name="refresh" fit :stroke-width="1.5"/>
           </IconButton>
           <button
-              v-if="columnFiltersEnabled && hasSortActive"
+              v-if="columnFiltersEnabled && hasClauseActive"
               class="dw-text-btn"
               type="button"
               @click="clearViewState"
@@ -1188,32 +1388,14 @@ function dismissColumnStats() {
               : t('dataGrid.truncatedAtCap', {count: gridRows.length})
           }}
         </span>
-        <button
-            v-if="truncatedAtCap && canRaiseMaxRows"
-            class="dw-text-btn dw-text-btn--accent"
-            type="button"
-            @click="emit('raise-max-rows')"
-        >
-          {{ t('dataGrid.raiseMaxRows') }}
-        </button>
-        <button
-            v-if="hasMore && !truncatedAtCap"
-            class="dw-text-btn dw-text-btn--accent"
-            type="button"
-            :disabled="cursorLoading"
-            @click="emit('load-more')"
-        >
-          {{ cursorLoading ? t('dataGrid.loadingMore') : t('dataGrid.loadMore') }}
-        </button>
-        <template v-if="editable">
-          <span class="action-divider"/>
+        <div v-if="editable" class="grid-toolbar-group" role="group" :aria-label="t('dataGrid.editGroup')">
           <IconButton
               class="grid-action-save"
               :title="t('dataGrid.submitChanges', { count: pendingCount })"
               :disabled="!submitEnabled"
               @click="onSubmitClick"
           >
-            <DwIcon class="grid-glyph grid-glyph--save" name="submit" fit :stroke-width="1.5"/>
+            <DwIcon class="grid-glyph" name="submit" fit :stroke-width="1.5"/>
           </IconButton>
           <IconButton
               class="grid-action-cancel"
@@ -1221,7 +1403,7 @@ function dismissColumnStats() {
               :disabled="!hasPendingChanges || submitting"
               @click="onDiscardClick"
           >
-            <DwIcon class="grid-glyph grid-glyph--cancel" name="rollback" fit :stroke-width="1.5"/>
+            <DwIcon class="grid-glyph" name="rollback" fit :stroke-width="1.5"/>
           </IconButton>
           <IconButton class="grid-action-neutral" :title="t('dataGrid.addRow')" @click="onAddRowClick">
             <DwIcon class="grid-glyph" name="plus" fit :stroke-width="1.5"/>
@@ -1240,38 +1422,101 @@ function dismissColumnStats() {
               :title="t('dataGrid.editHint')"
               :aria-label="t('dataGrid.editHint')"
           >
-            <DwIcon class="grid-glyph" name="explain" fit :stroke-width="1.5"/>
+            <DwIcon class="grid-glyph" name="help" fit :stroke-width="1.5"/>
           </span>
-        </template>
+        </div>
         <span
             v-if="readOnlyHint && !editable"
             class="grid-hint-tip"
             :title="readOnlyHint"
             :aria-label="readOnlyHint"
         >
-          <DwIcon class="grid-glyph" name="explain" fit :stroke-width="1.5"/>
+          <DwIcon class="grid-glyph" name="help" fit :stroke-width="1.5"/>
         </span>
-        <span v-if="showDmlActions" class="action-divider"/>
-        <IconButton
-            v-if="showDmlActions"
-            class="grid-action-neutral"
-            :title="t('dataGrid.generateDml')"
-            @click="onGenerateDmlClick"
+        <div
+            v-if="showDmlActions || $slots['toolbar-extra'] || (exportEnabled && showExport) || $slots['toolbar-tail']"
+            class="grid-toolbar-group"
+            role="group"
+            :aria-label="t('dataGrid.toolsGroup')"
         >
-          <DwIcon class="grid-glyph" name="ddl" fit :stroke-width="1.5"/>
-        </IconButton>
-        <span v-if="$slots['toolbar-extra']" class="action-divider"/>
-        <slot name="toolbar-extra"/>
-        <button
-            v-if="exportEnabled && showExport"
-            class="dw-text-btn"
-            type="button"
-            :title="t('dataGrid.export')"
-            @click="openExportDialog"
+          <slot name="toolbar-extra"/>
+          <button
+              v-if="showDmlActions"
+              type="button"
+              class="grid-label-btn"
+              @click="onGenerateDmlClick"
+          >
+            <DwIcon class="grid-glyph" name="ddl" fit :stroke-width="1.5"/>
+            <span>{{ t('dataGrid.generateDml') }}</span>
+          </button>
+          <button
+              v-if="exportEnabled && showExport"
+              type="button"
+              class="grid-label-btn"
+              @click="openExportDialog"
+          >
+            <DwIcon class="grid-glyph" name="export" fit :stroke-width="1.5"/>
+            <span>{{ t('dataGrid.export') }}</span>
+          </button>
+          <slot name="toolbar-tail"/>
+        </div>
+        <div
+            v-if="(hasMore && !truncatedAtCap) || (truncatedAtCap && canRaiseMaxRows)"
+            class="grid-toolbar-group"
+            role="group"
+            :aria-label="t('dataGrid.loadGroup')"
         >
-          <DwIcon name="export" size="sm" :stroke-width="1.5"/>
-          <span>{{ t('dataGrid.export') }}</span>
-        </button>
+          <button
+              v-if="truncatedAtCap && canRaiseMaxRows"
+              type="button"
+              class="grid-label-btn"
+              @click="emit('raise-max-rows')"
+          >
+            <DwIcon class="grid-glyph" name="arrow-up-down" fit :stroke-width="1.5"/>
+            <span>{{ t('dataGrid.raiseMaxRows') }}</span>
+          </button>
+          <button
+              v-if="hasMore && !truncatedAtCap"
+              type="button"
+              class="grid-label-btn"
+              :disabled="cursorLoading"
+              @click="emit('load-more')"
+          >
+            <DwIcon
+                class="grid-glyph"
+                :class="{ 'grid-glyph--spin': cursorLoading }"
+                :name="cursorLoading ? 'refresh' : 'chevrons-down'"
+                fit
+                :stroke-width="1.5"
+            />
+            <span>{{ cursorLoading ? t('dataGrid.loadingMore') : t('dataGrid.loadMore') }}</span>
+          </button>
+        </div>
+      </template>
+
+      <template #below-toolbar>
+        <GridClauseBar
+            v-if="columnFiltersEnabled"
+            v-model:where="whereClauseDraft"
+            v-model:order="orderClauseDraft"
+            :columns="filterColumnHints"
+            :where-invalid="whereClauseInvalid"
+            :order-invalid="orderClauseInvalid"
+            @apply="applyClauseBar()"
+            @focus-change="onClauseBarFocusChange"
+        />
+        <div v-else-if="showFilterBar" class="filter-bar">
+          <div class="filter-left">
+            <DwIcon class="filter-icon" name="filter" size="xs" :stroke-width="1.6"/>
+            <span class="keyword">WHERE</span>
+            <span v-if="where" class="expr">{{ where }}</span>
+          </div>
+          <div class="filter-right">
+            <span class="keyword">ORDER BY</span>
+            <DwIcon class="sort-icon" name="arrow-up-down" size="xs" :stroke-width="1.4"/>
+            <span v-if="orderBy" class="expr">{{ orderBy }}</span>
+          </div>
+        </div>
       </template>
 
       <template #body>
@@ -1314,19 +1559,6 @@ function dismissColumnStats() {
             >
               {{ item.value }} × {{ item.count }}
             </span>
-          </div>
-        </div>
-
-        <div v-if="showFilterBar" class="filter-bar">
-          <div class="filter-left">
-            <DwIcon class="filter-icon" name="filter" size="xs" :stroke-width="1.6"/>
-            <span class="keyword">WHERE</span>
-            <span v-if="where" class="expr">{{ where }}</span>
-          </div>
-          <div class="filter-right">
-            <span class="keyword">ORDER BY</span>
-            <DwIcon class="sort-icon" name="arrow-up-down" size="xs" :stroke-width="1.4"/>
-            <span v-if="orderBy" class="expr">{{ orderBy }}</span>
           </div>
         </div>
 
@@ -1648,8 +1880,9 @@ function dismissColumnStats() {
 .data-grid :deep(.dw-data-grid__toolbar-right .grid-action-save.dw-icon-btn),
 .data-grid :deep(.dw-data-grid__toolbar-right .grid-action-cancel.dw-icon-btn),
 .data-grid :deep(.dw-data-grid__toolbar-right .grid-action-neutral.dw-icon-btn) {
-  width: 30px;
-  height: var(--dw-control-h-sm);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--dw-btn-radius);
 }
 
 .data-grid :deep(.dw-data-grid__toolbar-right .grid-action-save.dw-icon-btn),
@@ -1667,8 +1900,8 @@ function dismissColumnStats() {
   border-color: transparent;
 }
 
-.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-save.dw-icon-btn:disabled .grid-glyph--save),
-.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-cancel.dw-icon-btn:disabled .grid-glyph--cancel) {
+.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-save.dw-icon-btn:disabled),
+.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-cancel.dw-icon-btn:disabled) {
   opacity: 0.42;
 }
 
@@ -1758,12 +1991,82 @@ th.is-stats-active .th-label {
   background: var(--dw-border);
 }
 
+.grid-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.grid-toolbar-group + .grid-toolbar-group {
+  margin-left: var(--dw-space-2);
+  padding-left: var(--dw-space-3);
+  border-left: 1px solid var(--dw-border-light);
+}
+
+.grid-toolbar-group :deep(.dw-segment) {
+  height: 28px;
+  min-height: 28px;
+  padding: var(--dw-space-1);
+  gap: var(--dw-space-1);
+  border: 1px solid color-mix(in srgb, var(--dw-border-light) 85%, transparent);
+  border-radius: var(--dw-btn-radius);
+  background: color-mix(in srgb, var(--dw-bg) 88%, var(--dw-bg-muted));
+}
+
+.grid-toolbar-group :deep(.dw-segment__btn--icon) {
+  width: 28px;
+  min-width: 28px;
+  height: 100%;
+  border-radius: calc(var(--dw-btn-radius) - 1px);
+  color: var(--dw-text-muted);
+}
+
+.grid-toolbar-group :deep(.dw-segment__btn--label) {
+  height: 100%;
+  gap: var(--dw-gap-xs);
+  padding: 0 var(--dw-space-3);
+  border-radius: calc(var(--dw-btn-radius) - 1px);
+}
+
+.grid-toolbar-group :deep(.dw-segment__btn--icon:hover:not(:disabled):not(.is-active)),
+.grid-toolbar-group :deep(.dw-segment__btn--label:hover:not(:disabled):not(.is-active)) {
+  background: color-mix(in srgb, var(--dw-text) 4%, transparent);
+  color: var(--dw-primary);
+}
+
+.grid-toolbar-group :deep(.dw-segment__btn--icon.is-active),
+.grid-toolbar-group :deep(.dw-segment__btn--label.is-active) {
+  background: var(--dw-bg);
+  color: var(--dw-primary);
+  font-weight: 600;
+  box-shadow: var(--dw-shadow-xs);
+}
+
+.grid-toolbar-group :deep(.dw-segment__btn .dw-icon-root) {
+  width: 20px;
+  height: 20px;
+}
+
+.grid-glyph--spin {
+  animation: grid-glyph-spin 0.8s linear infinite;
+}
+
+@keyframes grid-glyph-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .grid-hint-tip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: var(--dw-btn-height);
+  height: 28px;
   flex-shrink: 0;
   color: var(--dw-text-muted);
   cursor: help;
@@ -1775,13 +2078,7 @@ th.is-stats-active .th-label {
 
 .data-grid :deep(.dw-data-grid__toolbar-right .grid-hint-tip) {
   width: 28px;
-  height: var(--dw-btn-height);
-}
-
-.pager-total {
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-sm);
-  white-space: nowrap;
+  height: 28px;
 }
 
 .grid-glyph {
@@ -1791,12 +2088,18 @@ th.is-stats-active .th-label {
   line-height: 1;
 }
 
-.grid-glyph--save {
-  color: var(--dw-success);
+/* 骰子 / 机器人等光学偏小的图标，放大到与其它 glyph 观感一致 */
+.data-grid :deep(.grid-glyph--optical) {
+  width: 22px;
+  height: 22px;
+  transform: scale(1.12);
+  transform-origin: center;
 }
 
-.grid-glyph--cancel {
-  color: var(--dw-danger);
+.pager-total {
+  color: var(--dw-text-muted);
+  font-size: var(--dw-text-sm);
+  white-space: nowrap;
 }
 
 .page-indicator--solo {

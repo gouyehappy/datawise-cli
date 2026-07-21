@@ -342,6 +342,8 @@ watch(internalCurrentPage, () => {
           </div>
         </div>
 
+        <slot name="below-toolbar"/>
+
         <div v-if="showSearch" class="dw-data-grid__search-wrap" :class="{ 'is-column-filter': columnFilter }">
           <div
               v-if="columnFilter"

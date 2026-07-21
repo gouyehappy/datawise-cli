@@ -5,19 +5,20 @@ import {DwButton, EmptyState} from '@/core/components'
 import DwSelect from '@/core/components/DwSelect.vue'
 import type {SelectOption} from '@/core/components/select.types'
 import type {TableColumn, TableRow} from '@/core/types'
+import {DwIcon} from '@/core/icons'
+import type {DwIconName} from '@/core/icons'
 import AiAnalysisChart from '@/features/ai/analysis/components/AiAnalysisChart.vue'
 import {buildAiChartOption} from '@/features/ai/analysis/services/ai-chart.service'
 import SaveChartToDashboardDialog from '@/features/dashboard/components/SaveChartToDashboardDialog.vue'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {
-    buildDefaultQueryResultChartConfig,
-    inferQueryResultChartFields,
-    pivotQueryResultRows,
-    toAiChartSpec,
-    type QueryResultChartConfig,
-    type QueryResultChartType,
+  buildDefaultQueryResultChartConfig,
+  inferQueryResultChartFields,
+  pivotQueryResultRows,
+  toAiChartSpec,
+  type QueryResultChartConfig,
+  type QueryResultChartType,
 } from '@/features/workspace/services/query-result-chart.service'
-import QueryResultViewToggle from '@/features/workspace/components/QueryResultViewToggle.vue'
 
 const props = defineProps<{
   columns: TableColumn[]
@@ -31,6 +32,11 @@ const {t} = useI18n()
 const layout = useLayoutStore()
 
 const chartTypes: QueryResultChartType[] = ['bar', 'line', 'pie']
+const chartTypeIcons: Record<QueryResultChartType, DwIconName> = {
+  bar: 'chart-bar',
+  line: 'chart-line',
+  pie: 'chart-pie',
+}
 const config = ref<QueryResultChartConfig | null>(null)
 const pivotEnabled = ref(false)
 const saveDialogOpen = ref(false)
@@ -114,34 +120,78 @@ watch(
     <header class="result-chart__head">
       <div class="result-chart__controls">
         <label class="result-chart__field">
-          <span>{{ t('queryResult.chart.dimension') }}</span>
-          <DwSelect v-model="selectedDimensionKey" size="sm" :options="dimensionOptions"/>
+          <span class="result-chart__field-label">{{ t('queryResult.chart.dimension') }}</span>
+          <DwSelect
+              v-model="selectedDimensionKey"
+              class="result-chart__select"
+              size="compact"
+              :options="dimensionOptions"
+          />
         </label>
         <label class="result-chart__field">
-          <span>{{ t('queryResult.chart.measure') }}</span>
-          <DwSelect v-model="selectedMeasureKey" size="sm" :options="measureOptions"/>
+          <span class="result-chart__field-label">{{ t('queryResult.chart.measure') }}</span>
+          <DwSelect
+              v-model="selectedMeasureKey"
+              class="result-chart__select"
+              size="compact"
+              :options="measureOptions"
+          />
         </label>
-        <div class="dw-segment" role="tablist" :aria-label="t('queryResult.chart.type')">
+        <div class="result-chart__seg" role="tablist" :aria-label="t('queryResult.chart.type')">
           <button
               v-for="chartType in chartTypes"
               :key="chartType"
               type="button"
-              class="dw-segment__btn"
+              class="result-chart__seg-btn"
               :class="{ 'is-active': selectedChartType === chartType }"
               role="tab"
               :aria-selected="selectedChartType === chartType"
               @click="selectedChartType = chartType"
           >
-            {{ t(`queryResult.chart.types.${chartType}`) }}
+            <DwIcon
+                class="result-chart__ico"
+                :name="chartTypeIcons[chartType]"
+                fit
+                :stroke-width="1.5"
+            />
+            <span>{{ t(`queryResult.chart.types.${chartType}`) }}</span>
           </button>
         </div>
       </div>
       <div class="result-chart__head-actions">
-        <label v-if="selectedChartType !== 'pie'" class="result-chart__pivot">
-          <input v-model="pivotEnabled" type="checkbox"/>
+        <label
+            v-if="selectedChartType !== 'pie'"
+            class="result-chart__chip"
+            :class="{ 'is-active': pivotEnabled }"
+        >
+          <input v-model="pivotEnabled" type="checkbox" class="result-chart__chip-input"/>
+          <DwIcon class="result-chart__ico" name="layers" fit :stroke-width="1.5"/>
           <span>{{ t('queryResult.chart.pivot') }}</span>
         </label>
-        <QueryResultViewToggle v-model="viewMode"/>
+        <div class="result-chart__seg" role="tablist" :aria-label="t('queryResult.chart.viewMode')">
+          <button
+              type="button"
+              class="result-chart__seg-btn"
+              :class="{ 'is-active': viewMode === 'grid' }"
+              role="tab"
+              :aria-selected="viewMode === 'grid'"
+              @click="viewMode = 'grid'"
+          >
+            <DwIcon class="result-chart__ico" name="table" fit :stroke-width="1.5"/>
+            <span>{{ t('queryResult.chart.grid') }}</span>
+          </button>
+          <button
+              type="button"
+              class="result-chart__seg-btn"
+              :class="{ 'is-active': viewMode === 'chart' }"
+              role="tab"
+              :aria-selected="viewMode === 'chart'"
+              @click="viewMode = 'chart'"
+          >
+            <DwIcon class="result-chart__ico" name="chart" fit :stroke-width="1.5"/>
+            <span>{{ t('queryResult.chart.chart') }}</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -188,6 +238,8 @@ watch(
 
 <style scoped>
 .result-chart {
+  --rc-h: 30px;
+  --rc-ico: 16px;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -198,51 +250,159 @@ watch(
 
 .result-chart__head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--dw-space-5);
-  padding: var(--dw-space-4) var(--dw-space-6);
+  gap: var(--dw-space-4);
+  min-height: calc(var(--rc-h) + var(--dw-space-6));
+  padding: var(--dw-space-3) var(--dw-space-6);
   border-bottom: var(--dw-border-width) solid var(--dw-border-light);
   background: var(--dw-bg-muted);
 }
 
+.result-chart__controls,
 .result-chart__head-actions {
   display: inline-flex;
   align-items: center;
-  gap: var(--dw-gap);
-  flex-shrink: 0;
-}
-
-.result-chart__controls {
-  display: flex;
+  gap: var(--dw-space-2);
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--dw-space-4);
   min-width: 0;
 }
 
+.result-chart__head-actions {
+  flex-shrink: 0;
+}
+
 .result-chart__field {
-  display: grid;
-  gap: var(--dw-gap-xs);
-  min-width: 160px;
-  font-size: var(--dw-text-xs);
-  color: var(--dw-text-secondary);
-}
-
-.result-chart__field :deep(.dw-select) {
-  width: 100%;
-}
-
-
-
-
-.result-chart__pivot {
   display: inline-flex;
   align-items: center;
-  gap: var(--dw-gap-sm);
+  gap: var(--dw-space-2);
+  height: var(--rc-h);
+  padding: 0 var(--dw-space-2) 0 var(--dw-space-3);
+  border: 1px solid color-mix(in srgb, var(--dw-border-light) 85%, transparent);
+  border-radius: var(--dw-btn-radius);
+  background: color-mix(in srgb, var(--dw-bg) 88%, var(--dw-bg-muted));
+  min-width: 0;
+}
+
+.result-chart__field-label {
+  flex-shrink: 0;
   font-size: var(--dw-text-xs);
+  font-weight: 600;
+  color: var(--dw-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.result-chart__field :deep(.dw-select--compact) {
+  width: auto;
+  min-width: 112px;
+  max-width: 180px;
+}
+
+.result-chart__field :deep(.dw-select--compact .dw-select__trigger) {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: calc(var(--rc-h) - 2px);
+  min-height: calc(var(--rc-h) - 2px);
+  padding: 0 var(--dw-space-2) 0 var(--dw-space-1);
+  border: none;
+  border-radius: calc(var(--dw-btn-radius) - 1px);
+  background: transparent;
+  box-shadow: none;
+  color: var(--dw-text);
+  font-size: var(--dw-text-sm);
+  font-weight: 500;
+}
+
+.result-chart__field :deep(.dw-select--compact .dw-select__trigger:hover:not(:disabled)),
+.result-chart__field :deep(.dw-select.is-open .dw-select__trigger) {
+  background: color-mix(in srgb, var(--dw-primary) 8%, transparent);
+  color: var(--dw-primary);
+}
+
+.result-chart__field :deep(.dw-select--compact .dw-select__chevron) {
+  width: 14px;
+  height: 14px;
+}
+
+.result-chart__field :deep(.dw-select--compact .dw-select__menu) {
+  min-width: 160px;
+}
+
+.result-chart__seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: var(--rc-h);
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--dw-border-light) 85%, transparent);
+  border-radius: var(--dw-btn-radius);
+  background: color-mix(in srgb, var(--dw-bg) 88%, var(--dw-bg-muted));
+  flex-shrink: 0;
+}
+
+.result-chart__seg-btn,
+.result-chart__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dw-gap-xs);
+  height: calc(var(--rc-h) - 6px);
+  padding: 0 var(--dw-space-3);
+  border: none;
+  border-radius: calc(var(--dw-btn-radius) - 1px);
+  background: transparent;
   color: var(--dw-text-secondary);
+  font-size: var(--dw-text-sm);
+  font-weight: 500;
+  line-height: 1;
   white-space: nowrap;
+  cursor: pointer;
+  transition: var(--dw-transition-colors);
+}
+
+.result-chart__chip {
+  height: var(--rc-h);
+  border: 1px solid color-mix(in srgb, var(--dw-border-light) 85%, transparent);
+  border-radius: var(--dw-btn-radius);
+  background: color-mix(in srgb, var(--dw-bg) 88%, var(--dw-bg-muted));
+  position: relative;
+  user-select: none;
+}
+
+.result-chart__seg-btn:hover:not(.is-active),
+.result-chart__chip:hover:not(.is-active) {
+  color: var(--dw-primary);
+  background: color-mix(in srgb, var(--dw-primary) 8%, transparent);
+}
+
+.result-chart__seg-btn.is-active,
+.result-chart__chip.is-active {
+  background: var(--dw-bg);
+  color: var(--dw-primary);
+  font-weight: 600;
+  box-shadow: var(--dw-shadow-xs);
+}
+
+.result-chart__chip.is-active {
+  border-color: color-mix(in srgb, var(--dw-primary) 28%, var(--dw-border-light));
+  background: var(--dw-primary-softer);
+  box-shadow: none;
+}
+
+.result-chart__chip-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.result-chart__ico {
+  display: block;
+  width: var(--rc-ico);
+  height: var(--rc-ico);
+  flex-shrink: 0;
 }
 
 .result-chart :deep(.ai-analysis-chart) {

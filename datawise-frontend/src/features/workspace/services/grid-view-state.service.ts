@@ -3,6 +3,7 @@ import type {TableColumnDetail} from '@/shared/api/types'
 import {resolveGridColumnTypeLabel} from '@/core/components/data-grid-column-meta'
 import {formatCellFullValue} from '@/core/utils/cell-value-format'
 import {columnRowKey, readRowCell} from '@/core/utils/query-result-column'
+import {rowMatchesWhereExpression} from '@/features/workspace/services/grid-where-expression.service'
 
 export type GridSortDirection = 'asc' | 'desc'
 
@@ -85,6 +86,8 @@ function parseDeclaredTypeLength(typeLabel: string): number | null {
 
 export interface GridViewState {
     columnFilters: Record<string, string>
+    /** WHERE SQL 片段（优先于 columnFilters） */
+    whereExpression?: string
     sortColumn: string | null
     sortDirection: GridSortDirection | null
     /** 列宽（按 columnRowKey） */
@@ -98,6 +101,7 @@ export const GRID_VIEW_STATE_STORAGE_KEY = 'dw-grid-view-state-v1'
 export function createEmptyGridViewState(): GridViewState {
     return {
         columnFilters: {},
+        whereExpression: '',
         sortColumn: null,
         sortDirection: null,
         columnWidths: {},
@@ -106,8 +110,9 @@ export function createEmptyGridViewState(): GridViewState {
 }
 
 export function gridViewStateIsActive(state: GridViewState): boolean {
+    const hasExpression = Boolean(state.whereExpression?.trim())
     const hasFilters = Object.values(state.columnFilters).some((value) => value.trim().length > 0)
-    return hasFilters || Boolean(state.sortColumn && state.sortDirection)
+    return hasExpression || hasFilters || Boolean(state.sortColumn && state.sortDirection)
 }
 
 export function cellMatchesFilter(cellText: string, filter: string): boolean {
@@ -135,20 +140,35 @@ export function applyGridViewStateToRows(
     columns: TableColumn[],
     state: GridViewState,
 ): TableRow[] {
-    const activeFilters = Object.entries(state.columnFilters).filter(([, value]) => value.trim())
     let result = rows
 
-    if (activeFilters.length) {
+    const whereExpression = state.whereExpression?.trim() ?? ''
+    if (whereExpression) {
         result = result.filter((row) =>
-            activeFilters.every(([columnKey, filter]) => {
+            rowMatchesWhereExpression(whereExpression, (columnName) => {
                 const column = columns.find(
-                    (item) => columnRowKey(item) === columnKey || item.name === columnKey,
+                    (item) =>
+                        item.name.toLowerCase() === columnName.toLowerCase()
+                        || columnRowKey(item).toLowerCase() === columnName.toLowerCase(),
                 )
-                if (!column) return true
-                const text = formatCellFullValue(readRowCell(row, column))
-                return cellMatchesFilter(text, filter)
+                if (!column) return undefined
+                return readRowCell(row, column)
             }),
         )
+    } else {
+        const activeFilters = Object.entries(state.columnFilters).filter(([, value]) => value.trim())
+        if (activeFilters.length) {
+            result = result.filter((row) =>
+                activeFilters.every(([columnKey, filter]) => {
+                    const column = columns.find(
+                        (item) => columnRowKey(item) === columnKey || item.name === columnKey,
+                    )
+                    if (!column) return true
+                    const text = formatCellFullValue(readRowCell(row, column))
+                    return cellMatchesFilter(text, filter)
+                }),
+            )
+        }
     }
 
     if (state.sortColumn && state.sortDirection) {
@@ -260,6 +280,7 @@ export function normalizeGridViewState(raw: unknown): GridViewState {
         : null
     return {
         columnFilters,
+        whereExpression: typeof record.whereExpression === 'string' ? record.whereExpression : '',
         sortColumn: sortDirection ? sortColumn : null,
         sortDirection: sortColumn ? sortDirection : null,
         columnWidths: normalizeColumnWidths(record.columnWidths),
@@ -296,6 +317,7 @@ export function setGridColumnFilter(
 export function clearGridViewState(state?: GridViewState): GridViewState {
     return {
         columnFilters: {},
+        whereExpression: '',
         sortColumn: null,
         sortDirection: null,
         columnWidths: state?.columnWidths ?? {},

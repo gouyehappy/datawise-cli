@@ -23,8 +23,8 @@ defineProps<{
 
 <style scoped>
 :deep(.dw-icon-root) {
-  width: var(--dw-icon-size-lg);
-  height: var(--dw-icon-size-lg);
+  width: var(--dw-icon-size-sm);
+  height: var(--dw-icon-size-sm);
   color: var(--dw-text-muted);
 }
 

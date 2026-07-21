@@ -163,6 +163,56 @@
     font-size: var(--dw-font-size-btn-sm);
 }
 
+/* ---- 网格工具栏：图标 + 文字轻量按钮（插槽内外统一） ---- */
+.grid-label-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dw-gap-xs);
+    height: 28px;
+    padding: 0 var(--dw-space-4);
+    border: 1px solid color-mix(in srgb, var(--dw-border-light) 85%, transparent);
+    border-radius: var(--dw-btn-radius);
+    background: color-mix(in srgb, var(--dw-bg) 88%, var(--dw-bg-muted));
+    color: var(--dw-text-secondary);
+    font-size: var(--dw-text-sm);
+    font-weight: 500;
+    line-height: var(--dw-leading-tight);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: var(--dw-transition-colors), box-shadow var(--dw-duration-fast) var(--dw-ease);
+}
+
+.grid-label-btn:hover:not(:disabled) {
+    background: var(--dw-primary-softer);
+    border-color: color-mix(in srgb, var(--dw-primary) 22%, var(--dw-border-light));
+    color: var(--dw-primary);
+    box-shadow: inset 0 0 0 999px var(--dw-btn-hover-wash);
+}
+
+.grid-label-btn:active:not(:disabled) {
+    background: var(--dw-primary-soft);
+    box-shadow: inset 0 0 0 999px var(--dw-btn-active-wash);
+}
+
+.grid-label-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.grid-label-btn .grid-glyph,
+.grid-label-btn .dw-icon-root {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.grid-label-btn .grid-glyph--optical {
+    width: 22px;
+    height: 22px;
+    transform: scale(1.12);
+    transform-origin: center;
+}
+
 /* ---- 分段切换（表格/图表等） ---- */
 .dw-segment {
     display: inline-flex;
@@ -205,6 +255,27 @@
     color: var(--dw-text);
     font-weight: 600;
     box-shadow: var(--dw-shadow-xs);
+}
+
+.dw-segment__btn--icon {
+    width: var(--dw-control-h-xs);
+    min-width: var(--dw-control-h-xs);
+    padding: 0;
+    color: var(--dw-text-muted);
+}
+
+.dw-segment__btn--icon.is-active {
+    color: var(--dw-text);
+}
+
+.dw-segment__btn--label {
+    gap: var(--dw-gap-xs);
+    padding: 0 var(--dw-space-3);
+    color: var(--dw-text-muted);
+}
+
+.dw-segment__btn--label.is-active {
+    color: var(--dw-primary);
 }
 
 .dw-segment__btn:focus-visible {

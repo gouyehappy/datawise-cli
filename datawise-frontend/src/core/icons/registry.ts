@@ -11,14 +11,18 @@ import {
     Bookmark,
     Bot,
     Cable,
+    ChartColumn,
+    ChartPie,
     Check,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    ChevronsDown,
     Calendar,
     CircleAlert,
+    CircleHelp,
     Code,
     Columns2,
     Columns3,
@@ -27,6 +31,7 @@ import {
     Cpu,
     Crosshair,
     Database,
+    Dices,
     Download,
     ExternalLink,
     Eye,
@@ -50,10 +55,13 @@ import {
     Keyboard,
     LayoutGrid,
     LayoutTemplate,
+    Layers,
     LineChart,
     Link,
     List,
     ListOrdered,
+    ListPlus,
+    ListMinus,
     ListTree,
     ListVideo,
     Lock,
@@ -101,12 +109,17 @@ import {
 export type DwIconName =
     | 'plus'
     | 'minus'
+    | 'list-plus'
+    | 'list-minus'
+    | 'help'
+    | 'dices'
     | 'x'
     | 'chevron-down'
     | 'chevron-left'
     | 'chevron-right'
     | 'chevrons-left'
     | 'chevrons-right'
+    | 'chevrons-down'
     | 'filter'
     | 'arrow-up-down'
     | 'visibility-off'
@@ -130,6 +143,7 @@ export type DwIconName =
     | 'mic'
     | 'bot'
     | 'zap'
+    | 'layers'
     | 'list-ordered'
     | 'star'
     | 'cpu'
@@ -176,6 +190,10 @@ export type DwIconName =
     | 'plugins'
     | 'dev-tools'
     | 'dashboard'
+    | 'chart'
+    | 'chart-bar'
+    | 'chart-line'
+    | 'chart-pie'
     | 'tools'
     | 'tree'
     | 'terminal'
@@ -229,12 +247,17 @@ export type DwIconName =
 export const DW_ICON_REGISTRY: Record<DwIconName, Component> = {
     plus: Plus,
     minus: Minus,
+    'list-plus': ListPlus,
+    'list-minus': ListMinus,
+    help: CircleHelp,
+    dices: Dices,
     x: X,
     'chevron-down': ChevronDown,
     'chevron-left': ChevronLeft,
     'chevron-right': ChevronRight,
     'chevrons-left': ChevronsLeft,
     'chevrons-right': ChevronsRight,
+    'chevrons-down': ChevronsDown,
     filter: Filter,
     'arrow-up-down': ArrowUpDown,
     'visibility-off': EyeOff,
@@ -258,6 +281,7 @@ export const DW_ICON_REGISTRY: Record<DwIconName, Component> = {
     mic: Mic,
     bot: Bot,
     zap: Zap,
+    layers: Layers,
     'list-ordered': ListOrdered,
     star: Star,
     cpu: Cpu,
@@ -304,6 +328,10 @@ export const DW_ICON_REGISTRY: Record<DwIconName, Component> = {
     plugins: LayoutGrid,
     'dev-tools': Wrench,
     dashboard: BarChart3,
+    chart: BarChart3,
+    'chart-bar': ChartColumn,
+    'chart-line': LineChart,
+    'chart-pie': ChartPie,
     tools: Wrench,
     tree: ListTree,
     terminal: Terminal,

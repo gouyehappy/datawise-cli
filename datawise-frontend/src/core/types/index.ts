@@ -320,6 +320,16 @@ export type ContextMenuIcon =
     | 'close'
     | 'file'
     | 'connection'
+    | 'plus'
+    | 'minus'
+    | 'list-plus'
+    | 'list-minus'
+    | 'filter'
+    | 'ai'
+    | 'bot'
+    | 'dices'
+    | 'help'
+    | 'save'
 
 export interface ContextMenuItem {
     id: string
