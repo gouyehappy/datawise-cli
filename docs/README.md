@@ -30,6 +30,7 @@ cd datawise-frontend && npm install && npm run dev                   # → :2841
 | [OPENAPI.md](./OPENAPI.md) | API 契约导出与客户端生成 |
 | [FEDERATED_JOIN_BOUNDS.md](./FEDERATED_JOIN_BOUNDS.md) | 联邦跨源 JOIN 行数与截断行为 |
 | [CONFIG_MIGRATION.md](./CONFIG_MIGRATION.md) | Deprecated 配置路径 → 租户作用域迁移 |
+| [design/RUNTIME_ON_DEMAND_INSTALL.md](./design/RUNTIME_ON_DEMAND_INSTALL.md) | 运行时按需安装（连接器 / 驱动 / JRE 瘦身）设计 |
 | [DESKTOP_MAC.md](./DESKTOP_MAC.md) | 打 macOS 桌面包 |
 | [DESKTOP_LINUX.md](./DESKTOP_LINUX.md) | 打 Linux AppImage |
 | [todolist/](./todolist/README.md) | 产品级硬化待办 |
