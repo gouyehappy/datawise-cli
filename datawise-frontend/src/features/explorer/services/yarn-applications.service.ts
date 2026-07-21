@@ -79,6 +79,22 @@ export function isYarnAppKillable(state: string | null | undefined): boolean {
         || normalized === 'NEW_SAVING'
 }
 
+export const YARN_APP_STATE_OPTIONS = [
+    'RUNNING',
+    'ACCEPTED',
+    'FINISHED',
+    'FAILED',
+    'KILLED',
+] as const
+
+/** YARN REST `states` query — comma-separated uppercase values; empty = no filter. */
+export function formatYarnStateFilter(states: readonly string[]): string | undefined {
+    const normalized = states
+        .map((state) => state.trim().toUpperCase())
+        .filter(Boolean)
+    return normalized.length ? normalized.join(',') : undefined
+}
+
 export function formatYarnTimestamp(ms: number): string {
     if (!ms || ms <= 0) return '—'
     return new Date(ms).toLocaleString()

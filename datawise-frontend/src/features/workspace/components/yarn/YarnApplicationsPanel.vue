@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {DwButton, EmptyState} from '@/core/components'
+import {DwButton, DwMultiSelect, EmptyState} from '@/core/components'
+import type {SelectOption} from '@/core/components/select.types'
 import {configApi, explorerApi} from '@/api'
 import type {YarnAppDetail, YarnAppSummary, YarnQueueSummary} from '@/features/explorer/services/yarn-applications.service'
 import {
     formatYarnDuration,
     formatYarnMemory,
+    formatYarnStateFilter,
     formatYarnTimestamp,
     isYarnAppKillable,
+    YARN_APP_STATE_OPTIONS,
 } from '@/features/explorer/services/yarn-applications.service'
 import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useLayoutStore} from '@/features/layout/stores/layout'
@@ -27,7 +30,7 @@ const {t} = useI18n()
 const workspace = useWorkspaceStore()
 const layout = useLayoutStore()
 
-const stateFilter = ref('RUNNING')
+const stateFilter = ref<string[]>(['RUNNING'])
 const userFilter = ref('')
 const queueFilter = ref('')
 const apps = ref<YarnAppSummary[]>([])
@@ -42,6 +45,10 @@ const moveQueueInput = ref('')
 const killDiagnostics = ref('')
 
 const canKillSelected = computed(() => isYarnAppKillable(selectedApp.value?.state))
+
+const stateOptions = computed<SelectOption[]>(() =>
+    YARN_APP_STATE_OPTIONS.map((state) => ({value: state, label: state})),
+)
 
 const selectedAmHost = computed(() => selectedApp.value?.amHostHttpAddress ?? '')
 
@@ -59,7 +66,7 @@ async function loadApps() {
   selectedApp.value = null
   try {
     const result = await explorerApi.fetchYarnApplications(props.connectionId, {
-      state: stateFilter.value.trim() || undefined,
+      state: formatYarnStateFilter(stateFilter.value),
       user: userFilter.value.trim() || undefined,
       queue: queueFilter.value.trim() || undefined,
       limit: 200,
@@ -228,24 +235,32 @@ watch(() => props.initialAppId, () => {
 <template>
   <div class="yarn-apps-panel">
     <header class="yarn-apps-panel__filters">
-      <label>
-        <span>{{ t('explorer.yarnApps.state') }}</span>
-        <select v-model="stateFilter">
-          <option value="">{{ t('explorer.yarnApps.allStates') }}</option>
-          <option value="RUNNING">RUNNING</option>
-          <option value="ACCEPTED">ACCEPTED</option>
-          <option value="FINISHED">FINISHED</option>
-          <option value="FAILED">FAILED</option>
-          <option value="KILLED">KILLED</option>
-        </select>
+      <label class="dw-field yarn-apps-panel__filter">
+        <span class="dw-field__label">{{ t('explorer.yarnApps.state') }}</span>
+        <DwMultiSelect
+            v-model="stateFilter"
+            size="sm"
+            :options="stateOptions"
+            :placeholder="t('explorer.yarnApps.allStates')"
+        />
       </label>
-      <label>
-        <span>{{ t('explorer.yarnApps.user') }}</span>
-        <input v-model="userFilter" type="text" :placeholder="t('explorer.yarnApps.userPlaceholder')">
+      <label class="dw-field yarn-apps-panel__filter">
+        <span class="dw-field__label">{{ t('explorer.yarnApps.user') }}</span>
+        <input
+            v-model="userFilter"
+            class="dw-input dw-input--sm"
+            type="text"
+            :placeholder="t('explorer.yarnApps.userPlaceholder')"
+        >
       </label>
-      <label>
-        <span>{{ t('explorer.yarnApps.queue') }}</span>
-        <input v-model="queueFilter" type="text" :placeholder="t('explorer.yarnApps.queuePlaceholder')">
+      <label class="dw-field yarn-apps-panel__filter">
+        <span class="dw-field__label">{{ t('explorer.yarnApps.queue') }}</span>
+        <input
+            v-model="queueFilter"
+            class="dw-input dw-input--sm"
+            type="text"
+            :placeholder="t('explorer.yarnApps.queuePlaceholder')"
+        >
       </label>
       <DwButton size="sm" @click="loadApps">{{ t('explorer.yarnApps.applyFilters') }}</DwButton>
     </header>
@@ -361,22 +376,13 @@ watch(() => props.initialAppId, () => {
   align-items: end;
 }
 
-.yarn-apps-panel__filters label {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dw-gap-xs);
-  font-size: var(--dw-text-sm);
-  color: var(--dw-text-muted);
+.yarn-apps-panel__filter {
+  min-width: 160px;
 }
 
-.yarn-apps-panel__filters input,
-.yarn-apps-panel__filters select {
-  min-width: 140px;
-  padding: var(--dw-pad-tight);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius-sm);
-  background: var(--dw-bg-input);
-  color: var(--dw-text);
+.yarn-apps-panel__filter .dw-select,
+.yarn-apps-panel__filter .dw-input {
+  width: 100%;
 }
 
 .yarn-apps-panel__status {
