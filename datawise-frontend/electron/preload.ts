@@ -75,7 +75,53 @@ contextBridge.exposeInMainWorld('__datawiseDesktopBridge', {
             currentVersion: string
             latestVersion: string
             hasUpdate: boolean
+            downloadReady?: boolean
+            downloading?: boolean
+            error?: string
         }> => ipcRenderer.invoke('updater:checkForUpdates'),
+        downloadUpdate: (): Promise<{
+            currentVersion: string
+            latestVersion: string
+            hasUpdate: boolean
+            downloadReady?: boolean
+            downloading?: boolean
+            error?: string
+        }> => ipcRenderer.invoke('updater:downloadUpdate'),
+        quitAndInstall: (): Promise<boolean> => ipcRenderer.invoke('updater:quitAndInstall'),
+        setPreferences: (prefs: {
+            notifyOnUpdate: boolean
+            autoDownload: boolean
+        }): Promise<boolean> => ipcRenderer.invoke('updater:setPreferences', prefs),
+        getStatus: (): Promise<{
+            currentVersion: string
+            latestVersion: string
+            hasUpdate: boolean
+            downloadReady?: boolean
+            downloading?: boolean
+            error?: string
+        }> => ipcRenderer.invoke('updater:getStatus'),
+        onStatus: (
+            callback: (event: {
+                phase: 'available' | 'downloading' | 'downloaded' | 'error' | 'not-available'
+                currentVersion: string
+                latestVersion: string
+                percent?: number
+                error?: string
+            }) => void,
+        ) => {
+            const listener = (
+                _event: Electron.IpcRendererEvent,
+                payload: {
+                    phase: 'available' | 'downloading' | 'downloaded' | 'error' | 'not-available'
+                    currentVersion: string
+                    latestVersion: string
+                    percent?: number
+                    error?: string
+                },
+            ) => callback(payload)
+            ipcRenderer.on('updater:status', listener)
+            return () => ipcRenderer.removeListener('updater:status', listener)
+        },
     },
     config: {
         getSettings: (): Promise<{

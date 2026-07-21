@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {AppModal, DwButton} from '@/core/components'
 import {UserResource} from '@/features/auth/types/user-resource.types'
@@ -33,13 +33,56 @@ const changelogItems = tm('settings.about.changelogItems') as {
   notes: string
 }[]
 
+const canInstall = computed(() => Boolean(updateSettings.lastCheck?.downloadReady))
+const canDownload = computed(() =>
+  Boolean(
+    desktopApp
+    && updateSettings.lastCheck?.hasUpdate
+    && !updateSettings.lastCheck?.downloadReady
+    && !updateSettings.downloading,
+  ),
+)
+
+onMounted(() => {
+  updateSettings.ensureStatusSubscription()
+})
+
 async function handleCheckUpdate() {
   const result = await updateSettings.runUpdateCheck()
+  if (result.error) {
+    layout.showErrorToast(t('settings.about.updateCheckFailed', {message: result.error}))
+    return
+  }
+  if (result.downloadReady) {
+    layout.showToast(t('settings.about.updateReady', {version: result.latestVersion}))
+    return
+  }
   if (result.hasUpdate) {
     layout.showToast(t('settings.about.updateAvailable', {version: result.latestVersion}))
+    if (updateSettings.preferences.autoDownload) {
+      await handleDownload()
+    }
     return
   }
   layout.showSuccessToast(t('settings.about.upToDate'))
+}
+
+async function handleDownload() {
+  const result = await updateSettings.runDownload()
+  if (result.error) {
+    layout.showErrorToast(t('settings.about.downloadFailed', {message: result.error}))
+    return
+  }
+  if (result.downloadReady) {
+    layout.showToast(t('settings.about.updateReady', {version: result.latestVersion}))
+  }
+}
+
+async function handleInstall() {
+  const ok = await updateSettings.runInstall()
+  if (!ok) {
+    layout.showErrorToast(t('settings.about.installFailed'))
+  }
 }
 
 function patchUpdatePrefs(patch: Partial<typeof updateSettings.preferences>) {
@@ -65,6 +108,9 @@ function patchUpdatePrefs(patch: Partial<typeof updateSettings.preferences>) {
             <p class="latest-line">
               {{ t('settings.about.latestVersion', {version: updateSettings.lastCheck?.latestVersion ?? APP_VERSION}) }}
             </p>
+            <p v-if="updateSettings.downloading" class="latest-line">
+              {{ t('settings.about.downloading', {percent: updateSettings.downloadPercent}) }}
+            </p>
           </div>
         </div>
 
@@ -72,10 +118,26 @@ function patchUpdatePrefs(patch: Partial<typeof updateSettings.preferences>) {
           <DwButton
               variant="primary"
               :loading="updateSettings.checking"
-              :disabled="updateSettings.checking"
+              :disabled="updateSettings.checking || updateSettings.downloading"
               @click="handleCheckUpdate"
           >
             {{ updateSettings.checking ? t('settings.about.checking') : t('settings.about.checkUpdate') }}
+          </DwButton>
+          <DwButton
+              v-if="canDownload"
+              variant="secondary"
+              :loading="updateSettings.downloading"
+              :disabled="updateSettings.downloading"
+              @click="handleDownload"
+          >
+            {{ t('settings.about.downloadUpdate') }}
+          </DwButton>
+          <DwButton
+              v-if="canInstall"
+              variant="primary"
+              @click="handleInstall"
+          >
+            {{ t('settings.about.installAndRestart') }}
           </DwButton>
           <DwButton variant="secondary" @click="showChangelog = true">
             {{ t('settings.about.changelog') }}

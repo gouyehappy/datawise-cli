@@ -22,6 +22,7 @@ import OnboardingSpotlightTour from '@/features/onboarding/components/Onboarding
 import {useOnboardingGuide} from '@/features/onboarding/composables/useOnboardingGuide'
 import {isDesktopApp} from '@/features/layout/services/desktop-chrome'
 import {useDeepLinkListener} from '@/features/layout/composables/useDeepLinkListener'
+import {useUpdaterListener} from '@/features/settings/composables/useUpdaterListener'
 
 const layout = useLayoutStore()
 const appConfig = useAppConfigStore()
@@ -36,6 +37,7 @@ useConnectionHealthMonitor()
 useBackendHealthMonitor()
 useSessionKeepalive()
 useDeepLinkListener()
+useUpdaterListener()
 
 const hasEmbeddedToolRail = computed(
     () => layout.isWorkbenchModule && appConfig.showShortcutRail,

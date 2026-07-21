@@ -1118,20 +1118,32 @@ export default {
         checking: '正在检查更新…',
         upToDate: '当前已是最新版本',
         updateAvailable: '发现新版本「{version}」',
+        updateReady: '新版本「{version}」已下载，可安装并重启',
+        updateCheckFailed: '检查更新失败：{message}',
+        downloadUpdate: '下载更新',
+        downloading: '正在下载更新… {percent}%',
+        downloadFailed: '下载更新失败：{message}',
+        installAndRestart: '安装并重启',
+        installFailed: '无法安装更新，请稍后重试',
         changelog: '更新日志',
         changelogTitle: '更新日志',
         softwareUpdate: '软件更新',
         intro:
-            '应用内置自动更新机制，以确保你始终使用最新版本。默认会定期检查更新，并在发现新版本时通知你。',
+            '桌面版通过 GitHub Releases 检查并下载更新。发现新版本时可自动下载，下载完成后重启即可完成安装。',
         autoUpdateTitle: '自动更新',
         autoUpdateDesc:
-            '采用热更新方式，无需手动下载和安装，接受提示即可使用最新功能。',
+            '开启自动下载后，检查到新版本会在后台拉取安装包；下载完成后可一键安装并重启。',
         networkTitle: '网络要求',
         networkDesc:
-            '自动更新需要在本地网络外具备 HTTP 访问权限；否则将无法检查更新并完成热更新。',
+            '需要能访问 GitHub Releases（或你配置的更新源）；否则无法检查或下载更新。',
         notifyOnUpdate: '发现新版本时提醒我',
         autoDownload: '发现新版本时自动下载',
         changelogItems: [
+            {
+                version: '1.3.0',
+                date: '2026-07-21',
+                notes: '接入 GitHub Releases 自动更新：检查、下载与安装重启。',
+            },
             {
                 version: '1.0.0',
                 date: '2026-06-01',

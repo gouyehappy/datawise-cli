@@ -1118,20 +1118,32 @@ export default {
         checking: 'Checking for updates…',
         upToDate: 'You are on the latest version',
         updateAvailable: 'New version available: {version}',
+        updateReady: 'Version {version} is downloaded and ready to install',
+        updateCheckFailed: 'Update check failed: {message}',
+        downloadUpdate: 'Download update',
+        downloading: 'Downloading update… {percent}%',
+        downloadFailed: 'Download failed: {message}',
+        installAndRestart: 'Install and restart',
+        installFailed: 'Could not install the update. Try again later.',
         changelog: 'Changelog',
         changelogTitle: 'Changelog',
         softwareUpdate: 'Software update',
         intro:
-            'Built-in auto-update keeps you on the latest release. The app checks periodically and notifies you when a new version is available.',
+            'The desktop app checks GitHub Releases for updates. New versions can download automatically; restart to finish installing.',
         autoUpdateTitle: 'Auto update',
         autoUpdateDesc:
-            'Hot updates are built in — no manual download or install. Accept the prompt to get the latest features.',
+            'With auto-download enabled, new releases are fetched in the background. When ready, install and restart in one click.',
         networkTitle: 'Network requirements',
         networkDesc:
-            'Auto-update requires outbound HTTP access beyond your local network. Without it, update checks and hot updates cannot run.',
+            'Outbound access to GitHub Releases (or your configured update source) is required to check and download updates.',
         notifyOnUpdate: 'Alert me when a new version is found',
         autoDownload: 'Automatically download when a new version is found',
         changelogItems: [
+            {
+                version: '1.3.0',
+                date: '2026-07-21',
+                notes: 'GitHub Releases auto-update: check, download, and install/restart.',
+            },
             {
                 version: '1.0.0',
                 date: '2026-06-01',

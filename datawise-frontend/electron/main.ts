@@ -45,6 +45,7 @@ import {
 import {registerRendererProtocol, rendererAppUrl} from './renderer-protocol'
 import {registerRuntimeLogIpc} from './runtime-log-ipc'
 import {scheduleDetachedDevTools} from './devtools'
+import {registerUpdaterIpc} from './updater-service'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = !app.isPackaged
@@ -53,9 +54,6 @@ const isDev = !app.isPackaged
 if (process.platform === 'win32') {
     app.commandLine.appendSwitch('disable-features', 'OverlayScrollbars')
 }
-
-const APP_VERSION = '1.1.0'
-const LATEST_VERSION = process.env.DATAWISE_LATEST_VERSION?.trim() || APP_VERSION
 
 const pendingOpenUrls: string[] = []
 let deepLinkHandlersReady = false
@@ -94,12 +92,6 @@ if (!gotSingleInstanceLock) {
 
 if (process.platform === 'win32') {
     app.setAppUserModelId('org.apache.datawise.cli')
-}
-
-interface UpdateCheckResult {
-    currentVersion: string
-    latestVersion: string
-    hasUpdate: boolean
 }
 
 interface WindowStatePayload {
@@ -156,7 +148,7 @@ function registerSplashIpc() {
     })
     ipcMain.on('splash:getMeta', (event) => {
         event.returnValue = {
-            version: APP_VERSION,
+            version: app.getVersion(),
             tagline: '连接、查询、分析、导出 — 一站完成',
             isPackaged: app.isPackaged,
         }
@@ -165,20 +157,6 @@ function registerSplashIpc() {
 
 function registerBackendStartupIpc() {
     ipcMain.handle('backend:getStartupState', () => getBackendStartupState())
-}
-
-function registerUpdaterIpc() {
-    ipcMain.handle('updater:checkForUpdates', async (): Promise<UpdateCheckResult> => {
-        await new Promise<void>((resolve) => {
-            setTimeout(resolve, 400)
-        })
-        const latestVersion = LATEST_VERSION
-        return {
-            currentVersion: APP_VERSION,
-            latestVersion,
-            hasUpdate: latestVersion !== APP_VERSION,
-        }
-    })
 }
 
 function sanitizeWindowDimension(value: unknown, fallback: number, min: number, max: number): number {
@@ -429,7 +407,7 @@ app.whenReady().then(async () => {
     registerWindowIpc()
     registerSplashIpc()
     registerBackendStartupIpc()
-    registerUpdaterIpc()
+    registerUpdaterIpc(() => mainWindow)
     registerTerminalIpc()
     registerConfigDirIpc()
     registerRuntimeLogIpc()

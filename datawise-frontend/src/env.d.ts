@@ -51,7 +51,38 @@ declare global {
                     currentVersion: string
                     latestVersion: string
                     hasUpdate: boolean
+                    downloadReady?: boolean
+                    downloading?: boolean
+                    error?: string
                 }>
+                downloadUpdate: () => Promise<{
+                    currentVersion: string
+                    latestVersion: string
+                    hasUpdate: boolean
+                    downloadReady?: boolean
+                    downloading?: boolean
+                    error?: string
+                }>
+                quitAndInstall: () => Promise<boolean>
+                setPreferences: (prefs: {
+                    notifyOnUpdate: boolean
+                    autoDownload: boolean
+                }) => Promise<boolean>
+                getStatus: () => Promise<{
+                    currentVersion: string
+                    latestVersion: string
+                    hasUpdate: boolean
+                    downloadReady?: boolean
+                    downloading?: boolean
+                    error?: string
+                }>
+                onStatus: (callback: (event: {
+                    phase: 'available' | 'downloading' | 'downloaded' | 'error' | 'not-available'
+                    currentVersion: string
+                    latestVersion: string
+                    percent?: number
+                    error?: string
+                }) => void) => () => void
             }
             config?: {
                 getSettings: () => Promise<{
