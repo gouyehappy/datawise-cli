@@ -133,12 +133,13 @@ export function copyDirSync(src, dest) {
     cpSync(src, dest, {recursive: true, force: true})
 }
 
-export function copyJarFiles(srcDir, destDir, suffix = '.jar') {
+export function copyJarFiles(srcDir, destDir, suffix = '.jar', matcher = null) {
     if (!existsSync(srcDir)) return 0
     mkdirSync(destDir, {recursive: true})
     let count = 0
     for (const name of readdirSync(srcDir)) {
         if (!name.endsWith(suffix)) continue
+        if (matcher && !matcher(name)) continue
         cpSync(join(srcDir, name), join(destDir, name))
         count++
     }

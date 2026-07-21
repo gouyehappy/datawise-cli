@@ -26,7 +26,9 @@ desktop mvn  →  datawise-backend/**/target-desktop/  →  resources/desktop/  
 
 | Command | Description |
 |---------|-------------|
-| `npm run dist:desktop` | Full build for **host** OS (Win / Mac arm64 / Linux) |
+| `npm run dist:desktop` | Full build for **host** OS — default **`core`** profile |
+| `npm run dist:desktop:slim` | Slim bundle: no JRE, no connector JARs (catalog only) |
+| `npm run dist:desktop:full` | Full bundle: all connectors + full JRE |
 | `npm run dist:desktop:mac` | macOS Apple Silicon DMG + zip (**must run on macOS**) |
 | `npm run dist:desktop:linux` | Linux AppImage |
 | `npm run dist:desktop:clean` | Full rebuild (`--clean`: wipe packaging artifacts first) |
@@ -68,6 +70,16 @@ Build pipeline ([`maven.mjs`](./maven.mjs)):
 3. `mvn install -pl datawise-server,<connectors> -am` with `target-desktop`, incremental compile off, `-T 1`
 4. Validate Spring Boot JAR + sqlflow `Statement.class`
 
+**Packaging profiles** (`--profile slim|core|full`, default `core`):
+
+| Profile | JRE | Connectors in bundle | Maven `-pl` |
+|---------|-----|----------------------|-------------|
+| `slim` | none | none (runtime-catalog only) | server only |
+| `core` | jlink (fallback full) | mysql, postgresql, sqlite, h2 | server + 4 core |
+| `full` | full copy | all `CONNECTOR_MODULES` | server + all |
+
+See [RUNTIME_ON_DEMAND_INSTALL.md](../../../docs/design/RUNTIME_ON_DEMAND_INSTALL.md).
+
 Process stop does **not** kill Java LS by default. Set `DATAWISE_KILL_JAVA_LS=1` only if you still hit IDE file locks.
 
 `CONNECTOR_MODULES` lists packable datasource plugins (not spi/api/jdbc-runtime/`*-all`).
@@ -88,7 +100,8 @@ scripts/desktop/
   lib.mjs            — process kill, robust delete, boot-JAR find/validate
   maven.mjs          — purge → install → validate (tests always skipped)
   bundle-backend.mjs — Maven → assemble resources/desktop → AppCDS
-  build-cds.mjs      — AppCDS class archive (load-plugins=false during train)
+  generate-runtime-catalog.mjs — runtime-catalog.json from config/plugins JARs
+  jlink-jre.mjs      — trimmed JRE for core profile
   clean.mjs          — clean release dir or all packaging artifacts
   build.mjs          — orchestrator (optional clean → bundle → electron-builder)
   platform.mjs       — host/flag → electron-builder args (win/mac/linux)
@@ -97,7 +110,9 @@ scripts/desktop/
 ## Advanced flags
 
 ```powershell
-node scripts/desktop/build.mjs --skip-backend          # reuse existing resources/desktop/
+node scripts/desktop/build.mjs --profile core          # default desktop profile
+node scripts/desktop/build.mjs --profile slim
+node scripts/desktop/build.mjs --profile full
 node scripts/desktop/build.mjs --mac --arm64           # macOS (on a Mac)
 node scripts/desktop/build.mjs --linux                 # Linux AppImage
 node scripts/desktop/bundle-backend.mjs --skip-maven   # re-bundle JRE/config from existing JAR

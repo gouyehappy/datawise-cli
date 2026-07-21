@@ -13,7 +13,8 @@ import {existsSync, readdirSync} from 'node:fs'
 import {join} from 'node:path'
 import {
     backendRoot,
-    DESKTOP_BACKEND_MODULES,
+    backendModulesForProfile,
+    DEFAULT_DESKTOP_PROFILE,
     DESKTOP_MAVEN_BUILD_DIR,
     serverTargetDir,
 } from './paths.mjs'
@@ -242,21 +243,19 @@ function assertSqlFlowStatementClass() {
 
 /**
  * Build server + desktop connector plugins into target-desktop/.
- * 1) purge packaging output dirs
- * 2) mvn install (no clean goal — already purged)
- * 3) validate boot JAR + sqlflow Statement.class
+ * @param {{profile?: 'slim' | 'core' | 'full'}} [options]
  */
-export async function buildDesktopBackendMaven() {
+export async function buildDesktopBackendMaven({profile = DEFAULT_DESKTOP_PROFILE} = {}) {
+    const modules = backendModulesForProfile(profile)
     log(
         'maven',
-        `building datawise-server + desktop connectors → ${DESKTOP_MAVEN_BUILD_DIR}/ (tests skipped)…`,
+        `building profile=${profile} modules=${modules.length} → ${DESKTOP_MAVEN_BUILD_DIR}/ (tests skipped)…`,
     )
     await purgeBackendTargets({includeIdeTarget: false})
 
     runMaven({
-        // No `clean` — packaging dirs already purged (avoids maven-clean EPERM).
         goals: ['install'],
-        modules: DESKTOP_BACKEND_MODULES,
+        modules,
         alsoMake: true,
     })
 

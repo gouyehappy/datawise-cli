@@ -4,6 +4,11 @@
  * Prerequisites: JAVA_HOME (JDK 17+), Maven.
  * Output: resources/desktop/{backend,config-bundle}
  *
+ * Profiles (see docs/design/RUNTIME_ON_DEMAND_INSTALL.md):
+ *   slim — no bundled JRE, no connector JARs (catalog only)
+ *   core — jlink JRE + 4 core connectors (default)
+ *   full — full JRE + all connectors
+ *
  * Maven always skips tests (see maven.mjs).
  */
 import {cpSync, existsSync, mkdirSync, rmSync} from 'node:fs'
@@ -12,7 +17,10 @@ import {
     backendBundleOut,
     bundleConfigSrc,
     configBundleOut,
+    CORE_CONNECTOR_JAR_PREFIXES,
+    DEFAULT_DESKTOP_PROFILE,
     desktopBundleRoot,
+    parseDesktopProfile,
     repoConfig,
     serverTargetDir,
 } from './paths.mjs'
@@ -27,6 +35,8 @@ import {
 } from './lib.mjs'
 import {buildDesktopBackendMaven} from './maven.mjs'
 import {buildAppCds} from './build-cds.mjs'
+import {buildJlinkJre} from './jlink-jre.mjs'
+import {generateRuntimeCatalog} from './generate-runtime-catalog.mjs'
 
 function copyJre(javaHome, dest) {
     const dirs = ['bin', 'lib', 'conf']
@@ -50,10 +60,49 @@ function copyJre(javaHome, dest) {
     }
 }
 
-async function assembleBundle(serverJar) {
+/**
+ * @param {'slim' | 'core' | 'full'} profile
+ * @param {string} javaHome
+ * @param {string} dest
+ */
+function bundleJre(profile, javaHome, dest) {
+    if (profile === 'slim') {
+        log('bundle-backend', 'profile=slim — skipping bundled JRE')
+        return
+    }
+    if (profile === 'core') {
+        const jlinkOk = buildJlinkJre(javaHome, dest)
+        if (jlinkOk) {
+            log('bundle-backend', `bundled jlink JRE (core profile) from ${javaHome}`)
+            return
+        }
+        log('bundle-backend', 'jlink unavailable — falling back to full JRE copy for core profile')
+    }
+    copyJre(javaHome, dest)
+    log('bundle-backend', `bundled full JRE from ${javaHome}`)
+}
+
+/**
+ * @param {'slim' | 'core' | 'full'} profile
+ * @param {string} pluginsSrc
+ * @param {string} pluginsOut
+ */
+function copyPluginsForProfile(profile, pluginsSrc, pluginsOut) {
+    if (profile === 'slim') {
+        log('bundle-backend', 'profile=slim — no connector JARs in bundle (catalog only)')
+        return 0
+    }
+    if (profile === 'core') {
+        return copyJarFiles(pluginsSrc, pluginsOut, '.jar', (name) =>
+            CORE_CONNECTOR_JAR_PREFIXES.some((prefix) => name.startsWith(prefix)),
+        )
+    }
+    return copyJarFiles(pluginsSrc, pluginsOut)
+}
+
+async function assembleBundle(serverJar, profile) {
     await removePathRobust(desktopBundleRoot, {
         tag: 'bundle-backend',
-        // Only stop processes if delete hits a lock — packaging purge already stops earlier.
         onRetry: stopDesktopProcesses,
     })
 
@@ -62,11 +111,12 @@ async function assembleBundle(serverJar) {
     log('bundle-backend', `copied ${serverJar}`)
 
     const javaHome = process.env.JAVA_HOME?.trim()
-    if (!javaHome) {
-        throw new Error('JAVA_HOME is required to bundle a portable JRE')
+    if (profile !== 'slim') {
+        if (!javaHome) {
+            throw new Error('JAVA_HOME is required to bundle a portable JRE (profile is not slim)')
+        }
+        bundleJre(profile, javaHome, join(backendBundleOut, 'jre'))
     }
-    copyJre(javaHome, join(backendBundleOut, 'jre'))
-    log('bundle-backend', `bundled JRE from ${javaHome}`)
 
     copyDirSync(bundleConfigSrc, configBundleOut)
 
@@ -75,16 +125,26 @@ async function assembleBundle(serverJar) {
     rmSync(join(pluginsOut, '.gitkeep'), {force: true})
     rmSync(join(driversOut, '.gitkeep'), {force: true})
 
-    const pluginCount = copyJarFiles(join(repoConfig, 'plugins'), pluginsOut)
+    const pluginsSrc = join(repoConfig, 'plugins')
+    await generateRuntimeCatalog({
+        pluginsDir: pluginsSrc,
+        out: join(configBundleOut, 'runtime-catalog.json'),
+    })
+
+    const pluginCount = copyPluginsForProfile(profile, pluginsSrc, pluginsOut)
     const driverCount = copyJarFiles(join(repoConfig, 'drivers'), driversOut)
-    log('bundle-backend', `plugins: ${pluginCount}, drivers: ${driverCount}`)
+    log('bundle-backend', `profile=${profile} plugins: ${pluginCount}, drivers: ${driverCount}`)
 
     for (const sub of ['logs', 'cache/schema', 'scripts', 'ai-checkpoints']) {
         mkdirSync(join(configBundleOut, sub), {recursive: true})
     }
 }
 
-async function optionalAppCds() {
+async function optionalAppCds(profile) {
+    if (profile === 'slim') {
+        log('bundle-backend', 'profile=slim — skipping AppCDS (no bundled JRE)')
+        return
+    }
     log('bundle-backend', 'building AppCDS class cache (may take 1–2 min)…')
     try {
         await buildAppCds()
@@ -94,27 +154,26 @@ async function optionalAppCds() {
 }
 
 /**
- * @param {{skipMaven?: boolean}} [options]
+ * @param {{skipMaven?: boolean, profile?: 'slim' | 'core' | 'full'}} [options]
  */
-export async function bundleBackend({skipMaven = false} = {}) {
-    // 1) Maven: server + connectors → JAR / config/plugins (tests skipped)
-    //    Process stop happens inside purgeBackendTargets during the Maven step.
+export async function bundleBackend({skipMaven = false, profile = DEFAULT_DESKTOP_PROFILE} = {}) {
+    log('bundle-backend', `desktop packaging profile: ${profile}`)
+
     if (!skipMaven) {
-        await buildDesktopBackendMaven()
+        await buildDesktopBackendMaven({profile})
     }
 
-    // 2) Stage resources/desktop (existence check only — Maven already validated boot JAR)
     const serverJar = findServerJar(serverTargetDir)
     log('bundle-backend', `using server jar ${serverJar}`)
-    await assembleBundle(serverJar)
+    await assembleBundle(serverJar, profile)
 
-    // 3) Optional CDS archive for faster JVM startup
-    await optionalAppCds()
+    await optionalAppCds(profile)
 
     log('bundle-backend', `desktop bundle ready at ${desktopBundleRoot}`)
 }
 
 if (isDirectRun(import.meta.url)) {
     const skipMaven = process.argv.includes('--skip-maven')
-    await bundleBackend({skipMaven})
+    const profile = parseDesktopProfile(process.argv.slice(2))
+    await bundleBackend({skipMaven, profile})
 }

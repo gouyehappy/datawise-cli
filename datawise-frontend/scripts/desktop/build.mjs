@@ -3,6 +3,7 @@
  *
  * Usage:
  *   node scripts/desktop/build.mjs [--clean] [--skip-backend] [--dir] [--publish]
+ *     [--profile slim|core|full]
  *     [--win] [--mac] [--linux] [--arm64] [--x64] [--ide-target]
  *
  * npm scripts:
@@ -19,6 +20,7 @@ import {log, runNpm} from './lib.mjs'
 import {bundleBackend} from './bundle-backend.mjs'
 import {cleanDesktop} from './clean.mjs'
 import {describeDesktopTarget, resolveElectronBuilderArgs} from './platform.mjs'
+import {parseDesktopProfile} from './paths.mjs'
 
 function parseArgs(argv) {
     return {
@@ -32,6 +34,7 @@ function parseArgs(argv) {
         linux: argv.includes('--linux'),
         arm64: argv.includes('--arm64'),
         x64: argv.includes('--x64'),
+        profile: parseDesktopProfile(argv),
     }
 }
 
@@ -78,7 +81,7 @@ async function main() {
     }
 
     if (!opts.skipBackend) {
-        await bundleBackend()
+        await bundleBackend({profile: opts.profile})
     }
 
     await cleanDesktop('release')

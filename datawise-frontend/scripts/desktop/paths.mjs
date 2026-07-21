@@ -78,3 +78,62 @@ export const CONNECTOR_MODULES = [
 
 /** Single Maven -pl list: server JAR + desktop connector plugins. */
 export const DESKTOP_BACKEND_MODULES = ['datawise-server', ...CONNECTOR_MODULES]
+
+/** Core tier connectors pre-installed in the default `core` desktop profile. */
+export const CORE_CONNECTOR_MODULES = [
+    'datawise-connectors/datawise-connector-mysql',
+    'datawise-connectors/datawise-connector-postgresql',
+    'datawise-connectors/datawise-connector-sqlite',
+    'datawise-connectors/datawise-connector-h2',
+]
+
+/** JAR name prefixes for {@link CORE_CONNECTOR_MODULES} (used when copying into the bundle). */
+export const CORE_CONNECTOR_JAR_PREFIXES = [
+    'datawise-connector-mysql-',
+    'datawise-connector-postgresql-',
+    'datawise-connector-sqlite-',
+    'datawise-connector-h2-',
+]
+
+export const DESKTOP_PROFILES = ['slim', 'core', 'full']
+
+/** Default desktop packaging profile (see docs/design/RUNTIME_ON_DEMAND_INSTALL.md). */
+export const DEFAULT_DESKTOP_PROFILE = 'core'
+
+/**
+ * @param {string[]|readonly string[]} [argv]
+ * @returns {'slim' | 'core' | 'full'}
+ */
+export function parseDesktopProfile(argv = process.argv.slice(2)) {
+    const idx = argv.indexOf('--profile')
+    if (idx >= 0 && argv[idx + 1]) {
+        const profile = String(argv[idx + 1]).trim().toLowerCase()
+        if (DESKTOP_PROFILES.includes(profile)) {
+            return /** @type {'slim' | 'core' | 'full'} */ (profile)
+        }
+        throw new Error(`Unknown desktop profile "${argv[idx + 1]}". Use: ${DESKTOP_PROFILES.join(' | ')}`)
+    }
+    const fromEnv = process.env.DATAWISE_DESKTOP_PROFILE?.trim().toLowerCase()
+    if (fromEnv && DESKTOP_PROFILES.includes(fromEnv)) {
+        return /** @type {'slim' | 'core' | 'full'} */ (fromEnv)
+    }
+    return DEFAULT_DESKTOP_PROFILE
+}
+
+/**
+ * @param {'slim' | 'core' | 'full'} profile
+ * @returns {string[]}
+ */
+export function connectorModulesForProfile(profile) {
+    if (profile === 'full') return [...CONNECTOR_MODULES]
+    if (profile === 'core') return [...CORE_CONNECTOR_MODULES]
+    return []
+}
+
+/**
+ * @param {'slim' | 'core' | 'full'} profile
+ * @returns {string[]}
+ */
+export function backendModulesForProfile(profile) {
+    return ['datawise-server', ...connectorModulesForProfile(profile)]
+}
