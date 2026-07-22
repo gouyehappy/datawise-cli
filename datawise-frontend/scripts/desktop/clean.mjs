@@ -64,10 +64,23 @@ async function cleanAll({includeIdeTarget = false} = {}) {
     }
 
     for (const path of paths) {
-        await removePathRobust(path, {
-            tag: 'clean',
-            onRetry: stopDesktopProcesses,
-        })
+        try {
+            await removePathRobust(path, {
+                tag: 'clean',
+                onRetry: stopDesktopProcesses,
+            })
+        } catch (error) {
+            // On Windows, release artifacts are frequently locked by Explorer previews,
+            // anti-virus scanning, or stale Electron handles. Keep --all best-effort:
+            // a follow-up cleanDesktop('release') in build.mjs already handles fallback outputs.
+            const isReleasePath = path === releaseDir || path.includes(`${join(frontendRoot, 'release-')}`)
+            if (isReleasePath) {
+                const message = error instanceof Error ? error.message : String(error)
+                log('clean', `skip locked release artifact: ${path} (${message})`)
+                continue
+            }
+            throw error
+        }
     }
 
     // cleanBackendMaven → purgeBackendTargets also stops processes once for target-desktop/.
