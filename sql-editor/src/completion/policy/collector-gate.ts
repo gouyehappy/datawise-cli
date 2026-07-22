@@ -30,6 +30,7 @@ const NO_COLUMN_STAGES = new Set<string>([
     'group_by.clause_next',
     'join.on_keyword',
     'table.clause_next',
+    'update.after_table',
     'select_list.after_aggregate',
     'order_by.after_column',
 ])
@@ -76,6 +77,8 @@ function planAllowsSnippets(
         return slot === 'statement_start' || slot === 'from' || slot === 'join'
     }
     if (plan.keywordPhase === 'clause-next') return true
+    if (plan.keywordPhase === 'insert-clause-next') return true
+    if (plan.keywordPhase === 'update-clause-next') return true
     return plan.keywordPhase === 'all'
 }
 

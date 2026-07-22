@@ -39,6 +39,7 @@ const SLOT_SET = new Set<string>([
     'set',
     'values',
     'insert_columns',
+    'update_table',
     'column_ref',
 ])
 

@@ -40,7 +40,11 @@ export function runCollectors(input: RunCollectorsInput): void {
     const {ctx, plan, push, editor, range, prefix, hasTables, schema} = input
     const snippetSlot =
         plan.keywordSlot === 'after_table'
-            ? (ctx.slot === 'join' || ctx.slot === 'from' ? 'join' : 'where')
+            ? (ctx.statement === 'delete'
+                ? 'where'
+                : ctx.slot === 'join' || ctx.slot === 'from'
+                    ? 'join'
+                    : 'where')
             : plan.keywordSlot === 'after_where'
                 ? 'group_by'
                 : (plan.keywordSlot as SqlCompletionSlot)

@@ -55,7 +55,7 @@ export function resolveStageFromGrammar(
         }
     }
 
-    const tableSlots = new Set(['from', 'join', 'insert_columns'])
+    const tableSlots = new Set(['from', 'join', 'insert_columns', 'update_table'])
     if (tableSlots.has(ctx.slot)) {
         const clause =
             findActiveGrammarClause(ctx.segment, ctx.statement, grammar) ??

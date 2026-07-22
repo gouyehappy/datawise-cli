@@ -151,6 +151,26 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
         keywordPhase: 'none',
         suppressTables: false,
     },
+    'insert.after_table': {
+        collectors: ['keywords', 'snippets', 'columns'],
+        sortProfile: 'keyword-first',
+        keywordPhase: 'insert-clause-next',
+        keywordSlot: 'values',
+        suppressTables: true,
+    },
+    'update.pick_table': {
+        collectors: ['tables', 'snippets'],
+        sortProfile: 'table-first',
+        keywordPhase: 'none',
+        suppressTables: false,
+    },
+    'update.after_table': {
+        collectors: ['keywords', 'snippets'],
+        sortProfile: 'keyword-first',
+        keywordPhase: 'update-clause-next',
+        keywordSlot: 'set',
+        suppressTables: true,
+    },
     'update.set': {
         collectors: ['columns', 'aliasComplete', 'keywords', 'snippets'],
         sortProfile: 'column-first',

@@ -35,7 +35,10 @@ export type CompletionStage =
     // DML
     | 'insert.values'
     | 'insert.columns'
+    | 'insert.after_table'
     | 'update.set'
+    | 'update.pick_table'
+    | 'update.after_table'
     | 'delete.from'
     // 语句级
     | 'statement.start'

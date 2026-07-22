@@ -14,6 +14,12 @@ export const INSERT_STATEMENT_GRAMMAR: StatementGrammar = {
             markers: ['INTO'],
             states: [
                 {
+                    id: 'table_complete',
+                    when: 'from_table_clause_complete',
+                    stage: 'insert.after_table',
+                    hint: 'INSERT INTO 表后 → VALUES / 列名',
+                },
+                {
                     id: 'pick_table',
                     when: 'always',
                     stage: 'insert.columns',
@@ -49,6 +55,25 @@ export const UPDATE_STATEMENT_GRAMMAR: StatementGrammar = {
         },
     ],
     clauses: [
+        {
+            id: 'update_table',
+            slot: 'update_table',
+            markers: ['UPDATE'],
+            states: [
+                {
+                    id: 'table_complete',
+                    when: 'from_table_clause_complete',
+                    stage: 'update.after_table',
+                    hint: 'UPDATE 表后 → SET',
+                },
+                {
+                    id: 'pick_table',
+                    when: 'always',
+                    stage: 'update.pick_table',
+                    hint: 'UPDATE 后 → 表名',
+                },
+            ],
+        },
         {
             id: 'set',
             slot: 'set',
@@ -101,6 +126,12 @@ export const DELETE_STATEMENT_GRAMMAR: StatementGrammar = {
             slot: 'from',
             markers: ['FROM'],
             states: [
+                {
+                    id: 'table_complete',
+                    when: 'from_table_clause_complete',
+                    stage: 'table.clause_next',
+                    hint: 'DELETE FROM 表后 → WHERE',
+                },
                 {
                     id: 'pick_table',
                     when: 'always',

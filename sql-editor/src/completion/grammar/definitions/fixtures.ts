@@ -276,11 +276,23 @@ const FIXTURE_LIST: Array<{
         fixture: {sql: 'INSERT INTO |', stage: 'insert.columns', clauseId: 'insert_columns'},
     },
     {
+        statement: 'insert', clauseId: 'insert_columns', stateId: 'table_complete',
+        fixture: {sql: 'INSERT INTO orders |', stage: 'insert.after_table', clauseId: 'insert_columns'},
+    },
+    {
         statement: 'insert', clauseId: 'values', stateId: 'default',
         fixture: {sql: 'INSERT INTO orders VALUES |', stage: 'insert.values', clauseId: 'values'},
     },
 
     // ── UPDATE ──
+    {
+        statement: 'update', clauseId: 'update_table', stateId: 'pick_table',
+        fixture: {sql: 'UPDATE |', stage: 'update.pick_table', clauseId: 'update_table'},
+    },
+    {
+        statement: 'update', clauseId: 'update_table', stateId: 'table_complete',
+        fixture: {sql: 'UPDATE orders |', stage: 'update.after_table', clauseId: 'update_table'},
+    },
     {
         statement: 'update', clauseId: null, stateId: 'global_where_complete',
         fixture: {
@@ -337,6 +349,10 @@ const FIXTURE_LIST: Array<{
     {
         statement: 'delete', clauseId: 'from', stateId: 'pick_table',
         fixture: {sql: 'DELETE FROM |', stage: 'delete.from', clauseId: 'from'},
+    },
+    {
+        statement: 'delete', clauseId: 'from', stateId: 'table_complete',
+        fixture: {sql: 'DELETE FROM orders |', stage: 'table.clause_next', clauseId: 'from'},
     },
     {
         statement: 'delete', clauseId: 'where', stateId: 'where_complete',

@@ -71,6 +71,8 @@ function parseTableClauseTail(tail: string): {
     if (tokens.length === 1) {
         const tok = tokens[0]
         if (joinQualifierPrefix(tok)) return {alias: null, joinKeywordPrefix: tok, clauseKeywordPrefix: null}
+        const clausePref = clauseKeywordPrefix(tok)
+        if (clausePref) return {alias: null, joinKeywordPrefix: null, clauseKeywordPrefix: clausePref}
         return {alias: tok, joinKeywordPrefix: null, clauseKeywordPrefix: null}
     }
 
@@ -101,20 +103,29 @@ function parseTableClauseTail(tail: string): {
 }
 
 type ActiveClause = {
-    isJoin: boolean
+    kind: 'from' | 'join' | 'update'
     segmentStart: number
 }
 
-/** 光标前一行内，取最后一个 FROM / JOIN 子句起点 */
+/** 光标前一行内，取最后一个表名槽（FROM / JOIN / UPDATE…SET 前）起点 */
 function findActiveClause(lineBeforeCursor: string): ActiveClause | null {
     let last: ActiveClause | null = null
+    for (const m of lineBeforeCursor.matchAll(/\bUPDATE\s+/gi)) {
+        const afterUpdate = lineBeforeCursor.slice(m.index! + m[0].length)
+        if (!/\bSET\b/i.test(afterUpdate)) {
+            last = {kind: 'update', segmentStart: m.index! + m[0].length}
+        }
+    }
     for (const m of lineBeforeCursor.matchAll(
         /\b(FROM|(?:INNER|LEFT|RIGHT|FULL|CROSS)\s+JOIN|JOIN)\s+/gi,
     )) {
         const opener = m[1].toUpperCase().replace(/\s+/g, ' ')
-        last = {
-            isJoin: opener !== 'FROM',
+        const candidate: ActiveClause = {
+            kind: opener === 'FROM' ? 'from' : 'join',
             segmentStart: m.index! + m[0].length,
+        }
+        if (!last || candidate.segmentStart >= last.segmentStart) {
+            last = candidate
         }
     }
     return last
@@ -179,11 +190,12 @@ function analyzeTablePrefixSegment(
 
 function analyzeSegmentAfterOpener(
     segment: string,
-    isJoin: boolean,
+    kind: ActiveClause['kind'],
     line: string,
     cursorColumn: number,
     knownTables: string[],
 ): FromJoinTableState | null {
+    const isJoin = kind === 'join'
     const trimmed = segment.trimEnd()
     if (!trimmed) return null
 
@@ -251,17 +263,34 @@ export function analyzeFromJoinTableState(
     cursorColumn: number,
     knownTables: string[],
 ): FromJoinTableState | null {
-    if (slot !== 'from' && slot !== 'join' && slot !== 'insert_columns') return null
+    if (
+        slot !== 'from'
+        && slot !== 'join'
+        && slot !== 'insert_columns'
+        && slot !== 'update_table'
+    ) {
+        return null
+    }
+
+    if (slot === 'insert_columns') {
+        const intoMatch = /\bINTO\s+(.*)$/i.exec(lineBeforeCursor)
+        if (intoMatch) {
+            const segment = intoMatch[1] ?? ''
+            if (!segment.trim()) return emptyState({awaitingTableName: true})
+            const state = analyzeSegmentAfterOpener(segment, 'from', line, cursorColumn, knownTables)
+            if (state) return state
+        }
+    }
 
     const active = findActiveClause(lineBeforeCursor)
     if (active) {
         const segment = lineBeforeCursor.slice(active.segmentStart)
         if (!segment.trim()) {
-            return active.isJoin
-                ? emptyState({awaitingJoinTable: true})
-                : emptyState({awaitingTableName: true})
+            if (active.kind === 'join') return emptyState({awaitingJoinTable: true})
+            if (active.kind === 'update') return emptyState({awaitingTableName: true})
+            return emptyState({awaitingTableName: true})
         }
-        const state = analyzeSegmentAfterOpener(segment, active.isJoin, line, cursorColumn, knownTables)
+        const state = analyzeSegmentAfterOpener(segment, active.kind, line, cursorColumn, knownTables)
         if (state) return state
     }
 

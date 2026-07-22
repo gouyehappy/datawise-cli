@@ -167,6 +167,7 @@ function detectMarkerSlot(
     if (statement === 'update') {
         if (lastMarkerIndex(masked, 'WHERE') >= 0) return 'where'
         if (lastMarkerIndex(masked, 'SET') >= 0) return 'set'
+        if (lastMarkerIndex(masked, 'UPDATE') >= 0) return 'update_table'
         return 'statement_start'
     }
 
@@ -233,6 +234,8 @@ export function effectiveCompletionSlot(ctx: SqlCompletionContext): SqlCompletio
     if (hasSignal(ctx, 'after_complete_where_predicate')) return ctx.slot
     if (hasSignal(ctx, 'after_complete_column_ref') && ctx.predicateSlot) return ctx.predicateSlot
     if (ctx.fromJoin?.awaitingOnClause) return 'on'
+    if (ctx.fromJoin?.tableClauseComplete && ctx.slot === 'insert_columns') return 'values'
+    if (ctx.fromJoin?.tableClauseComplete && ctx.slot === 'update_table') return 'set'
     if (ctx.fromJoin?.tableClauseComplete && (ctx.slot === 'from' || ctx.slot === 'join')) {
         return ctx.slot === 'join' ? 'join' : 'where'
     }

@@ -20,7 +20,7 @@ const COLUMN_SLOTS = new Set<SqlCompletionSlot>([
     'column_ref', 'select_list', 'where', 'having', 'order_by', 'group_by', 'on', 'set', 'insert_columns',
 ])
 
-const TABLE_SLOTS = new Set<SqlCompletionSlot>(['from', 'join', 'insert_columns'])
+const TABLE_SLOTS = new Set<SqlCompletionSlot>(['from', 'join', 'insert_columns', 'update_table'])
 const ALIAS_DOT_SLOTS = new Set<SqlCompletionSlot>(['select_list', 'where', 'on', 'having', 'order_by', 'group_by'])
 
 export function shouldSuggestTables(ctx: Pick<SqlCompletionContext, 'slot' | 'fromJoin'>): boolean {

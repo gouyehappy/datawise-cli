@@ -44,6 +44,10 @@ export type KeywordPhase =
 
     | 'function-open'
 
+    | 'insert-clause-next'
+
+    | 'update-clause-next'
+
     | 'all'
 
 
@@ -52,6 +56,12 @@ const OPERATOR_KEYWORDS = new Set(['=', '<>', '!=', '>=', '<=', '<', '>', 'LIKE'
 const SORT_DIRECTION_KEYWORDS = new Set(['ASC', 'DESC'])
 
 const CONNECTOR_KEYWORDS = new Set(['AND', 'OR'])
+
+const INSERT_AFTER_TABLE_KEYWORDS = new Set(['VALUES'])
+
+const UPDATE_AFTER_TABLE_KEYWORDS = new Set(['SET'])
+
+const DELETE_AFTER_TABLE_KEYWORDS = new Set(['WHERE'])
 
 /** 下一子句 / SELECT 列表内输入子句前缀时允许的关键字 */
 const CLAUSE_NEXT_KEYWORDS = new Set([
@@ -167,6 +177,14 @@ export function filterKeywordsByPhase(keywords: string[], phase: KeywordPhase): 
     if (phase === 'function-open') return keywords.filter((k) => k === '(')
 
     if (phase === 'clause-next' || phase === 'clause-prefix') return keywords.filter(isClauseNextKeyword)
+
+    if (phase === 'insert-clause-next') {
+        return keywords.filter((k) => INSERT_AFTER_TABLE_KEYWORDS.has(normalizeClauseKeyword(k)))
+    }
+
+    if (phase === 'update-clause-next') {
+        return keywords.filter((k) => UPDATE_AFTER_TABLE_KEYWORDS.has(normalizeClauseKeyword(k)))
+    }
 
     if (phase === 'connectors') {
 

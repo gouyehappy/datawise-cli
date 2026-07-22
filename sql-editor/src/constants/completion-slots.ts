@@ -18,6 +18,7 @@ export const SQL_COMPLETION_SLOT_ORDER: readonly SqlCompletionSlot[] = [
     'set',
     'values',
     'insert_columns',
+    'update_table',
     'column_ref',
 ] as const
 
@@ -39,6 +40,7 @@ export const COMPLETION_SLOT_TONE_CLASSES: Partial<Record<SqlCompletionSlot, str
     set: 'tone-default',
     values: 'tone-default',
     insert_columns: 'tone-default',
+    update_table: 'tone-default',
     column_ref: 'tone-on',
 }
 

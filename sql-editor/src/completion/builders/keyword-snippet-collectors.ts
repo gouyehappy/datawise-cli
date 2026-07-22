@@ -57,7 +57,9 @@ export function collectKeywordSuggestions(
         plan.keywordSlot === 'after_table' ||
         plan.keywordSlot === 'after_on' ||
         plan.keywordSlot === 'after_where' ||
-        plan.keywordSlot === 'after_group_by'
+        plan.keywordSlot === 'after_group_by' ||
+        plan.keywordPhase === 'insert-clause-next' ||
+        plan.keywordPhase === 'update-clause-next'
     let index = 0
     let preselected = false
     const predicateClauseExit =

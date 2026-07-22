@@ -477,3 +477,83 @@ describe('completion scenarios — ON / WHERE / ORDER', () => {
         assert.equal(plan.keywordSlot, 'after_group_by')
     })
 })
+
+describe('completion scenarios — DML (INSERT / UPDATE / DELETE)', () => {
+    it('DELETE FROM 表后：WHERE 关键字', () => {
+        assertScenario('delete-after-table', 'DELETE FROM orders |', {
+            slot: 'from',
+            stage: 'table.clause_next',
+            afterTable: true,
+            hasKeywords: true,
+            hasTables: false,
+            allowEmpty: true,
+            abort: false,
+        })
+    })
+
+    it('DELETE FROM 表后输入 w：WHERE 关键字（非仅片段）', () => {
+        const {ctx, plan, clean, offset} = at('DELETE FROM orders w|')
+        assert.equal(ctx.fromJoin?.clauseKeywordPrefix, 'w')
+        assert.equal(ctx.fromJoin?.tableClauseComplete, true)
+        assert.equal(plan.stage, 'table.clause_next')
+        assert.equal(plan.keywordSlot, 'after_table')
+        assert.equal(plan.collectors.includes('keywords'), true)
+        assert.equal(
+            shouldAbortCompletion({
+                sql: clean,
+                offset,
+                prefix: 'w',
+                ctx,
+                triggerKind: TriggerCharacter,
+            }),
+            false,
+        )
+        assert.equal(shouldOfferKeywordAtCursor(clean, 'WHERE', 'w'), true)
+    })
+
+    it('UPDATE 后：表名补全', () => {
+        assertScenario('update-pick-table', 'UPDATE |', {
+            slot: 'update_table',
+            stage: 'update.pick_table',
+            hasTables: true,
+            hasKeywords: false,
+            allowEmpty: true,
+            abort: false,
+        })
+    })
+
+    it('UPDATE 表后：SET 关键字', () => {
+        assertScenario('update-after-table', 'UPDATE orders |', {
+            slot: 'update_table',
+            stage: 'update.after_table',
+            hasKeywords: true,
+            hasTables: false,
+            allowEmpty: true,
+            abort: false,
+        })
+        const {ctx, plan, clean, offset} = at('UPDATE orders s|')
+        assert.equal(plan.keywordPhase, 'update-clause-next')
+        assert.equal(shouldOfferKeywordAtCursor(clean, 'SET', 's'), true)
+        assert.equal(
+            shouldAbortCompletion({
+                sql: clean,
+                offset,
+                prefix: 's',
+                ctx,
+                triggerKind: TriggerCharacter,
+            }),
+            false,
+        )
+    })
+
+    it('INSERT INTO 表后：VALUES 关键字与列名', () => {
+        assertScenario('insert-after-table', 'INSERT INTO orders |', {
+            slot: 'insert_columns',
+            stage: 'insert.after_table',
+            hasKeywords: true,
+            hasTables: false,
+            allowEmpty: true,
+            abort: false,
+        })
+    })
+})

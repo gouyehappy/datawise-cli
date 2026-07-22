@@ -50,6 +50,7 @@ const SLOT_LABEL_KEY: Record<SqlCompletionSlot, string> = {
     set: 'slot.label.set',
     values: 'slot.label.values',
     insert_columns: 'slot.label.insert_columns',
+    update_table: 'slot.label.update_table',
     column_ref: 'slot.label.column_ref',
 }
 
@@ -67,6 +68,7 @@ const SLOT_HINT_KEY: Record<SqlCompletionSlot, string> = {
     set: 'hint.slot.set',
     values: 'hint.slot.values',
     insert_columns: 'hint.slot.insert_columns',
+    update_table: 'hint.slot.update_table',
     column_ref: 'hint.slot.column_ref',
 }
 
@@ -84,9 +86,17 @@ function buildHint(
         return sqlEditorT(locale, 'hint.awaiting_on')
     }
     if (ctx.fromJoin?.tableClauseComplete) {
-        return sqlEditorT(locale, 'hint.after_table', {
-            table: ctx.fromJoin.resolvedTable ?? '',
-        })
+        const table = ctx.fromJoin.resolvedTable ?? ''
+        if (ctx.statement === 'delete') {
+            return sqlEditorT(locale, 'hint.after_delete_table', {table})
+        }
+        if (ctx.statement === 'update') {
+            return sqlEditorT(locale, 'hint.after_update_table', {table})
+        }
+        if (ctx.statement === 'insert') {
+            return sqlEditorT(locale, 'hint.after_insert_table', {table})
+        }
+        return sqlEditorT(locale, 'hint.after_table', {table})
     }
     if (hasSignal(ctx, 'after_complete_column_ref')) {
         return sqlEditorT(locale, 'hint.after_column')

@@ -22,6 +22,9 @@ const KEYWORD_QUICK_ACTIONS: Partial<Record<SqlCompletionSlot, SqlQuickAction[]>
     from: [
         {id: 'join', label: 'JOIN', insertText: '\nINNER JOIN ', triggerSuggest: true, titleKey: 'quick.join'},
     ],
+    update_table: [
+        {id: 'set', label: 'SET', insertText: 'SET ', kind: 'keyword', titleKey: 'quick.set'},
+    ],
     where: [
         {id: 'and', label: 'AND', insertText: 'AND ', kind: 'keyword', titleKey: 'quick.and'},
         {id: 'or', label: 'OR', insertText: 'OR ', kind: 'keyword', titleKey: 'quick.or'},

@@ -104,6 +104,7 @@ export type SqlCompletionSlot =
     | 'set'
     | 'values'
     | 'insert_columns'
+    | 'update_table'
     | 'column_ref'
 
 /** Monaco 补全项用的运行时片段形状 */
