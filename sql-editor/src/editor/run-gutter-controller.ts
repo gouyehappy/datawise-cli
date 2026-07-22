@@ -1,8 +1,15 @@
 import * as monaco from 'monaco-editor'
-import {resolveGutterStatement, type SqlStatementSpan} from '@sql-editor/utils/sql-statement-index'
+import {
+    findStatementContainingLine,
+    findStatementContainingOffset,
+    indexSqlStatements,
+    resolveGutterStatement,
+    type SqlStatementSpan,
+} from '@sql-editor/utils/sql-statement-index'
 import type {SqlGutterStatementPayload} from '@sql-editor/types'
 
 export const SQL_RUN_GUTTER_GLYPH_CLASS = 'sql-editor-run-gutter-glyph'
+/** @deprecated GlyphMarginWidget 遗留 DOM 清理用 */
 export const SQL_RUN_GUTTER_BTN_CLASS = 'sql-editor-run-gutter-btn'
 
 export interface SqlRunGutterOptions {
@@ -32,32 +39,43 @@ function setRunGutterState(
     else delete container.dataset.runGutterReason
 }
 
-function createRunButton(): HTMLButtonElement {
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = SQL_RUN_GUTTER_BTN_CLASS
-    button.setAttribute('aria-label', 'Run statement')
-    button.innerHTML =
-        '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">' +
-        '<path fill="currentColor" d="M4.2 2.8v10.4c0 .55.6.88 1.08.6l7.8-4.55c.48-.28.48-.97 0-1.25L5.28 3.2c-.48-.27-1.08.06-1.08.6z"/>' +
-        '</svg>'
-    return button
+/** 清理 GlyphMarginWidget 遗留 DOM，避免与 decoration 叠出多个 ▶ */
+function purgeLegacyRunGutterNodes(
+    container: HTMLElement,
+    editor: monaco.editor.IStandaloneCodeEditor,
+): void {
+    container.querySelectorAll(`.${SQL_RUN_GUTTER_BTN_CLASS}`).forEach((node) => node.remove())
+    editor.getDomNode()?.querySelectorAll(`.${SQL_RUN_GUTTER_BTN_CLASS}`).forEach((node) => node.remove())
+}
+
+function resolveActiveStatement(
+    model: monaco.editor.ITextModel,
+    editor: monaco.editor.IStandaloneCodeEditor,
+    gutterLine: number | null,
+): SqlStatementSpan | null {
+    const sql = model.getValue()
+    const position = editor.getPosition()
+    if (position) {
+        const fromOffset = findStatementContainingOffset(
+            indexSqlStatements(sql),
+            model.getOffsetAt(position),
+        )
+        if (fromOffset) return fromOffset
+    }
+    return resolveGutterStatement(sql, position?.lineNumber ?? null, gutterLine)
 }
 
 /**
- * 行内执行按钮：真实 DOM GlyphMarginWidget。
- * - 光标在空行（不属于任何语句）→ 不显示
- * - 光标在某条 SQL 内 → 仅在该语句第一行显示一个 ▶
- * - 切换到另一条 SQL → 按钮跟随切换
+ * 行内执行按钮：单 decoration、语句首行、全局仅一个 ▶。
+ * 使用 deltaDecorations 确保光标切换到后续语句时 glyph 能正确换行。
  */
 export class SqlRunGutterController implements SqlRunGutterBinding {
     private active: SqlStatementSpan | null = null
     private gutterLine: number | null = null
-    private widgetMounted = false
+    private decorationIds: string[] = []
+    private displayedLine: number | null = null
+    private disposables: monaco.IDisposable[] = []
     private renderRaf = 0
-    private readonly button = createRunButton()
-    private readonly disposables: monaco.IDisposable[] = []
-    private readonly glyphWidget: monaco.editor.IGlyphMarginWidget
 
     constructor(
         private readonly editor: monaco.editor.IStandaloneCodeEditor,
@@ -65,38 +83,10 @@ export class SqlRunGutterController implements SqlRunGutterBinding {
         private readonly options: SqlRunGutterOptions,
     ) {
         container.classList.add('sql-monaco-host--run-gutter')
+        purgeLegacyRunGutterNodes(container, editor)
         editor.updateOptions({glyphMargin: true})
-
-        this.glyphWidget = {
-            getId: () => 'sql-editor-run-gutter',
-            getDomNode: () => this.button,
-            getPosition: () => ({
-                lane: monaco.editor.GlyphMarginLane.Right,
-                zIndex: 10000,
-                range: new monaco.Range(this.active?.anchorLine ?? 1, 1, this.active?.anchorLine ?? 1, 1),
-            }),
-        }
-
-        this.button.addEventListener('mousedown', (event) => {
-            event.preventDefault()
-            event.stopPropagation()
-        })
-        this.button.addEventListener('click', (event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            if (!this.active) return
-            this.options.onRun({
-                sql: this.active.sql,
-                anchorLine: this.active.anchorLine,
-            })
-        })
-
         this.bindEvents()
         this.sync()
-        // Monaco 布局完成后补几次 sync，避免首屏 glyph margin 尚未就绪时按钮不挂
-        requestAnimationFrame(() => this.sync())
-        window.setTimeout(() => this.sync(), 0)
-        window.setTimeout(() => this.sync(), 120)
     }
 
     sync = (): void => {
@@ -107,28 +97,50 @@ export class SqlRunGutterController implements SqlRunGutterBinding {
         })
     }
 
-    private mountWidget(): void {
-        if (this.widgetMounted) return
-        this.editor.addGlyphMarginWidget(this.glyphWidget)
-        this.widgetMounted = true
+    private clearDecoration(): void {
+        if (!this.decorationIds.length) return
+        this.decorationIds = this.editor.deltaDecorations(this.decorationIds, [])
+        this.displayedLine = null
     }
 
-    private unmountWidget(): void {
-        if (!this.widgetMounted) return
-        this.editor.removeGlyphMarginWidget(this.glyphWidget)
-        this.widgetMounted = false
+    private setDecoration(lineNumber: number): void {
+        const hoverMessage = this.options.hoverMessage()
+        if (this.displayedLine === lineNumber && this.decorationIds.length) {
+            this.decorationIds = this.editor.deltaDecorations(this.decorationIds, [
+                {
+                    range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+                    options: {
+                        glyphMarginClassName: SQL_RUN_GUTTER_GLYPH_CLASS,
+                        glyphMarginHoverMessage: {value: hoverMessage},
+                    },
+                },
+            ])
+            return
+        }
+
+        this.clearDecoration()
+        this.displayedLine = lineNumber
+        this.decorationIds = this.editor.deltaDecorations([], [
+            {
+                range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+                options: {
+                    glyphMarginClassName: SQL_RUN_GUTTER_GLYPH_CLASS,
+                    glyphMarginHoverMessage: {value: hoverMessage},
+                },
+            },
+        ])
     }
 
     private render(): void {
         if (!this.options.isEnabled()) {
             this.active = null
-            this.unmountWidget()
+            this.clearDecoration()
             setRunGutterState(this.container, 'disabled', 'setting-off')
             return
         }
         if (this.options.isReadonly()) {
             this.active = null
-            this.unmountWidget()
+            this.clearDecoration()
             setRunGutterState(this.container, 'readonly', 'readonly')
             return
         }
@@ -136,24 +148,21 @@ export class SqlRunGutterController implements SqlRunGutterBinding {
         const model = this.editor.getModel()
         if (!model) {
             this.active = null
-            this.unmountWidget()
+            this.clearDecoration()
             setRunGutterState(this.container, 'idle')
             return
         }
 
-        const cursorLine = this.editor.getPosition()?.lineNumber ?? null
-        const statement = resolveGutterStatement(model.getValue(), cursorLine, this.gutterLine)
+        const statement = resolveActiveStatement(model, this.editor, this.gutterLine)
         if (!statement) {
             this.active = null
-            this.unmountWidget()
+            this.clearDecoration()
             setRunGutterState(this.container, 'idle')
             return
         }
 
         this.active = statement
-        this.button.title = this.options.hoverMessage()
-        this.mountWidget()
-        this.editor.layoutGlyphMarginWidget(this.glyphWidget)
+        this.setDecoration(statement.anchorLine)
         setRunGutterState(this.container, 'on')
     }
 
@@ -170,6 +179,17 @@ export class SqlRunGutterController implements SqlRunGutterBinding {
             this.editor.onMouseLeave(() => {
                 this.gutterLine = null
                 this.sync()
+            }),
+            this.editor.onMouseDown((event) => {
+                if (!isGutterTarget(event.target)) return
+                const line = event.target.position?.lineNumber
+                if (!this.active || line !== this.active.anchorLine) return
+                this.options.onRun({
+                    sql: this.active.sql,
+                    anchorLine: this.active.anchorLine,
+                })
+                event.event.preventDefault()
+                event.event.stopPropagation()
             }),
             this.editor.onDidChangeCursorPosition(() => {
                 this.gutterLine = null
@@ -189,13 +209,12 @@ export class SqlRunGutterController implements SqlRunGutterBinding {
         if (this.renderRaf) cancelAnimationFrame(this.renderRaf)
         this.active = null
         this.gutterLine = null
-        this.unmountWidget()
-        this.button.remove()
+        this.clearDecoration()
         delete this.container.dataset.runGutter
         delete this.container.dataset.runGutterReason
         this.container.classList.remove('sql-monaco-host--run-gutter')
         for (const disposable of this.disposables) disposable.dispose()
-        this.disposables.length = 0
+        this.disposables = []
     }
 }
 

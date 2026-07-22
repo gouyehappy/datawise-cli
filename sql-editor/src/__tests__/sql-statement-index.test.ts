@@ -109,3 +109,76 @@ test('invisible whitespace on blank-looking line does not become statement ancho
     assert.ok(fromCreateBody)
     assert.equal(fromCreateBody.anchorLine, 3)
 })
+
+test('resolveGutterStatement follows cursor statement across blank separators', () => {
+    const sql = [
+        'SELECT * FROM product;',
+        '',
+        'SELECT * FROM order_detail;',
+        '',
+        'SELECT * FROM user;',
+    ].join('\n')
+
+    const onProduct = resolveGutterStatement(sql, 1, null)
+    assert.ok(onProduct)
+    assert.equal(onProduct.anchorLine, 1)
+
+    const onOrderDetail = resolveGutterStatement(sql, 3, null)
+    assert.ok(onOrderDetail)
+    assert.equal(onOrderDetail.anchorLine, 3)
+
+    const onUser = resolveGutterStatement(sql, 5, null)
+    assert.ok(onUser)
+    assert.equal(onUser.anchorLine, 5)
+
+    // blank line between statements is not inside any span
+    assert.equal(resolveGutterStatement(sql, 2, null), null)
+    assert.equal(resolveGutterStatement(sql, 4, null), null)
+})
+
+test('resolveGutterStatement anchors multiline cursor statement to first line only', () => {
+    const sql = [
+        'SELECT',
+        '  *',
+        'FROM',
+        '  user;',
+        '',
+        'SELECT',
+        '  *',
+        'FROM',
+        '  order_detail;',
+    ].join('\n')
+
+    const first = resolveGutterStatement(sql, 4, null)
+    assert.ok(first)
+    assert.equal(first.anchorLine, 1)
+    assert.match(first.sql, /^SELECT/)
+
+    const second = resolveGutterStatement(sql, 9, null)
+    assert.ok(second)
+    assert.equal(second.anchorLine, 6)
+    assert.match(second.sql, /order_detail/)
+})
+
+test('CRLF line endings keep anchor on executable line not preceding blank line', () => {
+    const sql = [
+        'SELECT * FROM product;',
+        '',
+        'SELECT * FROM order_detail;',
+        '',
+        'SELECT * FROM user;',
+    ].join('\r\n')
+
+    const spans = indexSqlStatements(sql)
+    assert.equal(spans[1]?.anchorLine, 3)
+    assert.equal(spans[1]?.startLine, 3)
+    assert.equal(spans[1]?.endLine, 3)
+
+    const onOrderDetail = resolveGutterStatement(sql, 3, null)
+    assert.ok(onOrderDetail)
+    assert.equal(onOrderDetail.anchorLine, 3)
+
+    const onUser = resolveGutterStatement(sql, 5, null)
+    assert.ok(onUser)
+    assert.equal(onUser.anchorLine, 5)
+})

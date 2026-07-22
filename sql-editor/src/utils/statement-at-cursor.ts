@@ -5,6 +5,7 @@ import {
     indexSqlStatements,
     isBlankOrCommentOnlyLine,
     lineContent,
+    lineStartOffsets,
     resolveGutterStatement,
     type SqlStatementSpan,
 } from './sql-statement-index'
@@ -46,15 +47,11 @@ function isCommentOnlyCursorLine(sql: string, cursor: number): boolean {
 }
 
 function offsetAtLine(sql: string, lineNumber: number): number | null {
+    const lineStarts = lineStartOffsets(sql)
     const lines = sql.split(/\r?\n/)
     if (lineNumber < 1 || lineNumber > lines.length) return null
-    let offset = 0
-    for (let i = 0; i < lineNumber - 1; i++) {
-        offset += (lines[i]?.length ?? 0) + 1
-    }
     const line = lines[lineNumber - 1] ?? ''
-    offset += line.length - line.trimStart().length
-    return offset
+    return (lineStarts[lineNumber - 1] ?? 0) + line.length - line.trimStart().length
 }
 
 /** 光标所在的可执行 SQL 语句（支持多行；忽略字符串/注释内分号） */

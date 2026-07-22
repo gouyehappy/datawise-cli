@@ -11,13 +11,35 @@ export type SqlStatementSpan = {
     anchorLine: number
 }
 
-function offsetToLine(sql: string, offset: number): number {
-    let line = 1
-    const end = Math.max(0, Math.min(offset, sql.length))
-    for (let i = 0; i < end; i++) {
-        if (sql.charCodeAt(i) === 10) line++
+function newlineLengthAt(text: string, index: number): number {
+    if (text.charCodeAt(index) === 13 && text.charCodeAt(index + 1) === 10) return 2
+    if (text.charCodeAt(index) === 10) return 1
+    if (text.charCodeAt(index) === 13) return 1
+    return 0
+}
+
+/** 每行在 text 中的起始 offset（兼容 \\n 与 \\r\\n） */
+export function lineStartOffsets(text: string): number[] {
+    const offsets = [0]
+    for (let i = 0; i < text.length; ) {
+        const newlineLength = newlineLengthAt(text, i)
+        if (newlineLength === 0) {
+            i++
+            continue
+        }
+        offsets.push(i + newlineLength)
+        i += newlineLength
     }
-    return line
+    return offsets
+}
+
+function offsetToLine(sql: string, offset: number): number {
+    const lineStarts = lineStartOffsets(sql)
+    const clamped = Math.max(0, Math.min(offset, sql.length))
+    for (let line = lineStarts.length; line >= 1; line--) {
+        if (clamped >= (lineStarts[line - 1] ?? 0)) return line
+    }
+    return 1
 }
 
 function trimStatementBounds(
@@ -49,12 +71,9 @@ function trimStatementBounds(
     const sql = bodyLines.join('\n').trim()
     if (!sql) return null
 
-    let startInPiece = 0
-    for (let i = 0; i < first; i++) {
-        startInPiece += (lines[i]?.length ?? 0) + 1
-    }
-    const body = bodyLines.join('\n')
-    startInPiece += body.length - body.trimStart().length
+    const pieceLineStarts = lineStartOffsets(piece)
+    const firstLine = lines[first] ?? ''
+    const startInPiece = (pieceLineStarts[first] ?? 0) + (firstLine.length - firstLine.trimStart().length)
     const endInPiece = startInPiece + sql.length
 
     return {
