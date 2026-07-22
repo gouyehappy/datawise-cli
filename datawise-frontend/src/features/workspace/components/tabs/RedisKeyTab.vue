@@ -54,17 +54,20 @@ onMounted(loadDetail)
 </script>
 
 <template>
-  <div class="redis-key-tab">
-    <header class="redis-key-tab__head">
-      <div>
+  <div class="redis-key-tab dw-workbench-page">
+    <header class="dw-workbench-page__head">
+      <div class="dw-workbench-page__title dw-workbench-page__title--break">
         <h2>{{ t('explorer.redisKey.title') }}</h2>
-        <p class="redis-key-tab__key">{{ redisKey }}</p>
+        <p class="dw-workbench-page__mono">{{ redisKey }}</p>
       </div>
-      <DwButton variant="secondary" :loading="loading" :disabled="loading" @click="loadDetail">
-        {{ loading ? t('explorer.redisKey.loading') : t('explorer.redisKey.refresh') }}
-      </DwButton>
+      <div class="dw-workbench-page__actions">
+        <DwButton variant="secondary" size="sm" :loading="loading" :disabled="loading" @click="loadDetail">
+          {{ loading ? t('explorer.redisKey.loading') : t('explorer.redisKey.refresh') }}
+        </DwButton>
+      </div>
     </header>
 
+    <div class="redis-key-tab__body dw-workbench-page__body dw-embedded-panel">
     <DwInlineAlert v-if="error" :message="error"/>
     <EmptyState v-else-if="loading && !detail" embedded bordered :title="t('explorer.redisKey.loading')"/>
 
@@ -92,37 +95,17 @@ onMounted(loadDetail)
       </div>
       <pre class="redis-key-tab__code">{{ detail.preview || t('explorer.redisKey.emptyValue') }}</pre>
     </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .redis-key-tab {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dw-space-8);
-  height: 100%;
-  padding: var(--dw-space-9) var(--dw-space-10);
+  min-width: 0;
+}
+
+.redis-key-tab__body {
   overflow: auto;
-}
-
-.redis-key-tab__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--dw-space-8);
-}
-
-.redis-key-tab__head h2 {
-  margin: 0 0 var(--dw-space-2);
-  font-size: var(--dw-text-2xl);
-}
-
-.redis-key-tab__key {
-  margin: 0;
-  font-family: var(--dw-font-mono);
-  font-size: var(--dw-text-md);
-  color: var(--dw-text-secondary);
-  word-break: break-all;
 }
 
 .redis-key-tab__meta {

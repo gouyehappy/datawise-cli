@@ -852,7 +852,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="console-tab" :class="{ 'is-editor-fullscreen': isEditorFullscreen }">
+  <div class="console-tab dw-workbench-page" :class="{ 'is-editor-fullscreen': isEditorFullscreen }">
     <div class="dw-console-toolbar">
       <div class="dw-console-actions dw-btn-group">
         <IconButton
@@ -1038,7 +1038,7 @@ onMounted(async () => {
         :source-label="source?.label ?? ''"
     />
 
-    <div ref="splitRef" class="split">
+    <div ref="splitRef" class="split dw-seam-stack dw-seam-stack--flush">
       <div
           class="editor-pane"
           :class="{

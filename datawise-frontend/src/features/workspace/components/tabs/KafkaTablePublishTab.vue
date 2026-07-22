@@ -42,15 +42,15 @@ const subtitle = computed(() => {
 </script>
 
 <template>
-  <div class="kafka-table-publish-tab">
-    <header class="kafka-table-publish-tab__head">
-      <div class="kafka-table-publish-tab__title">
+  <div class="kafka-table-publish-tab dw-workbench-page">
+    <header class="dw-workbench-page__head">
+      <div class="dw-workbench-page__title">
         <h2>{{ t('explorer.kafkaTablePublish.title') }}</h2>
         <p>{{ subtitle }}</p>
       </div>
     </header>
 
-    <div class="kafka-table-publish-tab__body">
+    <div class="kafka-table-publish-tab__body dw-workbench-page__body">
       <section class="kafka-table-publish-tab__panel">
         <header class="kafka-table-publish-tab__panel-head">
           <h3>{{ t('explorer.kafkaTablePublish.panelTitle') }}</h3>
@@ -67,30 +67,7 @@ const subtitle = computed(() => {
 
 <style scoped>
 .kafka-table-publish-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--dw-bg-editor);
-}
-
-.kafka-table-publish-tab__head {
-  flex-shrink: 0;
-  padding: var(--dw-space-5) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border);
-  background: var(--dw-bg-panel);
-}
-
-.kafka-table-publish-tab__title h2 {
-  margin: 0;
-  font-size: var(--dw-text-lg);
-  font-weight: 600;
-}
-
-.kafka-table-publish-tab__title p {
-  margin: var(--dw-space-1) 0 0;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-sm);
+  min-width: 0;
 }
 
 .kafka-table-publish-tab__body {
@@ -104,9 +81,10 @@ const subtitle = computed(() => {
   display: flex;
   flex-direction: column;
   width: min(100%, 640px);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-bg-panel);
+  border: 1px solid var(--dw-wb-card-border);
+  border-radius: var(--dw-wb-card-radius);
+  box-shadow: var(--dw-wb-card-shadow);
+  background: var(--dw-wb-card-bg);
 }
 
 .kafka-table-publish-tab__panel-head {

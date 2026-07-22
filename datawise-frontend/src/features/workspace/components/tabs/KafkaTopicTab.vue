@@ -32,15 +32,15 @@ function onUseInProducer(payload: { key: string; value: string; partition: numbe
 </script>
 
 <template>
-  <div class="kafka-topic-tab">
-    <header class="kafka-topic-tab__head">
-      <div class="kafka-topic-tab__title">
+  <div class="kafka-topic-tab dw-workbench-page">
+    <header class="dw-workbench-page__head">
+      <div class="dw-workbench-page__title dw-workbench-page__title--break">
         <h2>{{ topic || t('explorer.kafkaTopic.title') }}</h2>
         <p>{{ connectionLabel }}</p>
       </div>
     </header>
 
-    <div v-if="topic" class="kafka-topic-tab__body">
+    <div v-if="topic" class="kafka-topic-tab__body dw-workbench-page__body">
       <KafkaMessagesPanel
           ref="messagesPanelRef"
           class="kafka-topic-tab__messages"
@@ -71,31 +71,7 @@ function onUseInProducer(payload: { key: string; value: string; partition: numbe
 
 <style scoped>
 .kafka-topic-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--dw-bg-editor);
-}
-
-.kafka-topic-tab__head {
-  flex-shrink: 0;
-  padding: var(--dw-space-5) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border);
-  background: var(--dw-bg-panel);
-}
-
-.kafka-topic-tab__title h2 {
-  margin: 0;
-  font-size: var(--dw-text-lg);
-  font-weight: 600;
-  word-break: break-all;
-}
-
-.kafka-topic-tab__title p {
-  margin: var(--dw-space-1) 0 0;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-sm);
+  min-width: 0;
 }
 
 .kafka-topic-tab__body {
@@ -119,9 +95,10 @@ function onUseInProducer(payload: { key: string; value: string; partition: numbe
   flex-shrink: 0;
   min-height: 200px;
   max-height: 42%;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-bg-panel);
+  border: 1px solid var(--dw-wb-card-border);
+  border-radius: var(--dw-wb-card-radius);
+  box-shadow: var(--dw-wb-card-shadow);
+  background: var(--dw-wb-card-bg);
   overflow: hidden;
 }
 

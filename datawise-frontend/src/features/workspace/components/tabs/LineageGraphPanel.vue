@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {EmptyState, DwPanelState} from '@/core/components'
@@ -87,13 +87,13 @@ watch(
 </script>
 
 <template>
-  <div class="lineage-panel">
+  <div class="lineage-panel dw-workbench-page">
     <header class="lineage-panel__toolbar">
       <div class="lineage-panel__title">
         <h2>{{ tab.viewModelName }}</h2>
         <p class="lineage-panel__subtitle">{{ t('lineage.columnMapHint') }}</p>
         <span v-if="graph?.meta?.parser" class="lineage-panel__meta">
-          {{ graph.meta.parser }} · {{ statusLabel }}
+          {{ graph.meta.parser }} ?? {{ statusLabel }}
         </span>
       </div>
       <div class="lineage-panel__actions">
@@ -154,11 +154,9 @@ watch(
 
 <style scoped>
 .lineage-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
   min-height: 0;
-  background: var(--dw-bg-base);
+  min-width: 0;
+  background: var(--dw-wb-body-bg);
 }
 
 .lineage-panel__toolbar {
@@ -166,8 +164,10 @@ watch(
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--dw-space-6);
-  padding: var(--dw-space-6) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border-subtle);
+  padding: var(--dw-space-5) var(--dw-wb-content-pad-x);
+  border-bottom: 1px solid var(--dw-wb-head-border);
+  background: var(--dw-wb-head-bg);
+  box-shadow: var(--dw-wb-head-shadow);
 }
 
 .lineage-panel__title h2 {
@@ -203,7 +203,7 @@ watch(
 
 .lineage-panel__impact {
   padding: var(--dw-space-4) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border-subtle);
+  border-bottom: 1px solid var(--dw-wb-head-border);
 }
 
 .lineage-panel__impact h3 {

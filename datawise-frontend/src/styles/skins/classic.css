@@ -1,0 +1,39 @@
+/**
+ * Classic card workbench — layered panels, soft radius, readable gutters.
+ * html 未写 data-ui-skin 时与 classic 一致。
+ */
+
+html[data-ui-skin='classic'] .dw-workbench-page,
+html:not([data-ui-skin]) .dw-workbench-page {
+    --dw-wb-head-bg: var(--dw-bg-panel);
+    --dw-wb-head-border: var(--dw-border-light);
+    --dw-wb-head-shadow: 0 1px 0 color-mix(in srgb, var(--dw-border) 55%, transparent);
+    --dw-wb-split-gap: var(--dw-gap-md);
+    --dw-wb-split-divider: color-mix(in srgb, var(--dw-border) 70%, transparent);
+    --dw-wb-col-pad-top: var(--dw-space-5);
+    --dw-wb-col-pad-right: var(--dw-space-5);
+    --dw-wb-col-pad-bottom: var(--dw-space-5);
+    --dw-wb-col-pad-left: var(--dw-space-5);
+    --dw-wb-content-pad-x: var(--dw-space-8);
+    --dw-wb-content-pad-y: var(--dw-space-6);
+    --dw-wb-card-border: var(--dw-panel-border);
+    --dw-wb-card-radius: var(--dw-radius-lg);
+    --dw-wb-card-shadow: var(--dw-panel-shadow);
+    --dw-wb-card-bg: var(--dw-bg-panel);
+    --dw-wb-placeholder-border: color-mix(in srgb, var(--dw-border) 80%, transparent);
+    --dw-wb-placeholder-style: dashed;
+    --dw-wb-placeholder-shadow: none;
+    --dw-wb-terminal-border: transparent;
+    --dw-wb-terminal-radius: var(--dw-radius-xl);
+    --dw-wb-terminal-shadow: 0 4px 20px color-mix(in srgb, var(--dw-text) 8%, transparent);
+}
+
+html[data-ui-skin='classic'] .dw-workbench-page__head,
+html:not([data-ui-skin]) .dw-workbench-page__head {
+    min-height: 58px;
+}
+
+html[data-ui-skin='classic'] .lineage-panel__toolbar,
+html:not([data-ui-skin]) .lineage-panel__toolbar {
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--dw-border) 55%, transparent);
+}

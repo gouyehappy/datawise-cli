@@ -187,7 +187,7 @@ async function updateSelectedTags(tagged: boolean) {
 </script>
 
 <template>
-  <div class="schema-tables-tab">
+  <div class="schema-tables-tab dw-workbench-page">
     <DwDataGrid
         v-model:selected-keys="selectedKeys"
         :rows="gridRows"
@@ -255,10 +255,7 @@ async function updateSelectedTags(tagged: boolean) {
 
 <style scoped>
 .schema-tables-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  min-width: 0;
 }
 
 .schema-tables-tab :deep(.dw-data-grid) {

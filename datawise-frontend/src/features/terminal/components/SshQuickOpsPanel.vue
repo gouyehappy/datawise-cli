@@ -460,10 +460,10 @@ defineExpose({
 <style scoped>
 .ssh-quick-ops {
   flex-shrink: 0;
-  margin-bottom: var(--dw-space-4);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
-  background: color-mix(in srgb, var(--dw-bg-panel) 92%, transparent);
+  border: 1px solid var(--dw-wb-card-border);
+  border-radius: var(--dw-wb-card-radius);
+  background: var(--dw-wb-card-bg);
+  box-shadow: var(--dw-wb-card-shadow);
   /* Keep the SSH pane tall enough to show menus / scrollback. */
   max-height: min(240px, 32vh);
   overflow: hidden;

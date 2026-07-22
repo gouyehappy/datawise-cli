@@ -125,7 +125,7 @@ async function save() {
 </script>
 
 <template>
-  <div class="create-db">
+  <div class="create-db dw-workbench-page">
     <header class="create-db__toolbar">
       <DwButton variant="primary" size="sm" :disabled="!canSave" @click="save">
         {{ saving ? t('explorer.createNamespace.saving') : t('common.save') }}
@@ -194,19 +194,17 @@ async function save() {
 
 <style scoped>
 .create-db {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--dw-surface);
+  min-width: 0;
 }
 
 .create-db__toolbar {
   display: flex;
   align-items: center;
   gap: var(--dw-space-6);
-  padding: var(--dw-space-5) var(--dw-space-7);
-  border-bottom: 1px solid var(--dw-border);
+  padding: var(--dw-space-5) var(--dw-wb-content-pad-x);
+  border-bottom: 1px solid var(--dw-wb-head-border);
+  background: var(--dw-wb-head-bg);
+  box-shadow: var(--dw-wb-head-shadow);
 }
 
 .create-db__tabs {
@@ -249,7 +247,7 @@ async function save() {
 
 .create-db__input {
   height: var(--dw-tab-height);
-  border: 1px solid var(--dw-border);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-control-radius-sm);
   padding: 0 var(--dw-space-5);
   background: var(--dw-bg);
@@ -261,7 +259,7 @@ async function save() {
   flex-direction: column;
   min-height: 0;
   flex: 1;
-  padding: var(--dw-space-6) var(--dw-space-8);
+  padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
 }
 
 .create-db__sql-actions {
@@ -282,7 +280,8 @@ async function save() {
   flex: 1;
   overflow: auto;
   padding: var(--dw-space-6);
-  border-radius: var(--dw-control-radius);
+  border-radius: var(--dw-wb-card-radius);
+  box-shadow: var(--dw-wb-card-shadow);
   background: var(--dw-surface-muted));
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: var(--dw-text-md);

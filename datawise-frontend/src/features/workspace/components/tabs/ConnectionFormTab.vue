@@ -86,7 +86,7 @@ function openJdbcTunnelSshTerminal() {
 </script>
 
 <template>
-  <div class="conn-layout">
+  <div class="conn-layout dw-workbench-page dw-seam-split--direct">
     <section class="conn-editor">
       <header class="conn-head">
         <DbTypeIcon class="conn-head__icon" :db-type="dbType" :size="DB_TYPE_ICON_SIZE.header"/>
@@ -175,8 +175,10 @@ function openJdbcTunnelSshTerminal() {
   align-items: center;
   gap: var(--dw-space-6);
   flex-shrink: 0;
-  padding: var(--dw-space-8) var(--dw-space-10);
-  border-bottom: 1px solid var(--dw-border-light);
+  padding: var(--dw-space-5) var(--dw-wb-content-pad-x);
+  border-bottom: 1px solid var(--dw-wb-head-border);
+  background: var(--dw-wb-head-bg);
+  box-shadow: var(--dw-wb-head-shadow);
 }
 
 .conn-head__icon {
@@ -223,7 +225,7 @@ function openJdbcTunnelSshTerminal() {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--dw-space-8) var(--dw-space-10) var(--dw-space-4);
+  padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x) var(--dw-space-4);
   scrollbar-gutter: stable;
   transition: opacity 0.2s ease;
 }

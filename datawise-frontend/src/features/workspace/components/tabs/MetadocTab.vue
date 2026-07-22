@@ -51,7 +51,7 @@ function downloadCurrent() {
 </script>
 
 <template>
-  <div class="metadoc-tab">
+  <div class="metadoc-tab dw-workbench-page">
     <header class="metadoc-tab__toolbar">
       <div class="dw-segment" role="tablist">
         <button
@@ -115,11 +115,8 @@ function downloadCurrent() {
 
 <style scoped>
 .metadoc-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
   min-height: 0;
-  background: var(--dw-bg);
+  min-width: 0;
 }
 
 .metadoc-tab__toolbar {
@@ -127,8 +124,10 @@ function downloadCurrent() {
   align-items: center;
   justify-content: space-between;
   gap: var(--dw-space-6);
-  padding: var(--dw-space-6) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border);
+  padding: var(--dw-space-5) var(--dw-wb-content-pad-x);
+  border-bottom: 1px solid var(--dw-wb-head-border);
+  background: var(--dw-wb-head-bg);
+  box-shadow: var(--dw-wb-head-shadow);
 }
 
 .metadoc-tab__substatus {

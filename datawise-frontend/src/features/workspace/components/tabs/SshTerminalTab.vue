@@ -510,21 +510,21 @@ watch(status, (next) => {
 </script>
 
 <template>
-  <div class="ssh-terminal-tab">
-    <header class="ssh-terminal-tab__head">
-      <div class="ssh-terminal-tab__title">
-        <span class="ssh-terminal-tab__icon" aria-hidden="true">
+  <div class="ssh-terminal-tab dw-workbench-page dw-workbench-page--terminal">
+    <header class="dw-workbench-page__head dw-workbench-page__head--toolbar">
+      <div class="dw-workbench-page__title dw-workbench-page__title--with-icon">
+        <span class="dw-workbench-page__icon dw-workbench-page__icon--ssh" aria-hidden="true">
           <DwIcon name="terminal" :size="18" :stroke-width="1.7"/>
         </span>
         <div>
-          <div class="ssh-terminal-tab__heading">
-            <h1>{{ tab.title }}</h1>
-            <span class="ssh-terminal-tab__status" :class="`is-${status}`">{{ statusLabel }}</span>
+          <div class="dw-workbench-page__title-row">
+            <h2>{{ tab.title }}</h2>
+            <span class="dw-workbench-page__status" :class="`is-${status}`">{{ statusLabel }}</span>
           </div>
           <p>{{ statusMessage || subtitle }}</p>
         </div>
       </div>
-      <div class="ssh-terminal-tab__actions">
+      <div class="dw-workbench-page__actions">
         <IconButton
             size="sm"
             :title="autoReconnect ? t('terminal.sshAutoReconnectOn') : t('terminal.sshAutoReconnectOff')"
@@ -544,7 +544,7 @@ watch(status, (next) => {
         <IconButton size="sm" :title="t('ssh.profile.title')" @click="openProfileDialog">
           <DwIcon name="settings-profile" size="sm" :stroke-width="1.5"/>
         </IconButton>
-        <span class="ssh-terminal-tab__action-divider" aria-hidden="true"/>
+        <span class="dw-workbench-page__action-divider" aria-hidden="true"/>
         <IconButton size="sm" :title="t('terminal.sshSearch')" @click="openTerminalSearch">
           <DwIcon name="search" size="sm" :stroke-width="1.5"/>
         </IconButton>
@@ -564,7 +564,7 @@ watch(status, (next) => {
         >
           <span class="ssh-terminal-tab__font-btn">A+</span>
         </IconButton>
-        <span class="ssh-terminal-tab__action-divider" aria-hidden="true"/>
+        <span class="dw-workbench-page__action-divider" aria-hidden="true"/>
         <IconButton size="sm" :title="t('terminal.sshCopySelection')" @click="copySelection">
           <DwIcon name="copy" size="sm" :stroke-width="1.5"/>
         </IconButton>
@@ -574,7 +574,7 @@ watch(status, (next) => {
         <IconButton size="sm" :title="t('terminal.sshSaveSelection')" @click="saveSelectionToRecord">
           <DwIcon name="bookmark" size="sm" :stroke-width="1.5"/>
         </IconButton>
-        <span class="ssh-terminal-tab__action-divider" aria-hidden="true"/>
+        <span class="dw-workbench-page__action-divider" aria-hidden="true"/>
         <IconButton size="sm" :title="t('terminal.sshCopyBuffer')" @click="copyTerminalBuffer">
           <DwIcon name="file" size="sm" :stroke-width="1.5"/>
         </IconButton>
@@ -587,6 +587,7 @@ watch(status, (next) => {
       </div>
     </header>
 
+    <div class="ssh-terminal-tab__main dw-workbench-page__body">
     <div v-if="searchOpen" class="ssh-terminal-tab__search">
       <input
           ref="searchInputRef"
@@ -625,13 +626,14 @@ watch(status, (next) => {
         :tab-id="tab.id"
         :tab-label="tab.title"
         :auto-reconnect="autoReconnect"
-        class="ssh-terminal-tab__body"
+        class="ssh-terminal-tab__body dw-workbench-terminal"
         @status-change="onStatusChange"
         @save-selection="saveSelectionToRecord"
         @context-menu="onTerminalContextMenu"
         @open-search="openTerminalSearch"
     />
     <p v-else class="ssh-terminal-tab__empty">{{ t('terminal.sshMissingConnection') }}</p>
+    </div>
 
     <ContextMenuHost
         :visible="contextMenu.visible.value"
@@ -671,104 +673,8 @@ watch(status, (next) => {
 
 <style scoped>
 .ssh-terminal-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: var(--dw-space-8) var(--dw-space-9) var(--dw-space-9);
-  background: var(--dw-bg-editor);
-}
-
-.ssh-terminal-tab__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--dw-space-8);
-  flex-shrink: 0;
-  margin-bottom: var(--dw-space-5);
-}
-
-.ssh-terminal-tab__title {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--dw-space-6);
+  min-height: 0;
   min-width: 0;
-}
-
-.ssh-terminal-tab__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--dw-radius-lg);
-  background: color-mix(in srgb, var(--dw-info) 12%, var(--dw-bg));
-  color: var(--dw-info-fg);
-}
-
-.ssh-terminal-tab__heading {
-  display: flex;
-  align-items: center;
-  gap: var(--dw-gap);
-  flex-wrap: wrap;
-}
-
-.ssh-terminal-tab__head h1 {
-  margin: 0;
-  font-size: var(--dw-text-xl);
-  font-weight: 600;
-}
-
-.ssh-terminal-tab__status {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--dw-pad-chip);
-  border-radius: var(--dw-radius-pill);
-  font-size: var(--dw-text-xs);
-  font-weight: 600;
-}
-
-.ssh-terminal-tab__status.is-connecting {
-  color: var(--dw-warning-fg);
-  background: color-mix(in srgb, var(--dw-warning) 16%, transparent);
-}
-
-.ssh-terminal-tab__status.is-connected {
-  color: var(--dw-success-fg);
-  background: color-mix(in srgb, var(--dw-success) 16%, transparent);
-}
-
-.ssh-terminal-tab__status.is-disconnected,
-.ssh-terminal-tab__status.is-error {
-  color: var(--dw-danger-fg);
-  background: color-mix(in srgb, var(--dw-danger) 14%, transparent);
-}
-
-.ssh-terminal-tab__head p {
-  margin: var(--dw-space-2) 0 0;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-sm);
-  line-height: var(--dw-leading);
-}
-
-.ssh-terminal-tab__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--dw-gap-sm);
-  flex-shrink: 0;
-}
-
-.ssh-terminal-tab__action-divider {
-  width: 1px;
-  height: var(--dw-icon-size-lg);
-  margin: 0 var(--dw-space-1);
-  background: var(--dw-border);
-  flex-shrink: 0;
-}
-
-.ssh-terminal-tab__actions :deep(.icon-button.is-active) {
-  color: var(--dw-info-fg);
-  background: color-mix(in srgb, var(--dw-info) 14%, transparent);
 }
 
 .ssh-terminal-tab__font-btn {
@@ -781,19 +687,20 @@ watch(status, (next) => {
   display: flex;
   align-items: center;
   gap: var(--dw-gap-sm);
-  margin-bottom: var(--dw-space-4);
+  flex-shrink: 0;
   padding: var(--dw-pad-tight);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-lg);
-  background: var(--dw-bg-panel);
+  border: 1px solid var(--dw-wb-card-border);
+  border-radius: var(--dw-wb-card-radius);
+  background: var(--dw-wb-card-bg);
+  box-shadow: var(--dw-wb-card-shadow);
 }
 
 .ssh-terminal-tab__search-input {
   flex: 1;
   min-width: 0;
   padding: var(--dw-space-2) var(--dw-space-4);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
+  border: 1px solid var(--dw-wb-card-border);
+  border-radius: var(--dw-wb-card-radius);
   background: var(--dw-bg);
   color: var(--dw-text);
   font-size: var(--dw-text-sm);
@@ -802,8 +709,8 @@ watch(status, (next) => {
 
 .ssh-terminal-tab__search-btn {
   padding: var(--dw-space-2) var(--dw-space-5);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
+  border: 1px solid var(--dw-wb-card-border);
+  border-radius: var(--dw-wb-card-radius);
   background: var(--dw-bg);
   color: var(--dw-text);
   font-size: var(--dw-text-sm);
@@ -816,10 +723,7 @@ watch(status, (next) => {
 }
 
 .ssh-terminal-tab__body {
-  flex: 1;
-  min-height: 0;
-  border-radius: var(--dw-radius-xl);
-  box-shadow: 0 4px 20px color-mix(in srgb, var(--dw-text) 8%, transparent);
+  min-height: 120px;
 }
 
 .ssh-terminal-tab__empty {

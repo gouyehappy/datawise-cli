@@ -44,7 +44,7 @@ watch(
 </script>
 
 <template>
-  <div class="view-model-data">
+  <div class="view-model-data dw-workbench-page">
     <DwInlineAlert :message="errorMessage"/>
     <QueryResultPane
         :columns="columns"
@@ -66,9 +66,7 @@ watch(
 
 <style scoped>
 .view-model-data {
-  display: flex;
-  flex-direction: column;
   min-height: 0;
-  height: 100%;
+  min-width: 0;
 }
 </style>

@@ -1,0 +1,337 @@
+/**
+ * Workspace workbench page skeleton.
+ * Console-like tabs (Kafka / Redis / Yarn / SSH / SQL / etc.) share this layout;
+ * classic vs IDE differences are driven by --dw-wb-* tokens in skins/*.css.
+ */
+
+.dw-workbench-page {
+    --dw-wb-body-bg: var(--dw-bg-editor);
+    --dw-wb-head-bg: var(--dw-bg-panel);
+    --dw-wb-head-border: var(--dw-border);
+    --dw-wb-head-shadow: none;
+    --dw-wb-split-gap: var(--dw-gap-md);
+    --dw-wb-split-divider: var(--dw-panel-border);
+    --dw-wb-col-pad-top: var(--dw-space-5);
+    --dw-wb-col-pad-right: var(--dw-space-5);
+    --dw-wb-col-pad-bottom: var(--dw-space-5);
+    --dw-wb-col-pad-left: var(--dw-space-5);
+    --dw-wb-content-pad-x: var(--dw-space-8);
+    --dw-wb-content-pad-y: var(--dw-space-6);
+    --dw-wb-card-border: var(--dw-panel-border);
+    --dw-wb-card-radius: var(--dw-control-radius);
+    --dw-wb-card-shadow: var(--dw-panel-shadow);
+    --dw-wb-card-bg: var(--dw-bg-panel);
+    --dw-wb-placeholder-border: var(--dw-border);
+    --dw-wb-placeholder-style: dashed;
+    --dw-wb-placeholder-shadow: none;
+    --dw-wb-terminal-border: transparent;
+    --dw-wb-terminal-radius: var(--dw-radius-xl);
+    --dw-wb-terminal-shadow: 0 4px 20px color-mix(in srgb, var(--dw-text) 8%, transparent);
+
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    background: var(--dw-wb-body-bg);
+}
+
+.dw-workbench-page--center {
+    align-items: center;
+    justify-content: center;
+}
+
+.dw-workbench-page--padded {
+    padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
+}
+
+.dw-embedded-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dw-space-6);
+    flex: 1;
+    min-height: 0;
+    padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
+    overflow: auto;
+    min-width: 0;
+}
+
+.dw-workbench-page__head {
+    display: flex;
+    align-items: center;
+    gap: var(--dw-space-6);
+    min-height: 56px;
+    padding: var(--dw-space-5) var(--dw-wb-content-pad-x);
+    border-bottom: 1px solid var(--dw-wb-head-border);
+    background: var(--dw-wb-head-bg);
+    box-shadow: var(--dw-wb-head-shadow);
+    overflow: visible;
+}
+
+.dw-workbench-page__title {
+    flex: 1;
+    min-width: 0;
+}
+
+.dw-workbench-page__title h2 {
+    margin: 0;
+    font-size: var(--dw-text-lg);
+    font-weight: 600;
+}
+
+.dw-workbench-page__title p {
+    margin: var(--dw-space-1) 0 0;
+    color: var(--dw-text-muted);
+    font-size: var(--dw-text-sm);
+}
+
+.dw-workbench-page__stats {
+    display: inline-block;
+    margin-top: var(--dw-space-2);
+    padding: 1px var(--dw-space-4);
+    border-radius: var(--dw-radius-pill);
+    background: color-mix(in srgb, var(--dw-primary) 12%, transparent);
+    color: var(--dw-primary);
+    font-size: var(--dw-text-xs);
+}
+
+/** Secondary line under connection label (scheduler type, etc.) */
+.dw-workbench-page__meta {
+    margin: var(--dw-space-1) 0 0;
+    color: var(--dw-text-muted);
+    font-size: var(--dw-text-xs);
+}
+
+/** Monospace subtitle (Redis key path, host, …) */
+.dw-workbench-page__mono {
+    font-family: var(--dw-font-mono);
+    word-break: break-all;
+}
+
+/** Right-side refresh / selectors / icon toolbar */
+.dw-workbench-page__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--dw-gap-sm);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.dw-workbench-page__head--toolbar {
+    align-items: center;
+}
+
+/** Title row with leading icon (SSH / local terminal) */
+.dw-workbench-page__title--with-icon {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--dw-space-6);
+}
+
+.dw-workbench-page__title--break h2 {
+    word-break: break-all;
+}
+
+.dw-workbench-page__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--dw-wb-card-radius);
+}
+
+.dw-workbench-page__icon--terminal {
+    background: color-mix(in srgb, var(--dw-success) 12%, var(--dw-bg));
+    color: var(--dw-success-fg);
+}
+
+.dw-workbench-page__icon--ssh {
+    background: color-mix(in srgb, var(--dw-info) 12%, var(--dw-bg));
+    color: var(--dw-info-fg);
+}
+
+.dw-workbench-page__icon--script {
+    background: color-mix(in srgb, var(--dw-primary) 12%, transparent);
+    color: var(--dw-primary);
+}
+
+.dw-workbench-page__title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--dw-gap);
+    flex-wrap: wrap;
+}
+
+/** Live connection status chip beside title */
+.dw-workbench-page__status {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--dw-pad-chip);
+    border-radius: var(--dw-radius-pill);
+    font-size: var(--dw-text-xs);
+    font-weight: 600;
+}
+
+.dw-workbench-page__status.is-connecting {
+    color: var(--dw-warning-fg);
+    background: color-mix(in srgb, var(--dw-warning) 16%, transparent);
+}
+
+.dw-workbench-page__status.is-connected {
+    color: var(--dw-success-fg);
+    background: color-mix(in srgb, var(--dw-success) 16%, transparent);
+}
+
+.dw-workbench-page__status.is-disconnected,
+.dw-workbench-page__status.is-error {
+    color: var(--dw-danger-fg);
+    background: color-mix(in srgb, var(--dw-danger) 14%, transparent);
+}
+
+.dw-workbench-page__action-divider {
+    width: 1px;
+    height: var(--dw-icon-size-lg);
+    margin: 0 var(--dw-space-1);
+    background: var(--dw-wb-head-border);
+    flex-shrink: 0;
+}
+
+.dw-workbench-page__actions :deep(.icon-button.is-active) {
+    color: var(--dw-info-fg);
+    background: color-mix(in srgb, var(--dw-info) 14%, transparent);
+}
+
+.dw-workbench-page__kbd {
+    padding: var(--dw-space-1) 7px;
+    border: 1px solid var(--dw-wb-card-border);
+    border-radius: var(--dw-control-radius-sm);
+    background: var(--dw-bg-muted);
+    font-family: var(--dw-mono);
+    font-size: var(--dw-text-xs);
+    color: var(--dw-text-muted);
+}
+
+/** Inline editable title (SSH script record) */
+.dw-workbench-page__title-input {
+    display: block;
+    width: min(420px, 100%);
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--dw-text);
+    font-size: var(--dw-text-lg);
+    font-weight: 600;
+    line-height: var(--dw-leading-snug);
+    outline: none;
+}
+
+.dw-workbench-page__title-input::placeholder {
+    color: var(--dw-text-muted);
+}
+
+.dw-workbench-page__body {
+    flex: 1;
+    min-height: 0;
+}
+
+.dw-workbench-split {
+    display: grid;
+    grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
+    column-gap: var(--dw-wb-split-gap);
+}
+
+.dw-workbench-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.dw-workbench-col--left {
+    padding:
+        var(--dw-wb-col-pad-top)
+        0
+        var(--dw-wb-col-pad-bottom)
+        var(--dw-wb-col-pad-left);
+}
+
+.dw-workbench-col--right {
+    padding:
+        var(--dw-wb-col-pad-top)
+        var(--dw-wb-col-pad-right)
+        var(--dw-wb-col-pad-bottom)
+        0;
+}
+
+.dw-workbench-status {
+    padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
+    font-size: var(--dw-text-sm);
+    color: var(--dw-text-muted);
+}
+
+/** Inner cards / side panels inside workbench tabs */
+.dw-workbench-card {
+    border: 1px solid var(--dw-wb-card-border);
+    border-radius: var(--dw-wb-card-radius);
+    background: var(--dw-wb-card-bg);
+    box-shadow: var(--dw-wb-card-shadow);
+    overflow: hidden;
+}
+
+.dw-workbench-card--flat {
+    box-shadow: none;
+}
+
+.dw-workbench-placeholder {
+    border: 1px var(--dw-wb-placeholder-style) var(--dw-wb-placeholder-border);
+    border-radius: var(--dw-wb-card-radius);
+    background: color-mix(in srgb, var(--dw-wb-card-bg) 72%, transparent);
+}
+
+.dw-workbench-terminal {
+    flex: 1;
+    min-height: 0;
+    border: 1px solid var(--dw-wb-terminal-border);
+    border-radius: var(--dw-wb-terminal-radius);
+    box-shadow: var(--dw-wb-terminal-shadow);
+    overflow: hidden;
+}
+
+.dw-workbench-page--terminal .dw-workbench-page__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dw-gap-md);
+    padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
+    min-height: 0;
+}
+
+@media (max-width: 900px) {
+    .dw-workbench-page--padded {
+        padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
+    }
+
+    .dw-workbench-split {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(220px, 38%) minmax(0, 1fr);
+        column-gap: 0;
+        row-gap: var(--dw-wb-split-gap);
+    }
+
+    .dw-workbench-col--left {
+        padding:
+            var(--dw-wb-col-pad-top)
+            var(--dw-wb-col-pad-right)
+            0
+            var(--dw-wb-col-pad-left);
+    }
+
+    .dw-workbench-col--right {
+        padding:
+            0
+            var(--dw-wb-col-pad-right)
+            var(--dw-wb-col-pad-bottom)
+            var(--dw-wb-col-pad-left);
+    }
+}

@@ -113,19 +113,21 @@ watch(connectionId, loadQueues)
 </script>
 
 <template>
-  <div class="yarn-queues-tab">
-    <header class="yarn-queues-tab__head">
-      <div>
+  <div class="yarn-queues-tab dw-workbench-page">
+    <header class="dw-workbench-page__head">
+      <div class="dw-workbench-page__title">
         <h2>{{ t('explorer.yarnQueues.title') }}</h2>
         <p>{{ connectionLabel }}</p>
-        <p v-if="schedulerType" class="yarn-queues-tab__scheduler">{{ t('explorer.yarnQueues.scheduler', {type: schedulerType}) }}</p>
+        <p v-if="schedulerType" class="dw-workbench-page__meta">{{ t('explorer.yarnQueues.scheduler', {type: schedulerType}) }}</p>
       </div>
-      <button type="button" @click="loadQueues">{{ t('explorer.yarnQueues.refresh') }}</button>
+      <div class="dw-workbench-page__actions">
+        <button class="dw-text-btn" type="button" @click="loadQueues">{{ t('explorer.yarnQueues.refresh') }}</button>
+      </div>
     </header>
 
-    <p v-if="loading" class="yarn-queues-tab__status">{{ t('explorer.yarnQueues.loading') }}</p>
-    <DwInlineAlert v-else-if="error" class="yarn-queues-tab__status" :message="error"/>
-    <DwInlineAlert v-else-if="success" class="yarn-queues-tab__status" variant="success" :message="success"/>
+    <p v-if="loading" class="yarn-queues-tab__status dw-workbench-status">{{ t('explorer.yarnQueues.loading') }}</p>
+    <DwInlineAlert v-else-if="error" class="yarn-queues-tab__status dw-workbench-status" :message="error"/>
+    <DwInlineAlert v-else-if="success" class="yarn-queues-tab__status dw-workbench-status" variant="success" :message="success"/>
 
     <div v-if="queues.length" class="yarn-queues-tab__body">
       <div class="yarn-queues-tab__table-wrap">
@@ -146,8 +148,8 @@ watch(connectionId, loadQueues)
                 :class="{ 'is-selected': selectedQueueName === queue.name }"
                 @click="selectQueue(queue)"
             >
-              <td>{{ queue.name ?? '‚Äî' }}</td>
-              <td>{{ queue.state ?? '‚Äî' }}</td>
+              <td>{{ queue.name ?? 'ù? }}</td>
+              <td>{{ queue.state ?? 'ù? }}</td>
               <td>{{ queue.capacity?.toFixed?.(1) ?? 0 }}%</td>
               <td>{{ queue.usedCapacity?.toFixed?.(1) ?? 0 }}%</td>
               <td>{{ queue.numApplications }}</td>
@@ -192,35 +194,7 @@ watch(connectionId, loadQueues)
 
 <style scoped>
 .yarn-queues-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--dw-bg-editor);
-}
-
-.yarn-queues-tab__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--dw-space-5) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border);
-  background: var(--dw-bg-panel);
-}
-
-.yarn-queues-tab__head h2 {
-  margin: 0;
-  font-size: var(--dw-text-lg);
-}
-
-.yarn-queues-tab__head p {
-  margin: var(--dw-space-2) 0 0;
-  font-size: var(--dw-text-sm);
-  color: var(--dw-text-muted);
-}
-
-.yarn-queues-tab__scheduler {
-  margin-top: var(--dw-space-1) !important;
+  min-width: 0;
 }
 
 .yarn-queues-tab__body {
@@ -229,13 +203,14 @@ watch(connectionId, loadQueues)
   gap: var(--dw-space-8);
   flex: 1;
   min-height: 0;
-  padding: var(--dw-space-6) var(--dw-space-8);
+  padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
 }
 
 .yarn-queues-tab__table-wrap {
   overflow: auto;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
+  border: 1px solid var(--dw-wb-card-border);
+  border-radius: var(--dw-wb-card-radius);
+  box-shadow: var(--dw-wb-card-shadow);
 }
 
 .yarn-queues-tab__table-wrap table {
@@ -261,10 +236,11 @@ watch(connectionId, loadQueues)
 }
 
 .yarn-queues-tab__editor {
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
+  border: 1px solid var(--dw-wb-card-border);
+  border-radius: var(--dw-wb-card-radius);
+  box-shadow: var(--dw-wb-card-shadow);
   padding: var(--dw-space-6);
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
 }
 
 .yarn-queues-tab__editor h3 {
@@ -288,7 +264,7 @@ watch(connectionId, loadQueues)
 .yarn-queues-tab__form input,
 .yarn-queues-tab__form select {
   padding: var(--dw-pad-tight);
-  border: 1px solid var(--dw-border);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-input);
   color: var(--dw-text);
@@ -308,8 +284,6 @@ watch(connectionId, loadQueues)
 }
 
 .yarn-queues-tab__status {
-  padding: var(--dw-space-6) var(--dw-space-8);
-  font-size: var(--dw-text-sm);
-  color: var(--dw-text-muted);
+  margin: 0;
 }
 </style>

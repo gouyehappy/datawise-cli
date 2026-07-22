@@ -286,22 +286,22 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="ssh-script-record-tab">
-    <header class="ssh-script-record-tab__head">
-      <div class="ssh-script-record-tab__title">
-        <span class="ssh-script-record-tab__icon" aria-hidden="true">
+  <div class="ssh-script-record-tab dw-workbench-page dw-workbench-page--terminal">
+    <header class="dw-workbench-page__head">
+      <div class="dw-workbench-page__title dw-workbench-page__title--with-icon">
+        <span class="dw-workbench-page__icon dw-workbench-page__icon--script" aria-hidden="true">
           <DwIcon name="editor" :size="18" :stroke-width="1.7"/>
         </span>
         <div class="ssh-script-record-tab__meta">
           <input
               v-model="title"
-              class="ssh-script-record-tab__name"
+              class="dw-workbench-page__title-input"
               :placeholder="t('ssh.scriptRecord.titlePlaceholder')"
           >
           <p>{{ subtitle }}</p>
         </div>
       </div>
-      <div class="ssh-script-record-tab__actions">
+      <div class="dw-workbench-page__actions">
         <IconButton size="sm" :title="t('ssh.scriptRecord.sendToTerminal')" @click="sendToTerminal">
           <DwIcon name="console" size="sm" :stroke-width="1.5"/>
         </IconButton>
@@ -311,7 +311,8 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <div class="ssh-script-record-tab__body">
+    <div class="ssh-script-record-tab__body dw-workbench-page__body">
+      <div class="ssh-script-record-tab__editor dw-workbench-terminal">
       <SshCommandEditor
           v-if="hasEditorContext"
           v-model="commandText"
@@ -320,81 +321,30 @@ onBeforeUnmount(() => {
       <p v-else class="ssh-script-record-tab__empty">
         {{ t('ssh.scriptRecord.missingContext') }}
       </p>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .ssh-script-record-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
   min-height: 0;
-  background: var(--dw-bg-editor);
-}
-
-.ssh-script-record-tab__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--dw-space-6);
-  flex-shrink: 0;
-  padding: var(--dw-space-7) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border);
-  background: var(--dw-bg-panel);
-}
-
-.ssh-script-record-tab__title {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--dw-gap-md);
   min-width: 0;
-}
-
-.ssh-script-record-tab__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: var(--dw-control-h);
-  border-radius: var(--dw-control-radius);
-  color: var(--dw-primary);
-  background: color-mix(in srgb, var(--dw-primary) 12%, transparent);
 }
 
 .ssh-script-record-tab__meta {
   min-width: 0;
 }
 
-.ssh-script-record-tab__name {
-  width: min(420px, 100%);
-  border: none;
-  background: transparent;
-  color: var(--dw-text);
-  font-size: var(--dw-text-xl);
-  font-weight: 600;
-  outline: none;
-}
-
-.ssh-script-record-tab__meta p {
-  margin: var(--dw-space-2) 0 0;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-sm);
-}
-
-.ssh-script-record-tab__actions {
-  display: flex;
-  gap: var(--dw-gap-sm);
-  flex-shrink: 0;
-}
-
 .ssh-script-record-tab__body {
-  flex: 1;
   min-height: 0;
-  padding: var(--dw-space-8) var(--dw-space-8) var(--dw-space-8);
-  overflow: hidden;
+}
+
+.ssh-script-record-tab__editor {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  height: 100%;
 }
 
 .ssh-script-record-tab__empty {

@@ -224,7 +224,7 @@ watch(
 
 <template>
 
-  <section class="redis-key-detail-panel">
+  <section class="redis-key-detail-panel dw-workbench-card">
 
     <header class="redis-key-detail-panel__head">
 
@@ -349,21 +349,10 @@ watch(
 <style scoped>
 
 .redis-key-detail-panel {
-
   display: flex;
-
   flex-direction: column;
-
   min-height: 0;
-
-  border: 1px solid var(--dw-border);
-
-  border-radius: var(--dw-control-radius);
-
-  background: var(--dw-bg-panel);
-
   padding: var(--dw-space-6);
-
 }
 
 

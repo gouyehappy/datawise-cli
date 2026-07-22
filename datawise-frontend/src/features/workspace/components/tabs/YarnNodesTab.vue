@@ -43,16 +43,18 @@ watch(connectionId, loadNodes)
 </script>
 
 <template>
-  <div class="yarn-nodes-tab">
-    <header class="yarn-nodes-tab__head">
-      <div>
+  <div class="yarn-nodes-tab dw-workbench-page">
+    <header class="dw-workbench-page__head">
+      <div class="dw-workbench-page__title">
         <h2>{{ t('explorer.yarnNodes.title') }}</h2>
         <p>{{ connectionLabel }}</p>
       </div>
-      <button type="button" @click="loadNodes">{{ t('explorer.yarnNodes.refresh') }}</button>
+      <div class="dw-workbench-page__actions">
+        <button class="dw-text-btn" type="button" @click="loadNodes">{{ t('explorer.yarnNodes.refresh') }}</button>
+      </div>
     </header>
-    <p v-if="loading" class="yarn-nodes-tab__status">{{ t('explorer.yarnNodes.loading') }}</p>
-    <DwInlineAlert v-else-if="error" class="yarn-nodes-tab__status" :message="error"/>
+    <p v-if="loading" class="yarn-nodes-tab__status dw-workbench-status">{{ t('explorer.yarnNodes.loading') }}</p>
+    <DwInlineAlert v-else-if="error" class="yarn-nodes-tab__status dw-workbench-status" :message="error"/>
     <div v-else-if="nodes.length" class="yarn-nodes-tab__table-wrap">
       <table>
         <thead>
@@ -68,9 +70,9 @@ watch(connectionId, loadNodes)
         </thead>
         <tbody>
           <tr v-for="node in nodes" :key="node.id ?? node.state ?? Math.random()">
-            <td>{{ node.id ?? '‚Äî' }}</td>
-            <td>{{ node.state ?? '‚Äî' }}</td>
-            <td>{{ node.nodeHealthStatus ?? '‚Äî' }}</td>
+            <td>{{ node.id ?? 'ù? }}</td>
+            <td>{{ node.state ?? 'ù? }}</td>
+            <td>{{ node.nodeHealthStatus ?? 'ù? }}</td>
             <td>{{ node.numContainers }}</td>
             <td>{{ formatYarnMemory(node.usedMemoryMb) }}</td>
             <td>{{ formatYarnMemory(node.availMemoryMb) }}</td>
@@ -85,37 +87,13 @@ watch(connectionId, loadNodes)
 
 <style scoped>
 .yarn-nodes-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--dw-bg-editor);
-}
-
-.yarn-nodes-tab__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--dw-space-5) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border);
-  background: var(--dw-bg-panel);
-}
-
-.yarn-nodes-tab__head h2 {
-  margin: 0;
-  font-size: var(--dw-text-lg);
-}
-
-.yarn-nodes-tab__head p {
-  margin: var(--dw-space-2) 0 0;
-  font-size: var(--dw-text-sm);
-  color: var(--dw-text-muted);
+  min-width: 0;
 }
 
 .yarn-nodes-tab__table-wrap {
   flex: 1;
   overflow: auto;
-  padding: var(--dw-space-6) var(--dw-space-8);
+  padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
 }
 
 .yarn-nodes-tab__table-wrap table {
@@ -132,8 +110,6 @@ watch(connectionId, loadNodes)
 }
 
 .yarn-nodes-tab__status {
-  padding: var(--dw-space-6) var(--dw-space-8);
-  font-size: var(--dw-text-sm);
-  color: var(--dw-text-muted);
+  margin: 0;
 }
 </style>

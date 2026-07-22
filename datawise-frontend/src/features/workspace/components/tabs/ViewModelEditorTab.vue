@@ -388,7 +388,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="console-tab vm-editor-tab vm-editor-tab--v2" :class="{ 'is-editor-fullscreen': isEditorFullscreen }">
+  <div class="console-tab vm-editor-tab vm-editor-tab--v2 dw-workbench-page" :class="{ 'is-editor-fullscreen': isEditorFullscreen }">
     <div class="vm-editor-status" :class="{'is-ready': scopeReady, 'is-warn': !scopeReady}">
       <div class="vm-editor-status__intro">
         <span
@@ -501,7 +501,7 @@ onMounted(async () => {
 
     <DwInlineAlert :message="saveErrorMessage"/>
 
-    <div ref="splitRef" class="split">
+    <div ref="splitRef" class="split dw-seam-stack dw-seam-stack--flush">
       <div
           class="editor-pane"
           :class="{
@@ -643,8 +643,8 @@ onMounted(async () => {
   min-height: var(--dw-control-h-xs);
   padding: 0 var(--dw-space-4);
   border-radius: var(--dw-radius-pill);
-  border: 1px solid var(--dw-border-light);
-  background: var(--dw-bg-panel);
+  border: 1px solid var(--dw-wb-card-border);
+  background: var(--dw-wb-card-bg);
   font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
 }

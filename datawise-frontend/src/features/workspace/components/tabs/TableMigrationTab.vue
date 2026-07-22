@@ -25,7 +25,11 @@ provide(MIGRATION_WIZARD_KEY, wizard)
 </script>
 
 <template>
-  <div v-if="wizard.source" class="table-migration" :class="{ 'table-migration--running': wizard.running }">
+  <div
+      v-if="wizard.source"
+      class="table-migration dw-workbench-page"
+      :class="{ 'table-migration--running': wizard.running }"
+  >
     <header class="table-migration__toolbar">
       <div class="table-migration__toolbar-main">
         <h2>{{ t('explorer.tableMigrationWizard.title') }}</h2>

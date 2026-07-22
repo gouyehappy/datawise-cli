@@ -1,4 +1,4 @@
-ï»¿<script setup lang="ts">
+<script setup lang="ts">
 import {computed, defineAsyncComponent, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {WorkspaceTab} from '@/core/types'
@@ -542,7 +542,7 @@ async function onSubmitSyncProductionApproval(teamId: string) {
 </script>
 
 <template>
-  <div class="schema-compare">
+  <div class="schema-compare dw-workbench-page">
     <header class="schema-compare__head">
       <div>
         <h2>{{ t('schemaCompare.title') }}</h2>
@@ -694,8 +694,8 @@ async function onSubmitSyncProductionApproval(teamId: string) {
               <td>
                 <StatusPill inline :status="column.status" domain="schema">{{ statusLabel(column.status) }}</StatusPill>
               </td>
-              <td class="mono">{{ column.left?.dataType ?? 'â€”' }}</td>
-              <td class="mono">{{ column.right?.dataType ?? 'â€”' }}</td>
+              <td class="mono">{{ column.left?.dataType ?? '¡ª' }}</td>
+              <td class="mono">{{ column.right?.dataType ?? '¡ª' }}</td>
             </tr>
             </tbody>
           </table>
@@ -832,12 +832,10 @@ async function onSubmitSyncProductionApproval(teamId: string) {
 
 <style scoped>
 .schema-compare {
-  display: flex;
-  flex-direction: column;
   gap: var(--dw-space-7);
-  height: 100%;
   min-height: 0;
-  padding: var(--dw-space-8) var(--dw-space-8);
+  min-width: 0;
+  padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
   overflow: auto;
 }
 
@@ -867,9 +865,9 @@ async function onSubmitSyncProductionApproval(teamId: string) {
 
 .scope-card {
   padding: var(--dw-space-6) var(--dw-space-7);
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-radius-lg);
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
 }
 
 .scope-card h3 {
@@ -914,7 +912,7 @@ async function onSubmitSyncProductionApproval(teamId: string) {
   align-items: center;
   gap: var(--dw-gap-sm);
   padding: var(--dw-space-4) var(--dw-space-5);
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-muted);
   color: var(--dw-text-muted);
@@ -962,15 +960,15 @@ async function onSubmitSyncProductionApproval(teamId: string) {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-radius-lg);
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
 }
 
 .table-list__search {
   width: 100%;
   padding: var(--dw-pad-tight);
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-control-radius-sm);
   font-size: var(--dw-text-sm);
 }
@@ -1046,9 +1044,9 @@ async function onSubmitSyncProductionApproval(teamId: string) {
 
 .table-detail,
 .ddl-panel {
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-radius-lg);
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
   padding: var(--dw-space-6);
   min-height: 0;
   overflow: auto;
@@ -1085,7 +1083,7 @@ async function onSubmitSyncProductionApproval(teamId: string) {
   justify-content: space-between;
   gap: var(--dw-gap);
   padding: var(--dw-space-4) var(--dw-space-5);
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg-muted);
 }
@@ -1129,7 +1127,8 @@ async function onSubmitSyncProductionApproval(teamId: string) {
 .ddl-panel__code {
   margin: 0;
   padding: var(--dw-space-5);
-  border-radius: var(--dw-control-radius);
+  border-radius: var(--dw-wb-card-radius);
+  box-shadow: var(--dw-wb-card-shadow);
   background: color-mix(in srgb, var(--dw-bg) 90%, var(--dw-ink-deep));
   font-family: var(--dw-mono);
   font-size: var(--dw-text-sm);

@@ -330,7 +330,7 @@ function chooseLineageTarget(item: LineageImpactItem) {
 </script>
 
 <template>
-  <div class="data-catalog">
+  <div class="data-catalog dw-workbench-page">
     <header class="data-catalog__header">
       <div>
         <h2 class="data-catalog__title">{{ t('discovery.tabTitle') }}</h2>
@@ -529,12 +529,10 @@ function chooseLineageTarget(item: LineageImpactItem) {
 
 <style scoped>
 .data-catalog {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
+  gap: var(--dw-gap-md);
   min-height: 0;
-  padding: 12px 16px 16px;
+  min-width: 0;
+  padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
 }
 
 .data-catalog__header {

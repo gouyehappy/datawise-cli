@@ -77,21 +77,23 @@ watch(connectionId, () => {
 </script>
 
 <template>
-  <div class="kafka-topics-workbench">
-    <header class="kafka-topics-workbench__head">
-      <div class="kafka-topics-workbench__title">
+  <div class="kafka-topics-workbench dw-workbench-page">
+    <header class="dw-workbench-page__head">
+      <div class="dw-workbench-page__title">
         <h2>{{ t('explorer.kafkaConsole.title') }}</h2>
         <p>{{ connectionLabel }}</p>
-        <span class="kafka-topics-workbench__stats">{{ statsLabel }}</span>
+        <span class="dw-workbench-page__stats">{{ statsLabel }}</span>
       </div>
-      <button class="dw-text-btn" type="button" @click="refreshTopics">
-        {{ t('explorer.kafkaBrowser.refresh') }}
-      </button>
+      <div class="dw-workbench-page__actions">
+        <button class="dw-text-btn" type="button" @click="refreshTopics">
+          {{ t('explorer.kafkaBrowser.refresh') }}
+        </button>
+      </div>
     </header>
 
-    <div class="kafka-topics-workbench__body">
-      <div class="kafka-topics-workbench__left">
-        <section class="kafka-topics-workbench__topics-card">
+    <div class="kafka-topics-workbench__body dw-workbench-page__body dw-workbench-split">
+      <div class="kafka-topics-workbench__left dw-workbench-col dw-workbench-col--left">
+        <section class="kafka-topics-workbench__topics-card dw-workbench-card">
           <header class="kafka-topics-workbench__topics-head">
             <h3>{{ t('explorer.kafkaTopics.title') }}</h3>
           </header>
@@ -107,7 +109,7 @@ watch(connectionId, () => {
         </section>
       </div>
 
-      <div class="kafka-topics-workbench__right">
+      <div class="kafka-topics-workbench__right dw-workbench-col dw-workbench-col--right dw-seam-stack dw-seam-stack--flush">
         <KafkaMessagesPanel
             v-if="selectedTopic"
             ref="messagesPanelRef"
@@ -129,7 +131,7 @@ watch(connectionId, () => {
 
         <section
             v-if="selectedTopic"
-            class="kafka-topics-workbench__producer-wrap"
+            class="kafka-topics-workbench__producer-wrap dw-workbench-card"
             :class="{ 'is-collapsed': producerCollapsed }"
         >
           <header class="kafka-topics-workbench__producer-head">
@@ -159,65 +161,15 @@ watch(connectionId, () => {
 
 <style scoped>
 .kafka-topics-workbench {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--dw-bg-editor);
-}
-
-.kafka-topics-workbench__head {
-  display: flex;
-  align-items: center;
-  gap: var(--dw-space-6);
-  min-height: 56px;
-  padding: var(--dw-space-5) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border);
-  background: var(--dw-bg-panel);
-}
-
-.kafka-topics-workbench__title {
-  flex: 1;
   min-width: 0;
 }
 
-.kafka-topics-workbench__title h2 {
-  margin: 0;
-  font-size: var(--dw-text-lg);
-  font-weight: 600;
-}
-
-.kafka-topics-workbench__title p {
-  margin: var(--dw-space-1) 0 0;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-sm);
-}
-
-.kafka-topics-workbench__stats {
-  display: inline-block;
-  margin-top: var(--dw-space-2);
-  padding: 1px var(--dw-space-4);
-  border-radius: var(--dw-radius-pill);
-  background: color-mix(in srgb, var(--dw-primary) 12%, transparent);
-  color: var(--dw-primary);
-  font-size: var(--dw-text-xs);
-}
-
-
 .kafka-topics-workbench__body {
-  display: grid;
-  grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
-  column-gap: var(--dw-gap-md);
-  flex: 1;
-  min-height: 0;
+  min-width: 0;
 }
 
 .kafka-topics-workbench__left {
-  display: flex;
-  flex-direction: column;
   min-width: 0;
-  min-height: 0;
-  padding: var(--dw-space-5) 0 var(--dw-space-5) var(--dw-space-5);
 }
 
 .kafka-topics-workbench__topics-card {
@@ -225,9 +177,6 @@ watch(connectionId, () => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-bg-panel);
   overflow: hidden;
 }
 
@@ -248,11 +197,7 @@ watch(connectionId, () => {
 }
 
 .kafka-topics-workbench__right {
-  display: flex;
-  flex-direction: column;
   min-width: 0;
-  min-height: 0;
-  padding: var(--dw-space-5) var(--dw-space-5) var(--dw-space-5) 0;
   gap: var(--dw-gap-md);
 }
 
@@ -269,8 +214,9 @@ watch(connectionId, () => {
   align-items: center;
   min-height: 120px;
   padding: var(--dw-space-10);
-  border: 1px dashed var(--dw-border);
-  border-radius: var(--dw-control-radius);
+  border: 1px var(--dw-wb-placeholder-style) var(--dw-wb-placeholder-border);
+  border-radius: var(--dw-wb-card-radius);
+  box-shadow: var(--dw-wb-placeholder-shadow);
   text-align: center;
   color: var(--dw-text-muted);
 }
@@ -300,9 +246,6 @@ watch(connectionId, () => {
   flex-shrink: 0;
   min-height: 180px;
   max-height: 42%;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-bg-panel);
   overflow: hidden;
 }
 
@@ -345,20 +288,4 @@ watch(connectionId, () => {
   padding: var(--dw-space-4) var(--dw-space-5) var(--dw-space-5);
 }
 
-@media (max-width: 900px) {
-  .kafka-topics-workbench__body {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(220px, 38%) minmax(0, 1fr);
-    column-gap: 0;
-    row-gap: var(--dw-gap-md);
-  }
-
-  .kafka-topics-workbench__left {
-    padding: var(--dw-space-5) var(--dw-space-5) 0;
-  }
-
-  .kafka-topics-workbench__right {
-    padding: 0 var(--dw-space-5) var(--dw-space-5);
-  }
-}
 </style>

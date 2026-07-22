@@ -309,7 +309,7 @@ const renderedEdges = computed(() =>
 
 function truncateText(value: string, max: number): string {
   if (value.length <= max) return value
-  return `${value.slice(0, max - 1)}…`
+  return `${value.slice(0, max - 1)}?`
 }
 
 function columnTypeLabel(column: {
@@ -659,7 +659,7 @@ function openDropFkDialog() {
   fkDialogTitle.value = t('workspace.schemaEr.fkDropTitle')
   fkDialogSql.value = sql
   fkDialogSummary.value = [
-    t('workspace.schemaEr.fkSummaryConstraint', {name: draft.constraintName || '—'}),
+    t('workspace.schemaEr.fkSummaryConstraint', {name: draft.constraintName || '?'}),
     t('workspace.schemaEr.fkSummarySource', {
       table: draft.sourceTable,
       column: draft.sourceColumn,
@@ -771,7 +771,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="schema-er-graph">
+  <div class="schema-er-graph dw-workbench-page">
     <DwPanelState
         v-if="isLoading"
         status="loading"
@@ -848,7 +848,7 @@ onUnmounted(() => {
                   marker-end="url(#schema-er-arrow)"
                   @pointerdown.stop="selectEdge(entry.edge, $event)"
               >
-                <title>{{ entry.edge.constraintName }} · {{ entry.edge.label }}</title>
+                <title>{{ entry.edge.constraintName }} ? {{ entry.edge.label }}</title>
               </path>
               <circle
                   v-if="entry.dots"
@@ -952,7 +952,7 @@ onUnmounted(() => {
                   :x="148"
                   :y="RELATION_GRAPH_HEADER_HEIGHT + rowIndex * RELATION_GRAPH_ROW_HEIGHT + 14"
               >
-                {{ truncateText(column.comment || '—', 12) }}
+                {{ truncateText(column.comment || '??, 12) }}
               </text>
             </g>
 
@@ -1228,10 +1228,9 @@ onUnmounted(() => {
   --erg-pk-bg: rgb(251 191 36 / 14%);
   --erg-key: var(--dw-warning);
 
-  display: flex;
-  flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   background: var(--erg-canvas-bg);
 }
 
@@ -1310,7 +1309,7 @@ onUnmounted(() => {
   gap: var(--dw-space-4);
   padding: var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-control-radius);
+  border-radius: var(--dw-radius-lg);
   background: color-mix(in srgb, var(--dw-bg-panel) 92%, transparent);
   box-shadow: var(--dw-shadow-float);
   backdrop-filter: blur(12px);

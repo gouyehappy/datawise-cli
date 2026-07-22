@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
@@ -26,18 +26,20 @@ function refreshMetrics() {
 </script>
 
 <template>
-  <div class="kafka-consumer-groups-tab">
-    <header class="kafka-consumer-groups-tab__head">
-      <div class="kafka-consumer-groups-tab__title">
+  <div class="kafka-consumer-groups-tab dw-workbench-page">
+    <header class="dw-workbench-page__head">
+      <div class="dw-workbench-page__title">
         <h2>{{ t('explorer.kafkaConsumerGroups.title') }}</h2>
         <p>{{ connectionLabel }}</p>
       </div>
-      <button class="dw-text-btn" type="button" @click="refreshMetrics">
-        {{ t('explorer.kafkaConsumerGroup.reloadGroups') }}
-      </button>
+      <div class="dw-workbench-page__actions">
+        <button class="dw-text-btn" type="button" @click="refreshMetrics">
+          {{ t('explorer.kafkaConsumerGroup.reloadGroups') }}
+        </button>
+      </div>
     </header>
 
-    <div class="kafka-consumer-groups-tab__body">
+    <div class="kafka-consumer-groups-tab__body dw-workbench-page__body">
       <KafkaConsumerGroupPanel
           ref="consumerGroupPanelRef"
           class="kafka-consumer-groups-tab__panel"
@@ -51,45 +53,13 @@ function refreshMetrics() {
 
 <style scoped>
 .kafka-consumer-groups-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--dw-bg-editor);
-}
-
-.kafka-consumer-groups-tab__head {
-  display: flex;
-  align-items: center;
-  gap: var(--dw-space-6);
-  min-height: 56px;
-  padding: var(--dw-space-5) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border);
-  background: var(--dw-bg-panel);
-}
-
-.kafka-consumer-groups-tab__title {
-  flex: 1;
   min-width: 0;
 }
-
-.kafka-consumer-groups-tab__title h2 {
-  margin: 0;
-  font-size: var(--dw-text-lg);
-  font-weight: 600;
-}
-
-.kafka-consumer-groups-tab__title p {
-  margin: var(--dw-space-1) 0 0;
-  color: var(--dw-text-muted);
-  font-size: var(--dw-text-sm);
-}
-
 
 .kafka-consumer-groups-tab__body {
   flex: 1;
   min-height: 0;
-  padding: var(--dw-space-6) var(--dw-space-8) var(--dw-space-8);
+  padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
 }
 
 .kafka-consumer-groups-tab__panel {

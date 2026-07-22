@@ -25,7 +25,7 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
 </script>
 
 <template>
-  <div class="table-relations">
+  <div class="table-relations dw-embedded-panel">
     <DwPanelState
         v-if="loading"
         status="loading"
@@ -175,13 +175,8 @@ async function openRelation(edge: TableRelationEdge, direction: 'references' | '
 
 <style scoped>
 .table-relations {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dw-space-6);
-  flex: 1;
-  min-height: 0;
-  padding: var(--dw-space-6);
-  overflow: auto;
+  /* layout handled by dw-embedded-panel */
+  min-width: 0;
 }
 
 .table-relations__summary {

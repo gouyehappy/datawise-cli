@@ -158,7 +158,7 @@ defineExpose({refresh: loadData})
 </script>
 
 <template>
-  <section class="kafka-topic-detail-panel">
+  <section class="kafka-topic-detail-panel dw-workbench-card">
     <header class="kafka-topic-detail-panel__head">
       <div class="kafka-topic-detail-panel__title">
         <div class="kafka-topic-detail-panel__title-row">
@@ -323,9 +323,6 @@ defineExpose({refresh: loadData})
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-bg-panel);
   padding: var(--dw-space-6);
 }
 

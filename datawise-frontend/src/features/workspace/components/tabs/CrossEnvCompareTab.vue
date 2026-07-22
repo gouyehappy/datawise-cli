@@ -352,7 +352,7 @@ watch(
 </script>
 
 <template>
-  <div class="cross-env-compare">
+  <div class="cross-env-compare dw-workbench-page">
     <header class="cross-env-compare__head">
       <div>
         <h2>{{ t('crossEnvCompare.title') }}</h2>
@@ -505,11 +505,8 @@ watch(
 
 <style scoped>
 .cross-env-compare {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
   min-height: 0;
-  background: var(--dw-bg-editor);
+  min-width: 0;
 }
 
 .cross-env-compare__head {
@@ -556,9 +553,9 @@ watch(
 .scope-card {
   max-width: 420px;
   padding: var(--dw-space-8);
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-radius-xl);
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
 }
 
 .scope-card h3 {
@@ -598,8 +595,9 @@ watch(
 .sample-input {
   width: 100%;
   padding: var(--dw-pad-control-lg);
-  border: 1px solid var(--dw-border-light);
-  border-radius: var(--dw-control-radius);
+  border: 1px solid var(--dw-wb-card-border);
+  border-radius: var(--dw-wb-card-radius);
+  box-shadow: var(--dw-wb-card-shadow);
   background: var(--dw-bg);
   color: var(--dw-text);
   font-family: var(--dw-mono);
@@ -617,7 +615,7 @@ watch(
   gap: var(--dw-gap);
   padding: var(--dw-space-6) var(--dw-space-9);
   border-top: 1px solid var(--dw-border-light);
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
 }
 
 .cross-env-compare__footer-spacer {

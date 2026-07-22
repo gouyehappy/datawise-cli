@@ -242,3 +242,102 @@ html[data-ui-skin='ide'] .mp-segment__btn.is-active {
     box-shadow: none;
     border-color: var(--dw-primary-border);
 }
+
+/* ---- IDE 工作台页：贴边分栏、直角内卡、无阴影 ---- */
+html[data-ui-skin='ide'] .dw-workbench-page {
+    --dw-wb-head-bg: var(--dw-bg-muted);
+    --dw-wb-head-border: var(--dw-panel-border);
+    --dw-wb-head-shadow: none;
+    --dw-wb-split-gap: 0;
+    --dw-wb-split-divider: var(--dw-panel-border);
+    --dw-wb-col-pad-top: 0;
+    --dw-wb-col-pad-right: 0;
+    --dw-wb-col-pad-bottom: 0;
+    --dw-wb-col-pad-left: 0;
+    --dw-wb-content-pad-x: var(--dw-space-6);
+    --dw-wb-content-pad-y: var(--dw-space-5);
+    --dw-wb-card-border: var(--dw-panel-border);
+    --dw-wb-card-radius: 0;
+    --dw-wb-card-shadow: none;
+    --dw-wb-card-bg: var(--dw-bg-panel);
+    --dw-wb-placeholder-border: var(--dw-panel-border);
+    --dw-wb-placeholder-style: solid;
+    --dw-wb-placeholder-shadow: none;
+    --dw-wb-terminal-border: var(--dw-panel-border);
+    --dw-wb-terminal-radius: 0;
+    --dw-wb-terminal-shadow: none;
+}
+
+html[data-ui-skin='ide'] .dw-workbench-page__head {
+    min-height: var(--dw-tab-height);
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+html[data-ui-skin='ide'] .dw-workbench-split {
+    column-gap: 0;
+}
+
+html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--left,
+html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--right {
+    gap: 0;
+}
+
+html[data-ui-skin='ide'] .lineage-panel__toolbar {
+    min-height: var(--dw-tab-height);
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom-color: var(--dw-panel-border);
+    background: var(--dw-bg-muted);
+}
+
+html[data-ui-skin='ide'] .lineage-panel__warnings,
+html[data-ui-skin='ide'] .lineage-panel__impact {
+    border-bottom: 1px solid var(--dw-panel-border);
+}
+
+html[data-ui-skin='ide'] .schema-er-graph__inspector,
+html[data-ui-skin='ide'] .schema-er-graph__dock {
+    border-radius: 0;
+    box-shadow: none;
+    border-color: var(--dw-panel-border);
+}
+
+html[data-ui-skin='ide'] .table-migration__toolbar {
+    min-height: var(--dw-tab-height);
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+html[data-ui-skin='ide'] .conn-editor {
+    border-right-color: var(--dw-panel-border);
+}
+
+html[data-ui-skin='ide'] .dw-workbench-page--terminal .dw-workbench-page__body {
+    gap: 0;
+    padding: 0;
+}
+
+html[data-ui-skin='ide'] .dw-workbench-page--terminal .ssh-quick-ops {
+    margin-bottom: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    max-height: min(220px, 30vh);
+}
+
+html[data-ui-skin='ide'] .dw-workbench-page--terminal .ssh-terminal-tab__search {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    box-shadow: none;
+}
+
+html[data-ui-skin='ide'] .dw-workbench-page--terminal .ssh-script-record-tab__editor {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+}

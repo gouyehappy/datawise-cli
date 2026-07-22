@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
@@ -23,15 +23,17 @@ function refresh() {
 </script>
 
 <template>
-  <div class="yarn-apps-tab">
-    <header class="yarn-apps-tab__head">
-      <div class="yarn-apps-tab__title">
+  <div class="yarn-apps-tab dw-workbench-page">
+    <header class="dw-workbench-page__head">
+      <div class="dw-workbench-page__title">
         <h2>{{ t('explorer.yarnApps.title') }}</h2>
         <p>{{ connectionLabel }}</p>
       </div>
-      <button class="dw-text-btn" type="button" @click="refresh">
-        {{ t('explorer.yarnApps.refresh') }}
-      </button>
+      <div class="dw-workbench-page__actions">
+        <button class="dw-text-btn" type="button" @click="refresh">
+          {{ t('explorer.yarnApps.refresh') }}
+        </button>
+      </div>
     </header>
     <YarnApplicationsPanel
         ref="panelRef"
@@ -44,44 +46,12 @@ function refresh() {
 
 <style scoped>
 .yarn-apps-tab {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--dw-bg-editor);
-}
-
-.yarn-apps-tab__head {
-  display: flex;
-  align-items: center;
-  gap: var(--dw-space-6);
-  min-height: 56px;
-  padding: var(--dw-space-5) var(--dw-space-8);
-  border-bottom: 1px solid var(--dw-border);
-  background: var(--dw-bg-panel);
-}
-
-.yarn-apps-tab__title {
-  flex: 1;
   min-width: 0;
 }
-
-.yarn-apps-tab__title h2 {
-  margin: 0;
-  font-size: var(--dw-text-lg);
-  font-weight: 600;
-}
-
-.yarn-apps-tab__title p {
-  margin: var(--dw-space-2) 0 0;
-  font-size: var(--dw-text-sm);
-  color: var(--dw-text-muted);
-}
-
 
 .yarn-apps-tab__panel {
   flex: 1;
   min-height: 0;
-  padding: var(--dw-space-6) var(--dw-space-8);
+  padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
 }
 </style>

@@ -433,233 +433,246 @@ function runReleaseAction(action: ReleaseHighlightAction) {
 </script>
 
 <template>
-  <ReleaseHighlightsCards scope="platform" @action="runReleaseAction"/>
+  <div class="platform-catalog-tab dw-workbench-page">
+    <ReleaseHighlightsCards scope="platform" @action="runReleaseAction"/>
 
-  <DwDataGrid
-      v-model:selected-keys="selectedKeys"
-      :rows="rows"
-      :columns="columns"
-      row-key="id"
-      :loading="loading"
-      :error="error"
-      :labels="gridLabels"
-      :show-search="false"
-      :column-filter="false"
-  >
-    <template #toolbar-actions>
-      <button type="button" :disabled="loading" @click="openAdd">
-        <DwIcon name="plus" size="sm" :stroke-width="1.35"/>
-        {{ t('workspace.platformCatalog.add') }}
-      </button>
-      <button type="button" :disabled="loading || deleting || !canDelete" @click="requestDelete">
-        <DwIcon name="delete" size="sm" :stroke-width="1.35"/>
-        {{ t('workspace.platformCatalog.delete') }}
-      </button>
-      <button
-          v-if="isAnalysisCanvas"
-          type="button"
-          :disabled="loading || !canRunAction"
-          @click="openCanvasRerun"
-      >
-        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.canvas.rerun') }}
-      </button>
-      <button
-          v-if="isSchemaDrift"
-          type="button"
-          :disabled="loading || !canRunAction"
-          @click="runSchemaDriftMonitor"
-      >
-        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.common.run') }}
-      </button>
-      <button
-          v-if="isScheduledTasks || isDataQuality"
-          type="button"
-          :disabled="loading || !canRunAction"
-          @click="runScheduledTask"
-      >
-        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.common.run') }}
-      </button>
-      <button
-          v-if="isScheduledTasks && selectedIsHttpTrigger"
-          type="button"
-          :disabled="loading || !canRunAction"
-          @click="pollOrchestrationStatus"
-      >
-        <DwIcon name="refresh" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.tasks.orchestrationStatus') }}
-      </button>
-      <button
-          v-if="isDataQuality"
-          type="button"
-          :disabled="loading"
-          @click="openDqSharedTemplatesDialog"
-      >
-        <DwIcon name="settings" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.dq.manageSharedTemplates') }}
-      </button>
-      <button
-          v-if="isDataQuality"
-          type="button"
-          :disabled="loading || runningAction"
-          @click="runDataQualityGate"
-      >
-        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.dq.runGate') }}
-      </button>
-      <button
-          v-if="isDataQuality"
-          type="button"
-          :disabled="loading || runningAction || !multiEnvConnectionOptions.length"
-          @click="openMultiEnvGateDialog"
-      >
-        <DwIcon name="tab-cross-env-compare" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.dq.runMultiEnvGate') }}
-      </button>
-      <button
-          v-if="isDataQuality"
-          type="button"
-          :disabled="!lastGateResult"
-          @click="copyLastGateResult"
-      >
-        <DwIcon name="copy" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.dq.copyGateResult') }}
-      </button>
-      <button
-          v-if="isDataQuality"
-          type="button"
-          :disabled="!lastGateResult"
-          @click="downloadLastGateResult"
-      >
-        <DwIcon name="export" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.dq.downloadGateResult') }}
-      </button>
-      <button
-          v-if="isFederatedViews"
-          type="button"
-          :disabled="loading || !canRunAction"
-          @click="executeFederatedView()"
-      >
-        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.federated.execute') }}
-      </button>
-      <button
-          v-if="isFederatedViews && federatedRetryMaxRows"
-          type="button"
-          :disabled="loading || runningAction"
-          @click="retryFederatedAtNextLimit"
-      >
-        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.federated.retryAtLimit', {limit: federatedRetryMaxRows}) }}
-      </button>
-      <button
-          v-if="isFederatedViews && federatedTruncated"
-          type="button"
-          :disabled="loading || runningAction"
-          @click="executeFederatedNextBatch"
-      >
-        <DwIcon name="run" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.federated.nextBatch', {offset: federatedSourceOffset + federatedMaxRows}) }}
-      </button>
-      <button
-          v-if="isSemanticMetrics"
-          type="button"
-          :disabled="loading || autoGenerating || !canAutoGenerate"
-          @click="autoGenerateMetrics"
-      >
-        <DwIcon name="ai" size="sm" :stroke-width="1.35"/>
-        {{ t('platform.metrics.autoGenerate') }}
-      </button>
-    </template>
-  </DwDataGrid>
-
-  <PlatformCatalogFormDialog
-      v-if="!isFederatedViews"
-      v-model:open="formOpen"
-      :feature="feature"
-      :tab="tab"
-      @saved="onSaved"
-  />
-
-  <FederatedViewWizardDialog
-      v-model:open="federatedWizardOpen"
-      :tab="tab"
-      @saved="onSaved"
-  />
-
-  <ConfirmDialog
-      v-model:open="deleteConfirmOpen"
-      :title="t('workspace.platformCatalog.delete')"
-      :message="deleteConfirmMessage"
-      :confirm-label="t('workspace.platformCatalog.delete')"
-      :confirm-loading="deleting"
-      @confirm="confirmDelete"
-  />
-
-  <AnalysisCanvasRerunDialog
-      v-model:open="canvasRerunOpen"
-      :canvas-id="canvasRerunId"
-  />
-
-  <SchemaDriftReportDialog
-      v-model:open="driftReportOpen"
-      :report="driftReport"
-  />
-
-  <DataQualitySharedTemplatesDialog
-      v-model:open="dqSharedTemplatesOpen"
-      @deleted="onDqSharedTemplateDeleted"
-  />
-
-  <AppModal
-      :open="multiEnvOpen"
-      :title="t('platform.dq.multiEnvTitle')"
-      width="440px"
-      @close="multiEnvOpen = false"
-  >
-    <p class="modal-hint">{{ t('platform.dq.multiEnvHint') }}</p>
-    <label class="modal-field">
-      <span>{{ t('platform.dq.multiEnvReference') }}</span>
-      <DwSelect
-          v-model="multiEnvConnectionId"
-          size="sm"
-          :options="multiEnvConnectionOptions"
-          :disabled="!multiEnvConnectionOptions.length"
-      />
-    </label>
-    <FormField :label="t('platform.dq.multiEnvDatabase')">
-      <template #default="{ id }">
-        <input
-            :id="id"
-            v-model="multiEnvDatabase"
-            class="dw-input"
-            type="text"
-            :placeholder="t('platform.dq.multiEnvDatabaseHint')"
-        >
-      </template>
-    </FormField>
-    <p class="modal-hint">{{ t('platform.dq.multiEnvDatabaseHint') }}</p>
-    <SettingsSwitch
-        v-model="multiEnvPairByName"
-        :label="t('platform.dq.multiEnvPairByName')"
-    />
-    <p class="modal-hint">{{ t('platform.dq.multiEnvPairByNameHint') }}</p>
-    <template #footer>
-      <ModalActions>
-        <button type="button" class="dw-btn" @click="multiEnvOpen = false">
-          {{ t('common.cancel') }}
+    <DwDataGrid
+        v-model:selected-keys="selectedKeys"
+        :rows="rows"
+        :columns="columns"
+        row-key="id"
+        :loading="loading"
+        :error="error"
+        :labels="gridLabels"
+        :show-search="false"
+        :column-filter="false"
+    >
+      <template #toolbar-actions>
+        <button type="button" :disabled="loading" @click="openAdd">
+          <DwIcon name="plus" size="sm" :stroke-width="1.35"/>
+          {{ t('workspace.platformCatalog.add') }}
+        </button>
+        <button type="button" :disabled="loading || deleting || !canDelete" @click="requestDelete">
+          <DwIcon name="delete" size="sm" :stroke-width="1.35"/>
+          {{ t('workspace.platformCatalog.delete') }}
         </button>
         <button
+            v-if="isAnalysisCanvas"
             type="button"
-            class="dw-btn dw-btn--primary"
-            :disabled="!multiEnvConnectionId || runningAction"
-            @click="confirmMultiEnvGate"
+            :disabled="loading || !canRunAction"
+            @click="openCanvasRerun"
         >
+          <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.canvas.rerun') }}
+        </button>
+        <button
+            v-if="isSchemaDrift"
+            type="button"
+            :disabled="loading || !canRunAction"
+            @click="runSchemaDriftMonitor"
+        >
+          <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.common.run') }}
+        </button>
+        <button
+            v-if="isScheduledTasks || isDataQuality"
+            type="button"
+            :disabled="loading || !canRunAction"
+            @click="runScheduledTask"
+        >
+          <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.common.run') }}
+        </button>
+        <button
+            v-if="isScheduledTasks && selectedIsHttpTrigger"
+            type="button"
+            :disabled="loading || !canRunAction"
+            @click="pollOrchestrationStatus"
+        >
+          <DwIcon name="refresh" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.tasks.orchestrationStatus') }}
+        </button>
+        <button
+            v-if="isDataQuality"
+            type="button"
+            :disabled="loading"
+            @click="openDqSharedTemplatesDialog"
+        >
+          <DwIcon name="settings" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.dq.manageSharedTemplates') }}
+        </button>
+        <button
+            v-if="isDataQuality"
+            type="button"
+            :disabled="loading || runningAction"
+            @click="runDataQualityGate"
+        >
+          <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.dq.runGate') }}
+        </button>
+        <button
+            v-if="isDataQuality"
+            type="button"
+            :disabled="loading || runningAction || !multiEnvConnectionOptions.length"
+            @click="openMultiEnvGateDialog"
+        >
+          <DwIcon name="tab-cross-env-compare" size="sm" :stroke-width="1.35"/>
           {{ t('platform.dq.runMultiEnvGate') }}
         </button>
-      </ModalActions>
-    </template>
-  </AppModal>
+        <button
+            v-if="isDataQuality"
+            type="button"
+            :disabled="!lastGateResult"
+            @click="copyLastGateResult"
+        >
+          <DwIcon name="copy" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.dq.copyGateResult') }}
+        </button>
+        <button
+            v-if="isDataQuality"
+            type="button"
+            :disabled="!lastGateResult"
+            @click="downloadLastGateResult"
+        >
+          <DwIcon name="export" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.dq.downloadGateResult') }}
+        </button>
+        <button
+            v-if="isFederatedViews"
+            type="button"
+            :disabled="loading || !canRunAction"
+            @click="executeFederatedView()"
+        >
+          <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.federated.execute') }}
+        </button>
+        <button
+            v-if="isFederatedViews && federatedRetryMaxRows"
+            type="button"
+            :disabled="loading || runningAction"
+            @click="retryFederatedAtNextLimit"
+        >
+          <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.federated.retryAtLimit', {limit: federatedRetryMaxRows}) }}
+        </button>
+        <button
+            v-if="isFederatedViews && federatedTruncated"
+            type="button"
+            :disabled="loading || runningAction"
+            @click="executeFederatedNextBatch"
+        >
+          <DwIcon name="run" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.federated.nextBatch', {offset: federatedSourceOffset + federatedMaxRows}) }}
+        </button>
+        <button
+            v-if="isSemanticMetrics"
+            type="button"
+            :disabled="loading || autoGenerating || !canAutoGenerate"
+            @click="autoGenerateMetrics"
+        >
+          <DwIcon name="ai" size="sm" :stroke-width="1.35"/>
+          {{ t('platform.metrics.autoGenerate') }}
+        </button>
+      </template>
+    </DwDataGrid>
+
+    <PlatformCatalogFormDialog
+        v-if="!isFederatedViews"
+        v-model:open="formOpen"
+        :feature="feature"
+        :tab="tab"
+        @saved="onSaved"
+    />
+
+    <FederatedViewWizardDialog
+        v-model:open="federatedWizardOpen"
+        :tab="tab"
+        @saved="onSaved"
+    />
+
+    <ConfirmDialog
+        v-model:open="deleteConfirmOpen"
+        :title="t('workspace.platformCatalog.delete')"
+        :message="deleteConfirmMessage"
+        :confirm-label="t('workspace.platformCatalog.delete')"
+        :confirm-loading="deleting"
+        @confirm="confirmDelete"
+    />
+
+    <AnalysisCanvasRerunDialog
+        v-model:open="canvasRerunOpen"
+        :canvas-id="canvasRerunId"
+    />
+
+    <SchemaDriftReportDialog
+        v-model:open="driftReportOpen"
+        :report="driftReport"
+    />
+
+    <DataQualitySharedTemplatesDialog
+        v-model:open="dqSharedTemplatesOpen"
+        @deleted="onDqSharedTemplateDeleted"
+    />
+
+    <AppModal
+        :open="multiEnvOpen"
+        :title="t('platform.dq.multiEnvTitle')"
+        width="440px"
+        @close="multiEnvOpen = false"
+    >
+      <p class="modal-hint">{{ t('platform.dq.multiEnvHint') }}</p>
+      <label class="modal-field">
+        <span>{{ t('platform.dq.multiEnvReference') }}</span>
+        <DwSelect
+            v-model="multiEnvConnectionId"
+            size="sm"
+            :options="multiEnvConnectionOptions"
+            :disabled="!multiEnvConnectionOptions.length"
+        />
+      </label>
+      <FormField :label="t('platform.dq.multiEnvDatabase')">
+        <template #default="{ id }">
+          <input
+              :id="id"
+              v-model="multiEnvDatabase"
+              class="dw-input"
+              type="text"
+              :placeholder="t('platform.dq.multiEnvDatabaseHint')"
+          >
+        </template>
+      </FormField>
+      <p class="modal-hint">{{ t('platform.dq.multiEnvDatabaseHint') }}</p>
+      <SettingsSwitch
+          v-model="multiEnvPairByName"
+          :label="t('platform.dq.multiEnvPairByName')"
+      />
+      <p class="modal-hint">{{ t('platform.dq.multiEnvPairByNameHint') }}</p>
+      <template #footer>
+        <ModalActions>
+          <button type="button" class="dw-btn" @click="multiEnvOpen = false">
+            {{ t('common.cancel') }}
+          </button>
+          <button
+              type="button"
+              class="dw-btn dw-btn--primary"
+              :disabled="!multiEnvConnectionId || runningAction"
+              @click="confirmMultiEnvGate"
+          >
+            {{ t('platform.dq.runMultiEnvGate') }}
+          </button>
+        </ModalActions>
+      </template>
+    </AppModal>
+  </div>
 </template>
+
+<style scoped>
+.platform-catalog-tab {
+  min-width: 0;
+}
+
+.platform-catalog-tab :deep(.dw-data-grid) {
+  flex: 1;
+  min-height: 0;
+}
+</style>

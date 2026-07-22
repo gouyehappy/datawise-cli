@@ -223,7 +223,7 @@ async function copyDdl() {
 </script>
 
 <template>
-  <div class="table-detail">
+  <div class="table-detail dw-workbench-page">
     <header class="table-detail__header">
       <nav class="table-detail__views" :aria-label="t('workspace.tableDetail.views')">
         <button
@@ -344,20 +344,19 @@ async function copyDdl() {
                         variant="success"
                         :title="t('workspace.tableDetail.nullable')"
                     >
-                      ✓
-                    </StatusPill>
+                      �?                    </StatusPill>
                   </td>
                   <td class="col-center">
-                    <StatusPill v-if="column.autoIncrement" variant="primary">✓</StatusPill>
+                    <StatusPill v-if="column.autoIncrement" variant="primary">�?/StatusPill>
                   </td>
                   <td>
                     <StatusPill v-if="column.keyType" :variant="keyTypeVariant(column.keyType)">
                       {{ column.keyType }}
                     </StatusPill>
                   </td>
-                  <td class="mono col-muted">{{ column.defaultValue ?? '—' }}</td>
-                  <td class="mono col-muted">{{ column.extra ?? '—' }}</td>
-                  <td>{{ column.comment || '—' }}</td>
+                  <td class="mono col-muted">{{ column.defaultValue ?? '�? }}</td>
+                  <td class="mono col-muted">{{ column.extra ?? '�? }}</td>
+                  <td>{{ column.comment || '�? }}</td>
                 </tr>
                 </tbody>
               </table>
@@ -406,7 +405,7 @@ async function copyDdl() {
                   <td class="mono col-name">{{ fk.name }}</td>
                   <td class="mono">{{ fk.columns }}</td>
                   <td class="mono">{{ fk.referenceTable }}</td>
-                  <td class="mono">{{ fk.referenceColumns || '—' }}</td>
+                  <td class="mono">{{ fk.referenceColumns || '�? }}</td>
                 </tr>
                 <tr v-if="!properties.foreignKeys.length">
                   <td colspan="4">
@@ -486,17 +485,14 @@ async function copyDdl() {
 
 <style scoped>
 .table-detail {
-  display: flex;
-  flex-direction: column;
   min-height: 0;
-  height: 100%;
-  background: var(--dw-bg-editor);
+  min-width: 0;
 }
 
 .table-detail__header {
   flex-shrink: 0;
   border-bottom: 1px solid var(--dw-border-light);
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
 }
 
 .table-detail__views {
@@ -554,7 +550,7 @@ async function copyDdl() {
   align-items: flex-start;
   gap: var(--dw-space-6);
   padding: var(--dw-space-7) var(--dw-space-8);
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-radius-xl);
   background: linear-gradient(
       145deg,
@@ -621,9 +617,9 @@ async function copyDdl() {
   flex-direction: column;
   gap: var(--dw-gap-xs);
   padding: var(--dw-pad-control-lg);
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-radius-lg);
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
 }
 
 .table-detail__stat-label {
@@ -646,10 +642,10 @@ async function copyDdl() {
   display: flex;
   flex: 1;
   min-height: 280px;
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-radius-xl);
   overflow: hidden;
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
   box-shadow: var(--dw-panel-shadow));
 }
 
@@ -657,7 +653,6 @@ async function copyDdl() {
   flex-shrink: 0;
   width: 148px;
   padding: var(--dw-space-5);
-  border-right: 1px solid var(--dw-border-light);
   background: color-mix(in srgb, var(--dw-bg-muted) 35%, var(--dw-bg-panel));
   display: flex;
   flex-direction: column;
@@ -672,7 +667,8 @@ async function copyDdl() {
   width: 100%;
   padding: var(--dw-pad-control);
   border: 1px solid transparent;
-  border-radius: var(--dw-control-radius);
+  border-radius: var(--dw-wb-card-radius);
+  box-shadow: var(--dw-wb-card-shadow);
   background: transparent;
   color: var(--dw-text-secondary);
   font-size: var(--dw-text-sm);
@@ -687,7 +683,7 @@ async function copyDdl() {
 
 .table-detail__section-btn.active {
   border-color: color-mix(in srgb, var(--dw-primary) 22%, var(--dw-border-light));
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
   color: var(--dw-primary);
   box-shadow: var(--dw-shadow-xs);
 }
@@ -786,7 +782,7 @@ async function copyDdl() {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
   color: var(--dw-text-muted);
   font-size: var(--dw-text-xs);
   font-weight: 600;
@@ -850,10 +846,10 @@ async function copyDdl() {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  border: 1px solid var(--dw-border-light);
+  border: 1px solid var(--dw-wb-card-border);
   border-radius: var(--dw-radius-xl);
   overflow: hidden;
-  background: var(--dw-bg-panel);
+  background: var(--dw-wb-card-bg);
   box-shadow: var(--dw-panel-shadow));
 }
 
@@ -902,7 +898,7 @@ async function copyDdl() {
 
 .table-detail__ddl-code {
   margin: 0;
-  padding: var(--dw-space-8) var(--dw-space-8);
+  padding: var(--dw-wb-content-pad-y) var(--dw-wb-content-pad-x);
   color: color-mix(in srgb, var(--dw-text-primary) 92%, #dbeafe 8%);
   font-family: var(--dw-mono);
   font-size: var(--dw-text-sm);
