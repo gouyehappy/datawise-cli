@@ -472,7 +472,7 @@ async function onPluginToggle(plugin: PluginItem) {
         <div class="mp-hero__glow" aria-hidden="true"/>
         <div class="mp-hero__settings">
           <ModuleHeroSettingsMenu
-              :aria-label="t('plugin.settingsMenu.aria')"
+              :ariaLabel="t('plugin.settingsMenu.aria')"
               :items="heroMenuItems"
               @select="onHeroMenuSelect"
           />

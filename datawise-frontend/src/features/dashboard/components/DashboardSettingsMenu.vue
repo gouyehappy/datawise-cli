@@ -62,7 +62,7 @@ function onSelect(id: string) {
 
 <template>
   <ModuleHeroSettingsMenu
-      :aria-label="t('dashboard.settingsMenu.aria')"
+      :ariaLabel="t('dashboard.settingsMenu.aria')"
       :items="items"
       :active="layoutEditMode"
       @select="onSelect"

@@ -319,7 +319,7 @@ function onHeroMenuSelect(id: string) {
       <div class="mp-hero__glow" aria-hidden="true"/>
       <div class="mp-hero__settings">
         <ModuleHeroSettingsMenu
-            :aria-label="t('plugin.connectorMarket.settingsMenu.aria')"
+            :ariaLabel="t('plugin.connectorMarket.settingsMenu.aria')"
             :items="heroMenuItems"
             :active="reloading || installingCore || cleaningRedundant"
             @select="onHeroMenuSelect"

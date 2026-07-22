@@ -221,7 +221,7 @@ function onHeroMenuSelect(id: string) {
       <div class="mp-hero__glow" aria-hidden="true"/>
       <div class="mp-hero__settings">
         <ModuleHeroSettingsMenu
-            :aria-label="t('plugin.advanced.settingsMenu.aria')"
+            :ariaLabel="t('plugin.advanced.settingsMenu.aria')"
             :items="heroMenuItems"
             @select="onHeroMenuSelect"
         />
