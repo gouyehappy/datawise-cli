@@ -108,6 +108,7 @@ import {
     setServerConfigSyncEnabled,
     shouldSyncConfigToServer,
 } from '@/shared/config/config-server-sync'
+import {isQuietAuthFailure} from '@/shared/api/http/session-guard'
 import {cancelPendingSqlSnippetServerPersists} from '@/features/settings/services/sql-editor-shortcuts.service'
 import {shouldUseBuiltinAppConfig} from '@/shared/config/app-config-read-policy'
 import {configApi} from '@/api'
@@ -652,6 +653,7 @@ export function schedulePersistAppConfigToServer(config: AppConfigFile) {
     serverPersistTimer = setTimeout(() => {
         if (!shouldSyncConfigToServer()) return
         void configApi.saveAppConfig(normalizeAppConfig(config)).catch((error) => {
+            if (isQuietAuthFailure(error)) return
             console.warn('[config] failed to persist app.xml', error)
         })
     }, 420)

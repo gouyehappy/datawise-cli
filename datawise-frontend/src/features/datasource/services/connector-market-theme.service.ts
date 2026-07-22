@@ -55,8 +55,8 @@ export function connectorMarketAccentVars(dbType: string): Record<string, string
     const accent = connectorMarketAccent(dbType)
     return {
         '--cm-card-accent': accent,
-        '--cm-card-accent-soft': `color-mix(in srgb, ${accent} 16%, transparent)`,
-        '--cm-card-accent-border': `color-mix(in srgb, ${accent} 34%, var(--dw-border-light))`,
+        '--cm-card-accent-soft': `color-mix(in srgb, ${accent} 14%, transparent)`,
+        '--cm-card-accent-border': `color-mix(in srgb, ${accent} 28%, transparent)`,
         '--cm-card-accent-glow': `color-mix(in srgb, ${accent} 22%, transparent)`,
     }
 }

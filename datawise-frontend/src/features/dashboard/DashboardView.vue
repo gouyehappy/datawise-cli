@@ -352,9 +352,9 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
 <template>
   <div class="module-page module-page--ambient module-page--scroll dashboard">
     <div class="mp-page-wrap">
-      <header class="mp-hero mp-hero--glow dash-hero">
+      <header class="mp-hero mp-hero--glow mp-hero--with-settings">
         <div class="mp-hero__glow" aria-hidden="true"/>
-        <div class="dash-hero__settings">
+        <div class="mp-hero__settings">
           <DashboardSettingsMenu
               :layout-edit-mode="layoutEditMode"
               @toggle-layout-edit="toggleLayoutEditMode"
@@ -605,27 +605,17 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
   line-height: var(--dw-leading-relaxed);
 }
 
-.dash-hero__settings {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: var(--dw-z-raised);
-}
-
-.dash-hero .mp-hero__inner {
-  padding-right: 52px;
-}
-
 .dash-edit-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--dw-gap);
-  margin: 0 0 var(--mp-gap-lg);
+  margin: 0;
   padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, var(--dw-primary) 28%, var(--dw-panel-border));
-  border-radius: var(--dw-panel-radius);
-  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg-editor));
+  border: 0;
+  border-radius: var(--mp-shell-radius);
+  background: color-mix(in srgb, var(--mp-shell-accent) 10%, var(--mp-shell-surface));
+  box-shadow: inset var(--mp-shell-rail) 0 0 0 var(--mp-shell-accent);
 }
 
 .dash-edit-bar__hint {
@@ -636,7 +626,7 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
 }
 
 .dash-stats {
-  margin-bottom: var(--mp-gap-lg);
+  margin: 0;
 }
 
 .dash-layout.is-editing .dash-col {
@@ -645,22 +635,56 @@ function applyAiWidget(payload: { prompt: string; widgetId: DashboardWidgetId; c
 
 .dash-layout {
   display: grid;
-  grid-template-columns: clamp(240px, 24vw, 300px) 1fr clamp(240px, 24vw, 300px);
-  gap: var(--mp-gap-lg);
+  grid-template-columns: clamp(240px, 22vw, 300px) 1fr clamp(240px, 22vw, 300px);
+  gap: var(--mp-shell-gap);
   align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .dash-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .dash-col--side:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .dash-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .dash-col {
   display: flex;
   flex-direction: column;
-  gap: var(--mp-gap-lg);
+  gap: var(--mp-shell-gap);
 }
 
 :deep(.dash-card) {
-  border: 1px solid var(--dw-panel-border);
-  border-radius: var(--dw-panel-radius);
-  background: var(--dw-bg-editor);
-  box-shadow: var(--dw-panel-shadow);
+  border: 1px solid var(--mp-shell-border);
+  border-radius: var(--mp-shell-radius);
+  background: var(--mp-shell-tile);
+  box-shadow: none;
   overflow: hidden;
+}
+
+:deep(.dash-card__head) {
+  border-bottom: 1px solid color-mix(in srgb, var(--dw-text) 6%, transparent);
+  background: transparent;
+}
+
+:deep(.dash-card__head-actions .dw-text-btn) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--dw-text-secondary);
+}
+
+:deep(.dash-card__head-actions .dw-text-btn:hover:not(:disabled)) {
+  background: color-mix(in srgb, var(--mp-shell-accent) 8%, transparent);
+  color: var(--dw-text);
+  box-shadow: none;
 }
 </style>

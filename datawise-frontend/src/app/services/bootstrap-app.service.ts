@@ -1,5 +1,6 @@
 import {reactive, readonly} from 'vue'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
+import {awaitUnauthorizedRecovery} from '@/features/auth/services/auth-session-recovery.service'
 import {useAppConfigStore} from '@/features/layout/stores/app-config-store'
 import {useExplorerStore} from '@/features/explorer/stores/explorer'
 import {useNotificationStore} from '@/features/layout/stores/notification-store'
@@ -226,9 +227,6 @@ export async function bootstrapApp(): Promise<void> {
         state.backend.endpoint = settingsApi.resolveBackendEndpointLabel()
         const snapshot = await settingsApi.pingHealth()
         applyBackendResult(snapshot.result, snapshot.endpoint)
-        if (snapshot.result?.ok) {
-            await safeLoad(() => useAppConfigStore().syncFromServer())
-        }
     })
 
     if (desktopBoot) {
@@ -243,7 +241,13 @@ export async function bootstrapApp(): Promise<void> {
         } catch {
             auth.bootstrap()
         }
+        await awaitUnauthorizedRecovery()
     })
+
+    // 会话就绪后再拉配置，避免未登录并发 PUT/GET 刷屏
+    if (state.backend.status === 'connected') {
+        await safeLoad(() => useAppConfigStore().syncFromServer())
+    }
 
     await runStep('explorer', () => safeLoad(() => explorer.loadTree()))
     await runStep('workspace', () => safeLoad(() => useShortcutPanelStore().load()))
@@ -270,6 +274,7 @@ export async function bootstrapApp(): Promise<void> {
 async function bootstrapDesktopDeferredSteps(
     explorer: ReturnType<typeof useExplorerStore>,
 ) {
+    await awaitUnauthorizedRecovery()
     await safeLoad(() => explorer.loadTree())
     await safeLoad(() => useShortcutPanelStore().load())
     await safeLoad(() => useNotificationStore().load())

@@ -130,8 +130,11 @@ export function isBlankOrCommentOnlyLine(sql: string, lineNumber: number): boole
 
 /**
  * 行内执行按钮：解析当前应高亮的语句。
- * - 光标在可执行行 → 该语句
- * - 光标在空行/纯注释行 → 仅当 gutter 悬停在可执行行时取该语句
+ * - 光标落在某条语句的 span 范围内 → 该语句
+ * - 光标在不属于任何语句的空行/纯注释行 → 仅当 gutter 悬停时取 hovered 语句
+ *
+ * 注意：语句 span 内可能包含空行/纯注释行（例如多行 CREATE、字符串拆行等）。
+ * 即便光标位于这些“行内非可执行片段”的行，也应保持按钮固定在语句首行（anchorLine）。
  */
 export function resolveGutterStatement(
     sql: string,
@@ -140,12 +143,12 @@ export function resolveGutterStatement(
 ): SqlStatementSpan | null {
     const statements = indexSqlStatements(sql)
 
-    if (cursorLine !== null && !isBlankOrCommentOnlyLine(sql, cursorLine)) {
+    if (cursorLine !== null) {
         const fromCursor = findStatementContainingLine(statements, cursorLine)
         if (fromCursor) return fromCursor
     }
 
-    if (gutterLine !== null && !isBlankOrCommentOnlyLine(sql, gutterLine)) {
+    if (gutterLine !== null) {
         return findStatementContainingLine(statements, gutterLine)
     }
 

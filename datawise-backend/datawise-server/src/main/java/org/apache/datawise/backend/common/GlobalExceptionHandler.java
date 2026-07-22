@@ -140,7 +140,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SQLException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleSqlException(SQLException ex) {
         ExceptionLogging.error(log, "Unhandled SQLException (should be converted in service layer)", ex);
-        Map<String, Object> data = Map.of("errorCode", DatawiseErrorCodes.SQL_EXECUTION_FAILED);
+        String errorCode = JdbcConnectionErrors.resolveErrorCode(ex);
+        Map<String, Object> data = Map.of("errorCode", errorCode);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiResponse<>(-1, JdbcConnectionErrors.toUserMessage(ex), data));
     }

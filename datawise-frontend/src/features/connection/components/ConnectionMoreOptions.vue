@@ -9,6 +9,10 @@ import {resolveJdbcDriver} from '@/features/datasource/services/datasource-catal
 import {isJdbcDriverRequired} from '@/features/connection/utils/connection-defaults'
 import {supportsSshTunnel} from '@/shared/capabilities/db-type-capabilities'
 import {useDatasourceCatalogStore} from '@/features/datasource/stores/datasource-catalog'
+import {
+    resolveApiErrorMessage,
+    resolveDisplayApiErrorMessage,
+} from '@/shared/api/http/api-error-message'
 import type {ConnectionConfig, DbType} from '@/core/types'
 
 const props = defineProps<{ form: ConnectionConfig; readOnly?: boolean }>()
@@ -52,7 +56,7 @@ async function onResolveDriver() {
         : t('connection.driverResolveSuccess')
   } catch (err) {
     resolveOk.value = false
-    resolveMessage.value = err instanceof Error ? err.message : String(err)
+    resolveMessage.value = resolveDisplayApiErrorMessage(err, t) || resolveApiErrorMessage(err)
   } finally {
     resolving.value = false
   }

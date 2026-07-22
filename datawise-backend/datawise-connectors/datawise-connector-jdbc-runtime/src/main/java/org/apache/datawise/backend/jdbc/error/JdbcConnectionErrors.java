@@ -57,7 +57,7 @@ public final class JdbcConnectionErrors {
         );
     }
 
-    static String resolveErrorCode(Throwable error) {
+    public static String resolveErrorCode(Throwable error) {
         return JdbcErrorClassifier.resolveErrorCode(error);
     }
 }

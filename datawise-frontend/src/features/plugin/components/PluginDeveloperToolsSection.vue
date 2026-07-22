@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import {EmptyState, StatusPill} from '@/core/components'
+import {EmptyState, ModuleHeroSettingsMenu, StatusPill, type ModuleHeroMenuItem} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import type {PluginMatrixRow} from '@/features/plugin/services/plugin-matrix.service'
 import type {ExplorerPluginCrossRefRow} from '@/features/plugin/services/plugin-connector-crossref.service'
@@ -171,36 +171,86 @@ function selectTab(id: PluginDevTab) {
 function usageBarWidth(total: number): string {
     return `${Math.round((total / usageMaxTotal.value) * 100)}%`
 }
+
+const heroMenuItems = computed<ModuleHeroMenuItem[]>(() => [
+    {
+        id: 'export-matrix',
+        label: t('plugin.matrix.exportCsv'),
+        icon: 'export',
+    },
+    {
+        id: 'export-catalog',
+        label: t('plugin.catalogAudit.exportDiffCsv'),
+        icon: 'export',
+    },
+    {
+        id: 'refresh-hooks',
+        label: t('plugin.hooks.refresh'),
+        icon: 'refresh',
+        dividerBefore: true,
+    },
+    {
+        id: 'clear-usage',
+        label: t('plugin.usage.clear'),
+        icon: 'delete',
+    },
+])
+
+function onHeroMenuSelect(id: string) {
+    if (id === 'export-matrix') {
+        emit('exportMatrixCsv')
+        return
+    }
+    if (id === 'export-catalog') {
+        emit('exportCatalogDiffCsv')
+        return
+    }
+    if (id === 'refresh-hooks') {
+        emit('refreshHooks')
+        return
+    }
+    if (id === 'clear-usage') {
+        emit('clearUsage')
+    }
+}
 </script>
 
 <template>
   <section class="plugin-dev">
-    <header class="plugin-dev__hero">
-      <div class="plugin-dev__hero-glow" aria-hidden="true"/>
-      <div class="plugin-dev__hero-inner">
-        <div class="plugin-dev__hero-copy">
-          <p class="plugin-dev__eyebrow">{{ t('plugin.advanced.eyebrow') }}</p>
-          <h2 class="plugin-dev__title">{{ t('plugin.advanced.title') }}</h2>
-          <p class="plugin-dev__sub">{{ t('plugin.advanced.subtitle') }}</p>
-        </div>
-        <div class="plugin-dev__metrics">
-          <button
-              v-for="tab in devTabs"
-              :key="tab.id"
-              type="button"
-              class="plugin-dev-metric"
-              :class="[
-                `plugin-dev-metric--${tab.tone}`,
-                { 'is-active': activeTab === tab.id },
-              ]"
-              @click="selectTab(tab.id)"
-          >
-            <span class="plugin-dev-metric__value">{{ tab.count }}</span>
-            <span class="plugin-dev-metric__label">{{ tab.label }}</span>
-          </button>
+    <header class="mp-hero mp-hero--glow mp-hero--with-settings plugin-dev__hero">
+      <div class="mp-hero__glow" aria-hidden="true"/>
+      <div class="mp-hero__settings">
+        <ModuleHeroSettingsMenu
+            :aria-label="t('plugin.advanced.settingsMenu.aria')"
+            :items="heroMenuItems"
+            @select="onHeroMenuSelect"
+        />
+      </div>
+      <div class="mp-hero__inner">
+        <div class="mp-hero__copy">
+          <p class="mp-hero__eyebrow">{{ t('plugin.advanced.eyebrow') }}</p>
+          <h1 class="mp-hero__title">{{ t('plugin.advanced.title') }}</h1>
+          <p class="mp-hero__sub">{{ t('plugin.advanced.subtitle') }}</p>
         </div>
       </div>
     </header>
+
+    <section class="plugin-dev__status" aria-label="developer tools metrics">
+      <button
+          v-for="tab in devTabs"
+          :key="tab.id"
+          type="button"
+          class="plugin-dev__status-item"
+          :class="[
+            `plugin-dev__status-item--${tab.tone}`,
+            { 'is-active': activeTab === tab.id },
+          ]"
+          @click="selectTab(tab.id)"
+      >
+        <span class="plugin-dev__status-label">{{ tab.label }}</span>
+        <strong class="plugin-dev__status-value">{{ tab.count }}</strong>
+      </button>
+    </section>
 
     <nav class="plugin-dev__tabs" :aria-label="t('plugin.advanced.tabsLabel')">
       <button
@@ -249,9 +299,6 @@ function usageBarWidth(total: number): string {
                 {{ t('plugin.advanced.viewTable') }}
               </button>
             </div>
-            <button class="dw-text-btn" type="button" @click="emit('exportMatrixCsv')">
-              {{ t('plugin.matrix.exportCsv') }}
-            </button>
           </div>
         </div>
 
@@ -265,9 +312,9 @@ function usageBarWidth(total: number): string {
                 :placeholder="t('plugin.advanced.matrixSearch')"
             />
           </div>
-          <div class="plugin-dev-matrix-toolbar__filters">
+          <div class="plugin-dev-matrix-toolbar__filters dw-segment mp-segment--wrap">
             <button
-                class="plugin-dev-chip"
+                class="dw-segment__btn"
                 :class="{ 'is-active': matrixCategory === 'all' }"
                 type="button"
                 @click="matrixCategory = 'all'"
@@ -277,7 +324,7 @@ function usageBarWidth(total: number): string {
             <button
                 v-for="cat in CATEGORY_ORDER"
                 :key="cat"
-                class="plugin-dev-chip"
+                class="dw-segment__btn"
                 :class="{ 'is-active': matrixCategory === cat }"
                 type="button"
                 @click="matrixCategory = cat"
@@ -478,11 +525,6 @@ function usageBarWidth(total: number): string {
               </div>
             </li>
           </ol>
-          <div class="plugin-dev-pane__foot">
-            <button class="dw-text-btn" type="button" @click="emit('clearUsage')">
-              {{ t('plugin.usage.clear') }}
-            </button>
-          </div>
         </template>
       </div>
 
@@ -576,11 +618,6 @@ function usageBarWidth(total: number): string {
             <h3 class="plugin-dev-pane__title">{{ t('plugin.catalogAudit.title') }}</h3>
             <p class="plugin-dev-pane__desc">{{ t('plugin.catalogAudit.description') }}</p>
           </div>
-          <div class="plugin-dev-pane__actions">
-            <button class="dw-text-btn" type="button" @click="emit('exportCatalogDiffCsv')">
-              {{ t('plugin.catalogAudit.exportDiffCsv') }}
-            </button>
-          </div>
         </div>
         <EmptyState
             v-if="!catalogAllIssueCount && !referencePresetMismatchCount"
@@ -672,9 +709,6 @@ function usageBarWidth(total: number): string {
                 @click="emit('copyHookTemplate', tplId)"
             >
               {{ hookTemplateLabel(tplId) }}
-            </button>
-            <button class="dw-text-btn" type="button" @click="emit('refreshHooks')">
-              {{ t('plugin.hooks.refresh') }}
             </button>
           </div>
         </template>

@@ -204,7 +204,8 @@ export const useAuthStore = defineStore('auth', () => {
             applySessionInfo(session)
             return
         } catch (error) {
-            if (!shouldRecoverStaleSession(error)) {
+            // 后端已连通但会话探测失败（含 CORS 伪装的 401）：统一游客恢复，避免带着失效 session 并发打出一堆错
+            if (!shouldRecoverStaleSession(error) && !backendConnected) {
                 return
             }
         }
@@ -304,16 +305,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function handleUnauthorizedAccess() {
+        const wasGuest = readGuestFlag()
         cancelDeferredConfigServerWrites()
         clearSession()
         sessionId.value = null
         user.value = null
-        openLoginDialog()
-        useAppToast().show(t('auth.sessionExpired'))
         try {
             await loginAsGuest()
         } catch {
             bootstrapGuestSession()
+        }
+        // 原登录用户：游客兜底后弹出登录框；访客则静默重登，避免控制台炸一堆 401
+        if (!wasGuest) {
+            openLoginDialog()
+            useAppToast().show(t('auth.sessionExpired'))
         }
     }
 

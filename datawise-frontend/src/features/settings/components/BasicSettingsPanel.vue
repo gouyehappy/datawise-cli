@@ -68,12 +68,20 @@ const primaryTones: PrimaryTone[] = ['violet', 'blue', 'cyan', 'green', 'orange'
 const locales: AppLocale[] = ['zh-CN', 'en-US']
 
 const configDirInput = ref('')
-const resolvedPath = ref('')
+const previewPath = ref('')
+const activeFromBackend = ref('')
 const defaultPath = ref('')
 const canChangeConfigDir = ref(false)
 const configDirSaving = ref(false)
 const configDirError = ref('')
 const restartConfirmOpen = ref(false)
+
+const workspacePathMismatch = computed(() => {
+    const active = activeFromBackend.value.trim()
+    const preview = previewPath.value.trim()
+    if (!active || !preview) return false
+    return active.replace(/[/\\]+$/, '').toLowerCase() !== preview.replace(/[/\\]+$/, '').toLowerCase()
+})
 
 const apiServerMode = ref<ApiServerMode>('local')
 const apiServerRemoteUrl = ref('')
@@ -227,16 +235,20 @@ async function saveApiServer() {
 onMounted(async () => {
     loadApiServerDraft()
     const settings = await loadConfigDirSettings()
-    configDirInput.value = settings.configured ?? ''
-    resolvedPath.value = settings.resolved
+    activeFromBackend.value = settings.activeFromBackend
     defaultPath.value = settings.defaultPath
     canChangeConfigDir.value = settings.canChange
+    configDirInput.value = settings.configured ?? ''
+    const trimmed = configDirInput.value.trim()
+    previewPath.value = !trimmed
+        ? (settings.defaultPath || settings.resolved || settings.activeFromBackend)
+        : await resolveConfigDirectoryPath(trimmed)
 })
 
 watch(configDirInput, async (value) => {
     if (!canChangeConfigDir.value) return
     const trimmed = value.trim()
-    resolvedPath.value = !trimmed
+    previewPath.value = !trimmed
         ? defaultPath.value
         : await resolveConfigDirectoryPath(trimmed)
 })
@@ -248,7 +260,7 @@ async function browseConfigDir() {
 
 function resetConfigDir() {
     configDirInput.value = ''
-    resolvedPath.value = defaultPath.value
+    previewPath.value = defaultPath.value
 }
 
 async function saveConfigDir() {
@@ -461,7 +473,7 @@ async function copyDeepLinkExample() {
       </SettingsSectionCard>
 
       <SettingsSectionCard
-          v-if="resolvedPath || canChangeConfigDir"
+          v-if="activeFromBackend || previewPath || canChangeConfigDir"
           :title="t('settings.basic.workspaceRoot.title')"
           :hint="t('settings.basic.workspaceRoot.hint')"
           icon="folder"
@@ -487,9 +499,26 @@ async function copyDeepLinkExample() {
           </div>
         </FormField>
 
-        <p v-if="resolvedPath" class="workspace-root__path" :title="resolvedPath">
-          <code>{{ resolvedPath }}</code>
-        </p>
+        <dl class="config-dir-meta">
+          <div v-if="activeFromBackend" class="config-dir-meta__row">
+            <dt>{{ t('settings.basic.workspaceRoot.activeNow') }}</dt>
+            <dd>
+              <code class="workspace-root__path-code" :title="activeFromBackend">{{ activeFromBackend }}</code>
+            </dd>
+          </div>
+          <div v-if="previewPath" class="config-dir-meta__row">
+            <dt>{{ t('settings.basic.workspaceRoot.afterRestart') }}</dt>
+            <dd>
+              <code class="workspace-root__path-code" :title="previewPath">{{ previewPath }}</code>
+            </dd>
+          </div>
+        </dl>
+
+            <DwInlineAlert
+                v-if="workspacePathMismatch"
+                variant="warning"
+                :message="t('settings.basic.workspaceRoot.mismatchHint')"
+            />
 
         <div class="workspace-root__subs" :aria-label="t('settings.basic.workspaceRoot.layoutTitle')">
           <span

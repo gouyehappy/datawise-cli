@@ -15,6 +15,10 @@ import {
     isConnectorUpgradeAvailable,
     isRedundantPluginJar,
 } from '@/features/datasource/services/connector-market.service'
+import {
+    connectorCardCapLimit,
+    type ConnectorCardSize,
+} from '@/features/datasource/services/connector-market-layout.service'
 import {datasourcesApi} from '@/api/modules/datasources'
 import {DwButton} from '@/core/components'
 import {connectorMarketAccentVars} from '@/features/datasource/services/connector-market-theme.service'
@@ -24,19 +28,29 @@ import {useWorkspaceStore} from '@/features/workspace/stores/workspace'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {canMutateConnectionCatalog} from '@/features/auth/services/feature-permission.service'
 
-const CAP_LIMIT = 4
-
 const props = withDefaults(defineProps<{
     entry: ConnectorMarketEntry
     index?: number
     standalone?: boolean
+    size?: ConnectorCardSize
+    reorderable?: boolean
+    dragging?: boolean
+    dropTarget?: boolean
 }>(), {
     index: 0,
     standalone: false,
+    size: 'standard',
+    reorderable: false,
+    dragging: false,
+    dropTarget: false,
 })
 
 const emit = defineEmits<{
     installed: []
+    dragStart: [id: string]
+    dragOver: [id: string]
+    drop: [id: string]
+    dragEnd: []
 }>()
 
 const {t, te} = useI18n()
@@ -53,14 +67,22 @@ const canRemoteReinstall = computed(() => canRemoteReinstallConnector(props.entr
 const canUninstall = computed(() => canUninstallConnector(props.entry, auth.isAdmin))
 const redundantJar = computed(() => isRedundantPluginJar(props.entry))
 const upgradeAvailable = computed(() => isConnectorUpgradeAvailable(props.entry))
+const capLimit = computed(() => connectorCardCapLimit(props.size))
+const iconSize = computed(() => {
+    if (props.size === 'hero') return DB_TYPE_ICON_SIZE.header
+    if (props.size === 'wide' || props.size === 'tall') return DB_TYPE_ICON_SIZE.list
+    return DB_TYPE_ICON_SIZE.compact
+})
 
-function cardClasses() {
-    return [
-        'connector-card',
-        props.entry.available ? 'connector-card--ready' : 'connector-card--pending',
-        props.standalone ? 'connector-card--page' : '',
-    ].filter(Boolean)
-}
+const cardClassList = computed(() => [
+    'connector-card',
+    `connector-card--${props.size}`,
+    props.entry.available ? 'connector-card--ready' : 'connector-card--pending',
+    props.standalone ? 'connector-card--page' : '',
+    props.reorderable ? 'connector-card--reorderable' : '',
+    props.dragging ? 'is-dragging' : '',
+    props.dropTarget ? 'is-drop-target' : '',
+].filter(Boolean))
 
 function capabilityLabel(cap: string) {
     return formatConnectorCapabilityLabel(cap, t, te)
@@ -78,6 +100,38 @@ const integrityClass = computed(() => {
     if (status === 'unsigned') return 'connector-card__integrity--unsigned'
     return ''
 })
+
+function onGripDragStart(event: DragEvent) {
+    if (!props.reorderable) return
+    event.dataTransfer?.setData('text/plain', props.entry.id)
+    if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move'
+        const card = (event.currentTarget as HTMLElement | null)?.closest('.connector-card')
+        if (card instanceof HTMLElement) {
+            event.dataTransfer.setDragImage(card, 28, 28)
+        }
+    }
+    emit('dragStart', props.entry.id)
+}
+
+function onDragOver(event: DragEvent) {
+    if (!props.reorderable) return
+    event.preventDefault()
+    if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = 'move'
+    }
+    emit('dragOver', props.entry.id)
+}
+
+function onDrop(event: DragEvent) {
+    if (!props.reorderable) return
+    event.preventDefault()
+    emit('drop', props.entry.id)
+}
+
+function onDragEnd() {
+    emit('dragEnd')
+}
 
 async function installRemote(event: Event, reinstall = false) {
     event.stopPropagation()
@@ -171,14 +225,28 @@ function openNewConnection(event?: Event) {
 
 <template>
   <article
-      :class="cardClasses()"
+      :class="cardClassList"
       :style="{...connectorMarketAccentVars(entry.id), '--cm-i': index}"
+      @dragover="onDragOver"
+      @drop="onDrop"
   >
-    <div class="connector-card__stripe" aria-hidden="true"/>
+    <button
+        v-if="reorderable"
+        class="connector-card__grip"
+        type="button"
+        draggable="true"
+        :title="t('plugin.connectorMarket.dragToReorder')"
+        :aria-label="t('plugin.connectorMarket.dragToReorder')"
+        @click.stop
+        @dragstart="onGripDragStart"
+        @dragend="onDragEnd"
+    >
+      <span class="connector-card__grip-dots" aria-hidden="true"/>
+    </button>
 
     <div class="connector-card__head">
       <div class="connector-card__icon">
-        <DbTypeIcon :db-type="entry.id as DbType" :size="DB_TYPE_ICON_SIZE.compact"/>
+        <DbTypeIcon :db-type="entry.id as DbType" :size="iconSize"/>
       </div>
       <div class="connector-card__copy">
         <strong class="connector-card__name">{{ entry.label }}</strong>
@@ -199,7 +267,7 @@ function openNewConnection(event?: Event) {
 
     <div v-if="entry.available && entry.capabilities.length" class="connector-card__caps">
       <span
-          v-for="cap in entry.capabilities.slice(0, CAP_LIMIT)"
+          v-for="cap in entry.capabilities.slice(0, capLimit)"
           :key="`${entry.id}-${cap}`"
           class="connector-card__cap"
           :title="cap"
@@ -207,10 +275,10 @@ function openNewConnection(event?: Event) {
         {{ capabilityLabel(cap) }}
       </span>
       <span
-          v-if="entry.capabilities.length > CAP_LIMIT"
+          v-if="entry.capabilities.length > capLimit"
           class="connector-card__cap connector-card__cap--more"
       >
-        +{{ entry.capabilities.length - CAP_LIMIT }}
+        +{{ entry.capabilities.length - capLimit }}
       </span>
     </div>
 
@@ -218,18 +286,20 @@ function openNewConnection(event?: Event) {
       {{ entry.installHint }}
     </p>
 
-    <div
-        v-if="integrityLabel"
-        class="connector-card__integrity"
-        :class="integrityClass"
-    >
-      {{ integrityLabel }}
-    </div>
-    <div
-        v-if="upgradeAvailable"
-        class="connector-card__integrity connector-card__integrity--mismatch"
-    >
-      {{ t('plugin.connectorMarket.upgradeAvailable') }}
+    <div class="connector-card__meta">
+      <div
+          v-if="integrityLabel"
+          class="connector-card__integrity"
+          :class="integrityClass"
+      >
+        {{ integrityLabel }}
+      </div>
+      <div
+          v-if="upgradeAvailable"
+          class="connector-card__integrity connector-card__integrity--mismatch"
+      >
+        {{ t('plugin.connectorMarket.upgradeAvailable') }}
+      </div>
     </div>
 
     <footer v-if="standalone" class="connector-card__footer">
@@ -239,7 +309,11 @@ function openNewConnection(event?: Event) {
             size="sm"
             @click="openNewConnection"
         >
-          {{ t('plugin.connectorMarket.newConnection') }}
+          {{
+            size === 'compact'
+                ? t('plugin.connectorMarket.newConnectionShort')
+                : t('plugin.connectorMarket.newConnection')
+          }}
         </DwButton>
         <DwButton
             v-if="canRemoteReinstall"
@@ -284,7 +358,12 @@ function openNewConnection(event?: Event) {
         <DwButton size="sm" variant="secondary" @click="copyInstallGuide">
           {{ copied ? t('plugin.connectorMarket.copied') : t('plugin.connectorMarket.copyInstall') }}
         </DwButton>
-        <DwButton size="sm" variant="ghost" @click="copyPluginDir">
+        <DwButton
+            v-if="size !== 'compact'"
+            size="sm"
+            variant="ghost"
+            @click="copyPluginDir"
+        >
           {{ t('plugin.connectorMarket.copyPath') }}
         </DwButton>
       </div>

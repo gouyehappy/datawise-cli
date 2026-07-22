@@ -72,6 +72,11 @@ export default {
         SQL_PRODUCTION_APPROVAL_REQUIRED:
             'Production writes require team approval. Submit an approval request or contact a team admin.',
         IO_ERROR: 'I/O error',
+        JDBC_DRIVER_REQUIRED: 'JDBC driver is not configured. Set Maven coordinates and download the driver.',
+        JDBC_DRIVER_LOAD_FAILED: 'Failed to load JDBC driver. Check the local JAR or re-download it.',
+        JDBC_DRIVER_DOWNLOAD_FAILED:
+            'Could not download the JDBC driver from Maven repositories. Check network, configure mirrors (datawise.jdbc.maven.repositories), or place the JAR under config/drivers/.',
+        DATABASE_CONNECTION_FAILED: 'Database connection failed',
         TENANCY_MULTI_REQUIRED: 'This action requires multi-tenant mode',
         TENANT_ACCESS_DENIED: 'You do not have access to this organization',
         TENANT_NAME_REQUIRED: 'Organization name is required',

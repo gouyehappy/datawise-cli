@@ -52,7 +52,6 @@ function tabTypeLabel(type: WorkspaceTabType): string {
           type="button"
           @click="emit('openTab', tab.id)"
       >
-        <span class="dash-tab__indicator" aria-hidden="true"/>
         <span class="dash-tab__copy">
           <span class="dash-tab__name">{{ tab.title }}</span>
           <span class="dash-tab__type">{{ tabTypeLabel(tab.type) }}</span>

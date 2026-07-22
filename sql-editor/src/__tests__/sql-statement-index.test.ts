@@ -74,6 +74,21 @@ test('resolveGutterStatement uses gutter hover only when cursor is on blank line
     assert.equal(resolveGutterStatement(consoleSql, 5, 5), null)
 })
 
+test('resolveGutterStatement keeps statement when cursor is on blank line inside span', () => {
+    const sql = [
+        'CREATE TABLE t (',
+        '  id INT,',
+        '',
+        '  name TEXT',
+        ');',
+    ].join('\n')
+
+    // line 3 is blank, but it is inside the CREATE TABLE span (between first/last executable lines)
+    const span = resolveGutterStatement(sql, 3, null)
+    assert.ok(span)
+    assert.equal(span.anchorLine, 1)
+})
+
 test('invisible whitespace on blank-looking line does not become statement anchor', () => {
     const sql = [
         'DROP TABLE IF EXISTS admin_db.cdp_segment;',

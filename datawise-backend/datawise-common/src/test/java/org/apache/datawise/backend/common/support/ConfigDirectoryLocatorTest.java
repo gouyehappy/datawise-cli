@@ -21,4 +21,15 @@ class ConfigDirectoryLocatorTest {
         assertEquals(config.toAbsolutePath().normalize(), resolved);
         assertTrue(Files.isRegularFile(resolved.resolve("drivers/mysql-connector-j-8.4.0.jar")));
     }
+
+    @Test
+    void resolve_honorsEmptyAbsoluteWorkspaceWithoutFallingBack(@TempDir Path temp) throws Exception {
+        Path workspace = temp.resolve("workspaces");
+        Files.createDirectories(workspace);
+
+        Path resolved = ConfigDirectoryLocator.resolve(workspace.toString());
+        assertEquals(workspace.toAbsolutePath().normalize(), resolved);
+        assertTrue(Files.isDirectory(resolved.resolve("drivers")));
+        assertTrue(Files.isDirectory(resolved.resolve("plugins")));
+    }
 }

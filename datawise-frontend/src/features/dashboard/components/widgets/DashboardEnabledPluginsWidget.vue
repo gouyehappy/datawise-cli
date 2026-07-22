@@ -2,7 +2,7 @@
 import {toRefs} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DashboardWidgetFrame from '@/features/dashboard/components/DashboardWidgetFrame.vue'
-import {StatusPill, EmptyState} from '@/core/components'
+import {EmptyState} from '@/core/components'
 import type {PluginPresetId} from '@/features/plugin/services/plugin-preset.service'
 import {useReferenceConflictBannerDismiss} from '@/features/plugin/composables/useReferenceConflictBannerDismiss'
 import '@/features/dashboard/styles/dashboard-widgets.css'
@@ -53,64 +53,55 @@ const {t} = useI18n()
       @drop="emit('drop')"
       @drag-end="emit('drag-end')"
   >
-    <header class="dash-card__head dash-card__head--split">
-      <div class="dash-card__head-main">
-        <h2 class="dash-card__title">{{ t('dashboard.enabledPluginsList') }}</h2>
-        <span class="dash-card__badge">{{ plugins.length }}</span>
-      </div>
+    <header class="dash-card__head">
+      <h2 class="dash-card__title">{{ t('dashboard.enabledPluginsList') }}</h2>
       <div class="dash-card__head-actions">
-        <StatusPill variant="neutral" class="dash-card__preset-pill">
-          {{ t('dashboard.referencePreset', { preset: t(`plugin.presets.${referencePresetId}.label`) }) }}
-        </StatusPill>
-        <StatusPill
-            v-if="showReferenceConflictActions"
-            variant="warn"
-            class="dash-card__conflict-pill"
-        >
-          {{ t('dashboard.presetConflicts', { count: referencePresetConflictCount }) }}
-        </StatusPill>
+        <span class="dash-card__badge">{{ plugins.length }}</span>
         <button
-            v-if="showReferenceConflictActions"
-            class="dw-text-btn dw-text-btn--accent"
-            type="button"
-            @click="emit('alignReferencePreset')"
-        >
-          {{ t('dashboard.alignReferencePreset') }}
-        </button>
-        <button
-            class="dw-text-btn"
+            class="dw-text-btn dw-text-btn--compact"
             type="button"
             @click="emit('openPresetDiff')"
         >
           {{ t('dashboard.openPresetDiff') }}
         </button>
+        <button
+            class="dw-text-btn dw-text-btn--compact"
+            type="button"
+            @click="emit('openPlugins')"
+        >
+          {{ t('dashboard.actions.openPlugins') }}
+        </button>
       </div>
     </header>
+
     <div class="dash-card__body">
-      <div v-if="showReferenceConflictActions" class="dash-card__conflict-banner">
-        <p class="dash-card__conflict-banner-text">
-          {{ t('plugin.presets.referenceConflictBanner', {
-            preset: t(`plugin.presets.${referencePresetId}.label`),
-            count: referencePresetConflictCount,
-          }) }}
-        </p>
-        <div class="dash-card__conflict-banner-actions">
-          <button
-              class="dw-text-btn dw-text-btn--accent"
-              type="button"
-              @click="emit('alignReferencePreset')"
-          >
-            {{ t('plugin.presets.referenceConflictAlignAll', { count: referencePresetConflictCount }) }}
-          </button>
-          <button
-              class="dw-text-btn"
-              type="button"
-              @click="dismissReferenceConflict"
-          >
-            {{ t('plugin.presets.referenceConflictDismiss') }}
-          </button>
-        </div>
+      <p class="dash-plugins-summary">
+        {{ t('dashboard.referencePreset', {preset: t(`plugin.presets.${referencePresetId}.label`)}) }}
+        <template v-if="referencePresetConflictCount > 0">
+          · {{ t('dashboard.presetConflicts', {count: referencePresetConflictCount}) }}
+        </template>
+      </p>
+
+      <div
+          v-if="showReferenceConflictActions"
+          class="dash-plugins-actions"
+      >
+        <button
+            class="dw-text-btn dw-text-btn--accent dw-text-btn--compact"
+            type="button"
+            @click="emit('alignReferencePreset')"
+        >
+          {{ t('plugin.presets.referenceConflictAlignAll', {count: referencePresetConflictCount}) }}
+        </button>
+        <button
+            class="dw-text-btn dw-text-btn--compact"
+            type="button"
+            @click="dismissReferenceConflict"
+        >
+          {{ t('plugin.presets.referenceConflictDismiss') }}
+        </button>
       </div>
+
       <EmptyState v-if="!plugins.length" embedded :title="t('dashboard.noEnabledPlugins')"/>
       <button
           v-for="plugin in plugins"
@@ -120,65 +111,43 @@ const {t} = useI18n()
           @click="emit('focusPlugin', plugin.id)"
       >
         <span class="dash-item__title">{{ plugin.name }}</span>
-        <StatusPill variant="neutral">v{{ plugin.version }}</StatusPill>
+        <span class="dash-item__meta">v{{ plugin.version }}</span>
       </button>
     </div>
   </DashboardWidgetFrame>
 </template>
 
 <style scoped>
-.dash-card__head--split {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--dw-gap-md);
+.dash-plugins-summary {
+  margin: 0;
+  padding: var(--dw-space-4) 18px var(--dw-space-2);
+  font-size: var(--dw-text-sm);
+  color: var(--dw-text-secondary);
+  line-height: var(--dw-leading-relaxed);
 }
 
-.dash-card__head-main {
-  display: flex;
-  align-items: center;
-  gap: var(--dw-gap);
-  min-width: 0;
-}
-
-.dash-card__head-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--dw-gap);
-  flex-shrink: 0;
-}
-
-.dash-card__preset-pill {
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dash-card__conflict-pill {
-  flex-shrink: 0;
-}
-
-.dash-card__conflict-banner {
-  margin-bottom: var(--dw-space-5);
-  padding: var(--dw-pad-control-lg);
-  border: 1px solid var(--dw-warning));
-  border-radius: var(--dw-control-radius);
-  background: var(--dw-warning-soft));
-}
-
-.dash-card__conflict-banner-text {
-  margin: 0 0 var(--dw-space-4);
-  font-size: var(--dw-text-md);
-  line-height: var(--dw-leading);
-}
-
-.dash-card__conflict-banner-actions {
+.dash-plugins-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--dw-gap);
+  padding: 0 18px var(--dw-space-3);
 }
 
+.dash-plugins-actions :deep(.dw-text-btn) {
+  border: 0;
+  background: transparent;
+  padding-inline: 0;
+  height: auto;
+  min-height: 0;
+}
 
+.dash-plugins-actions :deep(.dw-text-btn--accent) {
+  color: color-mix(in srgb, var(--mp-shell-accent) 78%, var(--dw-text));
+}
 
+.dash-plugins-actions :deep(.dw-text-btn:hover:not(:disabled)) {
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+}
 </style>

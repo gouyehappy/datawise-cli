@@ -2,11 +2,13 @@ package org.apache.datawise.backend.jdbc.support;
 
 import org.apache.datawise.backend.common.support.ConfigDirectoryLocator;
 import org.apache.datawise.backend.common.support.ExceptionLogging;
+import org.apache.datawise.backend.config.JdbcDriverMavenProperties;
 import org.apache.datawise.backend.jdbc.connection.JdbcDriverCoordinateSupport;
 import org.apache.datawise.backend.jdbc.connection.JdbcDriverJarLocator;
 import org.apache.datawise.backend.jdbc.connection.JdbcMavenCoordinate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -31,23 +33,55 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * Downloads JDBC driver JARs to {@code config/drivers/} and keeps loaded drivers in memory.
+ * Maven 仓库列表见 {@link org.apache.datawise.backend.config.JdbcDriverMavenProperties}。
  */
 @Component
 public class JdbcDriverLoader {
 
     private static final Logger log = LoggerFactory.getLogger(JdbcDriverLoader.class);
-    private static final String MAVEN_CENTRAL = "https://repo1.maven.org/maven2";
 
     private final Path driversDir;
     private final JdbcDriverJarLocator jarLocator;
+    private final List<String> mavenRepositories;
     private final ConcurrentMap<String, LoadedDriver> cache = new ConcurrentHashMap<>();
 
-    public JdbcDriverLoader(@Value("${datawise.config.dir:config}") String configDir) throws IOException {
+    @Autowired
+    public JdbcDriverLoader(
+            @Value("${datawise.config.dir:config}") String configDir,
+            JdbcDriverMavenProperties mavenProperties
+    ) throws IOException {
+        this(configDir, mavenProperties != null ? mavenProperties.getRepositories() : null);
+    }
+
+    /** Tests / legacy: Maven Central only. */
+    JdbcDriverLoader(String configDir) throws IOException {
+        this(configDir, List.of(JdbcDriverMavenProperties.MAVEN_CENTRAL));
+    }
+
+    JdbcDriverLoader(String configDir, List<String> mavenRepositories) throws IOException {
         Path configRoot = ConfigDirectoryLocator.resolve(configDir);
         this.driversDir = configRoot.resolve("drivers").toAbsolutePath().normalize();
         Files.createDirectories(driversDir);
         this.jarLocator = new JdbcDriverJarLocator(driversDir);
-        log.info("JDBC drivers directory: {}", driversDir);
+        this.mavenRepositories = normalizeRepositories(mavenRepositories);
+        log.info("JDBC drivers directory: {}; Maven repositories: {}", driversDir, this.mavenRepositories);
+    }
+
+    private static List<String> normalizeRepositories(List<String> repositories) {
+        if (repositories == null || repositories.isEmpty()) {
+            return List.of(JdbcDriverMavenProperties.MAVEN_CENTRAL);
+        }
+        List<String> normalized = new ArrayList<>();
+        for (String entry : repositories) {
+            if (entry == null || entry.isBlank()) {
+                continue;
+            }
+            String trimmed = entry.trim().replaceAll("/+$", "");
+            if (!trimmed.isEmpty() && !normalized.contains(trimmed)) {
+                normalized.add(trimmed);
+            }
+        }
+        return normalized.isEmpty() ? List.of(JdbcDriverMavenProperties.MAVEN_CENTRAL) : List.copyOf(normalized);
     }
 
     /**
@@ -273,12 +307,32 @@ public class JdbcDriverLoader {
     }
 
     private void downloadJar(JdbcMavenCoordinate coordinate, Path target) throws IOException {
-        URI uri = URI.create(MAVEN_CENTRAL + "/" + coordinate.repositoryPath());
         Files.createDirectories(target.getParent());
-        log.info("Downloading JDBC driver from Maven Central: {}", coordinate.cacheKey());
-        try (InputStream input = uri.toURL().openStream()) {
-            Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
+        Path temp = target.resolveSibling(target.getFileName() + ".download");
+        IOException lastFailure = null;
+        List<String> attempted = new ArrayList<>();
+        for (String repository : mavenRepositories) {
+            URI uri = URI.create(repository + "/" + coordinate.repositoryPath());
+            attempted.add(uri.toString());
+            log.info("Downloading JDBC driver {} from {}", coordinate.cacheKey(), uri);
+            try (InputStream input = uri.toURL().openStream()) {
+                Files.copy(input, temp, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+                return;
+            } catch (IOException ex) {
+                lastFailure = ex;
+                ExceptionLogging.warn(log, "Failed to download JDBC driver from " + uri, ex);
+                Files.deleteIfExists(temp);
+            }
         }
+        String tried = String.join(", ", attempted);
+        throw new IOException(
+                "Failed to download JDBC driver " + coordinate.cacheKey()
+                        + " from configured Maven repositories. Tried: " + tried
+                        + ". Configure datawise.jdbc.maven.repositories or place the JAR under config/drivers/."
+                        + (lastFailure != null ? " Last error: " + lastFailure.getMessage() : ""),
+                lastFailure
+        );
     }
 
     private LoadedDriver loadDriver(Path jarPath, String driverClass, boolean downloaded, boolean cached)

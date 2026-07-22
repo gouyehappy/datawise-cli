@@ -48,13 +48,28 @@
     --mp-nav-w: clamp(168px, 15vmin, 220px);
     --mp-stat-min-h: clamp(56px, 7vmin, 72px);
     --mp-quick-h: clamp(32px, 4vmin, 40px);
-    --mp-page-max: clamp(960px, 92vw, 1240px);
-    --mp-hero-radius: clamp(8px, 1vmin, 12px);
+    --mp-page-max: clamp(1180px, 92vw, 1520px);
+    --mp-hero-radius: clamp(14px, 1.4vmin, 20px);
     --mp-tone-sky: #0ea5e9;
     --mp-tone-amber: #d97706;
     --mp-tone-emerald: #059669;
     --mp-tone-rose: #e11d48;
     --mp-tone-indigo: #4f46e5;
+
+    /* Ambient 模块壳（Dashboard / Plugins / Connectors / Dev 共用） */
+    --mp-shell-accent: color-mix(in srgb, var(--dw-primary) 72%, var(--mp-tone-sky));
+    --mp-shell-surface: color-mix(in srgb, var(--dw-bg-elevated, var(--dw-bg-panel)) 88%, transparent);
+    --mp-shell-tile: var(--dw-bg-elevated, var(--dw-bg-panel));
+    --mp-shell-rail: 3px;
+    --mp-shell-radius: clamp(14px, 1.3vmin, 18px);
+    --mp-shell-gap: clamp(14px, 1.6vmin, 22px);
+    --mp-shell-border: color-mix(in srgb, var(--dw-text) 8%, transparent);
+    --mp-shell-control-h: clamp(32px, 3.4vmin, 36px);
+    --mp-shell-control-radius: clamp(10px, 1vmin, 12px);
+    --mp-shell-control-bg: color-mix(in srgb, var(--dw-text) 5%, var(--mp-shell-tile));
+    --mp-shell-control-bg-hover: color-mix(in srgb, var(--mp-shell-accent) 10%, var(--mp-shell-tile));
+    --mp-shell-control-bg-active: color-mix(in srgb, var(--mp-shell-accent) 14%, var(--mp-shell-tile));
+    --mp-shell-focus-ring: 0 0 0 3px color-mix(in srgb, var(--mp-shell-accent) 16%, transparent);
 
     /* 默认主色 blue（与 theme-presets PRIMARY_PRESETS.blue 一致） */
     --dw-primary: #2563eb;

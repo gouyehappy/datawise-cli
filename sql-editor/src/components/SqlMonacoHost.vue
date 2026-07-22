@@ -699,20 +699,33 @@ defineExpose({
   height: 8px !important;
 }
 
-.monaco-editor .sql-editor-run-gutter-glyph {
+.monaco-editor .sql-editor-run-gutter-btn,
+.sql-monaco-host--run-gutter .sql-editor-run-gutter-btn {
   box-sizing: border-box;
-  width: 14px !important;
-  height: 14px !important;
-  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #22c55e;
   cursor: pointer;
   opacity: 0.95;
-  background: no-repeat center / 12px 12px
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2322c55e' d='M4.2 2.8v10.4c0 .55.6.88 1.08.6l7.8-4.55c.48-.28.48-.97 0-1.25L5.28 3.2c-.48-.27-1.08.06-1.08.6z'/%3E%3C/svg%3E");
+  line-height: 0;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+  filter: drop-shadow(0 0 0.5px rgba(34, 197, 94, 0.35));
 }
 
-.monaco-editor .sql-editor-run-gutter-glyph:hover {
+.monaco-editor .sql-editor-run-gutter-btn:hover,
+.sql-monaco-host--run-gutter .sql-editor-run-gutter-btn:hover {
   opacity: 1;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2316a34a' d='M4.2 2.8v10.4c0 .55.6.88 1.08.6l7.8-4.55c.48-.28.48-.97 0-1.25L5.28 3.2c-.48-.27-1.08.06-1.08.6z'/%3E%3C/svg%3E");
+  color: #16a34a;
+  background: color-mix(in srgb, #22c55e 14%, transparent);
 }
 
 /* 补全二级预览面板：隐藏关闭钮、与一级列表留缝、归属箭头 */

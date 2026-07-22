@@ -5,6 +5,7 @@ public final class JdbcErrorClassifier {
 
     public static final String ERROR_CODE_JDBC_DRIVER = "JDBC_DRIVER_REQUIRED";
     public static final String ERROR_CODE_JDBC_DRIVER_LOAD = "JDBC_DRIVER_LOAD_FAILED";
+    public static final String ERROR_CODE_JDBC_DRIVER_DOWNLOAD = "JDBC_DRIVER_DOWNLOAD_FAILED";
     public static final String ERROR_CODE_DATABASE_CONNECTION = "DATABASE_CONNECTION_FAILED";
 
     private JdbcErrorClassifier() {
@@ -38,7 +39,7 @@ public final class JdbcErrorClassifier {
     }
 
     public static boolean isDriverRelated(Throwable error) {
-        String message = rootMessage(error);
+        String message = classificationMessage(error);
         if (message == null) {
             return false;
         }
@@ -46,15 +47,21 @@ public final class JdbcErrorClassifier {
         return lower.contains("no suitable driver")
                 || lower.contains("driverclass is required")
                 || lower.contains("jdbc driver maven coordinates are required")
-                || lower.contains("failed to download driver")
+                || isDownloadFailure(lower)
                 || isLocalLoadFailure(lower);
+    }
+
+    public static boolean isDownloadFailure(String lowerMessage) {
+        return lowerMessage.contains("failed to download jdbc driver")
+                || lowerMessage.contains("failed to download driver from maven")
+                || lowerMessage.contains("failed to download driver");
     }
 
     public static String classifyErrorCode(Throwable error) {
         if (error == null) {
             return null;
         }
-        String message = rootMessage(error);
+        String message = classificationMessage(error);
         if (message == null || message.isBlank()) {
             return null;
         }
@@ -62,6 +69,9 @@ public final class JdbcErrorClassifier {
         if (lower.contains("driverclass is required")
                 || lower.contains("jdbc driver maven coordinates are required")) {
             return ERROR_CODE_JDBC_DRIVER;
+        }
+        if (isDownloadFailure(lower)) {
+            return ERROR_CODE_JDBC_DRIVER_DOWNLOAD;
         }
         if (isDriverRelated(error)) {
             if (isLocalLoadFailure(lower) || lower.contains("no suitable driver")) {
@@ -73,7 +83,7 @@ public final class JdbcErrorClassifier {
     }
 
     public static String resolveErrorCode(Throwable error) {
-        String message = rootMessage(error);
+        String message = classificationMessage(error);
         if (message == null || message.isBlank()) {
             return ERROR_CODE_DATABASE_CONNECTION;
         }
@@ -81,6 +91,9 @@ public final class JdbcErrorClassifier {
         if (lower.contains("driverclass is required")
                 || lower.contains("jdbc driver maven coordinates are required")) {
             return ERROR_CODE_JDBC_DRIVER;
+        }
+        if (isDownloadFailure(lower)) {
+            return ERROR_CODE_JDBC_DRIVER_DOWNLOAD;
         }
         if (isDriverRelated(error)) {
             return ERROR_CODE_JDBC_DRIVER_LOAD;
@@ -111,5 +124,21 @@ public final class JdbcErrorClassifier {
             current = current.getCause();
         }
         return current.getMessage();
+    }
+
+    /** 顶层 + 根因消息，避免包装异常丢失 “Failed to download…” 等关键文案。 */
+    public static String classificationMessage(Throwable error) {
+        if (error == null) {
+            return null;
+        }
+        String top = error.getMessage();
+        String root = rootMessage(error);
+        if (top != null && !top.isBlank() && root != null && !root.isBlank() && !top.equals(root)) {
+            return top + " | " + root;
+        }
+        if (top != null && !top.isBlank()) {
+            return top;
+        }
+        return root;
     }
 }

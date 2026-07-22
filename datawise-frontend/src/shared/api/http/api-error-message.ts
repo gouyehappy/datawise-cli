@@ -30,16 +30,27 @@ function extractStableErrorCode(error: unknown): string | null {
     return null
 }
 
-/** 将稳定错误码映射为本地化文案；未知码回退 raw message。 */
+/** 将稳定错误码映射为本地化文案；驱动类错误优先展示后端详情。 */
 export function resolveDisplayApiErrorMessage(
     error: unknown,
     translate: (key: string) => string,
 ): string {
+    const raw = resolveApiErrorMessage(error)
     const code = extractStableErrorCode(error)
     const i18nKey = stableApiErrorI18nKey(code)
     if (i18nKey) {
         const localized = translate(i18nKey)
-        if (localized && localized !== i18nKey) return localized
+        if (localized && localized !== i18nKey) {
+            // 下载失败等场景：后端消息含仓库 URL / 配置提示，比短码更有用
+            if (
+                code === 'JDBC_DRIVER_DOWNLOAD_FAILED'
+                || code === 'JDBC_DRIVER_LOAD_FAILED'
+                || (code === 'SQL_EXECUTION_FAILED' && /download|maven|driver/i.test(raw))
+            ) {
+                return raw.length > localized.length ? raw : localized
+            }
+            return localized
+        }
     }
-    return resolveApiErrorMessage(error)
+    return raw
 }

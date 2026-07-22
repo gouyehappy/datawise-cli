@@ -43,6 +43,12 @@ export function notifyUnauthorizedIfNeeded(error: ApiError, options?: SessionGua
     }
 }
 
+/** 会话失效 / 恢复中的失败：配置落盘等路径应静默，避免控制台刷屏 */
+export function isQuietAuthFailure(error: unknown): boolean {
+    if (sessionBlocked) return true
+    return isUnauthorizedApiError(error)
+}
+
 export function unblockApiSession(): void {
     sessionBlocked = false
 }

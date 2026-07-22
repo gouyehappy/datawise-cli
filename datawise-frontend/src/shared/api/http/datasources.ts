@@ -40,10 +40,10 @@ export function createHttpDatasourcesApi(): DatasourcesApi {
         },
 
         resolveDriver: async (request) =>
-            postJson<JdbcDriverResolveResult>(API_PATHS.datasources.resolveDriver, request),
+            postJson<JdbcDriverResolveResult>(API_PATHS.datasources.resolveDriver, request, {silent: true}),
 
         installDriver: async (request) =>
-            postJson<JdbcDriverResolveResult>(API_PATHS.datasources.driversInstall, request),
+            postJson<JdbcDriverResolveResult>(API_PATHS.datasources.driversInstall, request, {silent: true}),
 
         listDrivers: async () =>
             getJson<JdbcDriverCatalog>(API_PATHS.datasources.drivers),

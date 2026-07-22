@@ -22,6 +22,9 @@ export default {
     openFeature: '去使用',
     surfacesTitle: '生效位置',
     persistHint: '开关状态会写入应用配置，重启后仍保留。',
+    settingsMenu: {
+        aria: '插件中心操作',
+    },
     layout: {
         eyebrow: '扩展能力',
         referencePreset: '对照预设',
@@ -29,6 +32,7 @@ export default {
         config: '配置管理',
         presetMismatch: '与对照不一致',
         showing: '显示 {count} / {total}',
+        enabledRate: '启用率',
         status: '状态',
         category: '分类',
         more: '更多',
@@ -37,6 +41,9 @@ export default {
         title: '开发者工具',
         subtitle: '能力矩阵、使用统计、连接器 JAR、Catalog 审计与 Hook 扩展。',
         eyebrow: '运维与扩展',
+        settingsMenu: {
+            aria: '开发者工具操作',
+        },
         tabsLabel: '开发者工具分区',
         tabs: {
             matrix: '能力矩阵',
@@ -471,10 +478,22 @@ export default {
     },
     connectorMarket: {
         eyebrow: '社区',
+        settingsMenu: {
+            aria: '连接器市场操作',
+        },
         title: 'Connector 社区市场',
         subtitle: '浏览、安装与管理数据源连接器；管理员可从清单下载并热加载。',
         libraryTitle: '连接器目录',
-        libraryHint: '按状态筛选后安装或清理；精选与完整目录使用同一套卡片布局。',
+        libraryHint: '卡片大小错落排布；可拖拽排序，或用排序菜单切换。缩窄窗口时按列换行，不会压扁。',
+        dragToReorder: '拖拽调整顺序',
+        reorderHint: '拖动卡片可自定义顺序（会自动切换到「自定义」并记住）。',
+        sort: {
+            label: '排序',
+            featured: '精选优先',
+            name: '名称',
+            status: '可用优先',
+            custom: '自定义',
+        },
         refresh: '刷新',
         searchPlaceholder: '搜索连接器',
         filter: {

@@ -113,6 +113,32 @@ class SessionAuthFilterTest {
     }
 
     @Test
+    void unauthorizedResponseIncludesCorsHeadersForAllowedOrigin() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/explorer/tree");
+        request.addHeader("Origin", "http://127.0.0.1:28413");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, filterChain);
+
+        assertEquals(401, response.getStatus());
+        assertEquals("http://127.0.0.1:28413", response.getHeader("Access-Control-Allow-Origin"));
+        assertEquals("true", response.getHeader("Access-Control-Allow-Credentials"));
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void unauthorizedResponseOmitsCorsHeadersForDisallowedOrigin() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/explorer/tree");
+        request.addHeader("Origin", "https://evil.example");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, filterChain);
+
+        assertEquals(401, response.getStatus());
+        assertNull(response.getHeader("Access-Control-Allow-Origin"));
+    }
+
+    @Test
     void allowsAnonymousOnPublicHealthPath() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/health");
         MockHttpServletResponse response = new MockHttpServletResponse();

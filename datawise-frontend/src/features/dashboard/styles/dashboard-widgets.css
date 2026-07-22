@@ -186,7 +186,7 @@
 }
 
 .dash-conn:hover {
-  background: var(--dw-bg-hover);
+  background: color-mix(in srgb, var(--mp-shell-accent) 6%, transparent);
 }
 
 .dash-conn__dot {
@@ -308,7 +308,7 @@
   width: 100%;
   padding: var(--dw-space-5) var(--dw-space-8);
   border: none;
-  border-bottom: 1px solid var(--dw-border-light);
+  border-bottom: 1px solid color-mix(in srgb, var(--dw-text) 5%, transparent);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -320,24 +320,11 @@
 }
 
 .dash-tab:hover {
-  background: var(--dw-tab-hover-bg);
+  background: color-mix(in srgb, var(--mp-shell-accent) 6%, transparent);
 }
 
 .dash-tab.is-active {
-  background: var(--dw-tab-active-bg);
-  box-shadow: inset 0 0 0 1px var(--dw-tab-active-border);
-}
-
-.dash-tab__indicator {
-  width: 3px;
-  height: var(--dw-btn-height);
-  border-radius: var(--dw-radius-pill);
-  background: transparent;
-  flex-shrink: 0;
-}
-
-.dash-tab.is-active .dash-tab__indicator {
-  background: var(--dw-tab-active-border);
+  background: color-mix(in srgb, var(--mp-shell-accent) 9%, transparent);
 }
 
 .dash-tab__copy {
@@ -369,7 +356,7 @@
   width: 100%;
   padding: var(--dw-space-5) var(--dw-space-8);
   border: none;
-  border-bottom: 1px solid var(--dw-border-light);
+  border-bottom: 1px solid color-mix(in srgb, var(--dw-text) 5%, transparent);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -387,7 +374,7 @@
 }
 
 .dash-item:hover {
-  background: var(--dw-bg-hover);
+  background: color-mix(in srgb, var(--mp-shell-accent) 6%, transparent);
 }
 
 .dash-item__title {

@@ -61,7 +61,7 @@ public class JdbcDriverService {
                         ex
                 );
             }
-            throw new SQLException("Failed to download driver from Maven Central: " + ex.getMessage(), ex);
+            throw new SQLException("Failed to download JDBC driver: " + ex.getMessage(), ex);
         }
     }
 

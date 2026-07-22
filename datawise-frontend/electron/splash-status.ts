@@ -14,13 +14,9 @@ export function resolveBackendSplashStatus(phase: string, isPackaged: boolean): 
                 ? '正在准备工作区目录与配置文件…'
                 : '正在加载开发环境工作区配置…'
         case 'spawning':
-            return isPackaged
-                ? '正在启动内嵌 Java 服务 (datawise-server.jar)…'
-                : `正在连接本地后端服务 (${endpoint})…`
+            return `正在启动后端服务 (${endpoint})…`
         case 'warming':
-            return isPackaged
-                ? `正在等待 Spring Boot 服务就绪 (${endpoint}/api/health)…`
-                : `正在探测后端健康检查 (${endpoint}/api/health)…`
+            return `正在等待 Spring Boot 服务就绪 (${endpoint}/api/health)…`
         case 'session':
             return '正在建立用户会话与鉴权令牌…'
         case 'sync':

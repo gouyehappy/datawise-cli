@@ -17,6 +17,7 @@ import {
     resolveResourceStorageKey,
 } from '@/features/auth/services/user-resource-policy'
 import {createHttpConfigApi} from '@/shared/api/http/config'
+import {isQuietAuthFailure} from '@/shared/api/http/session-guard'
 
 const configHttp = createHttpConfigApi()
 
@@ -64,6 +65,7 @@ function persistSharedLayer(layer: SqlEditorShortcutsLayer) {
     sharedServerTimer = setTimeout(() => {
         if (!canSyncServerResource(UserResource.SqlSnippetsShared)) return
         void configHttp.saveSqlSnippets('shared', normalized).catch((error) => {
+            if (isQuietAuthFailure(error)) return
             console.warn('[config] failed to persist sql-snippets.shared.xml', error)
         })
     }, 420)
@@ -93,6 +95,7 @@ export function persistPersonalSqlEditorShortcuts(layer: SqlEditorShortcutsLayer
     personalServerTimer = setTimeout(() => {
         if (!canSyncServerResource(UserResource.SqlSnippetsPersonal)) return
         void configHttp.saveSqlSnippets('personal', normalized).catch((error) => {
+            if (isQuietAuthFailure(error)) return
             console.warn('[config] failed to persist sql-snippets.personal.xml', error)
         })
     }, 420)

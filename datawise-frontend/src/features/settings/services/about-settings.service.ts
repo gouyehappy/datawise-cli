@@ -78,11 +78,19 @@ export async function quitAndInstallUpdate(): Promise<boolean> {
     return updater()
 }
 
+/** IPC 只能传可 Structured Clone 的纯对象；Vue/Pinia 的 Proxy 会抛 “could not be cloned”。 */
+function toPlainUpdatePreferences(prefs: UpdatePreferences): UpdatePreferences {
+    return {
+        notifyOnUpdate: Boolean(prefs?.notifyOnUpdate),
+        autoDownload: Boolean(prefs?.autoDownload),
+    }
+}
+
 export async function syncUpdaterPreferencesToDesktop(prefs: UpdatePreferences): Promise<void> {
     const setter = desktopUpdater()?.setPreferences
     if (!setter) return
     try {
-        await setter(prefs)
+        await setter(toPlainUpdatePreferences(prefs))
     } catch (error) {
         console.warn('[updater] failed to sync preferences to desktop', error)
     }

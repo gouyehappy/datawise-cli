@@ -92,6 +92,11 @@ datawise:
   jdbc:
     # 启动时预加载 config/drivers/ 下已存在的 JDBC 驱动 JAR
     preload-drivers-on-startup: true
+    # JDBC 驱动 Maven 仓库（按顺序尝试；Central 不通时可换阿里云等镜像）
+    maven:
+      repositories:
+        - https://repo1.maven.org/maven2
+        - https://maven.aliyun.com/repository/central
     pool:
       # 每个已保存连接的 HikariCP 池参数（可按部署规模调大 maximum-pool-size）
       maximum-pool-size: 10

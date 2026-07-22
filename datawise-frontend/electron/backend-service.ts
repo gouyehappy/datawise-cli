@@ -1,9 +1,11 @@
 /**
- * 打包版 Electron：启动内嵌 Spring Boot 后端，退出时回收 JVM。
- * 开发模式不托管后端（沿用 mvn spring-boot:run + dev:electron）。
+ * Electron 启动 Spring Boot 后端：工作区目录一律来自 desktop-preferences.json。
+ * - 未配置偏好 → 系统目录 userData/workspaces
+ * - 已配置 → 始终使用配置中的绝对路径
+ * 开发态若已构建 server JAR，同样按偏好拉起后端（端口见 runtime-ports.dev）。
  */
-import {type ChildProcess, spawn} from 'node:child_process'
-import {existsSync, mkdirSync, cpSync, writeFileSync, readFileSync} from 'node:fs'
+import {type ChildProcess, execFileSync, spawn} from 'node:child_process'
+import {existsSync, mkdirSync, cpSync, writeFileSync, readFileSync, readdirSync} from 'node:fs'
 import http from 'node:http'
 import {dirname, isAbsolute, join} from 'node:path'
 import {app, dialog} from 'electron'
@@ -21,11 +23,14 @@ import {
 } from './runtime-log'
 import ports from '../runtime-ports.json' with {type: 'json'}
 
-const BACKEND_PACKAGED_PORT = ports.desktop.backend
 const HEALTH_PATH = '/api/health'
 const STARTUP_TIMEOUT_MS = 120_000
 const HEALTH_POLL_MS = 150
 const CDS_ARCHIVE_NAME = 'datawise.jsa'
+
+function resolveBackendListenPort(): number {
+    return app.isPackaged ? ports.desktop.backend : ports.dev.backend
+}
 
 let backendProcess: ChildProcess | null = null
 let runtimeConfigDir = ''
@@ -79,7 +84,11 @@ function emitBackendStartupProgress(phase: BackendStartupPhase, progress?: numbe
 }
 
 export function getBundledApiBaseUrl(): string {
-    return `http://127.0.0.1:${BACKEND_PACKAGED_PORT}`
+    return `http://127.0.0.1:${resolveBackendListenPort()}`
+}
+
+function normalizeFsPath(path: string): string {
+    return path.trim().replace(/[/\\]+$/, '').replace(/\\/g, '/').toLowerCase()
 }
 
 function sleep(ms: number) {
@@ -94,7 +103,12 @@ function resolveBackendRoot(): string {
 }
 
 function resolveConfigTemplateRoot(): string {
-    return join(process.resourcesPath, 'config-bundle')
+    if (app.isPackaged) {
+        // 安装包：electron-builder 从 resources/desktop/config-bundle 打进的种子
+        return join(process.resourcesPath, 'config-bundle')
+    }
+    // 开发态：与打包同源，使用仓库内 resources/bundle-config
+    return join(app.getAppPath(), 'resources', 'bundle-config')
 }
 
 export function resolveConfiguredConfigPath(configured: string): string {
@@ -104,27 +118,20 @@ export function resolveConfiguredConfigPath(configured: string): string {
     return join(dirname(process.execPath), trimmed)
 }
 
-/** 未自定义时的默认工作区目录 */
+/**
+ * 未写入 desktop-preferences.json 时的默认工作区：
+ * 系统目录（userData）下的 workspaces。
+ */
 export function resolveDefaultConfigDir(): string {
-    if (!app.isPackaged) {
-        return join(app.getAppPath(), '..', 'config')
-    }
-
     const portableDir = process.env.PORTABLE_EXECUTABLE_DIR?.trim()
     if (portableDir) {
-        return join(portableDir, 'config')
+        return join(portableDir, 'workspaces')
     }
-
-    // 安装版：放在 userData，重装/升级不会随安装目录被覆盖
-    return join(app.getPath('userData'), 'config')
+    return join(app.getPath('userData'), 'workspaces')
 }
 
-/** 当前生效的工作区目录（一套配置对应一个路径） */
+/** 当前应使用的工作区：始终读偏好文件；有配置用配置，否则用默认 workspaces */
 export function resolveRuntimeConfigDir(): string {
-    if (!app.isPackaged) {
-        return join(app.getAppPath(), '..', 'config')
-    }
-
     const configured = readDesktopPreferences().configDir?.trim()
     if (configured) {
         return resolveConfiguredConfigPath(configured)
@@ -137,6 +144,8 @@ function hasExistingConfig(dir: string): boolean {
     return existsSync(join(dir, 'users.json'))
         || existsSync(join(dir, 'connections.xml'))
         || existsSync(join(dir, 'sessions.json'))
+        || existsSync(join(dir, 'tenants', 'index.json'))
+        || existsSync(join(dir, 'tenants', 'default', 'connections.xml'))
 }
 
 function seedConfigDirectoryFromTemplate(configDir: string) {
@@ -178,47 +187,58 @@ function resolveJavaExecutable(): string {
     return process.platform === 'win32' ? 'java.exe' : 'java'
 }
 
-function resolveServerJar(): string {
+function resolveServerJar(): string | null {
+    const root = resolveBackendRoot()
     if (app.isPackaged) {
-        return join(resolveBackendRoot(), 'datawise-server.jar')
+        const jar = join(root, 'datawise-server.jar')
+        return existsSync(jar) ? jar : null
     }
-    return join(resolveBackendRoot(), 'datawise-server-0.1.0-SNAPSHOT.jar')
+    if (!existsSync(root)) return null
+    const jars = readdirSync(root)
+        .filter((name) => /^datawise-server-.*\.jar$/.test(name) && !name.endsWith('.original'))
+        .sort()
+    return jars.length ? join(root, jars[jars.length - 1]) : null
 }
 
 function ensureRuntimeConfigDir(): string {
     const configDir = resolveRuntimeConfigDir()
     bootstrapConfigDirectory(configDir)
-    if (app.isPackaged) {
-        touchRecentWorkspace(configDir)
-    }
+    touchRecentWorkspace(configDir)
     runtimeConfigDir = configDir
     return configDir
 }
 
+const EMPTY_TEAMS_SNAPSHOT = JSON.stringify({
+    teams: [],
+    members: [],
+    invites: [],
+    auditLogs: [],
+    sharedAiSessions: [],
+    sharedQueries: [],
+}, null, 2)
+
 /** 修复旧版打包模板中的错误 teams.json（[] 应为对象快照） */
 function repairBundledConfigFiles(configDir: string) {
-    const teamsPath = join(configDir, 'teams.json')
-    if (!existsSync(teamsPath)) return
-    const raw = readFileSync(teamsPath, 'utf8').trim()
-    if (!raw.startsWith('[')) return
+    const candidates = [
+        join(configDir, 'teams.json'),
+        join(configDir, 'tenants', 'default', 'teams.json'),
+    ]
+    const templateTeams = join(resolveConfigTemplateRoot(), 'tenants', 'default', 'teams.json')
+    const fallbackTemplate = join(resolveConfigTemplateRoot(), 'teams.json')
 
-    const templateTeams = join(resolveConfigTemplateRoot(), 'teams.json')
-    if (existsSync(templateTeams)) {
-        cpSync(templateTeams, teamsPath)
-        return
+    for (const teamsPath of candidates) {
+        if (!existsSync(teamsPath)) continue
+        const raw = readFileSync(teamsPath, 'utf8').trim()
+        if (!raw.startsWith('[')) continue
+
+        if (existsSync(templateTeams)) {
+            cpSync(templateTeams, teamsPath)
+        } else if (existsSync(fallbackTemplate)) {
+            cpSync(fallbackTemplate, teamsPath)
+        } else {
+            writeFileSync(teamsPath, EMPTY_TEAMS_SNAPSHOT, 'utf8')
+        }
     }
-    writeFileSync(
-        teamsPath,
-        JSON.stringify({
-            teams: [],
-            members: [],
-            invites: [],
-            auditLogs: [],
-            sharedAiSessions: [],
-            sharedQueries: [],
-        }, null, 2),
-        'utf8',
-    )
 }
 
 function writeStartupDiagnostics(configDir: string, java: string, jar: string) {
@@ -258,18 +278,84 @@ function logBackendLine(prefix: 'stdout' | 'stderr', chunk: Buffer) {
     }
 }
 
+type HealthProbe = {ok: boolean; configDir?: string}
+
 async function pingHealth(baseUrl: string): Promise<boolean> {
+    const probe = await probeHealth(baseUrl)
+    return probe.ok
+}
+
+async function probeHealth(baseUrl: string): Promise<HealthProbe> {
     return new Promise((resolve) => {
         const req = http.get(`${baseUrl}${HEALTH_PATH}`, {timeout: 3000}, (res) => {
-            res.resume()
-            resolve(res.statusCode !== undefined && res.statusCode >= 200 && res.statusCode < 300)
+            const chunks: Buffer[] = []
+            res.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)))
+            res.on('end', () => {
+                const ok = res.statusCode !== undefined && res.statusCode >= 200 && res.statusCode < 300
+                if (!ok) {
+                    resolve({ok: false})
+                    return
+                }
+                try {
+                    const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
+                        data?: {configDir?: string}
+                    }
+                    const configDir = body?.data?.configDir?.trim()
+                    resolve({ok: true, configDir: configDir || undefined})
+                } catch {
+                    resolve({ok: true})
+                }
+            })
         })
-        req.on('error', () => resolve(false))
+        req.on('error', () => resolve({ok: false}))
         req.on('timeout', () => {
             req.destroy()
-            resolve(false)
+            resolve({ok: false})
         })
     })
+}
+
+/** 释放被错误工作区占用的监听端口，避免复用旧后端 */
+function freeBackendListenPort(): void {
+    const port = resolveBackendListenPort()
+    try {
+        if (process.platform === 'win32') {
+            const out = execFileSync(
+                'powershell.exe',
+                [
+                    '-NoProfile',
+                    '-Command',
+                    `(Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue).OwningProcess | Select-Object -Unique`,
+                ],
+                {encoding: 'utf8', windowsHide: true},
+            )
+            for (const line of out.split(/\r?\n/)) {
+                const pid = Number(line.trim())
+                if (!Number.isFinite(pid) || pid <= 0) continue
+                try {
+                    execFileSync('taskkill', ['/pid', String(pid), '/t', '/f'], {
+                        stdio: 'ignore',
+                        windowsHide: true,
+                    })
+                } catch {
+                    // ignore
+                }
+            }
+            return
+        }
+        const out = execFileSync('lsof', ['-t', `-iTCP:${port}`, '-sTCP:LISTEN'], {encoding: 'utf8'})
+        for (const line of out.split(/\r?\n/)) {
+            const pid = Number(line.trim())
+            if (!Number.isFinite(pid) || pid <= 0) continue
+            try {
+                process.kill(pid, 'SIGTERM')
+            } catch {
+                // ignore
+            }
+        }
+    } catch {
+        // port free or tool unavailable
+    }
 }
 
 function warmingProgressFromElapsed(elapsedMs: number): number {
@@ -334,26 +420,38 @@ function buildBackendArgs(configDir: string, jar: string): string[] {
         ...buildJvmArgs(),
         '-jar',
         jar,
-        `--server.port=${BACKEND_PACKAGED_PORT}`,
+        `--server.port=${resolveBackendListenPort()}`,
         '--server.address=127.0.0.1',
         `--datawise.config.dir=${configDir}`,
-        '--spring.profiles.active=desktop',
+        `--spring.profiles.active=${app.isPackaged ? 'desktop' : 'dev'}`,
     ]
 }
 
-async function tryReuseExistingBackend(apiBase: string): Promise<boolean> {
-    if (!(await pingHealth(apiBase))) return false
+async function tryReuseExistingBackend(apiBase: string, expectedConfigDir: string): Promise<boolean> {
+    const probe = await probeHealth(apiBase)
+    if (!probe.ok) return false
+
+    if (probe.configDir && normalizeFsPath(probe.configDir) !== normalizeFsPath(expectedConfigDir)) {
+        appendDesktopStartupLog(
+            `reuse skipped: live configDir=${probe.configDir} expected=${expectedConfigDir}; freeing port`,
+        )
+        freeBackendListenPort()
+        await sleep(400)
+        return false
+    }
+
     emitBackendStartupProgress('config')
     emitBackendStartupProgress('spawning', PHASE_BASE_PROGRESS.spawning)
     emitBackendStartupProgress('warming', 58)
     emitBackendReady()
     process.env.DATAWISE_API_BASE_URL = apiBase
+    runtimeConfigDir = expectedConfigDir
     return true
 }
 
 function spawnBundledBackendProcess(java: string, args: string[]): void {
     backendProcess = spawn(java, args, {
-        cwd: dirname(process.execPath),
+        cwd: app.isPackaged ? dirname(process.execPath) : resolveBackendRoot(),
         env: {
             ...process.env,
             JAVA_TOOL_OPTIONS: '',
@@ -373,14 +471,31 @@ function spawnBundledBackendProcess(java: string, args: string[]): void {
 }
 
 export async function startBundledBackendInBackground(): Promise<boolean> {
-    if (!app.isPackaged) {
-        emitBackendReady()
+    const expectedConfigDir = resolveRuntimeConfigDir()
+    runtimeConfigDir = expectedConfigDir
+    const apiBase = getBundledApiBaseUrl()
+
+    if (await tryReuseExistingBackend(apiBase, expectedConfigDir)) {
         return true
     }
 
-    const apiBase = getBundledApiBaseUrl()
-    if (await tryReuseExistingBackend(apiBase)) {
-        return true
+    const jar = resolveServerJar()
+    if (!jar) {
+        // 开发态尚未打包 JAR：不阻塞启动，但写明必须用偏好工作区起后端
+        if (!app.isPackaged) {
+            appendDesktopStartupLog(
+                `dev server jar missing under ${resolveBackendRoot()}; `
+                + `start Spring Boot with --datawise.config.dir=${expectedConfigDir}`,
+            )
+            emitBackendReady()
+            return true
+        }
+        emitBackendStartupProgress('failed')
+        await dialog.showErrorBox(
+            'DataWise CLI',
+            `找不到后端 JAR：\n${join(resolveBackendRoot(), 'datawise-server.jar')}`,
+        )
+        return false
     }
 
     try {
@@ -409,13 +524,9 @@ export async function startBundledBackendInBackground(): Promise<boolean> {
 }
 
 export async function startBundledBackend(): Promise<string> {
-    if (!app.isPackaged) {
-        return getBundledApiBaseUrl()
-    }
-
     const jar = resolveServerJar()
-    if (!existsSync(jar)) {
-        throw new Error(`Backend JAR not found: ${jar}`)
+    if (!jar) {
+        throw new Error(`Backend JAR not found under ${resolveBackendRoot()}`)
     }
 
     emitBackendStartupProgress('config')

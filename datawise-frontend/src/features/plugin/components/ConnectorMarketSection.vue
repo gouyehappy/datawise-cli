@@ -3,7 +3,7 @@ import {computed, onMounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {datasourcesApi} from '@/api'
 import SearchInput from '@/core/components/SearchInput.vue'
-import {DwButton, EmptyState} from '@/core/components'
+import {DwButton, DwSelect, EmptyState, ModuleHeroSettingsMenu, type ModuleHeroMenuItem} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import ConnectorMarketCard from '@/features/plugin/components/ConnectorMarketCard.vue'
 import type {ConnectorMarketEntry} from '@/features/datasource/types/datasource.types'
@@ -12,9 +12,22 @@ import {
     filterConnectorMarketEntries,
     summarizeConnectorMarket,
 } from '@/features/datasource/services/connector-market.service'
+import {
+    defaultConnectorMarketOrder,
+    mergeConnectorMarketOrder,
+    moveConnectorInOrder,
+    readMarketCustomOrder,
+    readMarketSortMode,
+    resolveConnectorCardSize,
+    sortConnectorMarketEntries,
+    writeMarketCustomOrder,
+    writeMarketSortMode,
+    type ConnectorMarketSortMode,
+} from '@/features/datasource/services/connector-market-layout.service'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {useAuthStore} from '@/features/auth/stores/auth-store'
 import {CORE_CONNECTOR_IDS} from '@/features/settings/services/runtime-format.service'
+import type {SelectOption} from '@/core/components/select.types'
 
 type AvailabilityFilter = 'all' | 'ready' | 'pending'
 
@@ -40,6 +53,10 @@ const entries = ref<ConnectorMarketEntry[]>([])
 const loadedPluginJars = ref<string[]>([])
 const manifestSummary = ref<{schemaVersion: number; updatedAt?: string; channel?: string; pluginCount: number} | null>(null)
 const runtimeExpanded = ref(false)
+const sortMode = ref<ConnectorMarketSortMode>(readMarketSortMode())
+const customOrder = ref<string[]>(readMarketCustomOrder())
+const draggingId = ref<string | null>(null)
+const dropTargetId = ref<string | null>(null)
 
 onMounted(() => {
     void loadMarket()
@@ -53,6 +70,7 @@ async function loadMarket() {
         entries.value = bundle.connectors
         loadedPluginJars.value = bundle.loadedPluginJars
         manifestSummary.value = bundle.manifest ?? null
+        customOrder.value = mergeConnectorMarketOrder(customOrder.value, bundle.connectors)
     } catch (err) {
         error.value = err instanceof Error ? err.message : String(err)
     } finally {
@@ -74,11 +92,15 @@ const filteredEntries = computed(() => {
     } else if (availability.value === 'pending') {
         list = list.filter((entry) => !entry.available)
     }
-    return list
+    return sortConnectorMarketEntries(list, sortMode.value, customOrder.value)
 })
 
-const primaryEntries = computed(() => filteredEntries.value.filter((entry) => entry.primary))
-const secondaryEntries = computed(() => filteredEntries.value.filter((entry) => !entry.primary))
+const boardTiles = computed(() =>
+    filteredEntries.value.map((entry, index) => ({
+        entry,
+        size: resolveConnectorCardSize(entry, index, {standalone: props.standalone}),
+    })),
+)
 
 const showPendingBanner = computed(
     () => props.standalone
@@ -90,13 +112,71 @@ const showPendingBanner = computed(
 
 const filterOptions: AvailabilityFilter[] = ['all', 'ready', 'pending']
 
+const sortOptions = computed<SelectOption[]>(() => [
+    {value: 'featured', label: t('plugin.connectorMarket.sort.featured')},
+    {value: 'name', label: t('plugin.connectorMarket.sort.name')},
+    {value: 'status', label: t('plugin.connectorMarket.sort.status')},
+    {value: 'custom', label: t('plugin.connectorMarket.sort.custom')},
+])
+
+const reorderable = computed(() => props.standalone && !loading.value && !error.value)
+
 function filterLabel(key: AvailabilityFilter): string {
     return t(`plugin.connectorMarket.filter.${key}`)
+}
+
+function onSortModeChange(mode: string) {
+    const next = mode as ConnectorMarketSortMode
+    sortMode.value = next
+    writeMarketSortMode(next)
+    if (next === 'custom' && customOrder.value.length === 0) {
+        customOrder.value = defaultConnectorMarketOrder(entries.value)
+        writeMarketCustomOrder(customOrder.value)
+    }
 }
 
 function focusPending() {
     availability.value = 'pending'
     search.value = ''
+}
+
+function onCardDragStart(id: string) {
+    draggingId.value = id
+    if (sortMode.value !== 'custom') {
+        sortMode.value = 'custom'
+        writeMarketSortMode('custom')
+        customOrder.value = mergeConnectorMarketOrder(
+            customOrder.value.length ? customOrder.value : defaultConnectorMarketOrder(entries.value),
+            entries.value,
+        )
+        writeMarketCustomOrder(customOrder.value)
+    }
+}
+
+function onCardDragOver(id: string) {
+    if (!draggingId.value || draggingId.value === id) return
+    dropTargetId.value = id
+}
+
+function onCardDrop(toId: string) {
+    const fromId = draggingId.value
+    dropTargetId.value = null
+    draggingId.value = null
+    if (!fromId || fromId === toId) return
+    const next = moveConnectorInOrder(
+        mergeConnectorMarketOrder(customOrder.value, entries.value),
+        fromId,
+        toId,
+    )
+    customOrder.value = next
+    writeMarketCustomOrder(next)
+    sortMode.value = 'custom'
+    writeMarketSortMode('custom')
+}
+
+function onCardDragEnd() {
+    draggingId.value = null
+    dropTargetId.value = null
 }
 
 async function reloadPlugins() {
@@ -166,6 +246,65 @@ async function cleanupRedundantPlugins() {
         cleaningRedundant.value = false
     }
 }
+
+const heroMenuItems = computed<ModuleHeroMenuItem[]>(() => {
+    const items: ModuleHeroMenuItem[] = [
+        {
+            id: 'refresh',
+            label: t('plugin.connectorMarket.refresh'),
+            icon: 'refresh',
+            disabled: loading.value || reloading.value,
+        },
+        {
+            id: 'reload',
+            label: reloading.value
+                ? t('plugin.connectorMarket.reloading')
+                : t('plugin.connectorMarket.reloadPlugins'),
+            icon: 'run',
+            disabled: loading.value || reloading.value,
+        },
+    ]
+    if (auth.isAdmin) {
+        items.push(
+            {
+                id: 'install-core',
+                label: installingCore.value
+                    ? t('plugin.connectorMarket.installingCore')
+                    : t('plugin.connectorMarket.installCore'),
+                icon: 'plugins',
+                disabled: loading.value || reloading.value || installingCore.value,
+                dividerBefore: true,
+            },
+            {
+                id: 'cleanup',
+                label: cleaningRedundant.value
+                    ? t('plugin.connectorMarket.cleaningRedundant')
+                    : t('plugin.connectorMarket.cleanupRedundant'),
+                icon: 'delete',
+                disabled: loading.value || reloading.value || cleaningRedundant.value,
+            },
+        )
+    }
+    return items
+})
+
+function onHeroMenuSelect(id: string) {
+    if (id === 'refresh') {
+        void loadMarket()
+        return
+    }
+    if (id === 'reload') {
+        void reloadPlugins()
+        return
+    }
+    if (id === 'install-core') {
+        void installCoreConnectors()
+        return
+    }
+    if (id === 'cleanup') {
+        void cleanupRedundantPlugins()
+    }
+}
 </script>
 
 <template>
@@ -176,54 +315,21 @@ async function cleanupRedundantPlugins() {
         'connector-market--page': standalone,
       }"
   >
-    <header v-if="standalone" class="mp-hero mp-hero--compact connector-market-hero">
+    <header v-if="standalone" class="mp-hero mp-hero--glow mp-hero--with-settings connector-market-hero">
+      <div class="mp-hero__glow" aria-hidden="true"/>
+      <div class="mp-hero__settings">
+        <ModuleHeroSettingsMenu
+            :aria-label="t('plugin.connectorMarket.settingsMenu.aria')"
+            :items="heroMenuItems"
+            :active="reloading || installingCore || cleaningRedundant"
+            @select="onHeroMenuSelect"
+        />
+      </div>
       <div class="mp-hero__inner">
         <div class="mp-hero__copy">
+          <p class="mp-hero__eyebrow">{{ t('plugin.connectorMarket.eyebrow') }}</p>
           <h1 class="mp-hero__title">{{ t('plugin.connectorMarket.title') }}</h1>
           <p class="mp-hero__sub">{{ t('plugin.connectorMarket.subtitle') }}</p>
-        </div>
-        <div class="mp-hero__actions connector-market-hero__actions">
-          <DwButton
-              size="sm"
-              variant="secondary"
-              :disabled="loading || reloading"
-              :loading="reloading"
-              @click="reloadPlugins()"
-          >
-            <DwIcon name="run" :size="14" :stroke-width="1.8"/>
-            {{ reloading ? t('plugin.connectorMarket.reloading') : t('plugin.connectorMarket.reloadPlugins') }}
-          </DwButton>
-          <DwButton
-              v-if="auth.isAdmin"
-              size="sm"
-              :disabled="loading || reloading || installingCore"
-              :loading="installingCore"
-              @click="installCoreConnectors()"
-          >
-            <DwIcon name="plugins" :size="14" :stroke-width="1.8"/>
-            {{ installingCore ? t('plugin.connectorMarket.installingCore') : t('plugin.connectorMarket.installCore') }}
-          </DwButton>
-          <DwButton
-              v-if="auth.isAdmin"
-              size="sm"
-              variant="ghost"
-              :title="t('plugin.connectorMarket.cleanupRedundantHint')"
-              :disabled="loading || reloading || cleaningRedundant"
-              :loading="cleaningRedundant"
-              @click="cleanupRedundantPlugins()"
-          >
-            <DwIcon name="delete" :size="14" :stroke-width="1.8"/>
-            {{ cleaningRedundant ? t('plugin.connectorMarket.cleaningRedundant') : t('plugin.connectorMarket.cleanupRedundant') }}
-          </DwButton>
-          <DwButton
-              size="sm"
-              variant="secondary"
-              :disabled="loading || reloading"
-              @click="loadMarket()"
-          >
-            <DwIcon name="refresh" :size="14" :stroke-width="1.8"/>
-            {{ t('plugin.connectorMarket.refresh') }}
-          </DwButton>
         </div>
       </div>
     </header>
@@ -252,9 +358,14 @@ async function cleanupRedundantPlugins() {
         <span class="connector-market-status__label">{{ t('plugin.connectorMarket.filter.all') }}</span>
         <strong class="connector-market-status__value">{{ summary.total }}</strong>
       </div>
-      <div class="connector-market-status__item">
-        <span class="connector-market-status__label">{{ t('plugin.connectorMarket.readinessShort') }}</span>
-        <strong class="connector-market-status__value">{{ readinessPercent }}%</strong>
+      <div class="connector-market-status__item connector-market-status__item--readiness">
+        <div class="connector-market-status__readiness-row">
+          <span class="connector-market-status__label">{{ t('plugin.connectorMarket.readinessShort') }}</span>
+          <strong class="connector-market-status__value connector-market-status__value--inline">{{ readinessPercent }}%</strong>
+        </div>
+        <div class="connector-market-status__bar" aria-hidden="true">
+          <span :style="{width: `${readinessPercent}%`}"/>
+        </div>
         <span v-if="manifestSummary" class="connector-market-status__meta">
           {{ t('plugin.connectorMarket.manifestSummary', {
             count: manifestSummary.pluginCount,
@@ -286,7 +397,7 @@ async function cleanupRedundantPlugins() {
         </div>
       </header>
 
-      <div class="connector-market-toolbar" :class="{'connector-market-toolbar--embed': !standalone}">
+      <div class="connector-market-toolbar">
         <div v-if="standalone" class="dw-segment connector-market-filters" role="tablist">
           <button
               v-for="option in filterOptions"
@@ -309,13 +420,31 @@ async function cleanupRedundantPlugins() {
             size="sm"
             :placeholder="t('plugin.connectorMarket.searchPlaceholder')"
         />
+        <DwSelect
+            v-if="standalone"
+            class="connector-market-toolbar__sort"
+            size="sm"
+            v-model="sortMode"
+            :options="sortOptions"
+            :aria-label="t('plugin.connectorMarket.sort.label')"
+            @update:model-value="onSortModeChange"
+        />
         <span v-if="standalone && !loading && !error" class="connector-market-toolbar__count">
           {{ t('plugin.connectorMarket.matchCount', {count: filteredEntries.length}) }}
         </span>
       </div>
 
+      <p v-if="standalone && reorderable && !loading && !error" class="connector-market-reorder-hint">
+        {{ t('plugin.connectorMarket.reorderHint') }}
+      </p>
+
       <div v-if="loading" class="connector-market-skeleton" aria-busy="true">
-        <div v-for="n in 6" :key="n" class="connector-market-skeleton__card"/>
+        <div
+            v-for="n in 6"
+            :key="n"
+            class="connector-market-skeleton__card"
+            :class="`connector-market-skeleton__card--${n === 1 ? 'hero' : n % 3 === 0 ? 'tall' : 'standard'}`"
+        />
       </div>
 
       <EmptyState
@@ -326,53 +455,33 @@ async function cleanupRedundantPlugins() {
       />
 
       <EmptyState
-          v-else-if="!filteredEntries.length"
+          v-else-if="!boardTiles.length"
           embedded
           :title="t('plugin.connectorMarket.empty')"
           :hint="t('plugin.connectorMarket.emptyHint')"
       />
 
-      <div v-else class="connector-market-body">
-        <section v-if="primaryEntries.length" class="connector-market-section">
-          <div class="connector-market-section__head">
-            <h3 class="connector-market-section__title">
-              {{ standalone ? t('plugin.connectorMarket.featured') : t('plugin.connectorMarket.primary') }}
-              <span class="connector-market-section__count">{{ primaryEntries.length }}</span>
-            </h3>
-            <p v-if="standalone" class="connector-market-section__hint">
-              {{ t('plugin.connectorMarket.featuredHint') }}
-            </p>
-          </div>
-          <div class="connector-market-grid">
-            <ConnectorMarketCard
-                v-for="(entry, index) in primaryEntries"
-                :key="entry.id"
-                :entry="entry"
-                :index="index"
-                :standalone="standalone"
-                @installed="loadMarket"
-            />
-          </div>
-        </section>
-
-        <section v-if="secondaryEntries.length" class="connector-market-section">
-          <div class="connector-market-section__head">
-            <h3 class="connector-market-section__title">
-              {{ standalone ? t('plugin.connectorMarket.catalog') : t('plugin.connectorMarket.more') }}
-              <span class="connector-market-section__count">{{ secondaryEntries.length }}</span>
-            </h3>
-          </div>
-          <div class="connector-market-grid">
-            <ConnectorMarketCard
-                v-for="(entry, index) in secondaryEntries"
-                :key="entry.id"
-                :entry="entry"
-                :index="index + primaryEntries.length"
-                :standalone="standalone"
-                @installed="loadMarket"
-            />
-          </div>
-        </section>
+      <div
+          v-else
+          class="connector-market-board"
+          :class="{'connector-market-board--dragging': !!draggingId}"
+      >
+        <ConnectorMarketCard
+            v-for="(tile, index) in boardTiles"
+            :key="tile.entry.id"
+            :entry="tile.entry"
+            :index="index"
+            :size="tile.size"
+            :standalone="standalone"
+            :reorderable="reorderable"
+            :dragging="draggingId === tile.entry.id"
+            :drop-target="dropTargetId === tile.entry.id"
+            @installed="loadMarket"
+            @drag-start="onCardDragStart"
+            @drag-over="onCardDragOver"
+            @drop="onCardDrop"
+            @drag-end="onCardDragEnd"
+        />
       </div>
     </section>
 
@@ -410,13 +519,6 @@ async function cleanupRedundantPlugins() {
 </template>
 
 <style scoped>
-.connector-market--page {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  min-width: 0;
-}
-
 .connector-market__head {
   display: flex;
   align-items: flex-start;
@@ -435,9 +537,5 @@ async function cleanupRedundantPlugins() {
   margin: var(--dw-space-2) 0 0;
   font-size: var(--dw-text-sm);
   color: var(--dw-text-muted);
-}
-
-.connector-market-toolbar--embed {
-  margin-bottom: var(--dw-space-6);
 }
 </style>

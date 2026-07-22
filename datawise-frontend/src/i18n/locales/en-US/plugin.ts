@@ -22,6 +22,9 @@ export default {
     openFeature: 'Open',
     surfacesTitle: 'Where it works',
     persistHint: 'Toggle state is saved to app config and survives restarts.',
+    settingsMenu: {
+        aria: 'Plugin center actions',
+    },
     layout: {
         eyebrow: 'Extensions',
         referencePreset: 'Reference preset',
@@ -29,6 +32,7 @@ export default {
         config: 'Configuration',
         presetMismatch: 'Preset mismatches',
         showing: '{count} / {total} shown',
+        enabledRate: 'Enabled',
         status: 'Status',
         category: 'Category',
         more: 'More',
@@ -37,6 +41,9 @@ export default {
         title: 'Developer tools',
         subtitle: 'Capability matrix, usage stats, connector JARs, catalog audit, and hooks.',
         eyebrow: 'Ops & extensions',
+        settingsMenu: {
+            aria: 'Developer tools actions',
+        },
         tabsLabel: 'Developer tool sections',
         tabs: {
             matrix: 'Matrix',
@@ -471,10 +478,22 @@ export default {
     },
     connectorMarket: {
         eyebrow: 'Community',
+        settingsMenu: {
+            aria: 'Connector marketplace actions',
+        },
         title: 'Connector marketplace',
         subtitle: 'Browse, install, and manage datasource connectors. Admins can download from the manifest and hot-reload.',
         libraryTitle: 'Connector catalog',
-        libraryHint: 'Filter by status to install or clean up. Featured and full catalog share the same card layout.',
+        libraryHint: 'Mixed tile sizes. Drag to reorder, or pick a sort mode. Cards reflow by column as the window narrows.',
+        dragToReorder: 'Drag to reorder',
+        reorderHint: 'Drag cards to set a custom order (switches to Custom and remembers it).',
+        sort: {
+            label: 'Sort',
+            featured: 'Featured first',
+            name: 'Name',
+            status: 'Ready first',
+            custom: 'Custom',
+        },
         refresh: 'Refresh',
         searchPlaceholder: 'Search connectors',
         filter: {

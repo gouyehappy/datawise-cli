@@ -63,7 +63,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="module-page module-page--ambient-alt module-page--scroll plugin-dev-page">
+  <div class="module-page module-page--ambient module-page--scroll plugin-dev-page">
     <div class="mp-page-wrap plugin-dev-page__wrap">
       <PluginDeveloperToolsSection
           class="plugin-dev--standalone"
@@ -103,10 +103,6 @@ onMounted(() => {
 
 <style scoped>
 .plugin-dev-page__wrap {
-    max-width: 1280px;
-}
-
-.plugin-dev-page :deep(.plugin-dev--standalone) {
-    margin-top: 0;
+    min-width: 0;
 }
 </style>

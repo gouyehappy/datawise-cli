@@ -55,12 +55,14 @@ class HealthControllerTest {
     }
 
     @Test
-    void healthHidesPathsForAnonymousCallers() {
+    void healthExposesConfigDirButHidesScriptsForAnonymousCallers() {
+        when(configDirectoryService.getRoot()).thenReturn(Path.of("/workspace"));
+
         var response = controller.health().data();
 
         assertEquals("ok", response.status());
         assertNull(response.scriptsDir());
-        assertNull(response.configDir());
+        assertEquals(Path.of("/workspace").toString(), response.configDir());
     }
 
     @Test

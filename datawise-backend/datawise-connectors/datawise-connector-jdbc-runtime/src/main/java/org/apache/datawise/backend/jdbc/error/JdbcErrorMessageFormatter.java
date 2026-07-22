@@ -10,7 +10,7 @@ public final class JdbcErrorMessageFormatter {
     }
 
     public static String toUserMessage(ConnectionEntity entity, Throwable error) {
-        String message = JdbcErrorClassifier.rootMessage(error);
+        String message = JdbcErrorClassifier.classificationMessage(error);
         if (message == null || message.isBlank()) {
             return "Connection failed";
         }
@@ -55,8 +55,12 @@ public final class JdbcErrorMessageFormatter {
         }
 
         if (lower.contains("failed to download jdbc driver")
-                || lower.contains("failed to download driver from maven central")) {
-            return message;
+                || lower.contains("failed to download driver from maven")
+                || lower.contains("failed to download driver")) {
+            return "Failed to download JDBC driver from Maven repositories. "
+                    + "Check network access, configure datawise.jdbc.maven.repositories "
+                    + "(e.g. Aliyun mirror), or place the JAR under config/drivers/. "
+                    + "Details: " + message;
         }
 
         return message;

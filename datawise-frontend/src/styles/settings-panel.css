@@ -503,11 +503,17 @@
     line-height: var(--dw-leading);
 }
 
+.module-shell__main .config-dir-meta__row {
+    display: grid;
+    gap: var(--dw-space-2);
+}
+
 .module-shell__main .workspace-root__path {
     margin: var(--dw-space-4) 0 0;
 }
 
-.module-shell__main .workspace-root__path code {
+.module-shell__main .workspace-root__path code,
+.module-shell__main .workspace-root__path-code {
     display: block;
     padding: var(--dw-space-3) var(--dw-space-4);
     border-radius: var(--dw-control-radius-sm);

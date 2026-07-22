@@ -53,7 +53,8 @@ export function useWorkspaceActions() {
         loading.value = true
         try {
             const settings = await loadConfigDirSettings()
-            resolvedPath.value = settings.resolved
+            // 标题栏展示“当前实际在用”的目录；无健康检查结果时回落偏好解析路径
+            resolvedPath.value = settings.activeFromBackend || settings.resolved
             defaultPath.value = settings.defaultPath
             canSwitch.value = settings.canChange
             recentWorkspaces.value = settings.recentWorkspaces

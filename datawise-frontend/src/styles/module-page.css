@@ -690,37 +690,433 @@
 
 /* Settings 子面板宽度由 settings-page（SettingsPageShell）统一控制，见 settings-panel.css */
 
-/* ---- 氛围页（Dashboard / Plugin / Team 等滚动内容页） ---- */
+/* ---- 氛围页（Dashboard / Plugin / Connectors / Dev 共用） ---- */
 
 .module-page--ambient {
     overflow: auto;
     padding: 0;
     background-color: var(--dw-bg-muted);
     background-image:
-        radial-gradient(ellipse 80% 50% at 0% 0%, color-mix(in srgb, var(--dw-primary) 9%, transparent), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 100% 0%, color-mix(in srgb, var(--mp-tone-sky) 7%, transparent), transparent 50%);
+        radial-gradient(ellipse 78% 52% at 6% -10%, color-mix(in srgb, var(--mp-shell-accent) 18%, transparent), transparent 60%),
+        radial-gradient(ellipse 58% 44% at 98% 2%, color-mix(in srgb, var(--mp-tone-sky) 14%, transparent), transparent 55%),
+        radial-gradient(ellipse 48% 34% at 48% 108%, color-mix(in srgb, var(--dw-primary) 7%, transparent), transparent 62%),
+        linear-gradient(180deg, color-mix(in srgb, var(--dw-bg-elevated, var(--dw-bg-panel)) 35%, transparent), transparent 42%);
 }
 
-.module-page--ambient-alt {
-    overflow: auto;
-    padding: 0;
-    background-color: var(--dw-bg-muted);
+[data-theme='dark'] .module-page--ambient {
     background-image:
-        radial-gradient(ellipse 70% 50% at 100% 0%, color-mix(in srgb, var(--dw-primary) 7%, transparent), transparent 55%);
-}
-
-[data-theme='dark'] .module-page--ambient,
-[data-theme='dark'] .module-page--ambient-alt {
-    background-image:
-        radial-gradient(ellipse 80% 50% at 0% 0%, color-mix(in srgb, var(--dw-primary) 14%, transparent), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 100% 0%, color-mix(in srgb, var(--mp-tone-sky) 10%, transparent), transparent 50%);
+        radial-gradient(ellipse 78% 52% at 6% -10%, color-mix(in srgb, var(--mp-shell-accent) 26%, transparent), transparent 60%),
+        radial-gradient(ellipse 58% 44% at 98% 2%, color-mix(in srgb, var(--mp-tone-sky) 16%, transparent), transparent 55%),
+        radial-gradient(ellipse 48% 34% at 48% 108%, color-mix(in srgb, var(--dw-primary) 10%, transparent), transparent 62%),
+        linear-gradient(180deg, color-mix(in srgb, var(--dw-bg-elevated, var(--dw-bg-panel)) 22%, transparent), transparent 42%);
 }
 
 .mp-page-wrap {
     box-sizing: border-box;
+    width: 100%;
     max-width: var(--mp-page-max);
     margin: 0 auto;
-    padding: var(--mp-pad) clamp(18px, 2.4vmin, 32px) clamp(24px, 3.2vmin, 40px);
+    padding: clamp(20px, 2.4vmin, 36px) clamp(24px, 3.2vmin, 48px) clamp(40px, 5vmin, 72px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--mp-shell-gap);
+    min-width: 0;
+}
+
+/* Ambient 页内 Hero / 状态条 / 卡片表面统一 */
+
+.module-page--ambient .mp-hero {
+    margin-bottom: 0;
+    border: 1px solid var(--mp-shell-border);
+    border-radius: var(--mp-shell-radius);
+    background:
+        radial-gradient(ellipse 100% 140% at 0% 0%, color-mix(in srgb, var(--mp-shell-accent) 16%, transparent), transparent 58%),
+        var(--mp-shell-surface);
+    box-shadow: none;
+}
+
+.module-page--ambient .mp-hero--glow .mp-hero__glow {
+    background:
+        linear-gradient(118deg, color-mix(in srgb, var(--mp-shell-accent) 22%, transparent) 0%, transparent 48%),
+        linear-gradient(208deg, color-mix(in srgb, var(--mp-tone-sky) 14%, transparent) 0%, transparent 42%);
+}
+
+.module-page--ambient .mp-hero__title {
+    letter-spacing: -0.04em;
+    font-size: var(--dw-text-display);
+    font-weight: 650;
+}
+
+.module-page--ambient .mp-hero__inner {
+    padding: clamp(22px, 2.6vmin, 34px) clamp(24px, 2.8vmin, 36px);
+}
+
+.module-page--ambient .mp-stat,
+.module-page--ambient .mp-stat--icon {
+    border: 1px solid var(--mp-shell-border);
+    border-radius: var(--mp-shell-radius);
+    background: var(--mp-shell-tile);
+    box-shadow: none;
+}
+
+.module-page--ambient .mp-stat--icon.is-clickable:hover {
+    border-color: color-mix(in srgb, var(--mp-tone, var(--mp-shell-accent)) 22%, var(--mp-shell-border));
+    background: color-mix(in srgb, var(--mp-tone, var(--mp-shell-accent)) 8%, var(--mp-shell-tile));
+    box-shadow: 0 12px 28px -18px color-mix(in srgb, var(--mp-tone, var(--mp-shell-accent)) 40%, transparent);
+}
+
+.module-page--ambient .mp-stat__icon {
+    background: color-mix(in srgb, var(--mp-tone, var(--mp-shell-accent)) 14%, transparent);
+}
+
+/* Shared status strip — also aliases page-specific class names */
+.mp-status,
+.plugin-status,
+.connector-market-status,
+.plugin-dev__status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--dw-space-3) var(--dw-space-5);
+    margin: 0;
+    padding: var(--dw-space-5) var(--dw-space-6);
+    border: 1px solid var(--mp-shell-border);
+    border-radius: var(--mp-shell-radius);
+    background:
+        radial-gradient(ellipse 80% 120% at 0% 0%, color-mix(in srgb, var(--mp-shell-accent) 12%, transparent), transparent 55%),
+        var(--mp-shell-surface);
+    min-width: 0;
+}
+
+.mp-status__item,
+.plugin-status__item,
+.connector-market-status__item,
+.plugin-dev__status-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 4.5rem;
+    flex: 0 1 auto;
+    padding: 0;
+    background: transparent;
+}
+
+.mp-status__label,
+.plugin-status__label,
+.connector-market-status__label,
+.plugin-dev__status-label {
+    font-size: 11px;
+    color: var(--dw-text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.mp-status__value,
+.plugin-status__value,
+.connector-market-status__value,
+.plugin-dev__status-value {
+    font-size: clamp(1.25rem, 1.7vw, 1.55rem);
+    font-weight: 650;
+    line-height: 1.15;
+    color: var(--dw-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.mp-status__value--sm {
+    font-size: var(--dw-text-md);
+}
+
+.mp-status__bar,
+.plugin-status__bar,
+.connector-market-status__bar {
+    height: 4px;
+    width: 100%;
+    max-width: 240px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--dw-text) 8%, transparent);
+    overflow: hidden;
+}
+
+.mp-status__bar > span,
+.plugin-status__bar > span,
+.connector-market-status__bar > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--dw-success) 75%, var(--mp-shell-accent)),
+        var(--mp-shell-accent)
+    );
+}
+
+.mp-status__item--grow,
+.plugin-status__item--readiness,
+.connector-market-status__item--readiness {
+    flex: 1 1 160px;
+    min-width: min(100%, 160px);
+    justify-content: center;
+    gap: var(--dw-space-2);
+}
+
+.mp-status__value--sm,
+.plugin-status__value--inline,
+.connector-market-status__value--inline {
+    font-size: var(--dw-text-md);
+}
+
+.plugin-status__readiness-row,
+.connector-market-status__readiness-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--dw-gap);
+    min-width: 0;
+}
+
+.plugin-status__bar > span,
+.connector-market-status__bar > span {
+    transition: width 0.35s ease;
+}
+
+.plugin-status__item--warn .plugin-status__value,
+.plugin-dev__status-item--amber .plugin-dev__status-value {
+    color: var(--dw-warning-fg);
+}
+
+.mp-tile {
+    border: 1px solid var(--mp-shell-border);
+    border-radius: var(--mp-shell-radius);
+    background: var(--mp-shell-tile);
+    box-shadow: none;
+}
+
+/* Ambient 控件：按钮 / 搜索 / Tab / 分段 / Chip 同一套 */
+
+.module-page--ambient {
+    --dw-btn-height: var(--mp-shell-control-h);
+    --dw-btn-height-sm: var(--mp-shell-control-h);
+    --dw-control-h: var(--mp-shell-control-h);
+    --dw-control-h-sm: var(--mp-shell-control-h);
+    --dw-tab-height: var(--mp-shell-control-h);
+    --dw-select-trigger-h: var(--mp-shell-control-h);
+    --dw-btn-radius: var(--mp-shell-control-radius);
+    --dw-input-radius: var(--mp-shell-control-radius);
+    --dw-control-radius: var(--mp-shell-control-radius);
+    --dw-chip-radius: var(--mp-shell-control-radius);
+    --dw-tab-pill-radius: var(--mp-shell-control-radius);
+}
+
+.module-page--ambient .btn-primary,
+.module-page--ambient .btn-secondary,
+.module-page--ambient .btn-ghost,
+.module-page--ambient .mp-btn,
+.module-page--ambient .dw-text-btn {
+    height: var(--mp-shell-control-h);
+    min-height: var(--mp-shell-control-h);
+    border-radius: var(--mp-shell-control-radius);
+    font-size: var(--dw-text-sm);
+}
+
+.module-page--ambient .btn-primary {
+    border: 0;
+    background: color-mix(in srgb, var(--mp-shell-accent) 16%, var(--mp-shell-tile));
+    color: color-mix(in srgb, var(--mp-shell-accent) 72%, var(--dw-text));
+    box-shadow: none;
+}
+
+.module-page--ambient .btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--mp-shell-accent) 22%, var(--mp-shell-tile));
+    border-color: transparent;
+    color: color-mix(in srgb, var(--mp-shell-accent) 82%, var(--dw-text));
+    box-shadow: 0 10px 22px -16px color-mix(in srgb, var(--mp-shell-accent) 55%, transparent);
+}
+
+.module-page--ambient .btn-secondary,
+.module-page--ambient .dw-text-btn,
+.module-page--ambient .btn-ghost {
+    border: 0;
+    background: var(--mp-shell-control-bg);
+    color: var(--dw-text-secondary);
+    box-shadow: none;
+}
+
+.module-page--ambient .btn-secondary:hover:not(:disabled),
+.module-page--ambient .dw-text-btn:hover:not(:disabled),
+.module-page--ambient .btn-ghost:hover:not(:disabled) {
+    background: var(--mp-shell-control-bg-hover);
+    border-color: transparent;
+    color: var(--dw-text);
+    box-shadow: none;
+}
+
+.module-page--ambient .dw-text-btn.is-active,
+.module-page--ambient .dw-text-btn--accent {
+    background: var(--mp-shell-control-bg-active);
+    color: color-mix(in srgb, var(--mp-shell-accent) 78%, var(--dw-text));
+    box-shadow: inset var(--mp-shell-rail) 0 0 0 var(--mp-shell-accent);
+}
+
+.module-page--ambient .btn-primary:focus-visible,
+.module-page--ambient .btn-secondary:focus-visible,
+.module-page--ambient .btn-ghost:focus-visible,
+.module-page--ambient .dw-text-btn:focus-visible {
+    border-color: transparent;
+    box-shadow: var(--mp-shell-focus-ring);
+}
+
+/* Search fields */
+.module-page--ambient .dw-search,
+.module-page--ambient .plugin-filter-dock__input,
+.module-page--ambient .plugin-dev-search__input,
+.module-page--ambient .dw-input {
+    height: var(--mp-shell-control-h);
+    min-height: var(--mp-shell-control-h);
+    border: 0;
+    border-radius: var(--mp-shell-control-radius);
+    background: var(--mp-shell-control-bg);
+    box-shadow: none;
+    color: var(--dw-text);
+}
+
+.module-page--ambient .dw-search:hover,
+.module-page--ambient .plugin-filter-dock__input:hover,
+.module-page--ambient .plugin-dev-search__input:hover,
+.module-page--ambient .dw-input:hover {
+    background: var(--mp-shell-control-bg-hover);
+}
+
+.module-page--ambient .dw-search:focus-within,
+.module-page--ambient .plugin-filter-dock__input:focus,
+.module-page--ambient .plugin-dev-search__input:focus,
+.module-page--ambient .dw-input:focus {
+    outline: none;
+    border-color: transparent;
+    background: var(--mp-shell-control-bg-active);
+    box-shadow: var(--mp-shell-focus-ring);
+}
+
+.module-page--ambient .plugin-filter-dock__search-wrap,
+.module-page--ambient .plugin-dev-search {
+    position: relative;
+}
+
+.module-page--ambient .plugin-filter-dock__search-icon,
+.module-page--ambient .plugin-dev-search__icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--dw-icon-size-md);
+    height: var(--dw-icon-size-md);
+    color: var(--dw-text-muted);
+    pointer-events: none;
+}
+
+.module-page--ambient .plugin-filter-dock__input,
+.module-page--ambient .plugin-dev-search__input {
+    width: 100%;
+    padding: 0 var(--dw-space-4) 0 36px;
+    font-size: var(--dw-text-sm);
+}
+
+/* Segments / tabs / chips */
+.module-page--ambient .dw-segment,
+.module-page--ambient .mp-segment {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    height: auto;
+    min-height: var(--mp-shell-control-h);
+    padding: 4px;
+    border: 0;
+    border-radius: calc(var(--mp-shell-control-radius) + 2px);
+    background: var(--mp-shell-control-bg);
+}
+
+.module-page--ambient .dw-segment__btn,
+.module-page--ambient .plugin-dev-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--dw-gap-sm);
+    height: calc(var(--mp-shell-control-h) - 8px);
+    min-height: calc(var(--mp-shell-control-h) - 8px);
+    padding: 0 var(--dw-space-4);
+    border: 0;
+    border-radius: var(--mp-shell-control-radius);
+    background: transparent;
+    color: var(--dw-text-secondary);
+    font-size: var(--dw-text-sm);
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.module-page--ambient .dw-segment__btn:hover:not(:disabled):not(.is-active),
+.module-page--ambient .mp-segment__btn:hover:not(:disabled):not(.is-active),
+.module-page--ambient .plugin-dev-tab:hover:not(.is-active) {
+    background: color-mix(in srgb, var(--dw-text) 5%, transparent);
+    color: var(--dw-text);
+}
+
+.module-page--ambient .dw-segment__btn.is-active,
+.module-page--ambient .plugin-dev-tab.is-active {
+    background: var(--mp-shell-tile);
+    color: color-mix(in srgb, var(--mp-shell-accent) 78%, var(--dw-text));
+    font-weight: 600;
+    box-shadow:
+        0 1px 2px color-mix(in srgb, var(--dw-text) 6%, transparent),
+        inset 0 0 0 1px color-mix(in srgb, var(--mp-shell-accent) 18%, transparent);
+}
+
+.module-page--ambient .plugin-dev__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 4px;
+    border: 0;
+    border-radius: calc(var(--mp-shell-control-radius) + 2px);
+    background: var(--mp-shell-control-bg);
+}
+
+.module-page--ambient .plugin-dev-tab {
+    padding: 0 var(--dw-space-5);
+}
+
+.module-page--ambient .plugin-filter-dock__count,
+.module-page--ambient .connector-market-filters__count,
+.module-page--ambient .plugin-dev-tab__badge {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--dw-text) 7%, transparent);
+}
+
+.module-page--ambient .dw-segment__btn.is-active .connector-market-filters__count {
+    background: color-mix(in srgb, var(--mp-shell-accent) 16%, transparent);
+}
+
+/* Select trigger inside ambient toolbars */
+.module-page--ambient .dw-select__trigger {
+    height: var(--mp-shell-control-h);
+    min-height: var(--mp-shell-control-h);
+    border: 0;
+    border-radius: var(--mp-shell-control-radius);
+    background: var(--mp-shell-control-bg);
+    box-shadow: none;
+}
+
+.module-page--ambient .dw-select__trigger:hover {
+    background: var(--mp-shell-control-bg-hover);
+}
+
+.module-page--ambient .dw-select__trigger:focus-visible,
+.module-page--ambient .dw-select.is-open .dw-select__trigger {
+    box-shadow: var(--mp-shell-focus-ring);
 }
 
 /* ---- 色调工具类 ---- */
@@ -819,6 +1215,18 @@
     display: flex;
     gap: var(--dw-space-6);
     flex-shrink: 0;
+}
+
+/* Gear menu anchor (Dashboard / Plugins / Connectors / Dev) */
+.mp-hero--with-settings .mp-hero__inner {
+    padding-right: 52px;
+}
+
+.mp-hero__settings {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: var(--dw-z-raised);
 }
 
 /* ---- 带图标的统计卡（Dashboard Hero 下方） ---- */

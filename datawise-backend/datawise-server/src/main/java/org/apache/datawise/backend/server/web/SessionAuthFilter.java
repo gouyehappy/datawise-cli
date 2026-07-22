@@ -11,6 +11,7 @@ import org.apache.datawise.backend.model.ApiTokenEntity;
 import org.apache.datawise.backend.model.SessionEntity;
 import org.apache.datawise.backend.security.UserContext;
 import org.apache.datawise.backend.service.ApiTokenService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,10 +20,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * HTTP 入口：读 {@link #SESSION_HEADER} 或 {@link #API_TOKEN_HEADER}，校验后写入 {@link UserContext}。
  * 当 {@link AuthSecurityProperties#isRequireAuthentication()} 为 true 时，非公开路径匿名请求返回 401。
+ *
+ * <p>401 在到达 Spring MVC CORS 之前短路，因此必须在此补齐与 {@code WebConfig} 一致的 CORS 头，
+ * 否则浏览器会把真实 401 伪装成网络/CORS 失败，前端无法触发会话恢复。
  */
 public class SessionAuthFilter extends OncePerRequestFilter {
 
@@ -30,6 +35,14 @@ public class SessionAuthFilter extends OncePerRequestFilter {
     public static final String API_TOKEN_HEADER = "X-DW-Api-Token";
     public static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+
+    /** 与 {@code WebConfig#addCorsMappings} 保持一致 */
+    private static final Pattern[] ALLOWED_ORIGIN_PATTERNS = {
+            Pattern.compile("^https?://localhost(:\\d+)?$", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("^https?://127\\.0\\.0\\.1(:\\d+)?$", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("^app://local$", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("^app://.+$", Pattern.CASE_INSENSITIVE),
+    };
 
     private final SessionStore sessionStore;
     private final ApiTokenService apiTokenService;
@@ -68,7 +81,7 @@ public class SessionAuthFilter extends OncePerRequestFilter {
             if (!authenticated && authSecurityProperties.isRequireAuthentication()) {
                 String path = request.getRequestURI();
                 if (!authSecurityProperties.isPublicPath(path)) {
-                    writeUnauthorized(response);
+                    writeUnauthorized(request, response);
                     return;
                 }
             }
@@ -131,6 +144,19 @@ public class SessionAuthFilter extends OncePerRequestFilter {
         return null;
     }
 
+    static String resolveAllowedCorsOrigin(String origin) {
+        if (origin == null || origin.isBlank()) {
+            return null;
+        }
+        String trimmed = origin.trim();
+        for (Pattern pattern : ALLOWED_ORIGIN_PATTERNS) {
+            if (pattern.matcher(trimmed).matches()) {
+                return trimmed;
+            }
+        }
+        return null;
+    }
+
     private static Set<String> normalizeScopes(java.util.List<String> scopes) {
         if (scopes == null || scopes.isEmpty()) {
             return Set.of();
@@ -144,7 +170,8 @@ public class SessionAuthFilter extends OncePerRequestFilter {
         return Set.copyOf(normalized);
     }
 
-    private static void writeUnauthorized(HttpServletResponse response) throws IOException {
+    private static void writeUnauthorized(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        applyCorsHeadersForUnauthorized(request, response);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -152,5 +179,24 @@ public class SessionAuthFilter extends OncePerRequestFilter {
                 "{\"code\":-1,\"msg\":\"" + UnauthorizedException.CODE + "\",\"data\":{\"errorCode\":\""
                         + UnauthorizedException.CODE + "\"}}"
         );
+    }
+
+    private static void applyCorsHeadersForUnauthorized(HttpServletRequest request, HttpServletResponse response) {
+        String allowedOrigin = resolveAllowedCorsOrigin(request.getHeader(HttpHeaders.ORIGIN));
+        if (allowedOrigin == null) {
+            return;
+        }
+        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, allowedOrigin);
+        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+        response.setHeader(HttpHeaders.VARY, HttpHeaders.ORIGIN);
+        String requestHeaders = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
+        if (requestHeaders != null && !requestHeaders.isBlank()) {
+            response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, requestHeaders);
+        } else {
+            response.setHeader(
+                    HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
+                    "Content-Type, " + SESSION_HEADER + ", " + API_TOKEN_HEADER + ", " + AUTHORIZATION_HEADER
+            );
+        }
     }
 }

@@ -3,7 +3,7 @@ import {computed, nextTick, onMounted, ref, watch} from 'vue'
 import {storeToRefs} from 'pinia'
 import {useI18n} from 'vue-i18n'
 import type {PluginItem} from '@/core/types'
-import {CollapsibleSection, DwButton, EmptyState, StatusPill} from '@/core/components'
+import {CollapsibleSection, EmptyState, ModuleHeroSettingsMenu, StatusPill, type ModuleHeroMenuItem} from '@/core/components'
 import {DwIcon} from '@/core/icons'
 import PluginDetailDialog from '@/features/plugin/components/PluginDetailDialog.vue'
 import {usePluginStore} from '@/features/plugin/stores/plugin-store'
@@ -259,6 +259,29 @@ const stats = computed(() => ({
   enabled: pluginStore.enabledCount,
 }))
 
+const enabledPercent = computed(() => {
+  if (!stats.value.total) return 0
+  return Math.round((stats.value.enabled / stats.value.total) * 100)
+})
+
+type PluginCardSize = 'hero' | 'wide' | 'tall' | 'standard' | 'compact'
+
+function pluginCardSize(plugin: PluginItem, index: number): PluginCardSize {
+  if (index === 0 && plugin.enabled) return 'hero'
+  if (hasUnmetRequires(plugin) || conflictsWithReferencePreset(plugin)) return 'tall'
+  if (plugin.enabled && surfaces(plugin).length >= 3) return 'wide'
+  if (plugin.enabled && index < 3) return 'wide'
+  if (!plugin.enabled) return 'compact'
+  return 'standard'
+}
+
+const boardTiles = computed(() =>
+    filtered.value.map((plugin, index) => ({
+      plugin,
+      size: pluginCardSize(plugin, index),
+    })),
+)
+
 const hasAlerts = computed(
     () =>
         showTeamViewerHint.value
@@ -403,6 +426,39 @@ function resetPluginConfig() {
   pluginStore.resetPluginOverrides()
 }
 
+const heroMenuItems = computed<ModuleHeroMenuItem[]>(() => [
+  {
+    id: 'export',
+    label: t('plugin.config.export'),
+    icon: 'export',
+  },
+  {
+    id: 'import',
+    label: t('plugin.config.import'),
+    icon: 'save',
+  },
+  {
+    id: 'reset',
+    label: t('plugin.config.reset'),
+    icon: 'rollback',
+    dividerBefore: true,
+  },
+])
+
+function onHeroMenuSelect(id: string) {
+  if (id === 'export') {
+    exportPluginConfig()
+    return
+  }
+  if (id === 'import') {
+    triggerImportPluginConfig()
+    return
+  }
+  if (id === 'reset') {
+    resetPluginConfig()
+  }
+}
+
 async function onPluginToggle(plugin: PluginItem) {
   pluginStore.toggle(plugin.id)
   bumpUsageRevision()
@@ -410,9 +466,17 @@ async function onPluginToggle(plugin: PluginItem) {
 </script>
 
 <template>
-  <div class="module-page module-page--ambient-alt module-page--scroll plugin-page">
+  <div class="module-page module-page--ambient module-page--scroll plugin-page">
     <div class="mp-page-wrap plugin-page__wrap">
-      <header class="mp-hero mp-hero--compact plugin-hero">
+      <header class="mp-hero mp-hero--glow mp-hero--with-settings plugin-hero">
+        <div class="mp-hero__glow" aria-hidden="true"/>
+        <div class="mp-hero__settings">
+          <ModuleHeroSettingsMenu
+              :aria-label="t('plugin.settingsMenu.aria')"
+              :items="heroMenuItems"
+              @select="onHeroMenuSelect"
+          />
+        </div>
         <div class="mp-hero__inner">
           <div class="mp-hero__copy">
             <p class="mp-hero__eyebrow">{{ t('plugin.layout.eyebrow') }}</p>
@@ -420,22 +484,14 @@ async function onPluginToggle(plugin: PluginItem) {
             <p class="mp-hero__sub">{{ t('plugin.subtitle') }}</p>
             <p class="mp-hero__hint">{{ t('plugin.persistHint') }}</p>
           </div>
-          <div class="mp-hero__actions plugin-hero__actions">
-            <DwButton size="sm" variant="ghost" @click="exportPluginConfig">
-              {{ t('plugin.config.export') }}
-            </DwButton>
-            <DwButton size="sm" variant="ghost" @click="triggerImportPluginConfig">
-              {{ t('plugin.config.import') }}
-            </DwButton>
-            <input
-                ref="configImportInputRef"
-                type="file"
-                accept="application/json,.json"
-                hidden
-                @change="onImportPluginConfig"
-            />
-          </div>
         </div>
+        <input
+            ref="configImportInputRef"
+            type="file"
+            accept="application/json,.json"
+            hidden
+            @change="onImportPluginConfig"
+        />
       </header>
 
       <section class="plugin-status" aria-label="plugin status">
@@ -447,13 +503,25 @@ async function onPluginToggle(plugin: PluginItem) {
           <span class="plugin-status__label">{{ t('plugin.total') }}</span>
           <strong class="plugin-status__value">{{ stats.total }}</strong>
         </div>
-        <div v-if="presetMismatchCount > 0" class="plugin-status__item plugin-status__item--warn">
+        <div
+            v-if="presetMismatchCount > 0"
+            class="plugin-status__item plugin-status__item--warn"
+        >
           <span class="plugin-status__label">{{ t('plugin.layout.presetMismatch') }}</span>
           <strong class="plugin-status__value">{{ presetMismatchCount }}</strong>
         </div>
         <div v-else class="plugin-status__item">
           <span class="plugin-status__label">{{ t('plugin.layout.referencePreset') }}</span>
           <strong class="plugin-status__value">{{ t(`plugin.presets.${referencePresetId}.label`) }}</strong>
+        </div>
+        <div class="plugin-status__item plugin-status__item--readiness">
+          <div class="plugin-status__readiness-row">
+            <span class="plugin-status__label">{{ t('plugin.layout.enabledRate') }}</span>
+            <strong class="plugin-status__value plugin-status__value--inline">{{ enabledPercent }}%</strong>
+          </div>
+          <div class="plugin-status__bar" aria-hidden="true">
+            <span :style="{width: `${enabledPercent}%`}"/>
+          </div>
         </div>
       </section>
 
@@ -672,11 +740,11 @@ async function onPluginToggle(plugin: PluginItem) {
 
             <div class="plugin-filter-dock__group">
               <span class="plugin-filter-dock__label">{{ t('plugin.layout.status') }}</span>
-              <div class="mp-segment mp-segment--wrap">
+              <div class="dw-segment mp-segment--wrap">
                 <button
                     v-for="item in ['all', 'enabled', 'disabled'] as const"
                     :key="item"
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': filter === item }"
                     type="button"
                     @click="filter = item"
@@ -686,7 +754,7 @@ async function onPluginToggle(plugin: PluginItem) {
                   }}
                 </button>
                 <button
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': unmetRequiresOnly }"
                     type="button"
                     @click="unmetRequiresOnly = !unmetRequiresOnly"
@@ -695,7 +763,7 @@ async function onPluginToggle(plugin: PluginItem) {
                   <StatusPill v-if="unmetRequiresCount" variant="warn">{{ unmetRequiresCount }}</StatusPill>
                 </button>
                 <button
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': presetMismatchOnly }"
                     type="button"
                     @click="presetMismatchOnly = !presetMismatchOnly"
@@ -708,9 +776,9 @@ async function onPluginToggle(plugin: PluginItem) {
 
             <div class="plugin-filter-dock__group">
               <span class="plugin-filter-dock__label">{{ t('plugin.layout.category') }}</span>
-              <div class="mp-segment mp-segment--wrap">
+              <div class="dw-segment mp-segment--wrap">
                 <button
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': category === 'all' }"
                     type="button"
                     @click="category = 'all'"
@@ -720,7 +788,7 @@ async function onPluginToggle(plugin: PluginItem) {
                 <button
                     v-for="cat in CATEGORY_ORDER"
                     :key="cat"
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': category === cat }"
                     type="button"
                     @click="category = cat"
@@ -732,9 +800,9 @@ async function onPluginToggle(plugin: PluginItem) {
 
             <div class="plugin-filter-dock__group">
               <span class="plugin-filter-dock__label">{{ t('plugin.layout.more') }}</span>
-              <div class="mp-segment mp-segment--wrap">
+              <div class="dw-segment mp-segment--wrap">
                 <button
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': surface === 'all' }"
                     type="button"
                     @click="surface = 'all'"
@@ -744,7 +812,7 @@ async function onPluginToggle(plugin: PluginItem) {
                 <button
                     v-for="item in surfaceOptions"
                     :key="item"
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': surface === item }"
                     type="button"
                     @click="surface = item"
@@ -753,7 +821,7 @@ async function onPluginToggle(plugin: PluginItem) {
                 </button>
                 <span class="plugin-filter-dock__label">{{ t('plugin.sortBy') }}</span>
                 <button
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': sortMode === 'default' }"
                     type="button"
                     @click="sortMode = 'default'"
@@ -761,7 +829,7 @@ async function onPluginToggle(plugin: PluginItem) {
                   {{ t('plugin.sortDefault') }}
                 </button>
                 <button
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': sortMode === 'usage' }"
                     type="button"
                     @click="sortMode = 'usage'"
@@ -769,7 +837,7 @@ async function onPluginToggle(plugin: PluginItem) {
                   {{ t('plugin.sortByUsage') }}
                 </button>
                 <button
-                    class="dw-text-btn"
+                    class="dw-segment__btn"
                     :class="{ 'is-active': sortMode === 'recent' }"
                     type="button"
                     @click="sortMode = 'recent'"
@@ -780,38 +848,39 @@ async function onPluginToggle(plugin: PluginItem) {
             </div>
           </div>
 
-          <div class="mp-card-grid plugin-card-grid">
+          <div class="plugin-card-grid">
         <article
-            v-for="plugin in filtered"
-            :id="`plugin-card-${plugin.id}`"
-            :key="plugin.id"
+            v-for="tile in boardTiles"
+            :id="`plugin-card-${tile.plugin.id}`"
+            :key="tile.plugin.id"
             class="mp-feature-card plugin-card"
             :class="[
-              `mp-tone-${tone(plugin)}`,
+              `mp-tone-${tone(tile.plugin)}`,
+              `plugin-card--${tile.size}`,
               {
-                'is-enabled': plugin.enabled,
-                'is-highlighted': highlightPluginId === plugin.id,
-                'has-unmet-requires': hasUnmetRequires(plugin),
-                'preset-mismatch': conflictsWithReferencePreset(plugin),
+                'is-enabled': tile.plugin.enabled,
+                'is-highlighted': highlightPluginId === tile.plugin.id,
+                'has-unmet-requires': hasUnmetRequires(tile.plugin),
+                'preset-mismatch': conflictsWithReferencePreset(tile.plugin),
               },
             ]"
         >
           <header class="plugin-card__head">
             <div class="plugin-card__head-main">
               <div class="mp-feature-card__title-row">
-                <h2 class="mp-feature-card__title">{{ pluginName(plugin) }}</h2>
-                <span class="mp-feature-card__ver">v{{ plugin.version }}</span>
+                <h2 class="mp-feature-card__title">{{ pluginName(tile.plugin) }}</h2>
+                <span class="mp-feature-card__ver">v{{ tile.plugin.version }}</span>
               </div>
               <div class="plugin-card__meta">
-                <span class="mp-feature-card__cat">{{ t(`plugin.category.${plugin.category}`) }}</span>
-                <StatusPill v-if="conflictsWithReferencePreset(plugin)" variant="warn">
+                <span class="mp-feature-card__cat">{{ t(`plugin.category.${tile.plugin.category}`) }}</span>
+                <StatusPill v-if="conflictsWithReferencePreset(tile.plugin)" variant="warn">
                   {{ presetMismatchBadgeLabel() }}
                 </StatusPill>
-                <StatusPill v-if="hasUnmetRequires(plugin)" variant="warn">
+                <StatusPill v-if="hasUnmetRequires(tile.plugin)" variant="warn">
                   {{ t('plugin.unmetRequiresBadge') }}
                 </StatusPill>
-                <StatusPill v-if="pluginToggleCount(plugin)" variant="neutral">
-                  {{ t('plugin.usage.toggleBadge', {count: pluginToggleCount(plugin)}) }}
+                <StatusPill v-if="pluginToggleCount(tile.plugin)" variant="neutral">
+                  {{ t('plugin.usage.toggleBadge', {count: pluginToggleCount(tile.plugin)}) }}
                 </StatusPill>
               </div>
             </div>
@@ -819,34 +888,34 @@ async function onPluginToggle(plugin: PluginItem) {
               <label class="mp-switch">
                 <input
                     type="checkbox"
-                    :checked="plugin.enabled"
-                    @change="onPluginToggle(plugin)"
+                    :checked="tile.plugin.enabled"
+                    @change="onPluginToggle(tile.plugin)"
                 />
-                <span>{{ plugin.enabled ? t('plugin.enabled') : t('plugin.disabled') }}</span>
+                <span>{{ tile.plugin.enabled ? t('plugin.enabled') : t('plugin.disabled') }}</span>
               </label>
             </div>
           </header>
 
-          <p class="mp-feature-card__desc">{{ pluginDesc(plugin) }}</p>
+          <p class="mp-feature-card__desc">{{ pluginDesc(tile.plugin) }}</p>
 
-          <div v-if="surfaces(plugin).length" class="mp-feature-card__surfaces">
+          <div v-if="surfaces(tile.plugin).length" class="mp-feature-card__surfaces">
             <span class="mp-feature-card__surfaces-label">{{ t('plugin.surfacesTitle') }}</span>
             <div class="mp-feature-card__chips">
               <span
-                  v-for="surface in surfaces(plugin)"
-                  :key="surface"
+                  v-for="surfaceId in surfaces(tile.plugin)"
+                  :key="surfaceId"
                   class="mp-chip"
               >
-                {{ t(`plugin.surfaces.${surface}`) }}
+                {{ t(`plugin.surfaces.${surfaceId}`) }}
               </span>
             </div>
           </div>
 
-          <div v-if="pluginRequires(plugin).length" class="mp-feature-card__requires">
+          <div v-if="pluginRequires(tile.plugin).length" class="mp-feature-card__requires">
             <span class="mp-feature-card__surfaces-label">{{ t('plugin.detail.requires') }}</span>
             <div class="mp-feature-card__chips">
               <button
-                  v-for="reqId in pluginRequires(plugin)"
+                  v-for="reqId in pluginRequires(tile.plugin)"
                   :key="reqId"
                   type="button"
                   class="mp-chip mp-chip--hint mp-chip--link"
@@ -859,28 +928,28 @@ async function onPluginToggle(plugin: PluginItem) {
           </div>
 
           <footer class="plugin-card__foot">
-            <span class="mp-feature-card__author">{{ plugin.author }}</span>
+            <span class="mp-feature-card__author">{{ tile.plugin.author }}</span>
             <div class="plugin-card__foot-actions">
               <button
-                  v-if="hasUnmetRequires(plugin)"
+                  v-if="hasUnmetRequires(tile.plugin)"
                   class="mp-feature-card__detail"
                   type="button"
-                  @click="enablePluginRequires(plugin)"
+                  @click="enablePluginRequires(tile.plugin)"
               >
                 {{ t('plugin.enableRequires') }}
               </button>
               <button
                   class="mp-feature-card__detail"
                   type="button"
-                  @click="openDetail(plugin)"
+                  @click="openDetail(tile.plugin)"
               >
                 {{ t('plugin.detail.action') }}
               </button>
               <button
                   class="mp-feature-card__open"
                   type="button"
-                  :disabled="!plugin.enabled"
-                  @click="openPlugin(plugin)"
+                  :disabled="!tile.plugin.enabled"
+                  @click="openPlugin(tile.plugin)"
               >
                 {{ t('plugin.openFeature') }}
               </button>
@@ -888,7 +957,7 @@ async function onPluginToggle(plugin: PluginItem) {
           </footer>
         </article>
 
-            <p v-if="!filtered.length" class="mp-empty plugin-empty">{{ t('plugin.empty') }}</p>
+            <p v-if="!boardTiles.length" class="mp-empty plugin-empty">{{ t('plugin.empty') }}</p>
           </div>
         </main>
       </div>

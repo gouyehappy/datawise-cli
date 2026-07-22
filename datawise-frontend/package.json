@@ -31,6 +31,7 @@
     "build:backend": "node scripts/desktop/maven.mjs",
     "stop:desktop": "node scripts/desktop/lib.mjs --stop-processes",
     "clean:desktop": "node scripts/desktop/clean.mjs --all",
+    "clear:desktop": "npm run clean:desktop",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:all": "npm run typecheck --prefix ../sql-editor && vue-tsc --noEmit",

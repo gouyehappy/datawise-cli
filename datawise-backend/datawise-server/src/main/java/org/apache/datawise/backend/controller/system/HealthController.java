@@ -55,15 +55,17 @@ public class HealthController {
     @GetMapping("/health")
     public ApiResponse<HealthStatusDto> health() {
         String now = Instant.now().toString();
+        // configDir 对设置页「当前实际读取」必需，匿名/访客也返回（非敏感路径）
+        String configDir = configDirectoryService.getRoot().toString();
         if (UserContext.getUserId() == null || UserContext.isGuest()) {
-            return ApiResponse.ok(new HealthStatusDto("ok", "1.0.0", now, null, null));
+            return ApiResponse.ok(new HealthStatusDto("ok", "1.0.0", now, null, configDir));
         }
         return ApiResponse.ok(new HealthStatusDto(
                 "ok",
                 "1.0.0",
                 now,
                 instanceWorkspaceService.scriptsRoot(),
-                configDirectoryService.getRoot().toString()
+                configDir
         ));
     }
 

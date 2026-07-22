@@ -15,6 +15,11 @@ async function runUnauthorizedRecovery(): Promise<void> {
     }
 }
 
+/** 等待进行中的 401 恢复（游客登录 / 登录框）；无则立刻返回 */
+export function awaitUnauthorizedRecovery(): Promise<void> {
+    return recoveryPromise ?? Promise.resolve()
+}
+
 export function installUnauthorizedSessionRecovery(): void {
     registerUnauthorizedRecoveryHandler(() => {
         if (!recoveryPromise) {

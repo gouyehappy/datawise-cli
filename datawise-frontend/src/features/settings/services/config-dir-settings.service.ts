@@ -12,7 +12,10 @@ export interface WorkspaceListEntry {
 
 export interface ConfigDirSettings {
     configured: string | null
+    /** Electron 偏好解析出的工作区（切换并重启后会用这个） */
     resolved: string
+    /** 后端健康检查返回的实际配置根（当前真正在读的目录） */
+    activeFromBackend: string
     defaultPath: string
     canChange: boolean
     recentWorkspaces: WorkspaceListEntry[]
@@ -29,6 +32,7 @@ export async function loadConfigDirSettings(): Promise<ConfigDirSettings> {
     return {
         configured: full.configured,
         resolved: full.resolved,
+        activeFromBackend: full.activeFromBackend,
         defaultPath: full.defaultPath,
         canChange: full.canChange,
         recentWorkspaces: full.recentWorkspaces,
@@ -37,24 +41,34 @@ export async function loadConfigDirSettings(): Promise<ConfigDirSettings> {
 
 export async function loadDataDirectorySettings(): Promise<DataDirectorySettings> {
     const health = await settingsApi.pingHealth().catch(() => null)
+    const activeFromBackend = health?.result?.configDir?.trim() || ''
 
-    let settings: ConfigDirSettings
+    let settings: Omit<ConfigDirSettings, 'activeFromBackend'>
     if (window.datawise?.config) {
-        settings = await window.datawise.config.getSettings()
+        const desktop = await window.datawise.config.getSettings()
+        settings = {
+            configured: desktop.configured,
+            resolved: desktop.resolved,
+            defaultPath: desktop.defaultPath,
+            canChange: desktop.canChange,
+            recentWorkspaces: desktop.recentWorkspaces ?? EMPTY_RECENT,
+        }
     } else {
         settings = {
             configured: null,
-            resolved: health?.result?.configDir ?? '',
+            resolved: activeFromBackend,
             defaultPath: '',
             canChange: false,
             recentWorkspaces: EMPTY_RECENT,
         }
     }
 
-    const root = settings.resolved || health?.result?.configDir || ''
+    // 布局与“当前实际读取”对齐，避免把仅偏好、尚未生效的路径当成真目录
+    const root = activeFromBackend || settings.resolved || ''
 
     return {
         ...settings,
+        activeFromBackend,
         layout: resolveDataDirectoryLayout(root),
     }
 }
