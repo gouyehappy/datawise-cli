@@ -47,6 +47,15 @@ public final class ConnectionEnvironmentSupport {
         entity.setEnvCustom(normalized.envCustom());
     }
 
+    /** Whether the connection is tagged as development. */
+    public static boolean isDevelopment(ConnectionEntity entity) {
+        if (entity == null) {
+            return true;
+        }
+        NormalizedEnvironment normalized = normalize(entity.getEnv(), entity.getEnvCustom());
+        return DEV.equals(normalized.env());
+    }
+
     /** Whether the connection is tagged as production (incl. custom labels containing "prod"). */
     public static boolean isProduction(ConnectionEntity entity) {
         if (entity == null) {

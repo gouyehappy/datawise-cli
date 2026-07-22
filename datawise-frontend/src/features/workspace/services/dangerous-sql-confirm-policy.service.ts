@@ -46,6 +46,9 @@ export function shouldConfirmDangerousSql(
     if (context.env === 'prod') {
         return true
     }
+    if (context.env === 'dev') {
+        return false
+    }
     if (!context.preferences.confirmEnabled) {
         return false
     }

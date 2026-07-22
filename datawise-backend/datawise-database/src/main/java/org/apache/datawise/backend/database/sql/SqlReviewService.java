@@ -1,5 +1,6 @@
 package org.apache.datawise.backend.database.sql;
 
+import org.apache.datawise.backend.common.support.ConnectionEnvironmentSupport;
 import org.apache.datawise.backend.connector.api.support.SqlWriteClassifier;
 import org.apache.datawise.sqlparser.ExplainSqlSupport;
 import org.apache.datawise.sqlparser.analysis.SqlAnalysisSupport;
@@ -114,8 +115,19 @@ public class SqlReviewService {
             ));
         }
 
-        boolean blocked = findings.stream().anyMatch(f -> "error".equals(f.severity()));
+        boolean devEnvironment = isDevEnvironment(request);
+        boolean blocked = !devEnvironment
+                && findings.stream().anyMatch(f -> "error".equals(f.severity()));
         return new SqlReviewResultDto(!blocked, requiresApproval, findings);
+    }
+
+    private boolean isDevEnvironment(SqlReviewRequest request) {
+        if (request.connectionId() == null || request.connectionId().isBlank()) {
+            return false;
+        }
+        return connectionVisibilityService.resolveConnectionEntity(request.connectionId())
+                .map(ConnectionEnvironmentSupport::isDevelopment)
+                .orElse(false);
     }
 
     private boolean requiresProductionApproval(SqlReviewRequest request, String sql) {

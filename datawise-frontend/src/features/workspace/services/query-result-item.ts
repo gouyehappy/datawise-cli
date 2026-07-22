@@ -8,6 +8,24 @@ import {
     isExplainStatement,
     parseExplainPlanResult,
 } from '@/features/workspace/services/explain-plan.service'
+import {isNonGridResult} from '@/features/workspace/services/query-result-batch.utils'
+
+export function resolveQueryResultTabLabel(item: QueryResultItem, index: number): string {
+    const sql = item.sql ?? ''
+    if (isExplainAnalyzeStatement(sql)) {
+        return t('queryResult.explainPlanAnalyzeTab', {n: index + 1})
+    }
+    if (isExplainStatement(sql)) {
+        return t('queryResult.explainPlanEstimateTab', {n: index + 1})
+    }
+    if (item.batchEntries?.length) {
+        return item.label
+    }
+    if (isNonGridResult(item) && item.status === 'success') {
+        return t('queryResult.execTab', {n: index + 1})
+    }
+    return t('queryResult.resultTab', {n: index + 1})
+}
 
 /** 将 ExecuteSqlResult 转为结果 Tab 条目；sql 优先用客户端记录的完整执行语句 */
 export function buildSuccessQueryResultItem(
@@ -19,11 +37,7 @@ export function buildSuccessQueryResultItem(
     const sql = resolveStoredQuerySql(result.sql, executedSql)
     const item: QueryResultItem = {
         id: `result-${index}-${Date.now()}`,
-        label: isExplainAnalyzeStatement(sql)
-            ? t('queryResult.explainPlanAnalyzeTab', {n: index + 1})
-            : isExplainStatement(sql)
-                ? t('queryResult.explainPlanEstimateTab', {n: index + 1})
-                : t('queryResult.resultTab', {n: index + 1}),
+        label: '',
         sql,
         columns: result.columns,
         rows: result.rows,
@@ -39,6 +53,7 @@ export function buildSuccessQueryResultItem(
         pageOffset: result.pageOffset,
         pageSize: result.pageSize,
     }
+    item.label = resolveQueryResultTabLabel(item, index)
 
     if (isExplainStatement(sql)) {
         const explainPlan = parseExplainPlanResult(result.columns, result.rows, dbType)

@@ -54,7 +54,9 @@ public class JdbcStatementExecutor {
             boolean hasResult = statement.execute(trimmed);
             if (!hasResult) {
                 long duration = System.currentTimeMillis() - start;
-                return new ExecuteSqlResult(trimmed, 0, duration, List.of(), List.of(), null, null, null, null, null, null);
+                int affected = statement.getUpdateCount();
+                int rowCount = affected >= 0 ? affected : 0;
+                return new ExecuteSqlResult(trimmed, rowCount, duration, List.of(), List.of(), null, null, null, null, null, null);
             }
             try (ResultSet rs = statement.getResultSet()) {
                 TableDataResult tableData = JdbcResultSetMapper.mapAll(rs);

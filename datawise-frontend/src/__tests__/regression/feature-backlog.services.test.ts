@@ -278,6 +278,22 @@ describe('dangerous-sql-confirm-policy.service', () => {
         assert.equal(matchesTableGlob('orders', 'staging_orders'), false)
     })
 
+    it('skips confirmation on development without whitelist', () => {
+        const preview = analyzeDangerousSql('DELETE FROM staging_orders')!
+        assert.equal(shouldConfirmDangerousSql(preview, {
+            env: 'dev',
+            preferences: DEFAULT_DANGEROUS_SQL_PREFERENCES,
+        }), false)
+    })
+
+    it('still confirms on staging with default preferences', () => {
+        const preview = analyzeDangerousSql('DELETE FROM staging_orders')!
+        assert.equal(shouldConfirmDangerousSql(preview, {
+            env: 'staging',
+            preferences: DEFAULT_DANGEROUS_SQL_PREFERENCES,
+        }), true)
+    })
+
     it('skips confirmation for whitelisted tables on dev', () => {
         const preview = analyzeDangerousSql('DELETE FROM staging_orders')!
         assert.ok(preview)

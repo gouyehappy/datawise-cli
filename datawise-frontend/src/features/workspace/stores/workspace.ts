@@ -5,6 +5,7 @@ import {defineStore} from 'pinia'
 import {computed, ref} from 'vue'
 import type {DbType, StatusSnapshot, WorkspaceTab} from '@/core/types'
 import {t} from '@/i18n'
+import {resolveQueryResultTabLabel} from '@/features/workspace/services/query-result-item'
 import type {ConsoleQueryState, QueryResultItem} from '@/features/workspace/types'
 import type {WorkspaceTabSnapshot} from '@/shared/config/app-config.types'
 import type {PlatformFeatureId} from '@/features/platform/types/platform.types'
@@ -1698,7 +1699,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
     function renumberResultLabels(results: QueryResultItem[]) {
         results.forEach((item, index) => {
-            item.label = t('queryResult.resultTab', {n: index + 1})
+            item.label = resolveQueryResultTabLabel(item, index)
         })
     }
 

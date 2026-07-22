@@ -4,7 +4,9 @@ import org.apache.datawise.backend.model.ConnectionEntity;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConnectionEnvironmentSupportTest {
 
@@ -37,6 +39,17 @@ class ConnectionEnvironmentSupportTest {
         var normalized = ConnectionEnvironmentSupport.normalize("preprod", null);
         assertEquals(ConnectionEnvironmentSupport.CUSTOM, normalized.env());
         assertEquals("preprod", normalized.envCustom());
+    }
+
+    @Test
+    void detectsDevelopmentConnection() {
+        ConnectionEntity dev = new ConnectionEntity();
+        dev.setEnv("dev");
+        assertTrue(ConnectionEnvironmentSupport.isDevelopment(dev));
+
+        ConnectionEntity prod = new ConnectionEntity();
+        prod.setEnv("prod");
+        assertFalse(ConnectionEnvironmentSupport.isDevelopment(prod));
     }
 
     @Test

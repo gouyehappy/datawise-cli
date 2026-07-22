@@ -39,6 +39,7 @@ import {
     canCompareQueryResults,
 } from '@/features/workspace/services/query-result-diff.service'
 import {canVisualizeQueryResult} from '@/features/workspace/services/query-result-chart.service'
+import {isNonGridResult} from '@/features/workspace/services/query-result-batch.utils'
 
 const MESSAGES_WIDTH_DEFAULT = 280
 const MESSAGES_WIDTH_MIN = 180
@@ -364,6 +365,13 @@ const canShowResultChart = computed(() => {
   if (!result || result.status !== 'success') return false
   if (result.explainPlan?.length || result.batchEntries?.length) return false
   return canVisualizeQueryResult(result.columns, result.rows)
+})
+
+const showExecResultPane = computed(() => {
+  const result = activeResult.value
+  if (!result || result.status !== 'success') return false
+  if (result.explainPlan?.length || result.batchEntries?.length) return false
+  return isNonGridResult(result)
 })
 
 function onGenerateDml(rows: TableRow[]) {
@@ -870,6 +878,24 @@ watch(
         :diff="activeDiffView"
         @exit="exitDiffMode"
     />
+
+    <div v-else-if="showExecResultPane" class="exec-result-pane">
+      <p class="exec-result-pane__title">{{ t('queryResult.execResultTitle') }}</p>
+      <p class="exec-result-pane__rows">{{ t('queryResult.dmlAffectedRows', {count: activeResult?.total ?? 0}) }}</p>
+      <p
+          class="exec-result-pane__duration"
+          :class="{ 'query-duration--slow': isSlowQueryDuration(activeResult?.durationMs ?? 0) }"
+      >
+        {{ t('queryResult.messageSuccess', {duration: activeResult?.durationMs ?? 0}) }}
+      </p>
+      <details v-if="activeResult?.sql?.trim()" class="exec-result-pane__sql" open>
+        <summary class="exec-result-pane__sql-summary">
+          <DwIcon class="exec-result-pane__chevron" name="chevron-down" size="xs" :stroke-width="1.5"/>
+          <span>{{ t('queryResult.failedSql') }}</span>
+        </summary>
+        <pre class="exec-result-pane__code">{{ activeResult.sql }}</pre>
+      </details>
+    </div>
 
     <div v-else-if="activeResult" class="result-grid-pane">
       <QueryResultAiSummaryPanel
@@ -1383,6 +1409,61 @@ watch(
   display: flex;
   flex-direction: column;
   gap: var(--dw-space-6);
+}
+
+.exec-result-pane {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--dw-space-7) var(--dw-space-8) var(--dw-space-8);
+  color: var(--dw-text);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-4);
+}
+
+.exec-result-pane__title {
+  margin: 0;
+  font-size: var(--dw-text-md);
+  font-weight: 700;
+}
+
+.exec-result-pane__rows {
+  margin: 0;
+  font-size: var(--dw-text-lg);
+  font-weight: 600;
+  color: var(--dw-primary);
+}
+
+.exec-result-pane__duration {
+  margin: 0;
+  font-size: var(--dw-text-sm);
+  color: var(--dw-text-muted);
+}
+
+.exec-result-pane__sql {
+  margin-top: var(--dw-space-4);
+}
+
+.exec-result-pane__sql-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-gap-sm);
+  cursor: pointer;
+  font-size: var(--dw-text-sm);
+  color: var(--dw-text-muted);
+  user-select: none;
+}
+
+.exec-result-pane__code {
+  margin: var(--dw-space-3) 0 0;
+  padding: var(--dw-pad-tight);
+  border-radius: var(--dw-control-radius-sm);
+  background: var(--dw-bg-subtle);
+  font-family: var(--dw-font-mono);
+  font-size: var(--dw-text-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .error-callout {

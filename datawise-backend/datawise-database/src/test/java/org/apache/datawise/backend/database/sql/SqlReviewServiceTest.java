@@ -30,6 +30,30 @@ class SqlReviewServiceTest {
     }
 
     @Test
+    void allowsDangerousDmlOnDevelopmentConnection() {
+        ConnectionVisibilityService visibility = mock(ConnectionVisibilityService.class);
+        ConnectionEntity dev = new ConnectionEntity();
+        dev.setId("conn-dev");
+        dev.setEnv("dev");
+        when(visibility.resolveConnectionEntity("conn-dev")).thenReturn(Optional.of(dev));
+
+        SqlReviewService service = new SqlReviewService(
+                visibility,
+                mock(ProductionWriteGuardService.class),
+                mock(SqlService.class)
+        );
+
+        SqlReviewResultDto result = service.review(new SqlReviewRequest(
+                "DELETE FROM users WHERE id = 1",
+                "conn-dev",
+                "app"
+        ));
+
+        assertTrue(result.allowed());
+        assertTrue(result.findings().stream().anyMatch(f -> "DANGEROUS_DML".equals(f.code())));
+    }
+
+    @Test
     void blocksDeleteWithoutWhere() {
         ConnectionVisibilityService visibility = mock(ConnectionVisibilityService.class);
         when(visibility.resolveConnectionEntity(anyString())).thenReturn(Optional.empty());
