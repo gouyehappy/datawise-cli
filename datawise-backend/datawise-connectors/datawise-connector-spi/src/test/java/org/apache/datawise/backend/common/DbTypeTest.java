@@ -66,6 +66,7 @@ class DbTypeTest {
         assertTrue(DbType.MYSQL.isCatalogListed());
         assertTrue(DbType.MONGODB.isCatalogListed());
         assertTrue(DbType.HIVE.isCatalogListed());
+        assertTrue(DbType.KUDU.isCatalogListed());
         assertTrue(DbType.SQLSERVER.isCatalogListed());
         assertTrue(DbType.ORACLE.isCatalogListed());
         assertTrue(DbType.DM.isCatalogListed());
@@ -96,7 +97,7 @@ class DbTypeTest {
         assertTrue(DbType.SSH.isCatalogListed());
         assertTrue(DbType.GAUSSDB.isCatalogListed());
         assertEquals(DbType.DM, DbType.find("dameng").orElseThrow());
-        assertEquals(39, DbType.catalogListed().size());
+        assertEquals(40, DbType.catalogListed().size());
     }
 
     @Test
@@ -124,6 +125,11 @@ class DbTypeTest {
     @Test
     void find_resolvesHive() {
         assertEquals(DbType.HIVE, DbType.find("hive").orElseThrow());
+    }
+
+    @Test
+    void find_resolvesKudu() {
+        assertEquals(DbType.KUDU, DbType.find("kudu").orElseThrow());
     }
 
     @Test

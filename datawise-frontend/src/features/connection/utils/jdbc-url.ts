@@ -1,10 +1,58 @@
 import type {DbType} from '@/core/types'
 
+function readAdvancedLine(advancedConfig: string | undefined, key: string): string | undefined {
+    if (!advancedConfig?.trim()) return undefined
+    const prefix = `${key}=`
+    for (const line of advancedConfig.split(/\r?\n/)) {
+        const trimmed = line.trim()
+        if (!trimmed || trimmed.startsWith('#')) continue
+        if (trimmed.toLowerCase().startsWith(prefix.toLowerCase())) {
+            return trimmed.slice(prefix.length).trim()
+        }
+    }
+    return undefined
+}
+
+function finalizeHive2Url(
+    dbType: DbType,
+    url: string,
+    options?: {user?: string; auth?: string; advancedConfig?: string},
+): string {
+    if (dbType !== 'hive') return url
+    let resolved = url.replace(/;auth=LDAP/gi, '')
+    if (dbType === 'hive' && !/(?:[;?&]|^)auth=/i.test(resolved)) {
+        const auth = readAdvancedLine(options?.advancedConfig, 'auth')
+            ?? (options?.auth && options.auth !== 'NONE' && options.user?.trim() ? 'LDAP' : undefined)
+        if (auth) resolved = `${resolved};auth=${auth}`
+    }
+    for (const key of ['ssl', 'transportMode', 'httpPath']) {
+        const value = readAdvancedLine(options?.advancedConfig, key)
+        if (value && !new RegExp(`(?:[;?&]|^)${key}=`, 'i').test(resolved)) {
+            resolved = `${resolved};${key}=${value}`
+        }
+    }
+    return resolved
+}
+
+function buildHive2Url(
+    dbType: DbType,
+    host: string,
+    port: string,
+    extra?: {database?: string},
+    options?: {user?: string; auth?: string; advancedConfig?: string},
+): string {
+    const db = extra?.database?.trim() || ''
+    const base = db
+        ? `jdbc:hive2://${host}:${port}/${db}`
+        : `jdbc:hive2://${host}:${port}/`
+    return finalizeHive2Url(dbType, base, options)
+}
+
 export function buildJdbcUrl(
     dbType: DbType,
     host: string,
     port: string,
-    extra?: { sid?: string; database?: string },
+    extra?: { sid?: string; database?: string; user?: string; auth?: string; advancedConfig?: string },
 ) {
     switch (dbType) {
         case 'mysql':
@@ -127,10 +175,10 @@ export function buildJdbcUrl(
             return `jdbc:flink://${host}:${port}`
         case 'trino':
             return `jdbc:trino://${host}:${port}`
-        case 'hive': {
-            const db = extra?.database?.trim()
-            return db ? `jdbc:hive2://${host}:${port}/${db}` : `jdbc:hive2://${host}:${port}/`
-        }
+        case 'hive':
+            return buildHive2Url(dbType, host, port, extra, extra)
+        case 'kudu':
+            return host.includes(',') ? `kudu://${host}` : `kudu://${host}:${port}`
         default:
             return `jdbc:${dbType}://${host}:${port}/`
     }

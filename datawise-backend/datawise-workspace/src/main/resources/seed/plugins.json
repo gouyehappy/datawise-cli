@@ -171,6 +171,15 @@
     "category": "datasource"
   },
   {
+    "id": "p-kudu-explorer",
+    "name": "Kudu 连接",
+    "version": "1.0.0",
+    "author": "DataWise",
+    "description": "通过原生 kudu-client 连接 Apache Kudu Master，浏览表结构与数据。",
+    "enabled": true,
+    "category": "datasource"
+  },
+  {
     "id": "p-sqlserver-explorer",
     "name": "SQL Server 连接",
     "version": "1.0.0",

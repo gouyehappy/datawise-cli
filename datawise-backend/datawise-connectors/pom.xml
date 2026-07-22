@@ -53,6 +53,7 @@
         <module>datawise-connector-presto</module>
         <module>datawise-connector-trino</module>
         <module>datawise-connector-hive</module>
+        <module>datawise-connector-kudu</module>
         <module>datawise-connector-flink</module>
         <module>datawise-connector-gaussdb</module>
         <module>datawise-connector-all</module>

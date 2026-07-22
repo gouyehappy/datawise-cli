@@ -182,7 +182,7 @@ export function groupJdbcDrivers(drivers: JdbcDriverCached[]): DriverFamilyGroup
 
     const resolveFamily = (fileName: string, bundleDir?: string): {id: string; label: string} => {
         if (bundleDir) {
-            return {id: bundleDir.toLowerCase(), label: bundleDir === 'hive' ? 'Apache Hive' : bundleDir}
+            return {id: bundleDir.toLowerCase(), label: bundleDir === 'hive' ? 'Apache Hive' : bundleDir === 'kudu' ? 'Apache Kudu' : bundleDir}
         }
         for (const entry of ARTIFACT_LABELS) {
             if (entry.match.test(fileName)) {

@@ -249,6 +249,11 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.datawise</groupId>
+                <artifactId>datawise-connector-kudu</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.datawise</groupId>
                 <artifactId>datawise-connector-flink</artifactId>
                 <version>${project.version}</version>
             </dependency>

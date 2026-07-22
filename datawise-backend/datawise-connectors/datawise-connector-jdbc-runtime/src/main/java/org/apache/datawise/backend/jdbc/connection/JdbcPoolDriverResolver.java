@@ -1,16 +1,23 @@
 package org.apache.datawise.backend.jdbc.connection;
 
-import org.apache.datawise.backend.model.ConnectionEntity;
 import org.apache.datawise.backend.jdbc.support.JdbcDriverDefaultsProvider;
 import org.apache.datawise.backend.jdbc.support.JdbcDriverLoader;
+import org.apache.datawise.backend.model.ConnectionEntity;
 
 import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Resolves JDBC driver coordinates and connection properties for pool/direct open paths.
  */
 public final class JdbcPoolDriverResolver {
+
+    private static final Set<String> URL_SESSION_KEYS = Set.of(
+            "auth", "ssl", "transportmode", "httppath", "ssltruststore", "truststorepassword",
+            "ssltruststorepwd", "authmech", "user", "password"
+    );
 
     private JdbcPoolDriverResolver() {
     }
@@ -18,19 +25,52 @@ public final class JdbcPoolDriverResolver {
     public record ResolvedDriver(String mavenCoordinates, String driverClass) {
     }
 
-    /** Builds JDBC {@link Properties} from connection auth settings. */
+    /** Builds JDBC {@link Properties} from connection auth settings and optional advanced config. */
     public static Properties buildConnectionProperties(ConnectionEntity entity) {
         Properties properties = new Properties();
+        applyAdvancedConfig(properties, entity != null ? entity.getAdvancedConfig() : null);
+        if (entity == null) {
+            return properties;
+        }
+        String jdbcUrl = JdbcUrlBuilder.buildJdbcUrl(entity);
+        if (Hive2JdbcUrlSupport.credentialsInUrl(entity, jdbcUrl)) {
+            return properties;
+        }
         if (entity.getAuthType() != null && "NONE".equalsIgnoreCase(entity.getAuthType())) {
             return properties;
         }
-        if (entity.getUsername() != null) {
+        if (entity.getUsername() != null && !entity.getUsername().isBlank()) {
             properties.setProperty("user", entity.getUsername());
         }
         if (entity.getPassword() != null) {
             properties.setProperty("password", entity.getPassword());
         }
         return properties;
+    }
+
+    private static void applyAdvancedConfig(Properties properties, String advancedConfig) {
+        if (advancedConfig == null || advancedConfig.isBlank()) {
+            return;
+        }
+        for (String line : advancedConfig.split("\\R")) {
+            if (line == null) {
+                continue;
+            }
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            int separator = trimmed.indexOf('=');
+            if (separator <= 0 || separator >= trimmed.length() - 1) {
+                continue;
+            }
+            String key = trimmed.substring(0, separator).trim();
+            String value = trimmed.substring(separator + 1).trim();
+            if (URL_SESSION_KEYS.contains(key.toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            properties.setProperty(key, value);
+        }
     }
 
     /**

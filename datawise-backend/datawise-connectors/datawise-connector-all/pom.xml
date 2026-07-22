@@ -157,6 +157,10 @@
         </dependency>
         <dependency>
             <groupId>org.apache.datawise</groupId>
+            <artifactId>datawise-connector-kudu</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.datawise</groupId>
             <artifactId>datawise-connector-flink</artifactId>
         </dependency>
         <dependency>

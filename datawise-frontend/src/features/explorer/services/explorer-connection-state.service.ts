@@ -8,6 +8,7 @@ const NON_JDBC_POOL_DB_TYPES = new Set([
     'kafka',
     'yarn',
     'mongodb',
+    'kudu',
     'ssh',
 ])
 

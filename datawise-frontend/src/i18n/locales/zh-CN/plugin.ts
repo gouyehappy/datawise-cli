@@ -256,6 +256,10 @@ export default {
             name: 'Hive 连接',
             description: '在新建连接时可选 Apache Hive，浏览 catalog/schema 与表。',
         },
+        'p-kudu-explorer': {
+            name: 'Kudu 连接',
+            description: '通过原生 kudu-client 连接 Apache Kudu Master，浏览表结构与数据。',
+        },
         'p-sqlserver-explorer': {
             name: 'SQL Server 连接',
             description: '在新建连接时可选 Microsoft SQL Server，使用 JDBC 方言与 Explorer。',

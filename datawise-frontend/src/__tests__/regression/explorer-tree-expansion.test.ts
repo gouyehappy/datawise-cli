@@ -101,7 +101,32 @@ describe('explorer-tree-expansion', () => {
     it('collapses expanded node when children are loaded', () => {
         const mongoDb = tree[1].children![0]
         mongoDb.expanded = true
+        const tablesFolder = mongoDb.children![0]
+        tablesFolder.children = [
+            node({id: 'tbl-events', label: 'events', type: 'table'}),
+        ]
         assert.equal(shouldCollapseOnToggle(mongoDb, 'mongodb'), true)
+    })
+
+    it('reloads mongo/kudu database while tables folder is still empty', () => {
+        const mongoDb = node({
+            id: 'db-admin-fresh',
+            label: 'admin',
+            type: 'database',
+            children: [
+                node({id: 'folder-tables-mongo-fresh', label: 'tables', type: 'folder', children: []}),
+            ],
+        })
+        assert.equal(needsLazyLoad(mongoDb, 'mongodb'), true)
+        const kuduDb = node({
+            id: 'db-default',
+            label: 'default',
+            type: 'database',
+            children: [
+                node({id: 'folder-tables-kudu', label: 'tables', type: 'folder', children: []}),
+            ],
+        })
+        assert.equal(needsLazyLoad(kuduDb, 'kudu'), true)
     })
 
     it('does not load connection on single select', () => {

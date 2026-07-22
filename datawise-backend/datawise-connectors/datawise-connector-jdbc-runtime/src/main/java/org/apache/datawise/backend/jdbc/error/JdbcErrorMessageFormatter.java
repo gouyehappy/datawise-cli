@@ -63,6 +63,15 @@ public final class JdbcErrorMessageFormatter {
                     + "Details: " + message;
         }
 
+        if (lower.contains("connection reset") && entity != null
+                && "hive".equalsIgnoreCase(entity.getDbType())) {
+            String target = describeTarget(entity);
+            return "HiveServer2 closed the connection during the JDBC handshake"
+                    + (target.isBlank() ? "" : " (" + target + ")")
+                    + ". Check auth=LDAP or Kerberos settings and TLS (ssl=true) in advanced config. "
+                    + "Details: " + message;
+        }
+
         return message;
     }
 

@@ -31,11 +31,14 @@ export function useConnectionForm(dbType: DbType) {
     }
 
     watch(
-        () => [form.host, form.port, form.sid, form.database] as const,
+        () => [form.host, form.port, form.sid, form.database, form.user, form.auth, form.advancedConfig] as const,
         () => {
             form.url = buildJdbcUrl(form.dbType ?? dbType, form.host, form.port, {
                 sid: form.sid,
                 database: form.database,
+                user: form.user,
+                auth: form.auth,
+                advancedConfig: form.advancedConfig,
             })
         },
         {immediate: true},

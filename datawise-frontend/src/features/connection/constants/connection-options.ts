@@ -54,6 +54,10 @@ export const DRIVER_PRESETS: Partial<Record<DbType, DriverPreset>> = {
         jar: 'kylin-jdbc-5.0.3.jar',
         driverClass: 'org.apache.kylin.jdbc.Driver',
     },
+    hive: {
+        jar: 'hive-jdbc-3.1.2.jar',
+        driverClass: 'org.apache.hive.jdbc.HiveDriver',
+    },
     clickhouse: {
         jar: 'clickhouse-jdbc-0.6.5-all.jar',
         driverClass: 'com.clickhouse.jdbc.ClickHouseDriver',

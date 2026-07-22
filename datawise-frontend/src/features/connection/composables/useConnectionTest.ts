@@ -29,7 +29,7 @@ export function useConnectionTest(
             testing.value = false
             return
         }
-        if (payload.dbType !== 'redis' && payload.auth !== 'NONE' && !payload.user?.trim()) {
+        if (payload.dbType !== 'redis' && payload.dbType !== 'kudu' && payload.auth !== 'NONE' && !payload.user?.trim()) {
             testOk.value = false
             testMessage.value = t('connection.testUserRequired')
             testing.value = false

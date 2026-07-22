@@ -14,6 +14,7 @@ const KNOWN_ACCENTS: Partial<Record<DbType, string>> = {
     yarn: '#FF9900',
     elasticsearch: '#005571',
     hive: '#fdee21',
+    kudu: '#f96c00',
     trino: '#dd00a1',
     presto: '#5890ff',
     flink: '#e6526f',

@@ -150,6 +150,22 @@ export function buildExplorerLoadChildKey(
     return `${connectionId}:${nodeId}:${offset}:${refresh}`
 }
 
+/** MongoDB / Kudu 等：database 下 tables 文件夹为空时需拉取表列表 */
+const DOCUMENT_SCHEMA_DB_TYPES = new Set<DbType>(['mongodb', 'kudu'])
+
+function documentDatabaseNeedsLoad(node: TreeNode, connectionDbType?: DbType): boolean {
+    if (!connectionDbType || !DOCUMENT_SCHEMA_DB_TYPES.has(connectionDbType)) {
+        return false
+    }
+    const tablesFolder = node.children?.find(
+        (child) => child.type === 'folder' && child.label.toLowerCase() === 'tables',
+    )
+    if (!tablesFolder) {
+        return !node.children?.length
+    }
+    return !tablesFolder.children?.length && !isExplorerFolderLoaded(tablesFolder)
+}
+
 /** catalog 下应是 schema 节点，而非历史缓存里的 tables 文件夹 */
 function catalogNeedsSchemaLoad(node: TreeNode, connectionDbType?: DbType): boolean {
     const children = node.children ?? []
@@ -176,6 +192,9 @@ export function needsLazyLoad(node: TreeNode, connectionDbType?: DbType): boolea
         case 'table':
             return !node.children?.length
         case 'database':
+            if (documentDatabaseNeedsLoad(node, connectionDbType)) {
+                return true
+            }
             if (catalogSchema) {
                 return catalogNeedsSchemaLoad(node, connectionDbType)
             }

@@ -13,6 +13,7 @@ export const DB_TYPE_IDENTIFIER_QUOTES: Record<DbType, string> = {
     doris: '`',
     clickhouse: '`',
     hive: '`',
+    kudu: '`',
     trino: '"',
     presto: '"',
     postgresql: '"',

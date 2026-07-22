@@ -11,7 +11,7 @@ public final class JdbcUrlBuilder {
 
     public static String buildJdbcUrl(ConnectionEntity entity) {
         if (entity.getJdbcUrl() != null && !entity.getJdbcUrl().isBlank()) {
-            return entity.getJdbcUrl().trim();
+            return Hive2JdbcUrlSupport.finalizeUrl(entity, entity.getJdbcUrl().trim());
         }
         return buildJdbcUrlWithEndpoint(
                 entity,
@@ -22,7 +22,10 @@ public final class JdbcUrlBuilder {
 
     public static String buildJdbcUrlWithEndpoint(ConnectionEntity entity, String host, int port) {
         if (entity.getJdbcUrl() != null && !entity.getJdbcUrl().isBlank()) {
-            return rewriteJdbcUrlHostPort(entity.getJdbcUrl().trim(), host, port);
+            return Hive2JdbcUrlSupport.finalizeUrl(
+                    entity,
+                    rewriteJdbcUrlHostPort(entity.getJdbcUrl().trim(), host, port)
+            );
         }
         DbType dbType = DbType.parse(entity.getDbType());
         String database = entity.getDatabaseName() != null ? entity.getDatabaseName() : "";
@@ -108,6 +111,7 @@ public final class JdbcUrlBuilder {
                 yield "jdbc:sybase:Tds:" + host + ":" + port + "/" + db + "?charset=cp936";
             }
             case PHOENIX -> "jdbc:phoenix:" + host + ":" + port;
+            case HIVE -> Hive2JdbcUrlSupport.buildUrl(entity, host, port);
             case CACHEDB -> "jdbc:Cache://" + host + ":" + port;
             case H2 -> {
                 String db = database.isBlank() ? "test" : database;
@@ -144,6 +148,10 @@ public final class JdbcUrlBuilder {
         entity.setPort(config.getPort());
         entity.setDatabaseName(config.getDatabase());
         entity.setSid(config.getSid());
+        entity.setAuthType(config.getAuth());
+        entity.setUsername(config.getUser());
+        entity.setPassword(config.getPassword());
+        entity.setAdvancedConfig(config.getAdvancedConfig());
         return buildJdbcUrl(entity);
     }
 
@@ -160,6 +168,7 @@ public final class JdbcUrlBuilder {
             case TDENGINE -> "6041";
             case SYBASE -> "5000";
             case PHOENIX -> "8765";
+            case HIVE -> "10000";
             case CACHEDB -> "1972";
             case H2 -> "9092";
             case HSQL -> "9001";

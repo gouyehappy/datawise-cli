@@ -94,6 +94,7 @@ public final class LakehouseSqlSupport {
             return true;
         }
         return DbType.HIVE.matches(dbType)
+                || DbType.KUDU.matches(dbType)
                 || DbType.FLINK.matches(dbType)
                 || DbType.TRINO.matches(dbType)
                 || DbType.PRESTO.matches(dbType)

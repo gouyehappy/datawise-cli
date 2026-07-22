@@ -173,6 +173,11 @@ const CUSTOM_ICONS: Record<string, DbBrandIconSource> = {
         hex: '#F97316',
         label: 'PHX',
     },
+    kudu: {
+        title: 'Apache Kudu',
+        hex: '#F96C00',
+        label: 'KDU',
+    },
     cachedb: {
         title: 'InterSystems Caché',
         hex: '#333695',
@@ -244,6 +249,7 @@ const ALIASES: Record<string, string> = {
     mssql: 'sqlserver',
     'apache-doris': 'doris',
     'apache-hive': 'hive',
+    'apache-kudu': 'kudu',
     'apache-kafka': 'kafka',
     'apache-flink': 'flink',
     dameng: 'dm',

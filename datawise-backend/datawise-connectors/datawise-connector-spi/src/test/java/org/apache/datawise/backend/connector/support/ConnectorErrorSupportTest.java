@@ -21,5 +21,22 @@ class ConnectorErrorSupportTest {
 
         assertTrue(message.contains("Redis authentication failed"));
         assertTrue(message.contains("127.0.0.1:6379"));
+        assertTrue(message.contains("NOAUTH Authentication required"));
+    }
+
+    @Test
+    void includesRootErrorDetailsForGenericFailures() {
+        ConnectionEntity entity = new ConnectionEntity();
+        entity.setHost("10.0.0.1");
+        entity.setPort("7051");
+
+        String message = ConnectorErrorSupport.toUserMessage(
+                entity,
+                new RuntimeException("Could not find the requested table: impala::default.sample"),
+                ConnectorErrorTemplate.kudu()
+        );
+
+        assertTrue(message.contains("Kudu operation failed"));
+        assertTrue(message.contains("Could not find the requested table"));
     }
 }

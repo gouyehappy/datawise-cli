@@ -27,22 +27,41 @@ public final class ConnectorErrorSupport {
         String lower = root.toLowerCase(Locale.ROOT);
         if (lower.contains("connection refused") || lower.contains("connect timed out")
                 || lower.contains("timed out") || lower.contains("timeout")) {
-            return "Cannot reach " + template.productName()
-                    + (target.isBlank() ? "" : " at " + target)
-                    + ". " + template.unreachableHint();
+            return withDetails(
+                    "Cannot reach " + template.productName()
+                            + (target.isBlank() ? "" : " at " + target)
+                            + ". " + template.unreachableHint(),
+                    root
+            );
         }
         if (lower.contains("unknown host") || lower.contains("name or service not known")) {
-            return template.productName() + " host could not be resolved"
-                    + (target.isBlank() ? "" : " (" + target + ").")
-                    + " " + template.unknownHostHint();
+            return withDetails(
+                    template.productName() + " host could not be resolved"
+                            + (target.isBlank() ? "" : " (" + target + ").")
+                            + " " + template.unknownHostHint(),
+                    root
+            );
         }
-        if (template.authMatcher().test(lower)) {
-            return template.productName() + " authentication failed"
-                    + (target.isBlank() ? "" : " at " + target)
-                    + ". " + template.authHint();
+        if (template.authHint() != null && template.authMatcher().test(lower)) {
+            return withDetails(
+                    template.productName() + " authentication failed"
+                            + (target.isBlank() ? "" : " at " + target)
+                            + ". " + template.authHint(),
+                    root
+            );
         }
-        return template.productName() + " operation failed"
-                + (target.isBlank() ? "" : " at " + target)
-                + ". " + template.fallbackHint();
+        return withDetails(
+                template.productName() + " operation failed"
+                        + (target.isBlank() ? "" : " at " + target)
+                        + ". " + template.fallbackHint(),
+                root
+        );
+    }
+
+    private static String withDetails(String message, String root) {
+        if (root == null || root.isBlank() || message.contains(root)) {
+            return message;
+        }
+        return message + " Details: " + root.trim();
     }
 }

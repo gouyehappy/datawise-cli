@@ -53,4 +53,17 @@ public record ConnectorErrorTemplate(
                 false
         );
     }
+
+    public static ConnectorErrorTemplate kudu() {
+        return new ConnectorErrorTemplate(
+                "Kudu",
+                "Check Kudu master addresses, port 7051, and network.",
+                "Check master host(s), firewall/VPN, and that Kudu masters/tservers are running.",
+                "Check master addresses in connection settings.",
+                null,
+                "Check master addresses and Kudu cluster availability.",
+                lower -> lower.contains("auth") || lower.contains("kerberos"),
+                true
+        );
+    }
 }

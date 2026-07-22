@@ -71,7 +71,7 @@ const authOptions = computed(() =>
 
     <ConnectionFormField
         :label="t('connection.host')"
-        :hint="dbType === 'kafka' ? t('connection.hints.kafkaBootstrap') : dbType === 'yarn' ? t('connection.hints.yarnResourceManager') : dbType === 'ssh' ? t('connection.hints.sshHost') : undefined"
+        :hint="dbType === 'kafka' ? t('connection.hints.kafkaBootstrap') : dbType === 'yarn' ? t('connection.hints.yarnResourceManager') : dbType === 'ssh' ? t('connection.hints.sshHost') : dbType === 'kudu' ? t('connection.hints.kuduHost') : undefined"
     >
       <DwInput
           v-model="form.host"

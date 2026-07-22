@@ -16,6 +16,7 @@ public final class DbTypeFamily {
     );
     private static final Set<String> SQLSERVER_ALIASES = Set.of("sqlserver", "mssql");
     private static final Set<String> CATALOG_SCHEMA_FAMILY_IDS = Set.of("trino", "presto", "hive", "flink");
+    private static final Set<String> HIVE_FAMILY_IDS = Set.of("hive");
     private static final Set<String> TRINO_FAMILY_IDS = Set.of("trino", "presto");
     private static final Set<String> ORACLE_FAMILY_IDS = Set.of("oracle");
     private static final Set<String> DB2_FAMILY_IDS = Set.of("db2");
@@ -69,7 +70,17 @@ public final class DbTypeFamily {
     }
 
     public static boolean isHive(String dbType) {
-        return DbType.HIVE.matches(dbType);
+        return isHiveFamily(dbType);
+    }
+
+    /** Hive / Impala SQL dialects share HiveServer2 JDBC semantics. */
+    public static boolean isHiveFamily(String dbType) {
+        return HIVE_FAMILY_IDS.contains(DbType.normalizeId(dbType))
+                || DbType.HIVE.matches(dbType);
+    }
+
+    public static boolean isHiveFamily(DbType type) {
+        return type != null && isHiveFamily(type.id());
     }
 
     public static boolean isDb2Family(String dbType) {

@@ -21,6 +21,7 @@ export const PLUGIN_IDS = [
     'p-sqlite-explorer',
     'p-oracle-explorer',
     'p-hive-explorer',
+    'p-kudu-explorer',
     'p-sqlserver-explorer',
     'p-mariadb-explorer',
     'p-mysql-explorer',
@@ -96,6 +97,7 @@ const DB_TYPE_PLUGIN_MAP: Partial<Record<DbType, PluginId>> = {
     sqlite: 'p-sqlite-explorer',
     oracle: 'p-oracle-explorer',
     hive: 'p-hive-explorer',
+    kudu: 'p-kudu-explorer',
     sqlserver: 'p-sqlserver-explorer',
     mariadb: 'p-mariadb-explorer',
     mysql: 'p-mysql-explorer',
@@ -249,6 +251,11 @@ export const PLUGIN_REGISTRY: Record<PluginId, PluginRegistryMeta> = {
     },
     'p-hive-explorer': {
         tone: 'emerald',
+        surfaces: ['connectionForm', 'explorer'],
+        openModule: 'database',
+    },
+    'p-kudu-explorer': {
+        tone: 'amber',
         surfaces: ['connectionForm', 'explorer'],
         openModule: 'database',
     },

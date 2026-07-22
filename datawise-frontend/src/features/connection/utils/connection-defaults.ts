@@ -26,12 +26,12 @@ export function createDefaultConnection(
         storage: CONNECTION_STORAGE_OPTIONS[0],
         host: 'localhost',
         port,
-        auth: dbType === 'redis' || dbType === 'kafka'
+        auth: dbType === 'redis' || dbType === 'kafka' || dbType === 'kudu'
             ? CONNECTION_AUTH_OPTIONS[1]
             : dbType === 'ssh'
               ? CONNECTION_AUTH_OPTIONS[0]
               : CONNECTION_AUTH_OPTIONS[0],
-        user: dbType === 'redis' || dbType === 'kafka'
+        user: dbType === 'redis' || dbType === 'kafka' || dbType === 'kudu'
             ? ''
             : dbType === 'ssh'
               ? 'root'
@@ -61,5 +61,5 @@ export function isJdbcDriverRequired(
     catalogItem?: DatasourceDefinition | null,
 ): boolean {
     if (catalogItem) return catalogItem.jdbcDriverRequired
-    return dbType !== 'redis' && dbType !== 'kafka' && dbType !== 'mongodb' && dbType !== 'ssh'
+    return dbType !== 'redis' && dbType !== 'kafka' && dbType !== 'mongodb' && dbType !== 'ssh' && dbType !== 'kudu'
 }

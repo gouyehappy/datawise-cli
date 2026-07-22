@@ -217,6 +217,18 @@ export const DB_TYPE_CAPABILITIES: Partial<Record<DbType, DbTypeCapability>> = {
         sshTunnel: true,
         remoteShell: false,
     },
+    kudu: {
+        supported: true,
+        csvImport: false,
+        sqlExecute: false,
+        sqlExplain: false,
+        sessionMonitor: false,
+        sessionKill: false,
+        lockMonitor: false,
+        onlineDdl: false,
+        sshTunnel: false,
+        remoteShell: false,
+    },
     oceanbase: {
         supported: true,
         csvImport: true,

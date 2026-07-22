@@ -96,6 +96,7 @@ describe('db-brand-icon', () => {
             ['oscar', 'OS'],
             ['highgo', 'HG'],
             ['phoenix', 'PHX'],
+            ['kudu', 'KDU'],
             ['cachedb', 'Ca'],
             ['hsql', 'HSQ'],
         ]
@@ -110,7 +111,7 @@ describe('db-brand-icon', () => {
         const catalogTypes = [
             'mysql', 'oracle', 'postgresql', 'sqlserver', 'mariadb', 'clickhouse',
             'dm', 'oscar', 'presto', 'trino', 'db2', 'redis', 'kafka', 'mongodb',
-            'sqlite', 'hive', 'oceanbase', 'kingbase', 'greenplum', 'opengauss',
+            'sqlite', 'hive', 'kudu', 'oceanbase', 'kingbase', 'greenplum', 'opengauss',
             'highgo', 'gbase8a', 'elasticsearch', 'kylin', 'starrocks', 'doris',
             'tidb', 'tdengine', 'sybase', 'phoenix', 'cachedb', 'h2', 'hsql',
             'dameng', 'gaussdb', 'flink',

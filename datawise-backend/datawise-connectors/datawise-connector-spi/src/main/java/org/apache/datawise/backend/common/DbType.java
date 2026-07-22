@@ -29,6 +29,7 @@ public enum DbType {
     HIGHGO,
     SYBASE,
     HIVE,
+    KUDU,
     SQLITE3,
     OPENGAUSS,
     CLICKHOUSE,

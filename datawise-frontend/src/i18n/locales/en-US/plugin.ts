@@ -256,6 +256,10 @@ export default {
             name: 'Hive connections',
             description: 'Optional Apache Hive with catalog/schema and table browsing.',
         },
+        'p-kudu-explorer': {
+            name: 'Kudu connections',
+            description: 'Optional Apache Kudu via native kudu-client (master addresses, table browse).',
+        },
         'p-sqlserver-explorer': {
             name: 'SQL Server connections',
             description: 'Optional Microsoft SQL Server with JDBC dialect and Explorer.',

@@ -22,6 +22,7 @@ export type DbType =
     | 'mongodb'
     | 'sqlite'
     | 'hive'
+    | 'kudu'
     | 'oceanbase'
     | 'kingbase'
     | 'greenplum'
