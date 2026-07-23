@@ -115,6 +115,8 @@ html[data-ui-skin='ide'] :is(
 
 /* =============================================================================
    IDE — workbench split (Kafka / Redis / …)
+   Flush panes: only the column draws the middle divider. Child cards drop
+   every edge that would stack against head / sibling / page chrome.
    ============================================================================= */
 
 html[data-ui-skin='ide'] .dw-workbench-split {
@@ -126,40 +128,53 @@ html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--right {
     gap: 0 !important;
 }
 
-html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--left > :first-child {
-    border-right-width: 0 !important;
-    border-top-right-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-}
-
-html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--right > :first-child {
-    border-left-width: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-}
-
 html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--left {
     border-right: 1px solid var(--dw-seam-divider) !important;
 }
 
+html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--left > :first-child {
+    border-top-width: 0 !important;
+    border-right-width: 0 !important;
+    border-bottom-width: 0 !important;
+    border-left-width: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--right > :first-child {
+    border-top-width: 0 !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    border-bottom-width: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
 html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--right > * + * {
     border-top-width: 0 !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    box-shadow: none !important;
 }
 
 html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--right > *:not(:last-child) {
     border-bottom-width: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
 }
 
-/* Head meets first card (no double line under toolbar) */
-html[data-ui-skin='ide'] .dw-workbench-page__head + .dw-workbench-page__body .dw-workbench-split > .dw-workbench-col > :first-child,
-html[data-ui-skin='ide'] .dw-workbench-page__head + .dw-workbench-page__body > :first-child {
-    border-top-width: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
+html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--right > :last-child {
+    border-bottom-width: 0 !important;
+}
+
+/* Placeholder panels inside split: solid fill, no dashed “second frame” */
+html[data-ui-skin='ide'] .dw-workbench-split .dw-workbench-placeholder,
+html[data-ui-skin='ide'] .dw-workbench-split [class$='__placeholder'] {
+    border-style: solid !important;
+    border-color: transparent !important;
+    background: var(--dw-wb-card-bg);
 }
 
 /* =============================================================================
@@ -335,17 +350,10 @@ html[data-ui-skin='ide'] .lineage-panel__impact:last-child {
         border-bottom: 1px solid var(--dw-seam-divider) !important;
     }
 
-    html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--left > :first-child {
-        border-right-width: 1px !important;
-        border-bottom-width: 0 !important;
-        border-bottom-right-radius: 0 !important;
-        border-top-right-radius: 0 !important;
-    }
-
+    html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--left > :first-child,
     html[data-ui-skin='ide'] .dw-workbench-split > .dw-workbench-col--right > :first-child {
-        border-left-width: 1px !important;
-        border-top-left-radius: 0 !important;
-        border-top-right-radius: 0 !important;
+        border-width: 0 !important;
+        border-radius: 0 !important;
     }
 }
 

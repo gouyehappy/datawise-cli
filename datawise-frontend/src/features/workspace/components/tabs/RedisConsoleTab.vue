@@ -26,8 +26,6 @@ const selectedKey = ref<string | null>(null)
 const keyDetail = ref<RedisKeyDetail | null>(null)
 const keyDetailLoading = ref(false)
 const keyDetailError = ref<string | null>(null)
-const dbSize = ref<number | null>(null)
-const loadedCount = ref(0)
 const keysBrowserRef = ref<InstanceType<typeof RedisKeysBrowser> | null>(null)
 const commandPanelRef = ref<InstanceType<typeof RedisCommandPanel> | null>(null)
 const seedCommand = ref<string | null>(null)
@@ -49,13 +47,6 @@ const connectionLabel = computed(() => {
     return explorer.findNode(connectionId.value)?.label ?? connectionId.value
 })
 
-const statsLabel = computed(() => {
-    if (dbSize.value != null) {
-        return t('explorer.redisConsole.stats', {loaded: loadedCount.value, total: dbSize.value})
-    }
-    return t('explorer.redisConsole.statsLoaded', {loaded: loadedCount.value})
-})
-
 function onSelectKey(key: string) {
     selectedKey.value = key
 }
@@ -67,11 +58,6 @@ function onOpenKey(key: string) {
         key,
         explorerNodeId: `${connectionId.value}:redis:${key}`,
     })
-}
-
-function onStats(payload: { dbSize: number | null; loaded: number }) {
-    dbSize.value = payload.dbSize
-    loadedCount.value = payload.loaded
 }
 
 function refreshKeys() {
@@ -107,8 +93,6 @@ async function ensureDefaultDb() {
 watch(connectionId, () => {
     selectedKey.value = null
     keyDetail.value = null
-    dbSize.value = null
-    loadedCount.value = 0
     seedCommand.value = null
 })
 
@@ -140,19 +124,10 @@ watch(
       <div class="dw-workbench-page__title">
         <h2>{{ isCommandView ? t('explorer.redisFeatures.command') : t('explorer.redisConsole.title') }}</h2>
         <p>{{ connectionLabel }}</p>
-        <span v-if="!isCommandView" class="dw-workbench-page__stats">{{ statsLabel }}</span>
       </div>
 
       <div class="dw-workbench-page__actions">
         <RedisDbSelector v-model="redisDb"/>
-        <button
-            v-if="!isCommandView"
-            class="dw-text-btn"
-            type="button"
-            @click="refreshKeys"
-        >
-          {{ t('explorer.redisBrowser.refresh') }}
-        </button>
       </div>
     </header>
 
@@ -171,7 +146,6 @@ watch(
               embedded
               @select="onSelectKey"
               @open="onOpenKey"
-              @stats="onStats"
           />
         </section>
       </div>

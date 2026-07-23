@@ -7,7 +7,9 @@ html[data-ui-skin='classic'] .dw-workbench-page,
 html:not([data-ui-skin]) .dw-workbench-page {
     --dw-wb-head-bg: var(--dw-bg-panel);
     --dw-wb-head-border: var(--dw-border-light);
-    --dw-wb-head-shadow: 0 1px 0 color-mix(in srgb, var(--dw-border) 55%, transparent);
+    --dw-wb-head-shadow: none;
+    --dw-wb-head-pad-y: var(--dw-space-5);
+    --dw-wb-head-min-height: 56px;
     --dw-wb-split-gap: var(--dw-gap-md);
     --dw-wb-split-divider: color-mix(in srgb, var(--dw-border) 70%, transparent);
     --dw-wb-col-pad-top: var(--dw-space-5);
@@ -26,11 +28,6 @@ html:not([data-ui-skin]) .dw-workbench-page {
     --dw-wb-terminal-border: transparent;
     --dw-wb-terminal-radius: var(--dw-radius-xl);
     --dw-wb-terminal-shadow: 0 4px 20px color-mix(in srgb, var(--dw-text) 8%, transparent);
-}
-
-html[data-ui-skin='classic'] .dw-workbench-page__head,
-html:not([data-ui-skin]) .dw-workbench-page__head {
-    min-height: 58px;
 }
 
 html[data-ui-skin='classic'] .lineage-panel__toolbar,

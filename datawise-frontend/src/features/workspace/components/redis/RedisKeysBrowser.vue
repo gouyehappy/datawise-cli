@@ -42,6 +42,8 @@ const error = ref<string | null>(null)
 const activePrefix = ref<string | null>(null)
 const collapsedPrefixes = ref<Set<string>>(new Set())
 
+const REDIS_PREFIX_NAV_LIMIT = 6
+
 const filteredKeys = computed(() => filterRedisKeys(keys.value, localFilter.value))
 
 const prefixGroups = computed((): RedisKeyPrefixGroup[] => {
@@ -52,7 +54,21 @@ const prefixGroups = computed((): RedisKeyPrefixGroup[] => {
 
 const dynamicPresets = computed(() => derivePrefixPatterns(keys.value, 6))
 
+/** Already sorted by count desc in groupRedisKeysByPrefix */
 const prefixNav = computed(() => groupRedisKeysByPrefix(keys.value))
+
+const prefixNavExpanded = ref(false)
+
+const visiblePrefixNav = computed(() => {
+    const groups = prefixNav.value
+    if (prefixNavExpanded.value || groups.length <= REDIS_PREFIX_NAV_LIMIT) return groups
+    const top = groups.slice(0, REDIS_PREFIX_NAV_LIMIT)
+    if (activePrefix.value && !top.some((group) => group.prefix === activePrefix.value)) {
+        const active = groups.find((group) => group.prefix === activePrefix.value)
+        if (active) return [...top.slice(0, REDIS_PREFIX_NAV_LIMIT - 1), active]
+    }
+    return top
+})
 
 const statusText = computed(() => {
     if (loading.value) return t('explorer.redisBrowser.loading')
@@ -83,6 +99,7 @@ async function scanKeys(reset: boolean) {
         error.value = null
         activePrefix.value = null
         collapsedPrefixes.value = new Set()
+        prefixNavExpanded.value = false
     } else {
         loadingMore.value = true
     }
@@ -183,7 +200,7 @@ defineExpose({refresh: () => scanKeys(true)})
       <form class="redis-keys-browser__search" @submit.prevent="onSearch">
         <input
             v-model="patternInput"
-            class="redis-keys-browser__pattern"
+            class="dw-side-browser__field redis-keys-browser__pattern"
             type="text"
             spellcheck="false"
             :placeholder="t('explorer.redisBrowser.patternPlaceholder')"
@@ -191,7 +208,8 @@ defineExpose({refresh: () => scanKeys(true)})
         />
         <DwButton
             variant="primary"
-            class="redis-keys-browser__search-btn"
+            size="sm"
+            class="dw-side-browser__action"
             type="submit"
             :disabled="loading || !connectionId"
             :title="t('explorer.redisBrowser.searchHint')"
@@ -208,60 +226,83 @@ defineExpose({refresh: () => scanKeys(true)})
           ↻
         </button>
       </form>
-      <input
-          v-model="localFilter"
-          class="redis-keys-browser__filter"
-          type="search"
-          spellcheck="false"
-          :placeholder="t('explorer.redisBrowser.filterPlaceholder')"
-          :disabled="loading || !keys.length"
-      />
-      <p class="redis-keys-browser__status">{{ statusText }}</p>
+      <div class="redis-keys-browser__filter-row">
+        <input
+            v-model="localFilter"
+            class="dw-side-browser__field redis-keys-browser__filter"
+            type="search"
+            spellcheck="false"
+            :placeholder="t('explorer.redisBrowser.filterPlaceholder')"
+            :disabled="loading || !keys.length"
+        />
+        <p class="redis-keys-browser__status">{{ statusText }}</p>
+      </div>
     </div>
 
-    <div v-if="dynamicPresets.length" class="redis-keys-browser__presets">
-      <button
-          class="redis-keys-browser__preset"
-          type="button"
-          :class="{ 'is-active': patternInput === '*' && !activePrefix }"
-          :disabled="loading"
-          @click="onPresetClick('*')"
-      >
-        {{ t('explorer.redisBrowser.presetAll') }}
-      </button>
-      <button
-          v-for="pattern in dynamicPresets"
-          :key="pattern"
-          class="redis-keys-browser__preset"
-          type="button"
-          :class="{ 'is-active': patternInput === pattern }"
-          :disabled="loading"
-          @click="onPresetClick(pattern)"
-      >
-        {{ pattern }}
-      </button>
-    </div>
+    <div
+        v-if="dynamicPresets.length || prefixNav.length > 1"
+        class="dw-side-browser__filters"
+    >
+      <div v-if="dynamicPresets.length" class="dw-side-browser__rail">
+        <span class="dw-side-browser__rail-label">{{ t('explorer.redisBrowser.presetsLabel') }}</span>
+        <div class="dw-side-browser__chips">
+          <button
+              class="dw-side-browser__chip"
+              type="button"
+              :class="{ 'is-active': patternInput === '*' && !activePrefix }"
+              :disabled="loading"
+              @click="onPresetClick('*')"
+          >
+            {{ t('explorer.redisBrowser.presetAll') }}
+          </button>
+          <button
+              v-for="pattern in dynamicPresets"
+              :key="pattern"
+              class="dw-side-browser__chip"
+              type="button"
+              :class="{ 'is-active': patternInput === pattern }"
+              :disabled="loading"
+              @click="onPresetClick(pattern)"
+          >
+            {{ pattern }}
+          </button>
+        </div>
+      </div>
 
-    <div v-if="prefixNav.length > 1" class="redis-keys-browser__prefix-nav">
-      <button
-          class="redis-keys-browser__prefix-chip"
-          type="button"
-          :class="{ 'is-active': !activePrefix }"
-          @click="activePrefix = null"
-      >
-        {{ t('explorer.redisBrowser.allGroups') }}
-      </button>
-      <button
-          v-for="group in prefixNav"
-          :key="group.prefix"
-          class="redis-keys-browser__prefix-chip"
-          type="button"
-          :class="{ 'is-active': activePrefix === group.prefix }"
-          @click="onPrefixNavClick(group)"
-      >
-        {{ prefixLabel(group) }}
-        <span class="redis-keys-browser__prefix-count">{{ group.keys.length }}</span>
-      </button>
+      <div v-if="prefixNav.length > 1" class="dw-side-browser__rail">
+        <span class="dw-side-browser__rail-label">{{ t('explorer.redisBrowser.groupsLabel') }}</span>
+        <div class="dw-side-browser__chips">
+          <button
+              class="dw-side-browser__chip"
+              type="button"
+              :class="{ 'is-active': !activePrefix }"
+              @click="activePrefix = null"
+          >
+            {{ t('explorer.redisBrowser.allGroups') }}
+          </button>
+          <button
+              v-for="group in visiblePrefixNav"
+              :key="group.prefix"
+              class="dw-side-browser__chip"
+              type="button"
+              :class="{ 'is-active': activePrefix === group.prefix }"
+              @click="onPrefixNavClick(group)"
+          >
+            {{ prefixLabel(group) }}
+            <span class="dw-side-browser__chip-count">{{ group.keys.length }}</span>
+          </button>
+          <button
+              v-if="prefixNav.length > REDIS_PREFIX_NAV_LIMIT"
+              class="dw-side-browser__chip dw-side-browser__chip--more"
+              type="button"
+              @click="prefixNavExpanded = !prefixNavExpanded"
+          >
+            {{ prefixNavExpanded
+              ? t('explorer.redisBrowser.collapseGroups')
+              : t('explorer.redisBrowser.moreGroups', {count: prefixNav.length - REDIS_PREFIX_NAV_LIMIT}) }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="redis-keys-browser__list" role="listbox">
@@ -315,11 +356,11 @@ defineExpose({refresh: () => scanKeys(true)})
       </section>
     </div>
 
-    <footer class="redis-keys-browser__footer">
+    <footer v-if="hasMore" class="redis-keys-browser__footer">
       <button
           class="redis-keys-browser__more"
           type="button"
-          :disabled="!hasMore || loading || loadingMore"
+          :disabled="loading || loadingMore"
           @click="scanKeys(false)"
       >
         {{ loadingMore ? t('explorer.redisBrowser.loadingMore') : t('explorer.redisBrowser.loadMore') }}
@@ -342,101 +383,53 @@ defineExpose({refresh: () => scanKeys(true)})
 }
 
 .redis-keys-browser.is-embedded .redis-keys-browser__toolbar {
-  padding: 0 var(--dw-space-6) var(--dw-space-4);
-  border-bottom: none;
-}
-
-.redis-keys-browser.is-embedded .redis-keys-browser__presets,
-.redis-keys-browser.is-embedded .redis-keys-browser__prefix-nav {
-  padding: 0 var(--dw-space-6);
-  border-bottom: none;
+  padding-left: var(--dw-space-6);
+  padding-right: var(--dw-space-6);
 }
 
 .redis-keys-browser.is-embedded .redis-keys-browser__list {
-  padding: 0;
+  padding: var(--dw-space-2) var(--dw-space-6) var(--dw-space-4);
 }
 
 .redis-keys-browser.is-embedded .redis-keys-browser__footer {
   padding: var(--dw-space-4) var(--dw-space-6) var(--dw-space-6);
-  border-top: none;
-  background: color-mix(in srgb, var(--dw-bg-editor) 50%, transparent);
 }
 
 .redis-keys-browser__toolbar {
   display: flex;
   flex-direction: column;
   gap: var(--dw-gap-sm);
-  padding: var(--dw-pad-control-lg);
-  border-bottom: 1px solid var(--dw-border);
+  padding: var(--dw-space-5) var(--dw-space-6) var(--dw-space-4);
 }
 
-.redis-keys-browser__search {
+.redis-keys-browser__search,
+.redis-keys-browser__filter-row {
   display: flex;
+  align-items: center;
   gap: var(--dw-gap-sm);
-}
-
-.redis-keys-browser__pattern,
-.redis-keys-browser__filter {
   min-width: 0;
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius-sm);
-  padding: var(--dw-pad-tight);
-  background: var(--dw-bg-editor);
-  color: var(--dw-text);
-  font-size: var(--dw-text-sm);
-}
-
-.redis-keys-browser__pattern {
-  flex: 1;
-}
-
-.redis-keys-browser__search-btn {
-  flex-shrink: 0;
-  min-width: 56px;
 }
 
 .redis-keys-browser__status {
   margin: 0;
-  color: var(--dw-text-muted);
+  flex-shrink: 0;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--dw-text-xs);
-}
-
-.redis-keys-browser__presets,
-.redis-keys-browser__prefix-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--dw-gap-sm);
-  padding: var(--dw-space-4) var(--dw-space-6);
-  border-bottom: 1px solid var(--dw-border);
-}
-
-.redis-keys-browser__preset,
-.redis-keys-browser__prefix-chip {
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-pill);
-  padding: var(--dw-pad-chip);
-  background: transparent;
   color: var(--dw-text-muted);
-  font-size: var(--dw-text-xs);
-  cursor: pointer;
-}
-
-.redis-keys-browser__preset.is-active,
-.redis-keys-browser__prefix-chip.is-active {
-  border-color: var(--dw-primary);
-  color: var(--dw-primary);
-  background: color-mix(in srgb, var(--dw-primary) 10%, transparent);
-}
-
-.redis-keys-browser__prefix-count {
-  margin-left: var(--dw-space-2);
-  opacity: 0.7;
 }
 
 .redis-keys-browser__list {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  padding: var(--dw-space-3) var(--dw-space-6) var(--dw-space-5);
+}
+
+.redis-keys-browser__group + .redis-keys-browser__group {
+  margin-top: var(--dw-space-2);
 }
 
 .redis-keys-browser__group-head {
@@ -444,11 +437,11 @@ defineExpose({refresh: () => scanKeys(true)})
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: var(--dw-space-3) var(--dw-space-6);
+  padding: var(--dw-space-2) var(--dw-space-3);
   border: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--dw-border) 60%, transparent);
-  background: color-mix(in srgb, var(--dw-bg-editor) 80%, transparent);
-  color: var(--dw-text-muted);
+  border-radius: var(--dw-control-radius-sm);
+  background: color-mix(in srgb, var(--dw-bg-muted) 70%, transparent);
+  color: var(--dw-text-secondary);
   font-size: var(--dw-text-xs);
   font-weight: 600;
   cursor: pointer;
@@ -456,12 +449,15 @@ defineExpose({refresh: () => scanKeys(true)})
 
 .redis-keys-browser__group-meta {
   display: inline-flex;
+  gap: var(--dw-gap-sm);
   align-items: center;
-  gap: var(--dw-gap-xs);
+  color: var(--dw-text-muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
 
 .redis-keys-browser__items {
-  margin: 0;
+  margin: var(--dw-space-1) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -469,15 +465,15 @@ defineExpose({refresh: () => scanKeys(true)})
 .redis-keys-browser__item {
   display: flex;
   align-items: center;
-  gap: var(--dw-gap-xs);
-  padding: var(--dw-space-3) var(--dw-space-4) var(--dw-space-3) 18px;
+  gap: var(--dw-gap-sm);
+  padding: var(--dw-space-2) var(--dw-space-3);
+  border-radius: var(--dw-control-radius-sm);
   cursor: pointer;
-  border-bottom: 1px solid color-mix(in srgb, var(--dw-border) 40%, transparent);
 }
 
 .redis-keys-browser__item:hover,
 .redis-keys-browser__item.is-selected {
-  background: color-mix(in srgb, var(--dw-primary) 12%, transparent);
+  background: color-mix(in srgb, var(--dw-primary) 10%, transparent);
 }
 
 .redis-keys-browser.is-embedded .redis-keys-browser__item.is-selected {
@@ -487,22 +483,19 @@ defineExpose({refresh: () => scanKeys(true)})
 .redis-keys-browser__key {
   flex: 1;
   min-width: 0;
-  font-family: var(--dw-font-mono);
-  font-size: var(--dw-text-xs);
-  line-height: var(--dw-leading);
+  font-family: var(--dw-mono, var(--dw-font-mono));
+  font-size: var(--dw-text-sm);
   word-break: break-all;
 }
 
 .redis-keys-browser__copy {
   flex-shrink: 0;
+  padding: 0 var(--dw-space-2);
   border: none;
-  border-radius: var(--dw-radius-sm);
-  padding: var(--dw-space-1) var(--dw-space-2);
   background: transparent;
   color: var(--dw-text-muted);
-  font-size: var(--dw-text-xs);
-  cursor: pointer;
   opacity: 0;
+  cursor: pointer;
 }
 
 .redis-keys-browser__item:hover .redis-keys-browser__copy,
@@ -511,25 +504,28 @@ defineExpose({refresh: () => scanKeys(true)})
 }
 
 .redis-keys-browser__footer {
-  padding: var(--dw-space-4) var(--dw-space-6);
-  border-top: 1px solid var(--dw-border);
+  padding: var(--dw-space-4) var(--dw-space-6) var(--dw-space-5);
+  border-top: 1px solid color-mix(in srgb, var(--dw-border) 55%, transparent);
 }
 
 .redis-keys-browser__more {
   width: 100%;
+  height: var(--dw-control-h-sm);
   border: 1px solid var(--dw-border);
   border-radius: var(--dw-control-radius-sm);
-  padding: var(--dw-space-3) var(--dw-space-5);
-  background: var(--dw-bg-editor);
-  color: var(--dw-text);
+  background: var(--dw-bg);
+  color: var(--dw-text-secondary);
   font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 
-.redis-keys-browser__more:disabled,
-.redis-keys-browser__search-btn:disabled,
-.redis-keys-browser__preset:disabled {
-  opacity: 0.6;
+.redis-keys-browser__more:hover:not(:disabled) {
+  color: var(--dw-text);
+  background: var(--dw-bg-hover);
+}
+
+.redis-keys-browser__more:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 </style>

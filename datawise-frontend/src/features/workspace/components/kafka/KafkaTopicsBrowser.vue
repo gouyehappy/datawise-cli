@@ -26,6 +26,8 @@ const emit = defineEmits<{
 
 const {t} = useI18n()
 
+const KAFKA_PREFIX_NAV_LIMIT = 6
+
 const patternInput = ref('')
 const localFilter = ref('')
 const topics = ref<string[]>([])
@@ -36,6 +38,7 @@ const loadingMore = ref(false)
 const error = ref<string | null>(null)
 const activePrefix = ref<string | null>(null)
 const collapsedPrefixes = ref<Set<string>>(new Set())
+const prefixNavExpanded = ref(false)
 
 const filteredTopics = computed(() => filterKafkaTopics(topics.value, localFilter.value))
 
@@ -47,7 +50,19 @@ const prefixGroups = computed((): KafkaTopicPrefixGroup[] => {
 
 const dynamicPresets = computed(() => deriveTopicPrefixPatterns(topics.value, 6))
 
+/** Already sorted by count desc in groupKafkaTopicsByPrefix */
 const prefixNav = computed(() => groupKafkaTopicsByPrefix(topics.value))
+
+const visiblePrefixNav = computed(() => {
+  const groups = prefixNav.value
+  if (prefixNavExpanded.value || groups.length <= KAFKA_PREFIX_NAV_LIMIT) return groups
+  const top = groups.slice(0, KAFKA_PREFIX_NAV_LIMIT)
+  if (activePrefix.value && !top.some((group) => group.prefix === activePrefix.value)) {
+    const active = groups.find((group) => group.prefix === activePrefix.value)
+    if (active) return [...top.slice(0, KAFKA_PREFIX_NAV_LIMIT - 1), active]
+  }
+  return top
+})
 
 const hasMore = computed(() => totalCount.value > topics.value.length)
 
@@ -74,6 +89,7 @@ async function loadTopics(reset: boolean) {
     error.value = null
     activePrefix.value = null
     collapsedPrefixes.value = new Set()
+    prefixNavExpanded.value = false
   } else {
     loadingMore.value = true
     fetchLimit.value = Math.min(
@@ -171,7 +187,7 @@ defineExpose({refresh: () => loadTopics(true)})
       <form class="kafka-topics-browser__search" @submit.prevent="onSearch">
         <input
             v-model="patternInput"
-            class="kafka-topics-browser__pattern"
+            class="dw-side-browser__field kafka-topics-browser__pattern"
             type="text"
             spellcheck="false"
             :placeholder="t('explorer.kafkaBrowser.patternPlaceholder')"
@@ -179,7 +195,8 @@ defineExpose({refresh: () => loadTopics(true)})
         >
         <DwButton
             variant="primary"
-            class="dw-icon-btn dw-icon-btn--sm"
+            size="sm"
+            class="dw-side-browser__action"
             type="submit"
             :disabled="loading || !connectionId"
             :title="t('explorer.kafkaBrowser.searchHint')"
@@ -196,60 +213,83 @@ defineExpose({refresh: () => loadTopics(true)})
           ↻
         </button>
       </form>
-      <input
-          v-model="localFilter"
-          class="kafka-topics-browser__filter"
-          type="search"
-          spellcheck="false"
-          :placeholder="t('explorer.kafkaBrowser.filterPlaceholder')"
-          :disabled="loading || !topics.length"
-      >
-      <p class="kafka-topics-browser__status">{{ statusText }}</p>
+      <div class="kafka-topics-browser__filter-row">
+        <input
+            v-model="localFilter"
+            class="dw-side-browser__field kafka-topics-browser__filter"
+            type="search"
+            spellcheck="false"
+            :placeholder="t('explorer.kafkaBrowser.filterPlaceholder')"
+            :disabled="loading || !topics.length"
+        >
+        <p class="kafka-topics-browser__status">{{ statusText }}</p>
+      </div>
     </div>
 
-    <div v-if="dynamicPresets.length" class="kafka-topics-browser__presets">
-      <button
-          class="kafka-topics-browser__preset"
-          type="button"
-          :class="{ 'is-active': !patternInput && !activePrefix }"
-          :disabled="loading"
-          @click="onPresetClick('*')"
-      >
-        {{ t('explorer.kafkaBrowser.presetAll') }}
-      </button>
-      <button
-          v-for="pattern in dynamicPresets"
-          :key="pattern"
-          class="kafka-topics-browser__preset"
-          type="button"
-          :class="{ 'is-active': patternInput && normalizeKafkaTopicPattern(patternInput) === pattern }"
-          :disabled="loading"
-          @click="onPresetClick(pattern)"
-      >
-        {{ pattern }}
-      </button>
-    </div>
+    <div
+        v-if="dynamicPresets.length || prefixNav.length > 1"
+        class="dw-side-browser__filters"
+    >
+      <div v-if="dynamicPresets.length" class="dw-side-browser__rail">
+        <span class="dw-side-browser__rail-label">{{ t('explorer.kafkaBrowser.presetsLabel') }}</span>
+        <div class="dw-side-browser__chips">
+          <button
+              class="dw-side-browser__chip"
+              type="button"
+              :class="{ 'is-active': !patternInput && !activePrefix }"
+              :disabled="loading"
+              @click="onPresetClick('*')"
+          >
+            {{ t('explorer.kafkaBrowser.presetAll') }}
+          </button>
+          <button
+              v-for="pattern in dynamicPresets"
+              :key="pattern"
+              class="dw-side-browser__chip"
+              type="button"
+              :class="{ 'is-active': patternInput && normalizeKafkaTopicPattern(patternInput) === pattern }"
+              :disabled="loading"
+              @click="onPresetClick(pattern)"
+          >
+            {{ pattern }}
+          </button>
+        </div>
+      </div>
 
-    <div v-if="prefixNav.length > 1" class="kafka-topics-browser__prefix-nav">
-      <button
-          class="kafka-topics-browser__prefix-chip"
-          type="button"
-          :class="{ 'is-active': !activePrefix }"
-          @click="activePrefix = null"
-      >
-        {{ t('explorer.kafkaBrowser.allGroups') }}
-      </button>
-      <button
-          v-for="group in prefixNav"
-          :key="group.prefix"
-          class="kafka-topics-browser__prefix-chip"
-          type="button"
-          :class="{ 'is-active': activePrefix === group.prefix }"
-          @click="onPrefixNavClick(group)"
-      >
-        {{ prefixLabel(group) }}
-        <span class="kafka-topics-browser__prefix-count">{{ group.topics.length }}</span>
-      </button>
+      <div v-if="prefixNav.length > 1" class="dw-side-browser__rail">
+        <span class="dw-side-browser__rail-label">{{ t('explorer.kafkaBrowser.groupsLabel') }}</span>
+        <div class="dw-side-browser__chips">
+          <button
+              class="dw-side-browser__chip"
+              type="button"
+              :class="{ 'is-active': !activePrefix }"
+              @click="activePrefix = null"
+          >
+            {{ t('explorer.kafkaBrowser.allGroups') }}
+          </button>
+          <button
+              v-for="group in visiblePrefixNav"
+              :key="group.prefix"
+              class="dw-side-browser__chip"
+              type="button"
+              :class="{ 'is-active': activePrefix === group.prefix }"
+              @click="onPrefixNavClick(group)"
+          >
+            {{ prefixLabel(group) }}
+            <span class="dw-side-browser__chip-count">{{ group.topics.length }}</span>
+          </button>
+          <button
+              v-if="prefixNav.length > KAFKA_PREFIX_NAV_LIMIT"
+              class="dw-side-browser__chip dw-side-browser__chip--more"
+              type="button"
+              @click="prefixNavExpanded = !prefixNavExpanded"
+          >
+            {{ prefixNavExpanded
+              ? t('explorer.kafkaBrowser.collapseGroups')
+              : t('explorer.kafkaBrowser.moreGroups', {count: prefixNav.length - KAFKA_PREFIX_NAV_LIMIT}) }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="kafka-topics-browser__list" role="listbox">
@@ -329,13 +369,8 @@ defineExpose({refresh: () => loadTopics(true)})
 }
 
 .kafka-topics-browser.is-embedded .kafka-topics-browser__toolbar {
-  padding: 0 var(--dw-space-6) var(--dw-space-4);
-  border-bottom: none;
-}
-
-.kafka-topics-browser.is-embedded .kafka-topics-browser__presets,
-.kafka-topics-browser.is-embedded .kafka-topics-browser__prefix-nav {
-  padding: 0 var(--dw-space-6);
+  padding-left: var(--dw-space-6);
+  padding-right: var(--dw-space-6);
 }
 
 .kafka-topics-browser.is-embedded .kafka-topics-browser__list {
@@ -344,89 +379,55 @@ defineExpose({refresh: () => loadTopics(true)})
 
 .kafka-topics-browser.is-embedded .kafka-topics-browser__footer {
   padding: var(--dw-space-4) var(--dw-space-6) var(--dw-space-6);
-  border-top: none;
-  background: color-mix(in srgb, var(--dw-bg-editor) 50%, transparent);
 }
 
 .kafka-topics-browser__toolbar {
   display: flex;
   flex-direction: column;
-  gap: var(--dw-gap);
-  padding: var(--dw-space-6);
-  border-bottom: 1px solid var(--dw-border);
-}
-
-.kafka-topics-browser__search {
-  display: flex;
   gap: var(--dw-gap-sm);
+  padding: var(--dw-space-5) var(--dw-space-6) var(--dw-space-4);
 }
 
-.kafka-topics-browser__pattern,
-.kafka-topics-browser__filter {
-  flex: 1;
+.kafka-topics-browser__search,
+.kafka-topics-browser__filter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-gap-sm);
   min-width: 0;
-  padding: var(--dw-pad-tight);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-control-radius-sm);
-  background: var(--dw-bg);
-  font-size: var(--dw-text-sm);
 }
 
 .kafka-topics-browser__status {
   margin: 0;
+  flex-shrink: 0;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--dw-text-xs);
   color: var(--dw-text-muted);
-}
-
-.kafka-topics-browser__presets,
-.kafka-topics-browser__prefix-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--dw-gap-sm);
-  padding: var(--dw-space-4) var(--dw-space-6) 0;
-}
-
-.kafka-topics-browser__preset,
-.kafka-topics-browser__prefix-chip {
-  padding: var(--dw-space-1) var(--dw-space-4);
-  border: 1px solid var(--dw-border);
-  border-radius: var(--dw-radius-pill);
-  background: var(--dw-bg);
-  font-size: var(--dw-text-xs);
-  cursor: pointer;
-}
-
-.kafka-topics-browser__preset.is-active,
-.kafka-topics-browser__prefix-chip.is-active {
-  border-color: var(--dw-primary);
-  color: var(--dw-primary);
-  background: color-mix(in srgb, var(--dw-primary) 8%, var(--dw-bg));
-}
-
-.kafka-topics-browser__prefix-count {
-  margin-left: var(--dw-space-2);
-  opacity: 0.7;
 }
 
 .kafka-topics-browser__list {
   flex: 1;
   overflow: auto;
-  padding: var(--dw-space-4) var(--dw-space-6) var(--dw-space-6);
+  padding: var(--dw-space-3) var(--dw-space-6) var(--dw-space-5);
 }
 
 .kafka-topics-browser__group + .kafka-topics-browser__group {
-  margin-top: var(--dw-space-4);
+  margin-top: var(--dw-space-2);
 }
 
 .kafka-topics-browser__group-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: var(--dw-pad-tight);
+  padding: var(--dw-space-2) var(--dw-space-3);
   border: none;
   border-radius: var(--dw-control-radius-sm);
-  background: var(--dw-bg-muted);
-  font-size: var(--dw-text-sm);
+  background: color-mix(in srgb, var(--dw-bg-muted) 70%, transparent);
+  color: var(--dw-text-secondary);
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   cursor: pointer;
 }
@@ -437,10 +438,11 @@ defineExpose({refresh: () => loadTopics(true)})
   align-items: center;
   color: var(--dw-text-muted);
   font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
 
 .kafka-topics-browser__items {
-  margin: var(--dw-space-2) 0 0;
+  margin: var(--dw-space-1) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -449,7 +451,7 @@ defineExpose({refresh: () => loadTopics(true)})
   display: flex;
   align-items: center;
   gap: var(--dw-gap-sm);
-  padding: var(--dw-pad-tight);
+  padding: var(--dw-space-2) var(--dw-space-3);
   border-radius: var(--dw-control-radius-sm);
   cursor: pointer;
 }
@@ -487,23 +489,27 @@ defineExpose({refresh: () => loadTopics(true)})
 }
 
 .kafka-topics-browser__footer {
-  padding: var(--dw-space-4) var(--dw-space-6) var(--dw-space-6);
-  border-top: 1px solid var(--dw-border);
+  padding: var(--dw-space-4) var(--dw-space-6) var(--dw-space-5);
+  border-top: 1px solid color-mix(in srgb, var(--dw-border) 55%, transparent);
 }
 
 .kafka-topics-browser__more {
   width: 100%;
-  padding: var(--dw-space-4);
+  height: var(--dw-control-h-sm);
   border: 1px solid var(--dw-border);
   border-radius: var(--dw-control-radius-sm);
   background: var(--dw-bg);
+  color: var(--dw-text-secondary);
   font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 
-.kafka-topics-browser__more:disabled,
-.kafka-topics-browser__icon-btn:disabled,
-.kafka-topics-browser__preset:disabled {
+.kafka-topics-browser__more:hover:not(:disabled) {
+  color: var(--dw-text);
+  background: var(--dw-bg-hover);
+}
+
+.kafka-topics-browser__more:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

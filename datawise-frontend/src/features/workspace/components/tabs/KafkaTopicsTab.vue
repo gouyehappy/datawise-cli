@@ -15,9 +15,6 @@ const explorer = useExplorerStore()
 const workspace = useWorkspaceStore()
 
 const selectedTopic = ref<string | null>(props.tab.kafkaTopic ?? null)
-const totalCount = ref(0)
-const loadedCount = ref(0)
-const topicsBrowserRef = ref<InstanceType<typeof KafkaTopicsBrowser> | null>(null)
 const messagesPanelRef = ref<InstanceType<typeof KafkaMessagesPanel> | null>(null)
 const producerPanelRef = ref<InstanceType<typeof KafkaProducerPanel> | null>(null)
 const producerCollapsed = ref(false)
@@ -29,28 +26,9 @@ const connectionLabel = computed(() => {
   return explorer.findNode(connectionId.value)?.label ?? connectionId.value
 })
 
-const statsLabel = computed(() => {
-  if (totalCount.value > loadedCount.value) {
-    return t('explorer.kafkaConsole.statsWithTotal', {
-      loaded: loadedCount.value,
-      total: totalCount.value,
-    })
-  }
-  return t('explorer.kafkaConsole.stats', {count: loadedCount.value})
-})
-
 function onSelectTopic(topic: string) {
   selectedTopic.value = topic
   workspace.updateTabContext(props.tab.id, {kafkaTopic: topic})
-}
-
-function onStats(payload: { total: number; loaded: number }) {
-  totalCount.value = payload.total
-  loadedCount.value = payload.loaded
-}
-
-function refreshTopics() {
-  topicsBrowserRef.value?.refresh()
 }
 
 function onProduced() {
@@ -71,8 +49,6 @@ watch(
 
 watch(connectionId, () => {
   selectedTopic.value = null
-  totalCount.value = 0
-  loadedCount.value = 0
 })
 </script>
 
@@ -82,12 +58,6 @@ watch(connectionId, () => {
       <div class="dw-workbench-page__title">
         <h2>{{ t('explorer.kafkaConsole.title') }}</h2>
         <p>{{ connectionLabel }}</p>
-        <span class="dw-workbench-page__stats">{{ statsLabel }}</span>
-      </div>
-      <div class="dw-workbench-page__actions">
-        <button class="dw-text-btn" type="button" @click="refreshTopics">
-          {{ t('explorer.kafkaBrowser.refresh') }}
-        </button>
       </div>
     </header>
 
@@ -98,13 +68,11 @@ watch(connectionId, () => {
             <h3>{{ t('explorer.kafkaTopics.title') }}</h3>
           </header>
           <KafkaTopicsBrowser
-              ref="topicsBrowserRef"
               class="kafka-topics-workbench__topics"
               :connection-id="connectionId"
               :selected-topic="selectedTopic"
               embedded
               @select="onSelectTopic"
-              @stats="onStats"
           />
         </section>
       </div>

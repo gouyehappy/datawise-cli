@@ -248,6 +248,8 @@ html[data-ui-skin='ide'] .dw-workbench-page {
     --dw-wb-head-bg: var(--dw-bg-muted);
     --dw-wb-head-border: var(--dw-panel-border);
     --dw-wb-head-shadow: none;
+    --dw-wb-head-pad-y: 0;
+    --dw-wb-head-min-height: var(--dw-tab-height);
     --dw-wb-split-gap: 0;
     --dw-wb-split-divider: var(--dw-panel-border);
     --dw-wb-col-pad-top: 0;
@@ -269,9 +271,14 @@ html[data-ui-skin='ide'] .dw-workbench-page {
 }
 
 html[data-ui-skin='ide'] .dw-workbench-page__head {
-    min-height: var(--dw-tab-height);
+    min-height: var(--dw-wb-head-min-height);
     padding-top: 0;
     padding-bottom: 0;
+}
+
+html[data-ui-skin='ide'] .dw-workbench-page__icon {
+    border-radius: 0;
+    box-shadow: none;
 }
 
 html[data-ui-skin='ide'] .dw-workbench-split {
