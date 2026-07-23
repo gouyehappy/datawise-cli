@@ -1,40 +1,62 @@
-# 脚本
+# 仓库脚本
 
-## pre-commit-check
+根目录 `scripts/` — 联调、提交检查与少量工具脚本。桌面打包脚本在前端目录。
 
-读 `scripts/project-config.json`
+---
+
+## 提交前检查
+
+读取 `scripts/project-config.json`，实现位于 `scripts/sop/pre-commit-check.mjs`。
 
 ```bash
-node scripts/pre-commit-check.mjs
-node scripts/pre-commit-check.mjs --test
-node scripts/pre-commit-check.mjs --full
+node scripts/pre-commit-check.mjs        # 默认检查
+node scripts/pre-commit-check.mjs --test # 含测试
+node scripts/pre-commit-check.mjs --full # 全量
 ```
 
-实现：`scripts/sop/pre-commit-check.mjs`
+---
 
 ## 本地前后端联调
 
-从 `datawise-frontend` 目录：
+在 `datawise-frontend` 下：
 
 ```bash
-npm run dev:all     # node ../scripts/dev-start.mjs
-npm run stop:dev    # node ../scripts/dev-stop.mjs
+npm run dev:all     # → node ../scripts/dev-start.mjs
+npm run stop:dev    # → node ../scripts/dev-stop.mjs
 ```
 
-也可直接：
+或直接：
 
 ```bash
 node scripts/dev-start.mjs
 node scripts/dev-stop.mjs
 ```
 
-## 品牌图标 path 提取
+默认端口：前端 `28413` · 后端 `18421`。
 
-手动从 `.tmp-icons/` 重新生成品牌 SVG path（少用）：
+---
+
+## OpenAPI 导出
+
+后端已启动时：
+
+```bash
+node scripts/export-openapi.mjs
+```
+
+说明：[../docs/OPENAPI.md](../docs/OPENAPI.md)
+
+---
+
+## 品牌图标 path
+
+从 `.tmp-icons/` 重新提取品牌 SVG path（少用）：
 
 ```bash
 node scripts/extract-brand-icon-paths.mjs
 ```
+
+---
 
 ## 桌面打包
 

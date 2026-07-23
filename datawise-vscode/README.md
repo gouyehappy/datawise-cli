@@ -1,23 +1,33 @@
 # DataWise VS Code Extension
 
-MVP bridge between VS Code and the [DataWise CLI](https://github.com/apache/datawise-cli) desktop app.
+把 VS Code 里的 SQL（选区或整文件）一键送到 **DataWise 桌面版** SQL 控制台。
 
-## Features
+扩展名 `datawise-vscode` · 显示名 **DataWise** · 版本 **1.3.0**
 
-- **Open in DataWise** — send the current selection (or entire file) to the SQL console via the `datawise://` deep link.
+---
 
-## Requirements
+## 功能
 
-- [DataWise CLI desktop app](../datawise-frontend/) installed and registered as the handler for `datawise://` URLs.
+- **Open in DataWise** — 通过 `datawise://` Deep Link 打开（或聚焦）桌面应用，并载入当前 SQL
 
-## Settings
+就这一件事，刻意保持轻量：编辑在 VS Code，执行与治理在 DataWise。
 
-| Setting | Description |
-|---------|-------------|
-| `datawise.connectionId` | Connection ID from `connections.xml` (recommended) |
-| `datawise.database` | Optional default database/schema |
+---
 
-Example workspace settings (`.vscode/settings.json`):
+## 要求
+
+- 已安装 [DataWise 桌面应用](../datawise-frontend/)，且系统已注册 `datawise://` 协议处理器
+
+---
+
+## 设置
+
+| 设置项 | 说明 |
+|--------|------|
+| `datawise.connectionId` | `connections.xml` 中的连接 ID（推荐填写） |
+| `datawise.database` | 可选默认库 / schema |
+
+工作区示例（`.vscode/settings.json`）：
 
 ```json
 {
@@ -26,15 +36,29 @@ Example workspace settings (`.vscode/settings.json`):
 }
 ```
 
-## Usage
+未配置 `connectionId` 时仍会打开桌面版，但可能需要手动选择连接。
 
-1. Open or select SQL in the editor.
-2. Run **DataWise: Open in DataWise** from the Command Palette, or right-click → **Open in DataWise**.
-3. DataWise opens (or focuses) and loads the SQL in a console tab.
+---
 
-Without `datawise.connectionId`, the desktop app still opens but may prompt you to pick a connection.
+## 用法
 
-## Development
+1. 在编辑器中打开或选中 SQL
+2. 命令面板运行 **DataWise: Open in DataWise**，或右键 → **Open in DataWise**
+3. DataWise 打开并在控制台 Tab 中载入 SQL
+
+桌面端也可在 **设置 → 基础 → Deep Link** 查看协议说明。
+
+---
+
+## Deep Link 格式
+
+```
+datawise://open?connectionId=<id>&database=<db>&sql=<encoded-sql>
+```
+
+---
+
+## 开发
 
 ```bash
 cd datawise-vscode
@@ -43,18 +67,17 @@ npm run compile
 npm test
 ```
 
-Launch from VS Code: open this folder, press **F5** (Run Extension).
+在 VS Code 中打开本目录，按 **F5**（Run Extension）调试。
 
-Package a `.vsix` (optional):
+打包 `.vsix`（可选）：
 
 ```bash
 npx @vscode/vsce package
 ```
 
-## Deep link format
+---
 
-```
-datawise://open?connectionId=<id>&database=<db>&sql=<encoded-sql>
-```
+## 相关
 
-See also **Settings → Basic → Deep Link** in the desktop app.
+- 桌面打包：[../datawise-frontend/README.md](../datawise-frontend/README.md)
+- 生态说明：[../docs/user-manual/12-desktop-ecosystem.md](../docs/user-manual/12-desktop-ecosystem.md)

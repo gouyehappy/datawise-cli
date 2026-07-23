@@ -1,6 +1,10 @@
 # 本地运行时配置
 
-此目录存放**本机数据**，默认全部忽略，**勿提交 Git**。
+本目录存放**本机数据**，默认全部被 Git 忽略 — **请勿提交**。
+
+仓库里只保留 `*.example`、本 README，以及 [`plugins/README.md`](./plugins/README.md)。
+
+---
 
 ## 首次使用
 
@@ -9,41 +13,55 @@ cp config/connections.xml.example config/connections.xml
 cp config/users.json.example config/users.json
 ```
 
-按需将 connector JAR 放入 `plugins/`，JDBC 驱动放入 `drivers/`。说明见 [plugins/README.md](./plugins/README.md)。
+按需：
 
-生产 / 服务器部署（JDBC 元数据、鉴权、Prometheus、多实例）见 [docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)。
+- 连接器 JAR → `plugins/`
+- JDBC 驱动 → `drivers/`
 
-从旧布局（根目录 `connections.xml` / `users/{id}/*.json`）迁到租户作用域路径，见 [docs/CONFIG_MIGRATION.md](../docs/CONFIG_MIGRATION.md)（`datawise config migrate`）。
+插件说明：[plugins/README.md](./plugins/README.md)  
+生产部署（JDBC 元数据、鉴权、Prometheus、多实例）：[../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)  
+旧路径 → 租户作用域：[../docs/CONFIG_MIGRATION.md](../docs/CONFIG_MIGRATION.md)（`datawise config migrate`）
 
-## 安全相关默认（application.yml）
+---
 
-| 配置 | 默认（无 profile） | dev / desktop |
-|------|-------------------|---------------|
+## 安全相关默认
+
+来自 `application.yml`（无 profile 时）：
+
+| 配置 | 默认 | dev / desktop |
+|------|------|----------------|
 | `datawise.query.max-result-rows` | `10000` | 同左（可覆盖） |
 | `datawise.security.auth.require-authentication` | `true` | `true` |
 | `datawise.security.connection-probe.allow-private-networks` | `false` | `true` |
 | `datawise.connectors.require-manifest-integrity` | `true` | `false` |
 
-## 常见文件（均不入库）
+---
+
+## 常见路径（均不入库）
 
 | 路径 | 说明 |
 |------|------|
-| `connections.xml` | 数据源连接（含加密密码）；启动后迁至 `tenants/default/connections.xml` |
-| `teams.json` | 团队快照；启动后迁至 `tenants/default/teams.json` |
-| `oidc.json` | OIDC / 本地登录开关；启动后迁至 `tenants/default/oidc.json` |
-| `tenants/` | 租户索引、角色/成员、以及租户作用域配置 |
-| `tenants/{id}/outbound-webhooks.json` | 租户出站 Webhook（首次访问时合并迁移旧用户级文件） |
-| `tenants/{id}/data-quality-templates.json` | 租户共享数据质量规则模板 |
-| `tenants/{id}/ai-usage.json` | 租户当日 AI 调用计数（`max-ai-calls-per-tenant-per-day`）；`jdbc` 时为 `dw_tenant_ai_usage` |
-| `users.json` / `sessions.json` / `api-tokens.json` | 身份元数据（`storage.backend=file`）；`jdbc` 模式下可一次性导入库 |
-| `tenants/{id}/oidc.json` / `outbound-webhooks.json` / `teams.json` / `connections.xml` | 租户配置（file）；`jdbc` 时对应 `dw_oidc_configs` / `dw_outbound_webhook_snapshots` / `dw_team_snapshots` / `dw_connection_snapshots` |
-| `users/{id}/app.xml` | 应用偏好与 **AI 模型 / API Key**（可用 `dwsecret:` 引用，见 [SECRETS.md](../docs/SECRETS.md)） |
-| `users/{id}/outbound-webhooks.json` | （已废弃）旧用户级 Webhook；迁移后重命名为 `*.migrated` |
-| `sql-history.json` | SQL 执行历史（`storage.backend=file`）；`jdbc` 时为 `dw_sql_history` |
+| `connections.xml` | 数据源（含加密密码）；启动后迁至 `tenants/default/connections.xml` |
+| `teams.json` / `oidc.json` | 团队 / 登录开关；同样迁到租户目录 |
+| `tenants/` | 租户索引、角色/成员、租户作用域配置 |
+| `tenants/{id}/outbound-webhooks.json` | 出站 Webhook |
+| `tenants/{id}/data-quality-templates.json` | 数据质量规则模板 |
+| `tenants/{id}/ai-usage.json` | 租户当日 AI 调用计数（`jdbc` 时为表 `dw_tenant_ai_usage`） |
+| `users.json` / `sessions.json` / `api-tokens.json` | 身份元数据（`storage.backend=file`） |
+| `users/{id}/app.xml` | 应用偏好与 **AI 模型 / API Key**（可用 `dwsecret:`，见 [SECRETS.md](../docs/SECRETS.md)） |
+| `sql-history.json` | SQL 执行历史（`jdbc` 时为 `dw_sql_history`） |
 | `scripts/` | 各连接下的 SQL 脚本 |
 | `cache/` | Schema 缓存 |
-| `logs/datawise.log` | 统一运行日志（后端 + 桌面版 Electron；历史归档在 `logs/archive/`） |
+| `logs/datawise.log` | 统一运行日志（后端 + 桌面 Electron；归档在 `logs/archive/`） |
 | `ai-checkpoints/` | AI 分析断点 |
-| `plugins/*.jar` / `plugins/manifest.json` / `drivers/` | 插件 JAR、版本/完整性清单、驱动 |
+| `plugins/*.jar` · `plugins/manifest.json` · `drivers/` | 插件、完整性清单、驱动 |
 
-仓库中仅保留 `*.example` 与本 README、`plugins/README.md`。
+`jdbc` 存储模式下，上述多项会落到对应 `dw_*` 表，可一次性从文件导入。
+
+---
+
+## 切勿提交
+
+- 真实连接密码、`api-tokens.json`、`.datawise-master-key`
+- 含 API Key 的 `app.xml` / `.env`
+- 运行日志与会话文件

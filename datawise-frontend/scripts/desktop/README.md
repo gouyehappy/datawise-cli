@@ -1,124 +1,134 @@
 # Desktop packaging scripts
 
-Build desktop executables with an embedded backend and JRE.
+把内嵌后端与 JRE 打进 Electron 可执行包。脚本目录：`datawise-frontend/scripts/desktop/`。
 
-| Host | Default product |
-|------|-----------------|
-| Windows | NSIS installer + portable |
-| macOS (Apple Silicon) | DMG + zip (`arm64`) — see [DESKTOP_MAC.md](../../../docs/DESKTOP_MAC.md) |
-| Linux | AppImage — see [DESKTOP_LINUX.md](../../../docs/DESKTOP_LINUX.md) |
+| 主机 | 默认产物 |
+|------|----------|
+| Windows | NSIS 安装包 + 便携版 |
+| macOS (Apple Silicon) | DMG + zip（`arm64`）— [DESKTOP_MAC.md](../../../docs/DESKTOP_MAC.md) |
+| Linux | AppImage — [DESKTOP_LINUX.md](../../../docs/DESKTOP_LINUX.md) |
 
-## Why `target-desktop/`
+---
 
-Desktop packaging uses Maven’s official `<directory>` override:
+## 为何使用 `target-desktop/`
 
-- Parent POM property: `datawise.build.dir` (default `target`)
-- Packaging always passes `-Ddatawise.build.dir=target-desktop`
+桌面打包走 Maven 官方 `<directory>` 覆盖：
 
-Cursor/VS Code Java LS keeps compiling into the default `target/`. Sharing that directory with packaging caused corrupt `.class` files and empty Spring Boot JARs on Windows. **Two output directories is the intended isolation**, not a temporary path hack.
+- 父 POM：`datawise.build.dir`（默认 `target`）
+- 打包始终传入 `-Ddatawise.build.dir=target-desktop`
+
+IDE Java LS 会持续写入默认 `target/`。与打包共用同一目录会在 Windows 上弄坏 `.class`、产出空的 Spring Boot JAR。**两套输出目录是刻意隔离**，不是临时绕过。
 
 ```
 IDE Java LS  →  datawise-backend/**/target/
 desktop mvn  →  datawise-backend/**/target-desktop/  →  resources/desktop/  →  release/
 ```
 
-## npm commands
+---
 
-| Command | Description |
-|---------|-------------|
-| `npm run dist:desktop` | Full build for **host** OS — default **`core`** profile |
-| `npm run dist:desktop:slim` | Slim bundle: no JRE, no connector JARs (catalog only) |
-| `npm run dist:desktop:full` | Full bundle: all connectors + full JRE |
-| `npm run dist:desktop:mac` | macOS Apple Silicon DMG + zip (**must run on macOS**) |
+## npm 命令
+
+在 `datawise-frontend` 下执行。前置：`JAVA_HOME`（JDK 17+）、Maven、已 `npm install`。
+
+| 命令 | 说明 |
+|------|------|
+| `npm run dist:desktop` | 当前系统全量构建（默认 **`core`** 配置档） |
+| `npm run dist:desktop:slim` | 瘦包：无 JRE、无连接器 JAR（仅目录） |
+| `npm run dist:desktop:full` | 全连接器 + 完整 JRE |
+| `npm run dist:desktop:mac` | macOS Apple Silicon（**须在 Mac 上跑**） |
 | `npm run dist:desktop:linux` | Linux AppImage |
-| `npm run dist:desktop:clean` | Full rebuild (`--clean`: wipe packaging artifacts first) |
-| `npm run pack:desktop` | Unpacked app dir for quick testing (no installer) |
-| `npm run prepare:desktop` | Backend bundle only → `resources/desktop/` |
-| `npm run build:backend` | Maven only → `target-desktop/` |
-| `npm run clean:desktop` | Wipe frontend packaging artifacts + all `target-desktop/` (keeps IDE `target/`) |
-| `npm run stop:desktop` | Kill running DataWise / bundled backend processes |
+| `npm run dist:desktop:clean` | 先清理再全量重建 |
+| `npm run pack:desktop` | 仅 unpacked 目录，便于试跑 |
+| `npm run prepare:desktop` | 只组装后端 → `resources/desktop/` |
+| `npm run build:backend` | 仅 Maven → `target-desktop/` |
+| `npm run clean:desktop` | 清前端打包产物 + 全部 `target-desktop/`（保留 IDE `target/`） |
+| `npm run stop:desktop` | 结束正在运行的 DataWise / 内嵌后端 |
 
-**Prerequisites:** `JAVA_HOME` (JDK 17+), Maven, npm deps installed.
+产物：`release/`（若目录被锁则为 `release-<timestamp>/`）。
 
-**Output:** `release/` (or `release-<timestamp>/` if the folder is locked).
+---
 
-## Publishing auto-updates
+## 配置档（profile）
 
-Desktop clients resolve updates from:
+| Profile | JRE | 包内连接器 | Maven `-pl` |
+|---------|-----|------------|-------------|
+| `slim` | 无 | 无（runtime-catalog） | 仅 server |
+| `core`（默认） | jlink（失败则整包） | mysql · postgresql · sqlite · h2 | server + 4 |
+| `full` | 完整拷贝 | 全部 `CONNECTOR_MODULES` | server + all |
+
+设计说明：[RUNTIME_ON_DEMAND_INSTALL.md](../../../docs/design/RUNTIME_ON_DEMAND_INSTALL.md)
+
+---
+
+## 发布自动更新
+
+客户端从以下地址解析更新：
 
 `https://github.com/gouyehappy/datawise-cli/releases/latest/download/latest.yml`
 
-A git tag alone is **not** enough. Publish a non-draft GitHub Release that includes the electron-builder artifacts (`latest.yml`, NSIS/portable, etc.):
+仅打 Git tag **不够**。需要发布非 draft 的 GitHub Release，并附带 electron-builder 产物（`latest.yml`、NSIS/便携包等）：
 
 ```bash
-# requires GH_TOKEN / GitHub auth with repo release scope
+# 需要 GH_TOKEN / 具备 release 权限的 GitHub 鉴权
 npx electron-builder --win --publish always
-# or after a local dist:
-# upload release/* for the matching tag via GitHub Releases UI
 ```
 
-The packaged app uses the **generic** feed URL (not GitHubProvider JSON `/releases/latest`) to avoid GitHub’s intermittent HTTP 406 on `Accept: application/json`.
+包内使用 **generic** feed URL（而非 GitHubProvider JSON），以避免 GitHub 对 `Accept: application/json` 偶发 HTTP 406。
 
-## Maven policy
+---
 
-Desktop packaging **always skips tests** (`-Dmaven.test.skip=true` / `-DskipTests`).
+## Maven 策略
 
-Build pipeline ([`maven.mjs`](./maven.mjs)):
+桌面打包**始终跳过测试**（`-Dmaven.test.skip=true` / `-DskipTests`）。
 
-1. Purge every `datawise-backend/**/target-desktop` (IDE `target/` left alone)
-2. Stop stale desktop/backend processes (once, inside purge)
-3. `mvn install -pl datawise-server,<connectors> -am` with `target-desktop`, incremental compile off, `-T 1`
-4. Validate Spring Boot JAR + sqlflow `Statement.class`
+流水线（[`maven.mjs`](./maven.mjs)）：
 
-**Packaging profiles** (`--profile slim|core|full`, default `core`):
+1. 清空所有 `datawise-backend/**/target-desktop`（不动 IDE `target/`）
+2. 停止残留桌面/后端进程（在 purge 内执行一次）
+3. `mvn install -pl datawise-server,<connectors> -am`，`target-desktop`，关闭增量编译，`-T 1`
+4. 校验 Spring Boot JAR 与 sqlflow `Statement.class`
 
-| Profile | JRE | Connectors in bundle | Maven `-pl` |
-|---------|-----|----------------------|-------------|
-| `slim` | none | none (runtime-catalog only) | server only |
-| `core` | jlink (fallback full) | mysql, postgresql, sqlite, h2 | server + 4 core |
-| `full` | full copy | all `CONNECTOR_MODULES` | server + all |
+默认**不**结束 Java LS。仍遇文件锁时可：`DATAWISE_KILL_JAVA_LS=1`。
 
-See [RUNTIME_ON_DEMAND_INSTALL.md](../../../docs/design/RUNTIME_ON_DEMAND_INSTALL.md).
+---
 
-Process stop does **not** kill Java LS by default. Set `DATAWISE_KILL_JAVA_LS=1` only if you still hit IDE file locks.
+## 清理语义
 
-`CONNECTOR_MODULES` lists packable datasource plugins (not spi/api/jdbc-runtime/`*-all`).
+| 命令 | 清理范围 |
+|------|----------|
+| `npm run clean:desktop` | `dist/` · `dist-electron/` · `release*` · `resources/desktop/` · `**/target-desktop` |
+| `node scripts/desktop/clean.mjs --all --ide-target` | 以上 **加上** IDE `**/target` |
+| `node scripts/desktop/build.mjs --clean --ide-target` | 同 clean `--all --ide-target`，再全量构建 |
 
-## Clean semantics
+---
 
-| Command | Clears |
-|---------|--------|
-| `npm run clean:desktop` | `dist/`, `dist-electron/`, `release*`, `resources/desktop/`, `**/target-desktop` |
-| `node scripts/desktop/clean.mjs --all --ide-target` | Above **plus** IDE `**/target` |
-| `node scripts/desktop/build.mjs --clean --ide-target` | Same as clean `--all --ide-target`, then full build |
-
-## Script layout
+## 脚本布局
 
 ```
 scripts/desktop/
-  paths.mjs          — repo paths + DESKTOP_BACKEND_MODULES / CONNECTOR_MODULES
-  lib.mjs            — process kill, robust delete, boot-JAR find/validate
-  maven.mjs          — purge → install → validate (tests always skipped)
-  bundle-backend.mjs — Maven → assemble resources/desktop → AppCDS
-  generate-runtime-catalog.mjs — runtime-catalog.json from config/plugins JARs
-  jlink-jre.mjs      — trimmed JRE for core profile
-  clean.mjs          — clean release dir or all packaging artifacts
-  build.mjs          — orchestrator (optional clean → bundle → electron-builder)
-  platform.mjs       — host/flag → electron-builder args (win/mac/linux)
+  paths.mjs                   — 路径与模块列表
+  lib.mjs                     — 杀进程、删除、JAR 校验
+  maven.mjs                   — purge → install → validate
+  bundle-backend.mjs          — 组装 resources/desktop + AppCDS
+  generate-runtime-catalog.mjs
+  jlink-jre.mjs               — core 档瘦 JRE
+  clean.mjs / build.mjs / platform.mjs
 ```
 
-## Advanced flags
+---
+
+## 进阶参数
 
 ```powershell
-node scripts/desktop/build.mjs --profile core          # default desktop profile
+node scripts/desktop/build.mjs --profile core
 node scripts/desktop/build.mjs --profile slim
 node scripts/desktop/build.mjs --profile full
-node scripts/desktop/build.mjs --mac --arm64           # macOS (on a Mac)
-node scripts/desktop/build.mjs --linux                 # Linux AppImage
-node scripts/desktop/bundle-backend.mjs --skip-maven   # re-bundle JRE/config from existing JAR
-node scripts/desktop/clean.mjs --all                   # packaging clean without building
-node scripts/desktop/clean.mjs --all --ide-target      # also wipe IDE target/
-npm run stop:desktop                                   # free file locks before build
-npm run build:backend                                  # rebuild JAR only after Java changes
-$env:DATAWISE_KILL_JAVA_LS=1; npm run build:backend  # opt-in Java LS stop
+node scripts/desktop/build.mjs --mac --arm64
+node scripts/desktop/build.mjs --linux
+node scripts/desktop/bundle-backend.mjs --skip-maven
+node scripts/desktop/clean.mjs --all
+node scripts/desktop/clean.mjs --all --ide-target
+npm run stop:desktop
+npm run build:backend
+$env:DATAWISE_KILL_JAVA_LS=1; npm run build:backend
 ```

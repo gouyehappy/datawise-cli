@@ -1,15 +1,13 @@
 ﻿# DataWise 使用说明书
 
-> 面向数据分析师、数据开发与团队管理员的操作手册。  
-> 配图均为客户端真实界面截图（`npm run capture:demos`），每张图附「图中信息」。
-
-重新生成截图：
+面向数据分析师、数据开发与团队管理员的操作手册。  
+配图均为客户端真实界面截图（`npm run capture:demos`），每张图附「图中信息」。
 
 ```bash
 npm run capture:demos --prefix datawise-frontend
 ```
 
-截图清单：[MANIFEST.md](../assets/screenshots/MANIFEST.md)。
+截图清单：[MANIFEST.md](../assets/screenshots/MANIFEST.md) · 产品概览：[../../README.zh-CN.md](../../README.zh-CN.md)
 
 ---
 

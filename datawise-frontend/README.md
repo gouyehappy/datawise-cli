@@ -1,41 +1,97 @@
 # DataWise Frontend
 
-Vue 3 + TypeScript 客户端（浏览器 / Electron）。
+Vue 3 + TypeScript 客户端 — 浏览器联调与 Electron 桌面壳共用同一套 UI。
+
+包名 `datawise-cli` · 版本 **2.0.0** · 依赖同仓 [`@datawise/sql-editor`](../sql-editor/)（源码引用）
+
+---
+
+## 做什么
+
+| 区域 | 能力 |
+|------|------|
+| **Explorer** | 连接树、库表对象、脚本；Redis / Kafka / YARN / SSH |
+| **Workspace** | SQL 控制台 Tab、结果网格、书签、会话与事务 |
+| **AI** | 对话分析、Text-to-SQL、画布与报告 |
+| **Platform** | 联邦视图、漂移监控、数据质量、定时任务 |
+| **Team / Settings** | 共享与审批、插件中心、主题与偏好 |
+| **Desktop** | 内嵌后端 + JRE、自动更新、Deep Link |
+
+技术栈：Vue 3 · Pinia · Vite · Monaco · vue-i18n · ECharts · xterm · Electron · Playwright
+
+---
 
 ## 快速开始
 
-```powershell
+**前置：** 本机已启动后端（默认 `http://localhost:18421`），见 [../datawise-backend/README.md](../datawise-backend/README.md)。
+
+```bash
 cd datawise-frontend
+cp .env.development.example .env.development   # 首次
 npm install
 npm run dev          # http://localhost:28413
-npm run dev:electron # 桌面版
-npm run typecheck
 ```
 
-联调见 [docs/README.md](../docs/README.md) 与 `.env.development.example`。
+| 命令 | 说明 |
+|------|------|
+| `npm run dev` | 仅 Vite Web |
+| `npm run dev:electron` | Electron + Vite |
+| `npm run dev:all` | 一键起前后端（仓库根 `scripts/dev-start.mjs`） |
+| `npm run stop:dev` | 停止联调进程 |
+| `npm run typecheck` | `vue-tsc` |
+| `npm run test` | 单元测试 |
+| `npm run test:e2e` | Playwright |
 
-端口：开发后端 `18421`（dev）、桌面包后端 `18423`（desktop），见 [runtime-ports.json](./runtime-ports.json)。
+端口约定见 [`runtime-ports.json`](./runtime-ports.json)：
 
-## Electron 打包
+| 场景 | 前端 | 后端 |
+|------|------|------|
+| 开发 Web | `28413` | `18421` |
+| 桌面内嵌 | — | `18423` |
 
-```powershell
-npm run dist:desktop        # 当前 OS：Windows → NSIS/便携；macOS → DMG/zip (arm64)
-npm run dist:desktop:mac    # Apple Silicon（须在 macOS 上执行）
-npm run dist:desktop:linux  # Linux AppImage
-npm run dist:desktop:clean  # 全量重建（清理前后端产物 + purge target/）
-npm run pack:desktop        # 仅生成 unpacked 目录，便于快速测试
-npm run prepare:desktop     # 只打包后端资源到 resources/desktop/（不构建 Electron）
-npm run build:backend       # 仅编译后端（释放锁 → 清空 target/ → mvn install → 校验 JAR）
+环境变量与联调细节：[../docs/README.md](../docs/README.md)
+
+---
+
+## 桌面打包
+
+需要 `JAVA_HOME`（JDK 17+）与 Maven。产物在 `release/`。
+
+```bash
+npm run dist:desktop        # 当前系统；默认 core 配置档
+npm run dist:desktop:slim   # 无 JRE / 无连接器 JAR（目录清单）
+npm run dist:desktop:full   # 全连接器 + 完整 JRE
+npm run dist:desktop:mac    # Apple Silicon DMG/zip（须在 macOS）
+npm run dist:desktop:linux  # AppImage
+npm run pack:desktop        # 仅 unpacked，便于试跑
+npm run prepare:desktop     # 只组装后端资源 → resources/desktop/
 ```
 
-产物在 `release/`。macOS 说明见 [docs/DESKTOP_MAC.md](../docs/DESKTOP_MAC.md)；Linux 见 [docs/DESKTOP_LINUX.md](../docs/DESKTOP_LINUX.md)。
+| 平台文档 | 链接 |
+|----------|------|
+| 脚本说明 | [scripts/desktop/README.md](./scripts/desktop/README.md) |
+| macOS | [../docs/DESKTOP_MAC.md](../docs/DESKTOP_MAC.md) |
+| Linux | [../docs/DESKTOP_LINUX.md](../docs/DESKTOP_LINUX.md) |
+| 图标 | [build/README.md](./build/README.md) |
 
-配置目录：便携版为 exe 同目录 `config/`；Windows 安装版为 `%APPDATA%\DataWise CLI\config`；macOS 为 `~/Library/Application Support/DataWise CLI/config`。
+**用户配置目录**
 
-脚本说明见 [scripts/desktop/README.md](./scripts/desktop/README.md)。
+| 形态 | 路径 |
+|------|------|
+| 便携版 | exe 同目录 `config/` |
+| Windows 安装版 | `%APPDATA%\DataWise CLI\config` |
+| macOS | `~/Library/Application Support/DataWise CLI/config` |
 
-图标资源见 [build/README.md](./build/README.md)。
+---
 
-## 技术栈
+## 目录提示
 
-Vue 3 · Pinia · Vite · Monaco · vue-i18n · Electron · `@datawise/sql-editor`
+```
+src/features/     # ai · explorer · workspace · platform · team · settings …
+src/__tests__/    # 单元 / 回归
+e2e/              # Playwright
+scripts/desktop/  # Electron 打包流水线
+resources/        # 桌面种子配置、内嵌资源
+```
+
+更多产品说明见仓库根 [README.zh-CN.md](../README.zh-CN.md) 与 [使用说明书](../docs/user-manual/)。

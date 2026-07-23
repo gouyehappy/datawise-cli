@@ -1,30 +1,41 @@
 # DataWise MCP Server
 
-Expose DataWise connections, schema browsing, SQL review, and read-only query execution to Cursor / Claude Desktop via MCP.
+把 DataWise 的连接、Schema、SQL 审查与只读查询，通过 **MCP** 暴露给 Cursor / Claude Desktop 等 IDE 智能体。
 
-## Prerequisites
+包名 `@datawise/mcp-server` · 版本 **1.3.0** · 命令 `datawise-mcp`
 
-- DataWise backend running (`http://localhost:18421` by default)
-- Valid session or API token with SQL scope
+---
 
-## Environment
+## 前置条件
 
-| Variable | Description |
-|----------|-------------|
-| `DATAWISE_API_URL` | Backend base URL (default `http://localhost:18421`) |
-| `DATAWISE_SESSION_ID` | Browser session id (`X-Session-Id`) |
-| `DATAWISE_API_TOKEN` | API token (alternative to session) |
+1. DataWise 后端已启动（默认 `http://localhost:18421`）
+2. 具备 SQL 权限的会话或 API Token
 
-## Install & run
+---
+
+## 环境变量
+
+| 变量 | 说明 |
+|------|------|
+| `DATAWISE_API_URL` | 后端根地址，默认 `http://localhost:18421` |
+| `DATAWISE_SESSION_ID` | 浏览器会话 ID（请求头 `X-Session-Id`） |
+| `DATAWISE_API_TOKEN` | API Token（`Authorization: Bearer …`，可替代会话） |
+
+---
+
+## 安装与运行
 
 ```bash
 cd datawise-mcp
 npm install
 npm run build
 npm start
+# 开发：npm run dev
 ```
 
-## Cursor configuration
+---
+
+## Cursor 配置示例
 
 ```json
 {
@@ -41,13 +52,28 @@ npm start
 }
 ```
 
-## Tools
+将路径换成你的本机绝对路径；生产环境更推荐使用 `DATAWISE_API_TOKEN`。
 
-- `list_connections` — visible connections
-- `list_tables` — schema tables
-- `review_sql` — pre-execution safety review
-- `execute_readonly_sql` — SELECT-only via DataWise gate
-- `compare_schema` — drift between environments
-- `list_semantic_metrics` — semantic layer metrics for a database
-- `rerun_canvas` — parameterize and rerun a saved analysis canvas
-- `generate_federated_sql` — AI cross-source federated SQL from natural language
+---
+
+## 工具一览
+
+| 工具 | 作用 |
+|------|------|
+| `list_connections` | 列出当前可见连接 |
+| `list_tables` | 浏览库表 |
+| `review_sql` | 执行前安全审查 |
+| `execute_readonly_sql` | 仅 SELECT，经 DataWise 闸门执行 |
+| `compare_schema` | 环境间 Schema 差异 |
+| `list_semantic_metrics` | 语义指标目录 |
+| `rerun_canvas` | 参数化重跑已保存分析画布 |
+| `generate_federated_sql` | 自然语言 → 跨源联邦 SQL |
+
+写操作与治理边界见 [../docs/GOVERNANCE.md](../docs/GOVERNANCE.md)。
+
+---
+
+## 相关
+
+- 后端：[../datawise-backend/README.md](../datawise-backend/README.md)
+- 使用说明书 · 桌面与生态：[../docs/user-manual/12-desktop-ecosystem.md](../docs/user-manual/12-desktop-ecosystem.md)
