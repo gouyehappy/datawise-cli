@@ -29,6 +29,21 @@ export interface SqlTableColumnsResult {
     foreignKeys?: SqlForeignKey[]
 }
 
+/** 近期 SQL（宿主注入，按连接/库召回） */
+export interface SqlRecentQuery {
+    id: string
+    sql: string
+    label?: string
+    connectionId?: string
+    database?: string
+    tables?: string[]
+}
+
+export interface SqlRecentQueryScope {
+    connectionId?: string
+    database?: string
+}
+
 /** 补全 Schema：表名 + 各表字段 + 可选外键 */
 export interface SqlEditorSchema {
     tables: string[]
@@ -383,6 +398,15 @@ export interface SqlEditorRuntime {
     getSelectedText(): string
 
     setSelectedText(text: string | undefined): void
+
+    /** 宿主注入的近期 SQL（补全召回） */
+    getRecentQueries(): SqlRecentQuery[]
+
+    setRecentQueries(items: SqlRecentQuery[]): void
+
+    getRecentQueryScope(): SqlRecentQueryScope
+
+    setRecentQueryScope(scope: SqlRecentQueryScope): void
 
     setAiAssistHandler(handler: ((payload: SqlEditorAiAssistPayload) => void) | null): void
 

@@ -16,6 +16,8 @@ import {SqlEditor} from '@datawise/sql-editor'
 import type {SqlEditorExpose} from '@datawise/sql-editor'
 import {getActiveSqlEditorRuntime} from '@datawise/sql-editor/runtime/sql-editor-runtime'
 import {useExplorerSqlSchemaProvider} from '@/features/workspace/adapters/explorer-sql-schema-provider'
+import {useShortcutPanelStore} from '@/features/layout/stores/shortcut-panel-store'
+import {buildRecentQueriesFromSqlLogs} from '@/features/workspace/services/recent-sql-suggest.service'
 import SplitHandle from '@/core/components/SplitHandle.vue'
 import {shortcutTooltip} from '@/features/layout/composables/useAppShortcutListener'
 import {useWorkspaceSqlShortcutHandlers} from '@/features/workspace/composables/useWorkspaceSqlShortcutHandlers'
@@ -61,7 +63,14 @@ import {applySqlParameters, extractSqlParameters} from '@/features/workspace/ser
 import {
   buildOrderByFillInsert,
   buildWhereFillInsert,
+  buildWhereInFillInsert,
 } from '@/features/workspace/services/result-sql-fill.service'
+import {
+  applyOrderByToSql,
+  applyWhereConditionToSql,
+  nextOrderDirection,
+} from '@/features/workspace/services/result-sql-rewrite.service'
+import {buildWhereEqualsClause} from '@/features/workspace/services/grid-cell-context.service'
 import {
     supportsExplainAnalyze,
     wrapExplainSql,
@@ -109,6 +118,7 @@ const explorer = useExplorerStore()
 const layout = useLayoutStore()
 const appConfig = useAppConfigStore()
 const pluginStore = usePluginStore()
+const shortcutPanel = useShortcutPanelStore()
 const {consoleQueryByTabId} = storeToRefs(workspace)
 
 const sql = ref(props.tab.sql ?? '')
@@ -305,6 +315,26 @@ const databaseName = computed(() => {
 })
 
 const dbDialect = computed(() => source.value?.dbType)
+
+watch(
+    [() => shortcutPanel.sqlLogs, connectionId, databaseName],
+    () => {
+      const connId = connectionId.value || props.tab.connectionId
+      const database = databaseName.value
+      const runtime = getActiveSqlEditorRuntime()
+      runtime.setRecentQueryScope({
+        connectionId: connId,
+        database,
+      })
+      runtime.setRecentQueries(
+          buildRecentQueriesFromSqlLogs(shortcutPanel.sqlLogs, {
+            connectionId: connId,
+            database,
+          }),
+      )
+    },
+    {immediate: true, deep: true},
+)
 
 const connectionEnvironment = computed(() => {
   const connId = connectionId.value || props.tab.connectionId
@@ -749,10 +779,16 @@ function onRaiseMaxRows(maxRows: number) {
   })
 }
 
+const lastOrderFill = ref<{column: string; direction: 'asc' | 'desc'} | null>(null)
+
 function onInsertOrderByFromResult(payload: {column: string; direction: 'asc' | 'desc'}) {
   const editor = editorRef.value
   if (!editor) return
-  editor.insertTextAtCursor(buildOrderByFillInsert(payload.column, payload.direction))
+  const direction = payload.direction === 'desc'
+      ? 'desc'
+      : nextOrderDirection(lastOrderFill.value, payload.column)
+  lastOrderFill.value = {column: payload.column, direction}
+  editor.insertTextAtCursor(buildOrderByFillInsert(payload.column, direction))
   layout.showSuccessToast(t('console.sqlFillInserted'))
 }
 
@@ -762,6 +798,44 @@ function onInsertWhereFromResult(payload: {column: string; value: unknown}) {
   const statement = editor.getCurrentLineSql?.()?.trim() || sql.value
   editor.insertTextAtCursor(buildWhereFillInsert(statement, payload.column, payload.value))
   layout.showSuccessToast(t('console.sqlFillInserted'))
+}
+
+function onInsertWhereInFromResult(payload: {column: string; clause: string}) {
+  const editor = editorRef.value
+  if (!editor) return
+  const statement = editor.getCurrentLineSql?.()?.trim() || sql.value
+  const text = buildWhereInFillInsert(statement, payload.clause)
+  if (!text) return
+  editor.insertTextAtCursor(text)
+  layout.showSuccessToast(t('console.sqlFillInserted'))
+}
+
+function resolveActiveResultSql(): string {
+  const result = consoleQuery.value.results[consoleQuery.value.activeView]
+  return result?.sql?.trim() || sql.value
+}
+
+function replaceEditorSql(nextSql: string) {
+  sql.value = nextSql
+  editorRef.value?.layout()
+  layout.showSuccessToast(t('console.sqlRewriteApplied'))
+}
+
+function onRewriteWhereFromResult(payload: {column: string; value: unknown}) {
+  const source = resolveActiveResultSql()
+  if (!source) return
+  const condition = buildWhereEqualsClause(payload.column, payload.value)
+  replaceEditorSql(applyWhereConditionToSql(source, condition))
+}
+
+function onRewriteOrderByFromResult(payload: {column: string; direction: 'asc' | 'desc'}) {
+  const source = resolveActiveResultSql()
+  if (!source) return
+  const direction = payload.direction === 'desc'
+      ? 'desc'
+      : nextOrderDirection(lastOrderFill.value, payload.column)
+  lastOrderFill.value = {column: payload.column, direction}
+  replaceEditorSql(applyOrderByToSql(source, payload.column, direction))
 }
 
 async function onLoadMoreResult(index: number) {
@@ -1161,6 +1235,9 @@ onMounted(async () => {
           @raise-max-rows="onRaiseMaxRows"
           @insert-order-by="onInsertOrderByFromResult"
           @insert-where="onInsertWhereFromResult"
+          @insert-where-in="onInsertWhereInFromResult"
+          @rewrite-where="onRewriteWhereFromResult"
+          @rewrite-order-by="onRewriteOrderByFromResult"
       />
       <button
           v-if="!isEditorFullscreen && !showResultPanel"

@@ -32,6 +32,9 @@ const NO_COLUMN_STAGES = new Set<string>([
     'join.on_keyword',
     'table.clause_next',
     'update.after_table',
+    'update.after_set_item',
+    'delete.after_table',
+    'ddl.after_table',
     'select_list.after_aggregate',
     'order_by.after_column',
     'order_by.clause_next',
@@ -40,6 +43,8 @@ const NO_COLUMN_STAGES = new Set<string>([
 function defaultColumnMatch(stage: string | undefined): ColumnMatchMode {
     if (!stage) return 'prefix-only'
     if (stage === 'predicate.pick_column' || stage === 'predicate.pick_fk_on_column') return 'allow-empty'
+    if (stage === 'predicate.after_connector' || stage === 'update.set') return 'allow-empty'
+    if (stage === 'insert.pick_column' || stage === 'insert.values') return 'allow-empty'
     if (
         stage === 'group_by.pick_column' ||
         stage === 'group_by.after_comma' ||
@@ -106,6 +111,7 @@ function planAllowsSnippets(
     if (plan.keywordPhase === 'clause-prefix') return true
     if (plan.keywordPhase === 'insert-clause-next') return true
     if (plan.keywordPhase === 'update-clause-next') return true
+    if (plan.keywordPhase === 'ddl-alter-next') return true
     return plan.keywordPhase === 'all'
 }
 

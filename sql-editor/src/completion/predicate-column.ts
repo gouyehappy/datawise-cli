@@ -98,7 +98,7 @@ export function resolvePredicateLeftColumn(
         )
     // 仅在谓词连接词 / WHERE|HAVING|ON 后的裸列，避免误吃 SELECT 列表列名
     const unqualifiedBare =
-        /(?:^|[\s,(]|(?:\bWHERE|\bHAVING|\bAND|\bOR|\bON)\s+)([`"'\[]?[\w$]+[`"'\]]?)\s*$/i.exec(text)
+        /(?:^|[\s,(]|(?:\bWHERE|\bHAVING|\bAND|\bOR|\bON|\bSET)\s+)([`"'\[]?[\w$]+[`"'\]]?)\s*$/i.exec(text)
 
     const u = unqualifiedOp ?? unqualifiedBare
     if (u) {

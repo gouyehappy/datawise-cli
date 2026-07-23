@@ -257,6 +257,7 @@ const EN_MESSAGES = {
     'completion.badge.group_by': 'GRP',
     'completion.badge.order_by': 'ORD',
     'completion.badge.ordinal': '#',
+    'completion.badge.recent': 'HIST',
 
     'completion.type.table': 'Table',
     'completion.type.column': 'Column',
@@ -267,6 +268,7 @@ const EN_MESSAGES = {
     'completion.type.fk': 'Foreign Key',
     'completion.type.expand': 'Expand',
     'completion.type.ai': 'AI',
+    'completion.type.recent': 'History',
     'completion.type.value': 'Value',
     'completion.type.value_string': 'String',
     'completion.type.value_number': 'Number',
@@ -282,6 +284,7 @@ const EN_MESSAGES = {
     'completion.order_by.ordinal': '#{ordinal} → {label}',
 
     'completion.ai.detail': 'AI assistant',
+    'completion.recent.detail': 'Recent SQL',
 
     'completion.function': 'Function',
     'completion.ai.generate': 'AI: Write query',
@@ -642,6 +645,7 @@ const ZH_MESSAGES: Record<SqlEditorMessageKey, string> = {
     'completion.badge.group_by': '分组',
     'completion.badge.order_by': '排序',
     'completion.badge.ordinal': '序号',
+    'completion.badge.recent': '历史',
 
     'completion.type.table': '表',
     'completion.type.column': '字段',
@@ -652,6 +656,7 @@ const ZH_MESSAGES: Record<SqlEditorMessageKey, string> = {
     'completion.type.fk': '外键',
     'completion.type.expand': '展开',
     'completion.type.ai': 'AI',
+    'completion.type.recent': '历史',
     'completion.type.value': '值',
     'completion.type.value_string': '字符串',
     'completion.type.value_number': '数值',
@@ -667,6 +672,7 @@ const ZH_MESSAGES: Record<SqlEditorMessageKey, string> = {
     'completion.order_by.ordinal': '序号 {ordinal} → {label}',
 
     'completion.ai.detail': 'AI 助手',
+    'completion.recent.detail': '最近执行的 SQL',
 
     'completion.function': '函数',
     'completion.ai.generate': 'AI：写查询',

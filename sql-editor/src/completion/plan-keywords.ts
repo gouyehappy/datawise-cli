@@ -26,6 +26,24 @@ function filterKeywordsForDmlStatement(
 
 const DELETE_AFTER_TABLE_KEYWORDS = new Set(['WHERE'])
 
+const AFTER_SET_KEYWORDS = new Set(['WHERE'])
+
+const ALTER_AFTER_TABLE_KEYWORDS = new Set([
+    'ADD',
+    'ADD COLUMN',
+    'DROP',
+    'DROP COLUMN',
+    'MODIFY',
+    'MODIFY COLUMN',
+    'CHANGE',
+    'CHANGE COLUMN',
+    'ALTER',
+    'ALTER COLUMN',
+    'RENAME',
+    'RENAME COLUMN',
+    'RENAME TO',
+])
+
 function applyForbidden(ctx: SqlCompletionContext, keywords: string[]): string[] {
     if (ctx.statement !== 'select') return keywords
     const forbidden = forbiddenInSelectKeywords()
@@ -257,6 +275,10 @@ export function filterKeywordsForKeywordSlot(
         allowed = AFTER_HAVING_KEYWORDS
     } else if (keywordSlot === 'after_order_by') {
         allowed = AFTER_ORDER_BY_KEYWORDS
+    } else if (keywordSlot === 'after_set') {
+        allowed = AFTER_SET_KEYWORDS
+    } else if (keywordSlot === 'after_alter_table') {
+        allowed = ALTER_AFTER_TABLE_KEYWORDS
     }
 
     if (!allowed) return keywords

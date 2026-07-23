@@ -17,6 +17,13 @@ function at(sql: string, marker = '|') {
 }
 
 describe('DDL completion stages', () => {
+    it('ALTER TABLE 表后：ADD/DROP 等动作关键字', () => {
+        const {plan} = at('ALTER TABLE users |')
+        assert.equal(plan.stage, 'ddl.after_table')
+        assert.equal(plan.keywordPhase, 'ddl-alter-next')
+        assert.deepEqual(plan.collectors, ['keywords', 'snippets'])
+    })
+
     it('DROP/ALTER/TRUNCATE pick existing tables without alias mode', () => {
         for (const sql of [
             'DROP TABLE IF EXISTS c',

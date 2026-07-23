@@ -295,12 +295,24 @@ const FIXTURE_LIST: Array<{
         fixture: {sql: 'INSERT INTO |', stage: 'insert.columns', clauseId: 'insert_columns'},
     },
     {
+        statement: 'insert', clauseId: 'insert_columns', stateId: 'in_column_list',
+        fixture: {sql: 'INSERT INTO orders (|', stage: 'insert.pick_column', clauseId: 'insert_columns'},
+    },
+    {
+        statement: 'insert', clauseId: 'insert_columns', stateId: 'after_column_list',
+        fixture: {
+            sql: 'INSERT INTO orders (id, status) |',
+            stage: 'insert.after_table',
+            clauseId: 'insert_columns',
+        },
+    },
+    {
         statement: 'insert', clauseId: 'insert_columns', stateId: 'table_complete',
         fixture: {sql: 'INSERT INTO orders |', stage: 'insert.after_table', clauseId: 'insert_columns'},
     },
     {
         statement: 'insert', clauseId: 'values', stateId: 'default',
-        fixture: {sql: 'INSERT INTO orders VALUES |', stage: 'insert.values', clauseId: 'values'},
+        fixture: {sql: 'INSERT INTO orders VALUES (|', stage: 'insert.values', clauseId: 'values'},
     },
 
     // ── UPDATE ──
@@ -323,6 +335,14 @@ const FIXTURE_LIST: Array<{
     {
         statement: 'update', clauseId: 'set', stateId: 'set_pick_value',
         fixture: {sql: 'UPDATE orders SET status = |', stage: 'predicate.pick_value', clauseId: 'set'},
+    },
+    {
+        statement: 'update', clauseId: 'set', stateId: 'after_set_item',
+        fixture: {
+            sql: 'UPDATE orders SET status = 1 |',
+            stage: 'update.after_set_item',
+            clauseId: 'set',
+        },
     },
     {
         statement: 'update', clauseId: 'set', stateId: 'set_after_column',
@@ -371,7 +391,7 @@ const FIXTURE_LIST: Array<{
     },
     {
         statement: 'delete', clauseId: 'from', stateId: 'table_complete',
-        fixture: {sql: 'DELETE FROM orders |', stage: 'table.clause_next', clauseId: 'from'},
+        fixture: {sql: 'DELETE FROM orders |', stage: 'delete.after_table', clauseId: 'from'},
     },
     {
         statement: 'delete', clauseId: 'where', stateId: 'where_complete',
@@ -409,6 +429,10 @@ const FIXTURE_LIST: Array<{
     {
         statement: 'ddl', clauseId: 'ddl_table_object', stateId: 'pick_table',
         fixture: {sql: 'DROP TABLE IF EXISTS |', stage: 'ddl.pick_table', clauseId: 'ddl_table_object'},
+    },
+    {
+        statement: 'ddl', clauseId: 'ddl_table_object', stateId: 'after_table',
+        fixture: {sql: 'ALTER TABLE users |', stage: 'ddl.after_table', clauseId: 'ddl_table_object'},
     },
     {
         statement: 'ddl', clauseId: 'ddl_create_body', stateId: 'column_type',

@@ -173,6 +173,7 @@ export default {
     schemaWarn: 'Found {count} table/column issue(s) ({message}). Jumped to the first; run again to skip the check.',
     runFailed: 'SQL execution failed',
     sqlFillInserted: 'Inserted into editor',
+    sqlRewriteApplied: 'Source SQL updated',
     consoleTitle: 'Console {n}',
     newConnectionTitle: 'New {dbType}',
     parameters: {

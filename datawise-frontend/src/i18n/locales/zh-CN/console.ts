@@ -173,6 +173,7 @@ export default {
     schemaWarn: '发现 {count} 处表/列问题（{message}）。已定位到问题处，再次执行将跳过校验。',
     runFailed: 'SQL 执行失败',
     sqlFillInserted: '已插入到编辑器',
+    sqlRewriteApplied: '已写回原 SQL',
     consoleTitle: '控制台 {n}',
     newConnectionTitle: '新建 {dbType}',
     parameters: {

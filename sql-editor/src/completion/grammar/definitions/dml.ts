@@ -14,6 +14,18 @@ export const INSERT_STATEMENT_GRAMMAR: StatementGrammar = {
             markers: ['INTO'],
             states: [
                 {
+                    id: 'in_column_list',
+                    when: 'insert_in_column_list',
+                    stage: 'insert.pick_column',
+                    hint: 'INSERT 列清单内 → 列名',
+                },
+                {
+                    id: 'after_column_list',
+                    when: 'after_insert_column_list',
+                    stage: 'insert.after_table',
+                    hint: 'INSERT 列清单闭合 → VALUES',
+                },
+                {
                     id: 'table_complete',
                     when: 'from_table_clause_complete',
                     stage: 'insert.after_table',
@@ -36,7 +48,7 @@ export const INSERT_STATEMENT_GRAMMAR: StatementGrammar = {
                     id: 'default',
                     when: 'always',
                     stage: 'insert.values',
-                    hint: 'VALUES 后 → 字面量 / 关键字',
+                    hint: 'VALUES 后 → 字面量 / 列引用',
                 },
             ],
         },
@@ -80,6 +92,12 @@ export const UPDATE_STATEMENT_GRAMMAR: StatementGrammar = {
             markers: ['SET'],
             states: [
                 {...P.pickValue, id: 'set_pick_value'},
+                {
+                    id: 'after_set_item',
+                    when: 'after_complete_set_assignment',
+                    stage: 'update.after_set_item',
+                    hint: 'SET 赋值写完 → WHERE / 下一列',
+                },
                 {...P.afterColumn, id: 'set_after_column'},
                 {
                     id: 'pick_column',
@@ -129,7 +147,7 @@ export const DELETE_STATEMENT_GRAMMAR: StatementGrammar = {
                 {
                     id: 'table_complete',
                     when: 'from_table_clause_complete',
-                    stage: 'table.clause_next',
+                    stage: 'delete.after_table',
                     hint: 'DELETE FROM 表后 → WHERE',
                 },
                 {
@@ -248,6 +266,12 @@ export const DDL_STATEMENT_GRAMMAR: StatementGrammar = {
                 'RENAME TABLE',
             ],
             states: [
+                {
+                    id: 'after_table',
+                    when: 'ddl_after_alter_table',
+                    stage: 'ddl.after_table',
+                    hint: 'ALTER TABLE 表后 → ADD/DROP/MODIFY…',
+                },
                 {
                     id: 'pick_table',
                     when: 'always',

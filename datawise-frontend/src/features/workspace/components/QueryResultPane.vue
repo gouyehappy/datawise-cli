@@ -154,6 +154,9 @@ const emit = defineEmits<{
   'raise-max-rows': [maxRows: number]
   'insert-order-by': [payload: { column: string; direction: 'asc' | 'desc' }]
   'insert-where': [payload: { column: string; value: unknown }]
+  'insert-where-in': [payload: { column: string; clause: string }]
+  'rewrite-where': [payload: { column: string; value: unknown }]
+  'rewrite-order-by': [payload: { column: string; direction: 'asc' | 'desc' }]
 }>()
 
 const layout = useLayoutStore()
@@ -961,6 +964,9 @@ watch(
           @generate-fake-data="emit('generate-fake-data')"
           @insert-order-by="emit('insert-order-by', $event)"
           @insert-where="emit('insert-where', $event)"
+          @insert-where-in="emit('insert-where-in', $event)"
+          @rewrite-where="emit('rewrite-where', $event)"
+          @rewrite-order-by="emit('rewrite-order-by', $event)"
       >
         <template v-if="canShowFakeData || canShowResultChart" #toolbar-extra>
           <QueryResultViewToggle v-if="canShowResultChart" v-model="resultView"/>

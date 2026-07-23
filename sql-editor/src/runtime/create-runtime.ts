@@ -11,6 +11,8 @@ import type {
     SqlEditorShortcutsSettings,
     SqlEditorLocale,
     SqlEditorAiAssistPayload,
+    SqlRecentQuery,
+    SqlRecentQueryScope,
 } from '@sql-editor/types'
 
 import {toPlainSqlEditorSchema} from '@sql-editor/utils/schema-plain'
@@ -56,6 +58,8 @@ export function createSqlEditorRuntime(options: SqlEditorRuntimeOptions = {}): S
 
     let locale: SqlEditorLocale = normalizeSqlEditorLocale(effectiveSettings().locale)
     let selectedText = ''
+    let recentQueries: SqlRecentQuery[] = []
+    let recentQueryScope: SqlRecentQueryScope = {}
     let aiAssistHandler: ((payload: SqlEditorAiAssistPayload) => void) | null = null
 
     function syncLayers() {
@@ -124,6 +128,17 @@ export function createSqlEditorRuntime(options: SqlEditorRuntimeOptions = {}): S
         getSelectedText: () => selectedText,
         setSelectedText(next) {
             selectedText = next?.trim() ?? ''
+        },
+        getRecentQueries: () => recentQueries,
+        setRecentQueries(items) {
+            recentQueries = Array.isArray(items) ? items.slice(0, 40) : []
+        },
+        getRecentQueryScope: () => ({...recentQueryScope}),
+        setRecentQueryScope(scope) {
+            recentQueryScope = {
+                connectionId: scope.connectionId,
+                database: scope.database,
+            }
         },
         setAiAssistHandler(handler) {
             aiAssistHandler = handler

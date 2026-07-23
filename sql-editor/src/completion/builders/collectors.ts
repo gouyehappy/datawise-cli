@@ -22,6 +22,7 @@ import {
     collectSnippetSuggestions,
 } from './keyword-snippet-collectors'
 import {collectAiAssistSuggestions} from './ai-assist-collector'
+import {collectRecentSqlSuggestions} from './recent-sql-collector'
 
 export type CompletionPush = SuggestPush
 
@@ -86,6 +87,9 @@ export function runCollectors(input: RunCollectorsInput): void {
                 break
             case 'aiAssist':
                 collectAiAssistSuggestions(ctx, push, range, prefix, plan)
+                break
+            case 'recentSql':
+                collectRecentSqlSuggestions(ctx, push, range, prefix, plan)
                 break
         }
     }

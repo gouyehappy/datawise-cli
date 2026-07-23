@@ -214,6 +214,12 @@ const emit = defineEmits<{
   'insert-order-by': [payload: { column: string; direction: 'asc' | 'desc' }]
   /** 结果单元格回填：WHERE / AND 等值条件 */
   'insert-where': [payload: { column: string; value: unknown }]
+  /** 本页唯一值 WHERE IN */
+  'insert-where-in': [payload: { column: string; clause: string }]
+  /** 写回原结果 SQL 的 WHERE */
+  'rewrite-where': [payload: { column: string; value: unknown }]
+  /** 写回原结果 SQL 的 ORDER BY */
+  'rewrite-order-by': [payload: { column: string; direction: 'asc' | 'desc' }]
 }>()
 
 const viewState = defineModel<GridViewState>('viewState')
@@ -1170,11 +1176,23 @@ const cellMenuItems = computed<ContextMenuItem[]>(() => {
   ]
 
   if (props.enableSqlFill) {
-    items.push({
-      id: 'insert-where',
-      label: t('dataGrid.contextMenu.insertWhere'),
-      icon: 'filter',
-    })
+    items.push(
+        {
+          id: 'insert-where',
+          label: t('dataGrid.contextMenu.insertWhere'),
+          icon: 'filter',
+        },
+        {
+          id: 'insert-where-in',
+          label: t('dataGrid.contextMenu.insertWhereIn'),
+          icon: 'filter',
+        },
+        {
+          id: 'rewrite-where',
+          label: t('dataGrid.contextMenu.rewriteWhere'),
+          icon: 'filter',
+        },
+    )
   }
 
   // 与工具栏一致：按 editable 显示，不依赖 columnDetails 是否已加载
@@ -1273,6 +1291,15 @@ async function onCellMenuSelect(id: string) {
     emit('insert-where', {column: column.name, value: cellValue})
     return
   }
+  if (id === 'insert-where-in') {
+    const clause = buildWhereInClause(column.name, resolveContextPageRows(), column)
+    if (clause) emit('insert-where-in', {column: column.name, clause})
+    return
+  }
+  if (id === 'rewrite-where') {
+    emit('rewrite-where', {column: column.name, value: cellValue})
+    return
+  }
   if (id === 'add-row') {
     await onAddRowClick()
     return
@@ -1318,6 +1345,8 @@ const headerMenuItems = computed<ContextMenuItem[]>(() => {
         {id: 'divider-sql-fill', label: '', divider: true},
         {id: 'insert-order-by', label: t('dataGrid.contextMenu.insertOrderBy')},
         {id: 'insert-order-by-desc', label: t('dataGrid.contextMenu.insertOrderByDesc')},
+        {id: 'rewrite-order-by', label: t('dataGrid.contextMenu.rewriteOrderBy')},
+        {id: 'rewrite-order-by-desc', label: t('dataGrid.contextMenu.rewriteOrderByDesc')},
     )
   }
   return items
@@ -1363,6 +1392,14 @@ async function onHeaderMenuSelect(id: string) {
   }
   if (id === 'insert-order-by-desc') {
     emit('insert-order-by', {column: column.name, direction: 'desc'})
+    return
+  }
+  if (id === 'rewrite-order-by') {
+    emit('rewrite-order-by', {column: column.name, direction: 'asc'})
+    return
+  }
+  if (id === 'rewrite-order-by-desc') {
+    emit('rewrite-order-by', {column: column.name, direction: 'desc'})
   }
 }
 

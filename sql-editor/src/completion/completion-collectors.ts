@@ -12,3 +12,4 @@ export type CompletionCollector =
     | 'predicateValues'
     | 'ddlTypes'
     | 'aiAssist'
+    | 'recentSql'

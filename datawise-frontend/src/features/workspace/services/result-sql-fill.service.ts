@@ -21,3 +21,12 @@ export function buildOrderByFillInsert(
 ): string {
     return `\n${buildOrderByClause(columnName, direction)}`
 }
+
+/** 插入 WHERE IN / 等值条件片段（含 WHERE 或 AND 前缀） */
+export function buildWhereInFillInsert(statementSql: string, inClause: string): string {
+    const trimmed = inClause.trim()
+    if (!trimmed) return ''
+    const hasWhere = /\bWHERE\b/i.test(statementSql)
+    if (hasWhere) return `\n  AND ${trimmed}`
+    return `\nWHERE ${trimmed}`
+}

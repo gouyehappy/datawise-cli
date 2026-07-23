@@ -156,12 +156,20 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
         collectors: ['columns', 'aliasComplete'],
         sortProfile: 'column-first',
         keywordPhase: 'none',
+        columnMatch: 'allow-empty',
     },
     'insert.columns': {
-        collectors: ['fkJoinLines', 'tables', 'snippets'],
+        collectors: ['tables', 'snippets'],
         sortProfile: 'table-first',
         keywordPhase: 'none',
         suppressTables: false,
+        tableInsertMode: 'name-only',
+    },
+    'insert.pick_column': {
+        collectors: ['columns', 'aliasComplete'],
+        sortProfile: 'column-first',
+        keywordPhase: 'none',
+        columnMatch: 'allow-empty',
     },
     'insert.after_table': {
         collectors: ['keywords', 'snippets', 'columns'],
@@ -175,6 +183,7 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
         sortProfile: 'table-first',
         keywordPhase: 'none',
         suppressTables: false,
+        tableInsertMode: 'name-only',
     },
     'update.after_table': {
         collectors: ['keywords', 'snippets'],
@@ -187,16 +196,32 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
         collectors: ['columns', 'aliasComplete'],
         sortProfile: 'column-first',
         keywordPhase: 'none',
+        columnMatch: 'allow-empty',
+    },
+    'update.after_set_item': {
+        collectors: ['keywords', 'snippets'],
+        sortProfile: 'keyword-first',
+        keywordPhase: 'clause-next',
+        keywordSlot: 'after_set',
+        suppressTables: true,
     },
     'delete.from': {
-        collectors: ['fkJoinLines', 'tables', 'snippets'],
+        collectors: ['tables', 'snippets'],
         sortProfile: 'table-first',
         keywordPhase: 'none',
         suppressTables: false,
+        tableInsertMode: 'name-only',
+    },
+    'delete.after_table': {
+        collectors: ['keywords', 'snippets'],
+        sortProfile: 'keyword-first',
+        keywordPhase: 'clause-next',
+        keywordSlot: 'after_table',
+        suppressTables: true,
     },
 
     'statement.start': {
-        collectors: ['keywords', 'snippets'],
+        collectors: ['recentSql', 'keywords', 'snippets'],
         sortProfile: 'keyword-first',
         keywordPhase: 'all',
         keywordSlot: 'statement_start',
@@ -229,6 +254,13 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
         sortProfile: 'table-first',
         keywordPhase: 'none',
         tableInsertMode: 'name-only',
+    },
+    'ddl.after_table': {
+        collectors: ['keywords', 'snippets'],
+        sortProfile: 'keyword-first',
+        keywordPhase: 'ddl-alter-next',
+        keywordSlot: 'after_alter_table',
+        suppressTables: true,
     },
     'ddl.create_rest': {
         collectors: [],

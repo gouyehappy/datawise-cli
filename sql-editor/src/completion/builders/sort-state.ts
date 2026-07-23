@@ -13,7 +13,7 @@ export function getActiveSortProfile(): CompletionSortProfile {
 }
 
 export function completionSort(
-    group: 'keyword' | 'snippet' | 'column' | 'alias' | 'table' | 'fkjoin' | 'expand' | 'ai' | 'function',
+    group: 'keyword' | 'snippet' | 'column' | 'alias' | 'table' | 'fkjoin' | 'expand' | 'ai' | 'function' | 'recent',
     index: number,
 ): string {
     return sortTextForProfile(getActiveSortProfile(), group, index)

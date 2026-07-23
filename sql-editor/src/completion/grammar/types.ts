@@ -37,17 +37,21 @@ export type CompletionStage =
     // DML
     | 'insert.values'
     | 'insert.columns'
+    | 'insert.pick_column'
     | 'insert.after_table'
     | 'update.set'
     | 'update.pick_table'
     | 'update.after_table'
+    | 'update.after_set_item'
     | 'delete.from'
+    | 'delete.after_table'
     // 语句级
     | 'statement.start'
     | 'clause.keyword_first'
     | 'clause.column_first'
     | 'ddl.keywords'
     | 'ddl.pick_table'
+    | 'ddl.after_table'
     | 'ddl.create_rest'
     | 'ddl.column_type'
 
@@ -62,6 +66,8 @@ export type KeywordSlotOverride =
     | 'after_group_by'
     | 'after_having'
     | 'after_order_by'
+    | 'after_set'
+    | 'after_alter_table'
     | 'select_aggregate'
 
 /** 阶段计划模板 */

@@ -9,6 +9,7 @@ export type CompletionDisplayCategory =
     | 'fk'
     | 'expand'
     | 'ai'
+    | 'recent'
     | 'value'
     | 'value_string'
     | 'value_number'
@@ -29,6 +30,7 @@ const COMPLETION_ITEM_KIND = {
     fk: 21, // Reference
     expand: 10, // Event
     ai: 10, // Event
+    recent: 28, // Snippet
     value: 13, // Value
     value_string: 28, // Snippet — 字符串模板（Monaco Text/abc 在 showWords:false 时会被过滤）
     value_number: 12, // Unit — 数值模板，列表标签用 123

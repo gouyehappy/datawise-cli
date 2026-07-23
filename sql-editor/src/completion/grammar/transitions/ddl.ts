@@ -25,6 +25,17 @@ function isCreateTableColumnTypePosition(fromParen: string): boolean {
     return /^\s*[\w$"'`[\]]+\s+(?:[\w$]*)?\s*$/.test(current)
 }
 
+const IDENT = '[`"\'\\[]?[\\w$]+[`"\'\\]]?'
+
+/** ALTER TABLE <table> 之后：等待 ADD/DROP/MODIFY…（尚未写入动作关键字） */
+export function detectDdlAfterAlterTable(segment: string): boolean {
+    const re = new RegExp(
+        String.raw`\bALTER\s+TABLE\s+(?:${IDENT}\s*\.\s*)*${IDENT}\s+$`,
+        'i',
+    )
+    return re.test(segment)
+}
+
 /** ALTER … ADD/MODIFY/CHANGE COLUMN 列名之后，或 CREATE TABLE (…) 内列名之后 */
 export function detectDdlAwaitingColumnType(segment: string): boolean {
     if (ALTER_COLUMN_TYPE_TAIL.test(segment)) return true

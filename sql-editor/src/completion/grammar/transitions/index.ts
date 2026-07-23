@@ -9,4 +9,10 @@ export {detectAfterCompleteGroupByList} from './clause'
 
 export {detectAfterSelectAggregateKeyword} from './select-list'
 
-export {detectDdlAwaitingColumnType} from './ddl'
+export {detectDdlAwaitingColumnType, detectDdlAfterAlterTable} from './ddl'
+
+export {
+    detectInsertInColumnList,
+    detectAfterInsertColumnList,
+    detectAfterCompleteSetAssignment,
+} from './dml'

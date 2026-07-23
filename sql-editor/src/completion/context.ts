@@ -81,7 +81,8 @@ function extractScopedSegment(segment: string, maskedSegment?: string): string {
                 if (selectMatch?.index !== undefined) {
                     return inner.slice(selectMatch.index)
                 }
-                return inner
+                // 非 SELECT 括号（INSERT 列清单 / VALUES / 函数实参等）：保留整句，避免丢语句类型
+                return segment
             }
         }
     }
@@ -234,7 +235,9 @@ export function effectiveCompletionSlot(ctx: SqlCompletionContext): SqlCompletio
     if (hasSignal(ctx, 'after_complete_where_predicate')) return ctx.slot
     if (hasSignal(ctx, 'after_complete_column_ref') && ctx.predicateSlot) return ctx.predicateSlot
     if (ctx.fromJoin?.awaitingOnClause) return 'on'
-    if (ctx.fromJoin?.tableClauseComplete && ctx.slot === 'insert_columns') return 'values'
+    if (ctx.fromJoin?.tableClauseComplete && ctx.slot === 'insert_columns' && !hasSignal(ctx, 'insert_in_column_list')) {
+        return 'values'
+    }
     if (ctx.fromJoin?.tableClauseComplete && ctx.slot === 'update_table') return 'set'
     if (ctx.fromJoin?.tableClauseComplete && (ctx.slot === 'from' || ctx.slot === 'join')) {
         return ctx.slot === 'join' ? 'join' : 'where'

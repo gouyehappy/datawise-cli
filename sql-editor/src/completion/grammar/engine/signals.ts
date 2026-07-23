@@ -10,7 +10,12 @@ import {
     segmentEndsWithOperator,
 } from '../transitions/predicate'
 import {detectAfterSelectAggregateKeyword} from '../transitions/select-list'
-import {detectDdlAwaitingColumnType} from '../transitions/ddl'
+import {detectDdlAwaitingColumnType, detectDdlAfterAlterTable} from '../transitions/ddl'
+import {
+    detectInsertInColumnList,
+    detectAfterInsertColumnList,
+    detectAfterCompleteSetAssignment,
+} from '../transitions/dml'
 
 /** 所有 TransitionId（always 由 evaluateTransition 直接处理，不入 signals） */
 export const TRANSITION_IDS: readonly TransitionId[] = [
@@ -33,6 +38,10 @@ export const TRANSITION_IDS: readonly TransitionId[] = [
     'from_awaiting_join_table',
     'keyword_first_slot',
     'ddl_awaiting_column_type',
+    'ddl_after_alter_table',
+    'insert_in_column_list',
+    'after_insert_column_list',
+    'after_complete_set_assignment',
 ] as const
 
 export type GrammarSignals = Readonly<Record<Exclude<TransitionId, 'always'>, boolean>>
@@ -140,7 +149,7 @@ function detectAfterCompleteColumnRef(input: ComputeSignalsInput): boolean {
             if (col && isKnownColumnName(col, knownColumnNames)) return true
         }
 
-        const unqualMatch = /\b(?:AND|OR|WHERE|HAVING|ON|,)\s+([\w$]+)\s*$/i.exec(segment.trimEnd())
+        const unqualMatch = /\b(?:AND|OR|WHERE|HAVING|ON|SET|,)\s+([\w$]+)\s*$/i.exec(segment.trimEnd())
         if (unqualMatch?.[1]) {
             const col = unqualMatch[1]
             if (isKnownColumnName(col, knownColumnNames)) return true
@@ -238,6 +247,13 @@ export function computeGrammarSignals(input: ComputeSignalsInput): GrammarSignal
     )
 
     signals.ddl_awaiting_column_type = detectDdlAwaitingColumnType(segment)
+    signals.ddl_after_alter_table = detectDdlAfterAlterTable(segment)
+    signals.insert_in_column_list = detectInsertInColumnList(segment)
+    signals.after_insert_column_list = detectAfterInsertColumnList(segment)
+    signals.after_complete_set_assignment =
+        !signals.after_predicate_operator &&
+        !signals.after_complete_column_ref &&
+        detectAfterCompleteSetAssignment(segment, slot)
 
     return signals
 }

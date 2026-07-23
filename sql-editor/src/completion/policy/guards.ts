@@ -17,8 +17,12 @@ export type CompletionTriggerKind = number
 
 export function allowsEmptyPrefixCompletion(ctx: SqlCompletionContext): boolean {
     if (ctx.slot === 'column_ref') return true
+    if (ctx.slot === 'values') return true
+    if (hasSignal(ctx, 'insert_in_column_list')) return true
+    if (hasSignal(ctx, 'after_complete_set_assignment')) return true
+    if (hasSignal(ctx, 'ddl_after_alter_table')) return true
     if (
-        (ctx.slot === 'on' || ctx.slot === 'where' || ctx.slot === 'having') &&
+        (ctx.slot === 'on' || ctx.slot === 'where' || ctx.slot === 'having' || ctx.slot === 'set') &&
         !hasSignal(ctx, 'after_complete_column_ref') &&
         !hasSignal(ctx, 'after_predicate_operator')
     ) {

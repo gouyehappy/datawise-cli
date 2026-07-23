@@ -48,6 +48,8 @@ export type KeywordPhase =
 
     | 'update-clause-next'
 
+    | 'ddl-alter-next'
+
     | 'all'
 
 
@@ -78,6 +80,22 @@ const INSERT_AFTER_TABLE_KEYWORDS = new Set(['VALUES'])
 const UPDATE_AFTER_TABLE_KEYWORDS = new Set(['SET'])
 
 const DELETE_AFTER_TABLE_KEYWORDS = new Set(['WHERE'])
+
+const ALTER_AFTER_TABLE_KEYWORDS = new Set([
+    'ADD',
+    'ADD COLUMN',
+    'DROP',
+    'DROP COLUMN',
+    'MODIFY',
+    'MODIFY COLUMN',
+    'CHANGE',
+    'CHANGE COLUMN',
+    'ALTER',
+    'ALTER COLUMN',
+    'RENAME',
+    'RENAME COLUMN',
+    'RENAME TO',
+])
 
 /** 下一子句关键字 */
 const CLAUSE_NEXT_KEYWORDS = new Set([
@@ -168,7 +186,7 @@ export function sortClauseNextKeywords(keywords: string[]): string[] {
 
 export function sortTextForProfile(
     profile: CompletionSortProfile,
-    group: 'keyword' | 'snippet' | 'column' | 'alias' | 'table' | 'fkjoin' | 'expand' | 'ai' | 'function',
+    group: 'keyword' | 'snippet' | 'column' | 'alias' | 'table' | 'fkjoin' | 'expand' | 'ai' | 'function' | 'recent',
     index = 0,
 ): string {
 
@@ -176,13 +194,13 @@ export function sortTextForProfile(
 
         profile === 'keyword-first'
 
-            ? {keyword: 0, function: 300, snippet: 500, expand: 800, ai: 900, fkjoin: 1000, column: 1500, alias: 2000, table: 2500}
+            ? {keyword: 0, recent: 40, function: 300, snippet: 500, expand: 800, ai: 900, fkjoin: 1000, column: 1500, alias: 2000, table: 2500}
 
             : profile === 'table-first'
 
-                ? {table: 0, fkjoin: 500, column: 1000, function: 1200, alias: 1500, expand: 1800, ai: 1900, snippet: 2000, keyword: 2500}
+                ? {table: 0, fkjoin: 500, recent: 700, column: 1000, function: 1200, alias: 1500, expand: 1800, ai: 1900, snippet: 2000, keyword: 2500}
 
-                : {fkjoin: 0, column: 100, function: 220, expand: 300, alias: 500, table: 800, snippet: 1500, ai: 1800, keyword: 2000}
+                : {fkjoin: 0, column: 100, function: 220, expand: 300, recent: 400, alias: 500, table: 800, snippet: 1500, ai: 1800, keyword: 2000}
 
     return String((tiers[group] ?? 0) + index).padStart(4, '0')
 
@@ -209,6 +227,10 @@ export function filterKeywordsByPhase(keywords: string[], phase: KeywordPhase): 
 
     if (phase === 'update-clause-next') {
         return keywords.filter((k) => UPDATE_AFTER_TABLE_KEYWORDS.has(normalizeClauseKeyword(k)))
+    }
+
+    if (phase === 'ddl-alter-next') {
+        return keywords.filter((k) => ALTER_AFTER_TABLE_KEYWORDS.has(normalizeClauseKeyword(k)))
     }
 
     if (phase === 'connectors') {
@@ -250,6 +272,8 @@ export function shouldOfferSnippetsForPlan(
     }
 
     if (plan.keywordPhase === 'clause-next') return true
+
+    if (plan.keywordPhase === 'ddl-alter-next') return true
 
     return plan.keywordPhase === 'all'
 

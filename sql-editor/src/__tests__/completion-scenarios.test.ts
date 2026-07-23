@@ -20,10 +20,9 @@ const TriggerCharacter = 1
 
 const TABLES = ['orders', 'order_items', 'users', 'items', 'cdp_segment']
 const COLUMNS = {
-    orders: [{name: 'id'}, {name: 'amount'}],
+    orders: [{name: 'id'}, {name: 'amount'}, {name: 'status'}, {name: 'user_id'}],
     order_items: [{name: 'id'}],
-    users: [{name: 'id', pk: true}, {name: 'status'}],
-    orders: [{name: 'id'}, {name: 'user_id'}],
+    users: [{name: 'id', pk: true}, {name: 'status'}, {name: 'name'}],
     items: [{name: 'user_id'}],
     cdp_segment: [{name: 'id'}, {name: 'tag_ids'}],
 }
@@ -613,10 +612,11 @@ describe('completion scenarios — DML (INSERT / UPDATE / DELETE)', () => {
     it('DELETE FROM 表后：WHERE 关键字', () => {
         assertScenario('delete-after-table', 'DELETE FROM orders |', {
             slot: 'from',
-            stage: 'table.clause_next',
+            stage: 'delete.after_table',
             afterTable: true,
             hasKeywords: true,
             hasTables: false,
+            hasFkJoinLines: false,
             allowEmpty: true,
             abort: false,
         })
@@ -626,7 +626,7 @@ describe('completion scenarios — DML (INSERT / UPDATE / DELETE)', () => {
         const {ctx, plan, clean, offset} = at('DELETE FROM orders w|')
         assert.equal(ctx.fromJoin?.clauseKeywordPrefix, 'w')
         assert.equal(ctx.fromJoin?.tableClauseComplete, true)
-        assert.equal(plan.stage, 'table.clause_next')
+        assert.equal(plan.stage, 'delete.after_table')
         assert.equal(plan.keywordSlot, 'after_table')
         assert.equal(plan.collectors.includes('keywords'), true)
         assert.equal(
@@ -640,6 +640,77 @@ describe('completion scenarios — DML (INSERT / UPDATE / DELETE)', () => {
             false,
         )
         assert.equal(shouldOfferKeywordAtCursor(clean, 'WHERE', 'w'), true)
+    })
+
+    it('DELETE FROM 后：仅表名（无 FK JOIN 行）', () => {
+        assertScenario('delete-from', 'DELETE FROM |', {
+            slot: 'from',
+            stage: 'delete.from',
+            hasTables: true,
+            hasFkJoinLines: false,
+            hasKeywords: false,
+            allowEmpty: true,
+            abort: false,
+        })
+    })
+
+    it('INSERT INTO 后：仅表名（无 FK JOIN 行）', () => {
+        assertScenario('insert-into', 'INSERT INTO |', {
+            slot: 'insert_columns',
+            stage: 'insert.columns',
+            hasTables: true,
+            hasFkJoinLines: false,
+            hasKeywords: false,
+            allowEmpty: true,
+            abort: false,
+        })
+    })
+
+    it('INSERT 列清单内：列名', () => {
+        const {ctx, plan} = at('INSERT INTO orders (|')
+        assert.equal(plan.stage, 'insert.pick_column')
+        assert.equal(plan.collectors.includes('columns'), true)
+        assert.equal(plan.collectors.includes('tables'), false)
+        assert.equal(shouldRunCollector('columns', plan, ctx, ''), true)
+    })
+
+    it('INSERT 列清单逗号后：列名', () => {
+        const {ctx, plan} = at('INSERT INTO orders (id, |')
+        assert.equal(plan.stage, 'insert.pick_column')
+        assert.equal(shouldRunCollector('columns', plan, ctx, ''), true)
+    })
+
+    it('INSERT VALUES 括号内：列引用', () => {
+        const {ctx, plan} = at('INSERT INTO orders VALUES (|')
+        assert.equal(plan.stage, 'insert.values')
+        assert.equal(shouldRunCollector('columns', plan, ctx, ''), true)
+    })
+
+    it('UPDATE SET 空：列名', () => {
+        const {ctx, plan} = at('UPDATE orders SET |')
+        assert.equal(plan.stage, 'update.set')
+        assert.equal(shouldRunCollector('columns', plan, ctx, ''), true)
+        assert.equal(allowsEmptyPrefixCompletion(ctx), true)
+    })
+
+    it('UPDATE SET 列后：运算符', () => {
+        const {ctx, plan} = at('UPDATE orders SET status |')
+        assert.equal(ctx.signals.after_complete_column_ref, true)
+        assert.equal(plan.stage, 'predicate.after_column')
+        assert.equal(plan.keywordPhase, 'operators')
+    })
+
+    it('UPDATE SET 赋值写完：WHERE', () => {
+        const {ctx, plan} = at('UPDATE orders SET status = 1 |')
+        assert.equal(plan.stage, 'update.after_set_item')
+        assert.equal(plan.keywordSlot, 'after_set')
+        assert.equal(shouldOfferKeywordAtCursor(ctx.segment, 'WHERE', ''), true)
+    })
+
+    it('WHERE AND 后空前缀：列名可运行', () => {
+        const {ctx, plan} = at('SELECT * FROM orders WHERE status = 1 AND |')
+        assert.equal(plan.stage, 'predicate.after_connector')
+        assert.equal(shouldRunCollector('columns', plan, ctx, ''), true)
     })
 
     it('UPDATE 后：表名补全', () => {

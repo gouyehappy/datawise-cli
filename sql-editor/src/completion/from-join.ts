@@ -216,6 +216,12 @@ function analyzeSegmentAfterOpener(
 
     const tableRef = unquoteTableIdent(withTail[1])
     const tail = withTail[2] ?? ''
+
+    // INSERT INTO orders ( … — 开括号进入列清单，不是别名
+    if (tail.trimStart().startsWith('(')) {
+        return analyzeTablePrefixSegment(tableRef, line, cursorColumn, knownTables)
+    }
+
     const resolvedTable = findKnownTable(tableRef, knownTables)
     const parsed = parseTableClauseTail(tail)
 

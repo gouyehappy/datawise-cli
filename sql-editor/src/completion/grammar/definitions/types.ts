@@ -26,6 +26,10 @@ export type TransitionId =
     | 'from_awaiting_join_table'
     | 'keyword_first_slot'
     | 'ddl_awaiting_column_type'
+    | 'ddl_after_alter_table'
+    | 'insert_in_column_list'
+    | 'after_insert_column_list'
+    | 'after_complete_set_assignment'
 
 /** 单条语法状态：满足 when → 进入 stage，显示内容由 plans.ts 定义 */
 export interface GrammarStateRule {

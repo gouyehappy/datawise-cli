@@ -173,6 +173,7 @@ export function collectTableSuggestions(
 
     let index = 0
     let first = true
+    const nameOnly = plan.tableInsertMode === 'name-only'
     for (const table of tables) {
         if (index >= MAX_TABLE_SUGGESTIONS) break
         if (prefix && !table.toLowerCase().startsWith(prefixLower)) continue
@@ -183,8 +184,11 @@ export function collectTableSuggestions(
             ctx.aliases,
             sql,
             cursorOffset,
-            {insertMode: 'name-only'},
+            nameOnly ? {insertMode: 'name-only'} : undefined,
         )
+        // FROM/JOIN：别名后留空格并链式再弹（JOIN/WHERE/ON）
+        const chainedText =
+            nameOnly || insertText.endsWith(' ') ? insertText : `${insertText} `
         const catalog = catalogForTable(getSchemaContext(), table)
         const rightDetail = [
             detail || null,
@@ -199,12 +203,13 @@ export function collectTableSuggestions(
                 rightDetail,
             ),
             kind: completionItemKind('table'),
-            insertText,
+            insertText: chainedText,
             detail: rightDetail,
             filterText: buildFilterText(table, [insertText, catalog ?? '']),
             range,
             sortText: completionSort('table', related.has(table.toLowerCase()) ? index : index + 500),
             preselect: first && ctx.slot !== 'join',
+            command: nameOnly ? undefined : TRIGGER_SUGGEST_COMMAND,
         })
         first = false
         index++
