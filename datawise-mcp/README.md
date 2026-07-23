@@ -2,7 +2,7 @@
 
 把 DataWise 的连接、Schema、SQL 审查与只读查询，通过 **MCP** 暴露给 Cursor / Claude Desktop 等 IDE 智能体。
 
-包名 `@datawise/mcp-server` · 版本 **1.3.0** · 命令 `datawise-mcp`
+包名 `@datawise/mcp-server` · 版本 **4.0.1** · 命令 `datawise-mcp`
 
 ---
 

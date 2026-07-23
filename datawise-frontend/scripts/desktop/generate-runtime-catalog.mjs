@@ -124,9 +124,9 @@ function readPackageVersion() {
         const pkg = JSON.parse(
             readFileSync(join(repoRoot, 'datawise-frontend', 'package.json'), 'utf8'),
         )
-        return pkg.version ?? '2.0.0'
+        return pkg.version ?? '4.0.1'
     } catch {
-        return '2.0.0'
+        return '4.0.1'
     }
 }
 

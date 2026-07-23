@@ -2,7 +2,7 @@
 
 可嵌入的 **SQL 编辑器**（Vue 3 + Monaco）— 语法驱动补全、Schema 感知提示、多方言关键字 / 格式化，以及可配置的片段与快捷键。
 
-版本 **1.3.0** · 许可 **MIT** · [English](./README.md)
+版本 **4.0.1** · 许可 **MIT** · [English](./README.md)
 
 ![演示](docs/demo.gif)
 

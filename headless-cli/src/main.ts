@@ -7,7 +7,7 @@ import {registerSqlExecCommand} from './commands/sql-exec.js'
 
 const program = new Command('datawise')
     .description('DataWise headless CLI for CI and automation')
-    .version('1.3.0')
+    .version('4.0.1')
     .option('--server <url>', 'Backend base URL', process.env.DATAWISE_SERVER ?? 'http://localhost:18421')
     .option('--token <token>', 'API token (or DATAWISE_API_TOKEN env)')
 

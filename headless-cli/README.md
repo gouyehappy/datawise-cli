@@ -2,7 +2,7 @@
 
 面向 CI 与自动化的命令行客户端 — 对运行中的 DataWise 后端发起迁移、SQL 执行与 Query Library 流水线。
 
-包名 `@datawise/headless-cli` · 版本 **1.3.0** · 命令 **`datawise`**
+包名 `@datawise/headless-cli` · 版本 **4.0.1** · 命令 **`datawise`**
 
 ---
 

@@ -1,8 +1,8 @@
 name: Desktop release
 
 # Tag a release (example):
-#   git tag v1.3.0
-#   git push origin v1.3.0
+#   git tag v4.0.1
+#   git push origin v4.0.1
 #
 # Creates a GitHub Release with electron-builder artifacts so packaged
 # apps can auto-update via electron-updater.

@@ -2,7 +2,7 @@
 
 Vue 3 + TypeScript 客户端 — 浏览器联调与 Electron 桌面壳共用同一套 UI。
 
-包名 `datawise-cli` · 版本 **2.0.0** · 依赖同仓 [`@datawise/sql-editor`](../sql-editor/)（源码引用）
+包名 `datawise-cli` · 版本 **4.0.1** · 依赖同仓 [`@datawise/sql-editor`](../sql-editor/)（源码引用）
 
 ---
 

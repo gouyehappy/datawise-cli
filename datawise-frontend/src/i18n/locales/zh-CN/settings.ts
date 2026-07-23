@@ -1231,6 +1231,11 @@ export default {
         autoDownload: '发现新版本时自动下载',
         changelogItems: [
             {
+                version: '4.0.1',
+                date: '2026-07-23',
+                notes: '统一产品版本至 4.0.1，为后续大版本架构调整做准备。',
+            },
+            {
                 version: '1.3.0',
                 date: '2026-07-21',
                 notes: '接入 GitHub Releases 自动更新：检查、下载与安装重启。',

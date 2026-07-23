@@ -26,7 +26,7 @@ describe('canUninstallConnector', () => {
         primary: true,
         available: true,
         capabilities: [],
-        jarName: 'datawise-connector-mysql-1.3.0.jar',
+        jarName: 'datawise-connector-mysql-4.0.1.jar',
         integrityStatus: 'bundled',
         redundantOnDisk: true,
     }
@@ -60,7 +60,7 @@ describe('isRedundantPluginJar', () => {
             primary: false,
             available: true,
             capabilities: [],
-            jarName: 'datawise-connector-oracle-1.3.0.jar',
+            jarName: 'datawise-connector-oracle-4.0.1.jar',
             integrityStatus: 'bundled',
         }), true)
     })
@@ -72,7 +72,7 @@ describe('isRedundantPluginJar', () => {
             primary: true,
             available: true,
             capabilities: [],
-            jarName: 'datawise-connector-redis-1.3.0-plugin.jar',
+            jarName: 'datawise-connector-redis-4.0.1-plugin.jar',
             integrityStatus: 'unsigned',
             redundantOnDisk: false,
         }), false)

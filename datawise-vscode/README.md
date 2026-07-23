@@ -2,7 +2,7 @@
 
 把 VS Code 里的 SQL（选区或整文件）一键送到 **DataWise 桌面版** SQL 控制台。
 
-扩展名 `datawise-vscode` · 显示名 **DataWise** · 版本 **1.3.0**
+扩展名 `datawise-vscode` · 显示名 **DataWise** · 版本 **4.0.1**
 
 ---
 

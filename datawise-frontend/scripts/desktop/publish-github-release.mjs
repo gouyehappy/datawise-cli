@@ -2,7 +2,7 @@
  * Upload desktop release artifacts to GitHub Releases (retry helper).
  *
  * Usage (GH_TOKEN required):
- *   node scripts/desktop/publish-github-release.mjs [--tag v2.0.0]
+ *   node scripts/desktop/publish-github-release.mjs [--tag v4.0.1]
  */
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -14,7 +14,7 @@ const owner = 'gouyehappy'
 const repo = 'datawise-cli'
 const tag = process.argv.includes('--tag')
     ? process.argv[process.argv.indexOf('--tag') + 1]
-    : 'v2.0.0'
+    : 'v4.0.1'
 const releaseIdArg = process.argv.includes('--release-id')
     ? Number(process.argv[process.argv.indexOf('--release-id') + 1])
     : null
@@ -138,11 +138,11 @@ function assertFile(name) {
 }
 
 async function main() {
-    const setupLocal = assertFile('DataWiseCLI Setup 2.0.0.exe')
-    const blockmapLocal = assertFile('DataWiseCLI Setup 2.0.0.exe.blockmap')
-    const portableLocal = assertFile('DataWiseCLI 2.0.0.exe')
+    const setupLocal = assertFile('DataWiseCLI Setup 4.0.1.exe')
+    const blockmapLocal = assertFile('DataWiseCLI Setup 4.0.1.exe.blockmap')
+    const portableLocal = assertFile('DataWiseCLI 4.0.1.exe')
 
-    writeLatestYml(setupLocal, 'DataWiseCLI-Setup-2.0.0.exe')
+    writeLatestYml(setupLocal, 'DataWiseCLI-Setup-4.0.1.exe')
     const latestLocal = path.join(releaseDir, 'latest.yml')
 
     const release = releaseIdArg
@@ -160,9 +160,9 @@ async function main() {
 
     const uploads = [
         ['latest.yml', latestLocal],
-        ['DataWiseCLI-Setup-2.0.0.exe.blockmap', blockmapLocal],
-        ['DataWiseCLI-2.0.0.exe', portableLocal],
-        ['DataWiseCLI-Setup-2.0.0.exe', setupLocal],
+        ['DataWiseCLI-Setup-4.0.1.exe.blockmap', blockmapLocal],
+        ['DataWiseCLI-4.0.1.exe', portableLocal],
+        ['DataWiseCLI-Setup-4.0.1.exe', setupLocal],
     ]
 
     for (const [remoteName, localPath] of uploads) {

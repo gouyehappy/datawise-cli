@@ -2,6 +2,10 @@
 
 All notable product-level changes for DataWise are documented in this file.
 
+## v4.0.1 - Unified product version baseline
+
+- Bump all product package / Maven module versions to `4.0.1` as the baseline before the next major restructuring.
+
 ## Unreleased — Tenancy Phase 0–3 (RBAC + dual-mode + JDBC metadata)
 
 ### Highlights

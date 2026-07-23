@@ -1,6 +1,6 @@
 {
   "name": "@datawise/headless-cli",
-  "version": "1.3.0",
+  "version": "4.0.1",
   "private": true,
   "type": "module",
   "description": "DataWise headless CLI — migrate run, sql exec & query-library CI against the backend API",

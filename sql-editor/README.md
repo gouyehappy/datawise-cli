@@ -2,7 +2,7 @@
 
 Embeddable **SQL editor** for Vue 3 + Monaco — grammar-driven completion, schema-aware hints, multi-dialect keywords/formatting, and configurable snippets & shortcuts.
 
-Version **1.3.0** · License **MIT** · [中文文档](./README.zh-CN.md)
+Version **4.0.1** · License **MIT** · [中文文档](./README.zh-CN.md)
 
 ![Demo](docs/demo.gif)
 

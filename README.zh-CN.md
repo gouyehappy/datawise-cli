@@ -16,7 +16,7 @@
 
 <p align="center">
   <a href="https://github.com/gouyehappy/datawise-cli/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-5248e8?style=flat-square" alt="License" /></a>
-  <a href="https://github.com/gouyehappy/datawise-cli"><img src="https://img.shields.io/badge/desktop-v2.0.0-6d72f8?style=flat-square" alt="Desktop version" /></a>
+  <a href="https://github.com/gouyehappy/datawise-cli"><img src="https://img.shields.io/badge/desktop-v4.0.1-6d72f8?style=flat-square" alt="Desktop version" /></a>
   <a href="#快速开始"><img src="https://img.shields.io/badge/Java-17%2B-orange?style=flat-square" alt="Java 17+" /></a>
   <a href="#快速开始"><img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square" alt="Node.js 18+" /></a>
   <a href="./datawise-frontend/"><img src="https://img.shields.io/badge/Vue-3-42b883?style=flat-square" alt="Vue 3" /></a>

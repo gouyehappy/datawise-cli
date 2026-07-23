@@ -1231,6 +1231,11 @@ export default {
         autoDownload: 'Automatically download when a new version is found',
         changelogItems: [
             {
+                version: '4.0.1',
+                date: '2026-07-23',
+                notes: 'Unify product version to 4.0.1 as the baseline before the next major restructuring.',
+            },
+            {
                 version: '1.3.0',
                 date: '2026-07-21',
                 notes: 'GitHub Releases auto-update: check, download, and install/restart.',

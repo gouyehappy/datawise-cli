@@ -1,6 +1,6 @@
 {
   "name": "@datawise/mcp-server",
-  "version": "1.3.0",
+  "version": "4.0.1",
   "description": "DataWise MCP server — safe database access for Cursor and Claude Desktop",
   "type": "module",
   "bin": {
