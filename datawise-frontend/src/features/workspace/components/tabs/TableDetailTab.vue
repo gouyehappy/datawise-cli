@@ -344,19 +344,20 @@ async function copyDdl() {
                         variant="success"
                         :title="t('workspace.tableDetail.nullable')"
                     >
-                      �?                    </StatusPill>
+                      ✓
+                    </StatusPill>
                   </td>
                   <td class="col-center">
-                    <StatusPill v-if="column.autoIncrement" variant="primary">�?/StatusPill>
+                    <StatusPill v-if="column.autoIncrement" variant="primary">✓</StatusPill>
                   </td>
                   <td>
                     <StatusPill v-if="column.keyType" :variant="keyTypeVariant(column.keyType)">
                       {{ column.keyType }}
                     </StatusPill>
                   </td>
-                  <td class="mono col-muted">{{ column.defaultValue ?? '�? }}</td>
-                  <td class="mono col-muted">{{ column.extra ?? '�? }}</td>
-                  <td>{{ column.comment || '�? }}</td>
+                  <td class="mono col-muted">{{ column.defaultValue ?? '—' }}</td>
+                  <td class="mono col-muted">{{ column.extra ?? '—' }}</td>
+                  <td>{{ column.comment || '—' }}</td>
                 </tr>
                 </tbody>
               </table>
@@ -405,7 +406,7 @@ async function copyDdl() {
                   <td class="mono col-name">{{ fk.name }}</td>
                   <td class="mono">{{ fk.columns }}</td>
                   <td class="mono">{{ fk.referenceTable }}</td>
-                  <td class="mono">{{ fk.referenceColumns || '�? }}</td>
+                  <td class="mono">{{ fk.referenceColumns || '—' }}</td>
                 </tr>
                 <tr v-if="!properties.foreignKeys.length">
                   <td colspan="4">

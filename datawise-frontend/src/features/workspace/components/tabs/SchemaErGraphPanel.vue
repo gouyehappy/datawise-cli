@@ -952,7 +952,7 @@ onUnmounted(() => {
                   :x="148"
                   :y="RELATION_GRAPH_HEADER_HEIGHT + rowIndex * RELATION_GRAPH_ROW_HEIGHT + 14"
               >
-                {{ truncateText(column.comment || '??, 12) }}
+                {{ truncateText(column.comment || '—', 12) }}
               </text>
             </g>
 
