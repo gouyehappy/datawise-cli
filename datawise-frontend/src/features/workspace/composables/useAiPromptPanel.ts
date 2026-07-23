@@ -9,7 +9,7 @@ export interface ConsoleAiSqlResult {
     sql: string
 }
 
-/** AI 输入条：打开 / 关闭 / 提交 / 快捷�?*/
+/** AI 输入条：打开 / 关闭 / 提交 / 快捷—*/
 export function useAiPromptPanel(
     onApplySql: (result: ConsoleAiSqlResult) => void,
     options?: {

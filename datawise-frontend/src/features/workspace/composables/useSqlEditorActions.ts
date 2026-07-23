@@ -1,6 +1,6 @@
 import {logPerf} from '@/core/utils/perf-log'
 import {computed, nextTick, ref} from 'vue'
-import type {SqlEditorExpose} from '@datawise/sql-editor/types'
+import type {SqlEditorExpose, SqlEditorSchema} from '@datawise/sql-editor/types'
 import {
     parseSqlErrorLine,
     readApiErrorLine,
@@ -42,6 +42,11 @@ import {
     runPluginAfterResult,
     runPluginBeforeExecute,
 } from '@/features/plugin/services/plugin-hook.service'
+import {
+    collectPreExecuteDiagnostics,
+    mapDiagnosticToEditorLine,
+    summarizePreExecuteDiagnostics,
+} from '@/features/workspace/services/sql-pre-execute-diagnostics.service'
 
 export type SqlRunPerfSource = 'toolbar' | 'gutter' | 'shortcut' | 'context-menu' | 'explain' | 'editor' | 'vqb'
 
@@ -50,6 +55,8 @@ export type SqlRunOptions = {
     refreshResultIndex?: number
     /** 跳过危险 SQL 工具栏确认（提交待执行语句时） */
     skipDangerousCheck?: boolean
+    /** 跳过执行前表/列诊断提示（二次确认 / 刷新 / EXPLAIN） */
+    skipSchemaCheck?: boolean
     /** PERF 日志来源（行内运行、工具栏、快捷键等） */
     perfSource?: SqlRunPerfSource
     /** 单次执行覆盖 maxRows（如联邦截断后提高上限）；仍受联邦硬顶约束 */
@@ -74,6 +81,8 @@ export interface SqlEditorActionsOptions {
     applyParameters?: (sql: string) => string
     /** 当前连接是否启用生产环境性能模式收紧策略 */
     getProductionPerfActive?: () => boolean
+    /** 当前编辑器 Schema（执行前表/列诊断） */
+    getSchema?: () => SqlEditorSchema | null | undefined
 }
 
 async function jumpEditorToErrorLine(editor: SqlEditorExpose | null, line: number) {
@@ -128,6 +137,8 @@ export function useSqlEditorActions(options: SqlEditorActionsOptions) {
     const appConfig = useAppConfigStore()
     const teamStore = useTeamStore()
     const running = ref(false)
+    /** 已提示过的可执行 SQL：再次执行同一语句则跳过 schema 诊断 */
+    let schemaWarnBypassSql: string | null = null
     const dbType = computed(() => options.getDbType())
     const {caps: connectionCaps} = useConnectionCapabilities(dbType)
 
@@ -213,14 +224,37 @@ export function useSqlEditorActions(options: SqlEditorActionsOptions) {
 
         const refreshIndex = runOptions?.refreshResultIndex
         const isRefresh = refreshIndex !== undefined
+        const trimmedExecutable = executable.trim()
+        const resolvedForCheck = options.applyParameters?.(trimmedExecutable) ?? trimmedExecutable
+        const skipSchemaCheck =
+            runOptions?.skipSchemaCheck
+            || runOptions?.skipDangerousCheck
+            || isRefresh
+        if (!skipSchemaCheck) {
+            const schema = options.getSchema?.()
+            const diagnostics = collectPreExecuteDiagnostics(resolvedForCheck, schema)
+            const summary = summarizePreExecuteDiagnostics(diagnostics)
+            if (summary && schemaWarnBypassSql !== trimmedExecutable) {
+                schemaWarnBypassSql = trimmedExecutable
+                const editorLine = mapDiagnosticToEditorLine(summary.firstLine, anchorLine)
+                void jumpEditorToErrorLine(editor, editorLine)
+                notifyActionIssue(
+                    t('console.schemaWarn', {
+                        count: summary.count,
+                        message: summary.firstMessage,
+                    }),
+                )
+                return
+            }
+            schemaWarnBypassSql = null
+        }
 
         running.value = true
         appConfig.setShowConsoleResultPanel(true)
         void (async () => {
             const started = performance.now()
         const editorText = options.getSql()
-        const trimmedExecutable = executable.trim()
-        const resolvedSql = options.applyParameters?.(trimmedExecutable) ?? trimmedExecutable
+        const resolvedSql = resolvedForCheck
         const tabId = options.getTabId()
             // 新查询开始时清空上次结果，保证执行中只显示消息区
             if (!isRefresh) {
@@ -483,8 +517,8 @@ export function useSqlEditorActions(options: SqlEditorActionsOptions) {
     }
 
     function formatSql() {
-        options.editorRef()?.formatDocument()
-        workspace.setStatus(t('console.formatted'))
+        const ok = options.editorRef()?.formatDocument() ?? false
+        if (ok) workspace.setStatus(t('console.formatted'))
     }
 
     function formatSelection() {

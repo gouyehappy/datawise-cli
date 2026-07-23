@@ -11,12 +11,11 @@ import {
 } from './predicate-value-templates'
 import type {SuggestPush, SuggestTextRange} from './suggest-types'
 import {SUGGEST_INSERT_AS_SNIPPET} from './suggest-types'
-import {sqlEditorT} from '@sql-editor/i18n'
-import {getActiveSqlEditorRuntime} from '@sql-editor/runtime/sql-editor-runtime'
+import {sqlEditorSuggestT} from '@sql-editor/i18n'
 import type {SqlEditorSchema} from '@sql-editor/types'
 
 function localeT(key: string) {
-    return sqlEditorT(getActiveSqlEditorRuntime().getLocale(), key)
+    return sqlEditorSuggestT(key)
 }
 
 /** = / LIKE / IN / IS 后：值与子查询，不展示 AND/OR 等谓词关键字 */

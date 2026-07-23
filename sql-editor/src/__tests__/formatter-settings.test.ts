@@ -22,6 +22,7 @@ describe('formatter settings', () => {
             resolveSqlEditorFormatterSettings({useLibrary: false}),
             {
                 useLibrary: false,
+                formatAsYouType: true,
                 keywordCase: 'upper',
                 identifierCase: 'preserve',
                 functionCase: 'preserve',

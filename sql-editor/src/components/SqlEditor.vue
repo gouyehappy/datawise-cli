@@ -336,7 +336,7 @@ function getExecutableSql() {
 }
 
 function formatDocument() {
-  editorRef.value?.formatDocument()
+  return editorRef.value?.formatDocument() ?? false
 }
 
 function formatSelection() {

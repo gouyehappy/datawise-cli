@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * AI 聊天输入区（豆包式一体化卡片：输�?+ 底部工具栏）
+ * AI 聊天输入区（豆包式一体化卡片：输入 + 底部工具栏）
  */
 import {nextTick, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'

@@ -1,3 +1,8 @@
+import {
+    abbreviationTokensForKeyword,
+    matchesKeywordAbbreviation,
+} from './keyword-abbreviations'
+
 /** 列名 Monaco 过滤：仅用 label，避免子串误命中（如 count → user_count） */
 export function columnFilterText(label: string): string {
     return label
@@ -23,17 +28,24 @@ export function matchesCompletionPrefix(label: string, prefix: string): boolean 
     return firstWord.startsWith(lowerPrefix)
 }
 
-/** 关键字是否匹配前缀（含空格关键字的首词） */
+/** 关键字是否匹配前缀（含空格关键字首词 + 缩写 lj/gb/ob…） */
 export function matchesKeywordPrefix(keyword: string, prefix: string): boolean {
-    return matchesCompletionPrefix(keyword, prefix)
+    if (matchesCompletionPrefix(keyword, prefix)) return true
+    return matchesKeywordAbbreviation(keyword, prefix)
 }
 
-/** 关键字专用 filterText：含空格关键字的分词，便于 order → ORDER BY */
+/** 关键字专用 filterText：含空格关键字的分词与缩写，便于 order/lj → ORDER BY / LEFT JOIN */
 export function keywordFilterText(keyword: string): string {
     const lower = keyword.toLowerCase()
     const compact = lower.replace(/\s+/g, '')
     const words = lower.split(/\s+/).filter(Boolean)
-    const prefixes = new Set<string>([lower, compact, keyword, ...words])
+    const prefixes = new Set<string>([
+        lower,
+        compact,
+        keyword,
+        ...words,
+        ...abbreviationTokensForKeyword(keyword),
+    ])
     for (const word of words) {
         for (let i = 1; i <= word.length; i++) prefixes.add(word.slice(0, i))
     }

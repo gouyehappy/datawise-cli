@@ -5,6 +5,7 @@ import {SQL_EDITOR_CONFIG_KEY} from '@sql-editor/config/injection'
 import {DEFAULT_SQL_EDITOR_THEME} from '@sql-editor/config/defaults'
 import {SQL_EDITOR_MONACO_OPTIONS, resolveSqlEditorMonacoOptions} from '@sql-editor/constants/editor-options'
 import {formatSql} from '@sql-editor/utils/format'
+import {planFormatAsYouTypeBreak} from '@sql-editor/utils/format-as-you-type'
 import {isCursorInStringOrCommentCached} from '@sql-editor/completion/incremental-scan'
 import {registerSqlEditorLineShortcuts} from '@sql-editor/editor/line-shortcuts'
 import {bindSuggestAcceptSuppress} from '@sql-editor/completion/monaco/suggest-accept'
@@ -13,7 +14,11 @@ import {
   applySqlSuggestDetailsSetting,
 } from '@sql-editor/completion/monaco/suggest-details'
 import {extractExecutableLineSql} from '@sql-editor/utils/current-line-sql'
-import {resolveStatementAtCursor} from '@sql-editor/utils/statement-at-cursor'
+import {resolveStatementAtCursor, resolveStatementAtLine} from '@sql-editor/utils/statement-at-cursor'
+import {
+  findStatementContainingOffset,
+  indexSqlStatements,
+} from '@sql-editor/utils/sql-statement-index'
 import {bindSqlRunGutter} from '@sql-editor/editor/run-gutter'
 import {isSqlRunGutterEnabled} from '@sql-editor/editor/run-gutter-enabled'
 import {
@@ -21,6 +26,7 @@ import {
   getSqlEditorFolding,
   getSqlEditorFontSize,
   getSqlEditorTheme,
+  getSqlEditorFormatterSettings,
   sqlEditorSettingsVersion,
 } from '@sql-editor/config/snippets/cache'
 import {applySqlEditorMonacoTheme, ensureSqlEditorMonacoThemes} from '@sql-editor/monaco/themes'
@@ -82,6 +88,7 @@ let runGutterDisposable: monaco.IDisposable | null = null
 let initRafOuter = 0
 let initRafInner = 0
 let diagnosticTimer: ReturnType<typeof setTimeout> | null = null
+let formatAsYouTypeBusy = false
 
 const COLUMN_DIAGNOSTIC_OWNER = 'sql-column-diagnostics'
 
@@ -125,25 +132,65 @@ function getExecutableSql(): string {
   return selected || (editor?.getValue() ?? '')
 }
 
-function formatDocument() {
-  if (!editor || props.readonly) return
-  const formatted = formatSql(editor.getValue())
-  editor.setValue(formatted)
-  emit('update:modelValue', formatted)
+function applyFormattedSqlToRange(range: monaco.IRange, rawSql: string): boolean {
+  if (!editor) return false
+  const trimmed = rawSql.trim()
+  if (!trimmed) return false
+  const formatted = formatSql(trimmed)
+  editor.executeEdits('sql-editor-format', [
+    {range, text: formatted, forceMoveMarkers: true},
+  ])
+  emit('update:modelValue', editor.getValue())
+  return true
 }
 
+/**
+ * 仅格式化选区。
+ * 无选区时返回 false（由 formatDocument / 快捷键回退到当前语句）。
+ */
 function formatSelection(): boolean {
   if (!editor || props.readonly) return false
   const selection = editor.getSelection()
   const model = editor.getModel()
   if (!selection || !model || selection.isEmpty()) return false
-  const selected = model.getValueInRange(selection)
-  const formatted = formatSql(selected)
-  editor.executeEdits('sql-editor-format-selection', [
-    {range: selection, text: formatted, forceMoveMarkers: true},
-  ])
-  emit('update:modelValue', editor.getValue())
-  return true
+  return applyFormattedSqlToRange(selection, model.getValueInRange(selection))
+}
+
+/** 格式化光标所在语句（非整份文档） */
+function formatStatementAtCursor(): boolean {
+  if (!editor || props.readonly) return false
+  const model = editor.getModel()
+  const position = editor.getPosition()
+  if (!model || !position) return false
+  const full = model.getValue()
+  const offset = model.getOffsetAt(position)
+  const span = findStatementContainingOffset(indexSqlStatements(full), offset)
+  if (!span?.sql.trim()) return false
+  const start = model.getPositionAt(span.startOffset)
+  const end = model.getPositionAt(span.endOffset)
+  const range = new monaco.Range(
+      start.lineNumber,
+      start.column,
+      end.lineNumber,
+      end.column,
+  )
+  return applyFormattedSqlToRange(range, span.sql)
+}
+
+/**
+ * 工具栏 / API 格式化入口：
+ * 1) 有选区 → 只格式化选区
+ * 2) 无选区 → 只格式化光标所在语句
+ * 绝不整文件重写（避免多段脚本被一起改掉）
+ */
+function formatDocument(): boolean {
+  if (formatSelection()) return true
+  return formatStatementAtCursor()
+}
+
+/** 快捷键：选区优先，否则当前语句 */
+function formatSelectionOrStatement(): boolean {
+  return formatDocument()
 }
 
 function getCursorLineNumber(): number | null {
@@ -161,12 +208,20 @@ function resolveStatementAtEditorCursor() {
 
 function getCurrentLineSql(): string {
   if (!editor) return ''
+  const model = editor.getModel()
+  if (!model) return ''
+
   const statement = resolveStatementAtEditorCursor()
   if (statement?.sql.trim()) return statement.sql
-  const model = editor.getModel()
+
+  // 再按行号归属整句（与 resolveStatementAtCursor 互补，保证多行任意行可执行）
   const lineNumber = getCursorLineNumber()
-  if (!model || !lineNumber) return ''
-  return extractExecutableLineSql(model.getLineContent(lineNumber))
+  if (lineNumber) {
+    const byLine = resolveStatementAtLine(model.getValue(), lineNumber)
+    if (byLine?.sql.trim()) return byLine.sql
+    return extractExecutableLineSql(model.getLineContent(lineNumber))
+  }
+  return ''
 }
 
 function getCurrentLineNumber(): number | null {
@@ -451,7 +506,7 @@ function bindLineShortcuts() {
     readonly: props.readonly,
     keybindings: props.keybindings,
     customHandlers: {
-      'sqlEditor.formatSelection': formatSelection,
+      'sqlEditor.formatSelection': formatSelectionOrStatement,
       ...props.customHandlers,
     },
     onEdit: () => emit('update:modelValue', editor?.getValue() ?? ''),
@@ -481,6 +536,47 @@ function bindSuggestDetails() {
   suggestDetailsDisposable = bindSqlSuggestDetailsAutoShow(editor, {
     isEnabled: getSqlEditorShowSuggestDetails,
   })
+}
+
+/** 手写子句关键字后自动换行（可在设置中关闭 formatAsYouType） */
+function tryFormatAsYouType(event: monaco.editor.IModelContentChangedEvent) {
+  if (!editor || props.readonly || props.preview) return
+  if (formatAsYouTypeBusy || event.isFlush || event.isUndoing || event.isRedoing) return
+  if (!getSqlEditorFormatterSettings().formatAsYouType) return
+  if (event.changes.length !== 1) return
+  const change = event.changes[0]
+  if (!change || change.text !== ' ') return
+
+  const model = editor.getModel()
+  const position = editor.getPosition()
+  if (!model || !position) return
+
+  const lineNumber = position.lineNumber
+  const lineContent = model.getLineContent(lineNumber)
+  const lineBefore = lineContent.slice(0, position.column - 1)
+  const plan = planFormatAsYouTypeBreak(lineBefore)
+  if (!plan) return
+
+  const prefixToCursor = model.getValueInRange(
+      new monaco.Range(1, 1, lineNumber, position.column),
+  )
+  if (isCursorInStringOrCommentCached(prefixToCursor, prefixToCursor.length)) return
+
+  formatAsYouTypeBusy = true
+  try {
+    const insertPos = new monaco.Position(lineNumber, plan.insertColumn)
+    editor.executeEdits('sql-editor-format-as-you-type', [
+      {
+        range: monaco.Range.fromPositions(insertPos, insertPos),
+        text: plan.text,
+        forceMoveMarkers: true,
+      },
+    ])
+  } finally {
+    requestAnimationFrame(() => {
+      formatAsYouTypeBusy = false
+    })
+  }
 }
 
 onMounted(() => {
@@ -542,6 +638,7 @@ function mountEditor() {
     editor.onDidChangeModelContent((event) => {
       emit('update:modelValue', editor?.getValue() ?? '')
       scheduleColumnDiagnostics()
+      tryFormatAsYouType(event)
       const forceColumnRef = event.changes.some((change) => {
         if (!bypassesAutocompleteSuppress(change.text)) return false
         const model = editor?.getModel()

@@ -299,8 +299,8 @@ function clampEditorHeight(value: number) {
 }
 
 function formatSql() {
-    editorRef.value?.formatDocument()
-    workspace.setStatus(t('console.formatted'))
+    const ok = editorRef.value?.formatDocument() ?? false
+    if (ok) workspace.setStatus(t('console.formatted'))
 }
 
 async function onPreview() {

@@ -42,7 +42,7 @@ const KEYWORD_QUICK_ACTIONS: Partial<Record<SqlCompletionSlot, SqlQuickAction[]>
 /** 提示条优先展示的片段 label（按槽位）；未列出的片段仍可在补全里出现 */
 export const HINT_SNIPPET_PRIORITY: Partial<Record<SqlCompletionSlot, readonly string[]>> = {
     statement_start: ['sel', 'cte', 'lf', 'crt', 'alt', 'del', 'upd', 'ins'],
-    select_list: ['cnt', 'case'],
+    select_list: ['cnt', 'case', 'win'],
     join: ['ij', 'lf'],
     on: ['eq'],
     where: ['w1', 'in', 'like', 'between', 'null', 'exists', 'dt7', 'dt30'],

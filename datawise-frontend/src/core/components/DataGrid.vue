@@ -152,6 +152,8 @@ const props = withDefaults(
       showFakeData?: boolean
       /** Mongo 等文档源：点击行号打开整行 JSON 文档 */
       enableRowDocumentView?: boolean
+      /** 控制台：Alt+点击 / 右键回填 SQL 到编辑器 */
+      enableSqlFill?: boolean
     }>(),
     {
       total: 0,
@@ -170,6 +172,7 @@ const props = withDefaults(
       aiSummaryLoading: false,
       showFakeData: false,
       enableRowDocumentView: false,
+      enableSqlFill: false,
       truncatedAtCap: false,
       truncatedCapRows: undefined,
       canRaiseMaxRows: false,
@@ -207,6 +210,10 @@ const emit = defineEmits<{
   'generate-dml': [rows: TableRow[]]
   'request-ai-summary': []
   'generate-fake-data': []
+  /** 结果列头回填：ORDER BY */
+  'insert-order-by': [payload: { column: string; direction: 'asc' | 'desc' }]
+  /** 结果单元格回填：WHERE / AND 等值条件 */
+  'insert-where': [payload: { column: string; value: unknown }]
 }>()
 
 const viewState = defineModel<GridViewState>('viewState')
@@ -716,6 +723,18 @@ function onHeaderSort(columnKey: string) {
   viewState.value = toggleGridSort(viewState.value, columnKey)
 }
 
+function onHeaderClick(event: MouseEvent, column: TableColumn) {
+  if (props.enableSqlFill && event.altKey) {
+    event.preventDefault()
+    event.stopPropagation()
+    emit('insert-order-by', {column: column.name, direction: 'asc'})
+    return
+  }
+  if (columnFiltersEnabled.value) {
+    onHeaderSort(columnRowKey(column))
+  }
+}
+
 function sortDirection(columnKey: string): 'asc' | 'desc' | null {
   if (!viewState.value || viewState.value.sortColumn !== columnKey || !viewState.value.sortDirection) {
     return null
@@ -1095,7 +1114,16 @@ function onIndexColClick(item: typeof displayRows.value[number], rowIndex: numbe
   activeCell.value = null
 }
 
-function onCellClick(item: typeof displayRows.value[number], columnName: string) {
+function onCellClick(event: MouseEvent, item: typeof displayRows.value[number], columnName: string) {
+  if (props.enableSqlFill && event.altKey) {
+    event.preventDefault()
+    event.stopPropagation()
+    const value = item.originalRow
+        ? readGridCellValue(item.originalRow, displayColumns.value.find((c) => c.name === columnName) ?? {name: columnName})
+        : null
+    emit('insert-where', {column: columnName, value})
+    return
+  }
   if (!inlineEnabled.value) return
   selectRow(item)
   activeCell.value = {rowId: item.id, column: columnName}
@@ -1140,6 +1168,14 @@ const cellMenuItems = computed<ContextMenuItem[]>(() => {
     {id: 'copy-where-equals', label: t('dataGrid.contextMenu.copyWhereEquals'), icon: 'filter'},
     {id: 'copy-where-in', label: t('dataGrid.contextMenu.copyWhereIn'), icon: 'filter'},
   ]
+
+  if (props.enableSqlFill) {
+    items.push({
+      id: 'insert-where',
+      label: t('dataGrid.contextMenu.insertWhere'),
+      icon: 'filter',
+    })
+  }
 
   // 与工具栏一致：按 editable 显示，不依赖 columnDetails 是否已加载
   if (props.editable) {
@@ -1233,6 +1269,10 @@ async function onCellMenuSelect(id: string) {
     if (clause) await copyGridContextText(clause, 'whereCopied')
     return
   }
+  if (id === 'insert-where') {
+    emit('insert-where', {column: column.name, value: cellValue})
+    return
+  }
   if (id === 'add-row') {
     await onAddRowClick()
     return
@@ -1268,10 +1308,20 @@ const {
 
 const statsColumnName = ref<string | null>(null)
 
-const headerMenuItems = computed<ContextMenuItem[]>(() => [
-  {id: 'toggle-column-stats', label: t('dataGrid.contextMenu.toggleColumnStats')},
-  {id: 'copy-column-stats', label: t('dataGrid.contextMenu.copyColumnStats')},
-])
+const headerMenuItems = computed<ContextMenuItem[]>(() => {
+  const items: ContextMenuItem[] = [
+    {id: 'toggle-column-stats', label: t('dataGrid.contextMenu.toggleColumnStats')},
+    {id: 'copy-column-stats', label: t('dataGrid.contextMenu.copyColumnStats')},
+  ]
+  if (props.enableSqlFill) {
+    items.push(
+        {id: 'divider-sql-fill', label: '', divider: true},
+        {id: 'insert-order-by', label: t('dataGrid.contextMenu.insertOrderBy')},
+        {id: 'insert-order-by-desc', label: t('dataGrid.contextMenu.insertOrderByDesc')},
+    )
+  }
+  return items
+})
 
 function resolveStatsRows(): TableRow[] {
   return viewFilteredDisplayRows.value
@@ -1305,6 +1355,14 @@ async function onHeaderMenuSelect(id: string) {
   if (id === 'copy-column-stats') {
     const stats = computeGridColumnStats(column, resolveStatsRows())
     await copyGridContextText(formatGridColumnStatsLines(stats).join('\n'), 'statsCopied')
+    return
+  }
+  if (id === 'insert-order-by') {
+    emit('insert-order-by', {column: column.name, direction: 'asc'})
+    return
+  }
+  if (id === 'insert-order-by-desc') {
+    emit('insert-order-by', {column: column.name, direction: 'desc'})
   }
 }
 
@@ -1667,7 +1725,7 @@ function dismissColumnStats() {
                 'is-dragging': dragFromKey === columnRowKey(col),
               }"
               draggable="true"
-              @click="columnFiltersEnabled ? onHeaderSort(columnRowKey(col)) : undefined"
+              @click="onHeaderClick($event, col)"
               @contextmenu="onHeaderContextMenu($event, col)"
               @dragstart="onHeaderDragStart($event, col)"
               @dragover="onHeaderDragOver($event, col)"
@@ -1743,7 +1801,7 @@ function dismissColumnStats() {
                 'is-cell-editing': isCellInputVisible(item, col.name),
                 'is-numeric': isNumericColumn(col),
               }"
-              @click="onCellClick(item, col.name)"
+              @click="onCellClick($event, item, col.name)"
               @dblclick="onCellDblClick(item, col.name, $event, rowIndex)"
               @contextmenu="onCellContextMenu($event, item, col)"
           >

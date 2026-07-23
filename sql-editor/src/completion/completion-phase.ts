@@ -51,7 +51,23 @@ export type KeywordPhase =
     | 'all'
 
 
-const OPERATOR_KEYWORDS = new Set(['=', '<>', '!=', '>=', '<=', '<', '>', 'LIKE', 'IN', 'IS', 'BETWEEN', 'EXISTS', 'NOT'])
+const OPERATOR_KEYWORDS = new Set([
+    '=',
+    '<>',
+    '!=',
+    '>=',
+    '<=',
+    '<',
+    '>',
+    'LIKE',
+    'ILIKE',
+    'SIMILAR TO',
+    'IN',
+    'IS',
+    'BETWEEN',
+    'EXISTS',
+    'NOT',
+])
 
 const SORT_DIRECTION_KEYWORDS = new Set(['ASC', 'DESC'])
 
@@ -63,7 +79,7 @@ const UPDATE_AFTER_TABLE_KEYWORDS = new Set(['SET'])
 
 const DELETE_AFTER_TABLE_KEYWORDS = new Set(['WHERE'])
 
-/** 下一子句 / SELECT 列表内输入子句前缀时允许的关键字 */
+/** 下一子句关键字 */
 const CLAUSE_NEXT_KEYWORDS = new Set([
     'FROM',
     'WHERE',
@@ -94,12 +110,19 @@ const CLAUSE_NEXT_KEYWORDS = new Set([
     'OR',
 ])
 
+/** SELECT 列表内：FROM / DISTINCT / AS（避免 or→ORDER BY） */
+const CLAUSE_PREFIX_KEYWORDS = new Set(['FROM', 'DISTINCT', 'AS'])
+
 function normalizeClauseKeyword(keyword: string): string {
     return keyword.trim().replace(/\s+/g, ' ').toUpperCase()
 }
 
 function isClauseNextKeyword(keyword: string): boolean {
     return CLAUSE_NEXT_KEYWORDS.has(normalizeClauseKeyword(keyword))
+}
+
+function isClausePrefixKeyword(keyword: string): boolean {
+    return CLAUSE_PREFIX_KEYWORDS.has(normalizeClauseKeyword(keyword))
 }
 
 /** clause-next 阶段关键字排序：WHERE 优先于 LEFT/RIGHT 等 JOIN 限定词 */
@@ -176,7 +199,9 @@ export function filterKeywordsByPhase(keywords: string[], phase: KeywordPhase): 
 
     if (phase === 'function-open') return keywords.filter((k) => k === '(')
 
-    if (phase === 'clause-next' || phase === 'clause-prefix') return keywords.filter(isClauseNextKeyword)
+    if (phase === 'clause-prefix') return keywords.filter(isClausePrefixKeyword)
+
+    if (phase === 'clause-next') return keywords.filter(isClauseNextKeyword)
 
     if (phase === 'insert-clause-next') {
         return keywords.filter((k) => INSERT_AFTER_TABLE_KEYWORDS.has(normalizeClauseKeyword(k)))

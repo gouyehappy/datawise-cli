@@ -3,13 +3,12 @@ import {hintCompletionPresentation, completionItemKind, type CompletionDisplayCa
 import {groupBySelectItems, orderBySelectItems} from './select-list'
 import {matchesCompletionPrefix, columnFilterText} from './filter-text'
 import {isColumnAlreadySelected, selectedColumnRefs} from '@sql-editor/utils/selected-columns'
-import {sqlEditorT} from '@sql-editor/i18n'
-import {getActiveSqlEditorRuntime} from '@sql-editor/runtime/sql-editor-runtime'
+import {sqlEditorSuggestT} from '@sql-editor/i18n'
 import type {SuggestPush, SuggestTextRange} from './suggest-types'
 import {SUGGEST_INSERT_AS_SNIPPET} from './suggest-types'
 
 function localeT(key: string, params?: Record<string, string | number>) {
-    return sqlEditorT(getActiveSqlEditorRuntime().getLocale(), key, params)
+    return sqlEditorSuggestT(key, params)
 }
 
 function sortText(index: number, boost = 0): string {

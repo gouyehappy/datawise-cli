@@ -25,6 +25,7 @@ const COLUMN_COLLECTORS = new Set<CompletionCollector>([
 const NO_COLUMN_STAGES = new Set<string>([
     'predicate.after_on_complete',
     'predicate.after_where_complete',
+    'predicate.after_having_complete',
     'predicate.after_column',
     'predicate.pick_value',
     'group_by.clause_next',
@@ -33,6 +34,7 @@ const NO_COLUMN_STAGES = new Set<string>([
     'update.after_table',
     'select_list.after_aggregate',
     'order_by.after_column',
+    'order_by.clause_next',
 ])
 
 function defaultColumnMatch(stage: string | undefined): ColumnMatchMode {
@@ -62,7 +64,31 @@ function shouldRunKeywordCollector(
     prefix: string,
 ): boolean {
     if (plan.keywordPhase === 'none') return false
-    if (plan.keywordPhase === 'clause-prefix' && !prefix) return false
+    // SELECT 列表空前缀仍给出 FROM / DISTINCT（及列后 AS）top-N
+    if (plan.keywordPhase === 'clause-prefix' && !prefix) {
+        if (plan.keywordSlot !== 'select_list' && plan.stage !== 'select_list.default' && plan.stage !== 'select_list.after_comma') {
+            return false
+        }
+    }
+    // 列后正在打别名（SELECT id u|）：不要用 AS/FROM 关键字抢补全
+    if (
+        (plan.keywordPhase === 'clause-prefix' || ctx.slot === 'select_list') &&
+        prefix.trim()
+    ) {
+        const p = prefix.toLowerCase()
+        const mayBeKeyword = ['as', 'from', 'distinct'].some((kw) => kw.startsWith(p))
+        if (!mayBeKeyword) {
+            const trimmed = ctx.segment.trimEnd()
+            const withoutPrefix =
+                trimmed.toLowerCase().endsWith(p) && trimmed.length >= prefix.length
+                    ? trimmed.slice(0, trimmed.length - prefix.length).trimEnd()
+                    : trimmed
+            const afterItem =
+                hasSignal(ctx, 'after_select_list_item') ||
+                /(?:^|,|\bSELECT\b)\s*(?:DISTINCT\s+)?(?:[\w$]+\.)?[\w$]+$/i.test(withoutPrefix)
+            if (afterItem) return false
+        }
+    }
     if (ctx.slot === 'column_ref' && !hasSignal(ctx, 'after_complete_column_ref')) return false
     if (hasSignal(ctx, 'after_condition_connector') && !prefix) return false
     if (hasSignal(ctx, 'after_predicate_operator')) return false
@@ -77,6 +103,7 @@ function planAllowsSnippets(
         return slot === 'statement_start' || slot === 'from' || slot === 'join'
     }
     if (plan.keywordPhase === 'clause-next') return true
+    if (plan.keywordPhase === 'clause-prefix') return true
     if (plan.keywordPhase === 'insert-clause-next') return true
     if (plan.keywordPhase === 'update-clause-next') return true
     return plan.keywordPhase === 'all'
@@ -89,6 +116,13 @@ function shouldRunSnippetCollector(
 ): boolean {
     if (hasSignal(ctx, 'after_condition_connector') && !prefix) return false
     if (ctx.fromJoin?.clauseKeywordPrefix && !ctx.fromJoin.joinKeywordPrefix) return false
+    // 子句关键字优先：空前缀不抢戏；打出前缀后再出相关片段
+    if (
+        (plan.keywordPhase === 'clause-next' || plan.keywordPhase === 'clause-prefix') &&
+        !prefix.trim()
+    ) {
+        return false
+    }
     return planAllowsSnippets(plan, ctx.slot)
 }
 

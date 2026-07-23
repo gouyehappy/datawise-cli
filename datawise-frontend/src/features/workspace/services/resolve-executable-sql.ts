@@ -4,7 +4,7 @@ export type ExecutableSqlResolution = {
     anchorLine?: number | null
 }
 
-/** 控制台执行 SQL：显式 string → 编辑器选区 → 光标所在行 → 可选全文（工具栏） */
+/** 控制台执行 SQL：显式 string → 编辑器选区 → 光标所在完整语句（多行向上下扩展）→ 可选全文 */
 export function resolveExecutableSql(
     executableOverride: unknown,
     getSelectedText: () => string,

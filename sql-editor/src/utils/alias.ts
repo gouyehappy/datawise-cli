@@ -5,7 +5,7 @@
 import {stripSqlForParsing, statementBoundsAtOffset} from './parse-references'
 import {suggestTableAlias} from './alias-from-name'
 import {getActiveSqlEditorRuntime} from '@sql-editor/runtime/sql-editor-runtime'
-import {sqlEditorT} from '@sql-editor/i18n'
+import {sqlEditorSuggestT} from '@sql-editor/i18n'
 
 export {existingAliasAfterTableOnLine} from './alias-line'
 import {existingAliasAfterTableOnLine} from './alias-line'
@@ -113,21 +113,20 @@ export function tableCompletionInsertText(
     offset?: number,
     options?: { insertMode?: 'name-only' },
 ): { insertText: string; detail: string } {
-    const locale = getActiveSqlEditorRuntime().getLocale()
     if (options?.insertMode === 'name-only' || !getActiveSqlEditorRuntime().isAutoTableAliasEnabled()) {
-        return {insertText: table, detail: sqlEditorT(locale, 'alias.table')}
+        return {insertText: table, detail: sqlEditorSuggestT('alias.table')}
     }
     const existing = existingAliasAfterTableOnLine(line, replaceEndColumn)
     if (existing) {
         return {
             insertText: table,
-            detail: sqlEditorT(locale, 'alias.table_reuse', {alias: existing}),
+            detail: sqlEditorSuggestT('alias.table_reuse', {alias: existing}),
         }
     }
     const alias = nextTableAlias(table, aliases, sql, line, undefined, offset)
     return {
         insertText: `${table} ${alias}`,
-        detail: sqlEditorT(locale, 'alias.table_alias', {alias}),
+        detail: sqlEditorSuggestT('alias.table_alias', {alias}),
     }
 }
 

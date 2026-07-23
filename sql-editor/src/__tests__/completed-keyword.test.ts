@@ -38,8 +38,9 @@ describe('completed-keyword — suppress redundant suggestions', () => {
             shouldOfferKeywordAtCursor('SELECT * FROM t ORDER BY ', 'ORDER BY', ''),
             false,
         )
+        // 已进入列名区域：尾部判定不再拦截；由 keywordSlot 白名单去掉 GROUP BY
         assert.equal(
-            shouldOfferKeywordAtCursor('SELECT * FROM t GROUP BY status', 'GROUP BY', ''),
+            isKeywordCompleteBeforeCursor('SELECT * FROM t GROUP BY status', 'GROUP BY'),
             false,
         )
     })
@@ -52,6 +53,17 @@ describe('completed-keyword — suppress redundant suggestions', () => {
         assert.equal(
             shouldOfferKeywordAtCursor('FROM t1 LEFT JOIN', 'LEFT JOIN', ''),
             false,
+        )
+    })
+
+    it('同行更早的 LEFT JOIN 不阻止下一跳 LEFT JOIN', () => {
+        assert.equal(
+            shouldOfferKeywordAtCursor(
+                'FROM t1 LEFT JOIN u ON t1.id = u.id ',
+                'LEFT JOIN',
+                '',
+            ),
+            true,
         )
     })
 

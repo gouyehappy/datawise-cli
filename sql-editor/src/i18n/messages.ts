@@ -48,6 +48,8 @@ const EN_MESSAGES = {
     'hint.column_ref.unresolved': 'Alias "{alias}" not found · check FROM/JOIN',
     'hint.select_list.no_tables': 'Add FROM and pick a table · or sel+Tab to jump to table',
     'hint.snippet_tips': 'sel · crt · alt · del · upd · ins',
+    'hint.next_keywords': 'Next: {keywords}',
+    'hint.completion_debug': '{stage} · {slot} · {phase}',
 
     'hintbar.dialect': 'Dialect: {dialect}',
     'hintbar.insert_alias': 'Insert {alias}. → {table}',
@@ -101,6 +103,9 @@ const EN_MESSAGES = {
     'settings.formatter_section': 'SQL formatter',
     'settings.formatter_use_library': 'Use sql-formatter library',
     'settings.formatter_use_library_hint': 'When off, only keyword line-break fallback is used',
+    'settings.formatter_as_you_type': 'Break lines while typing',
+    'settings.formatter_as_you_type_hint':
+        'After typing WHERE / FROM / JOIN / GROUP BY … and a space, insert a newline so lines stay short',
     'settings.formatter_keyword_case': 'Keyword case',
     'settings.formatter_keyword_case_hint': 'How SQL keywords are cased when formatting',
     'settings.formatter_keyword_upper': 'UPPERCASE',
@@ -427,6 +432,8 @@ const ZH_MESSAGES: Record<SqlEditorMessageKey, string> = {
     'hint.column_ref.unresolved': '别名「{alias}」未识别 · 检查 FROM/JOIN',
     'hint.select_list.no_tables': '先输入 FROM 选表 · 或 sel+Tab 定位到表名',
     'hint.snippet_tips': 'sel · crt · alt · del · upd · ins',
+    'hint.next_keywords': '下一步：{keywords}',
+    'hint.completion_debug': '{stage} · {slot} · {phase}',
 
     'hintbar.dialect': '方言: {dialect}',
     'hintbar.insert_alias': '插入 {alias}. → {table}',
@@ -480,6 +487,9 @@ const ZH_MESSAGES: Record<SqlEditorMessageKey, string> = {
     'settings.formatter_section': 'SQL 格式化',
     'settings.formatter_use_library': '使用 sql-formatter 库',
     'settings.formatter_use_library_hint': '关闭后仅使用关键字换行回退格式化',
+    'settings.formatter_as_you_type': '边写边断行',
+    'settings.formatter_as_you_type_hint':
+        '手写 WHERE / FROM / JOIN / GROUP BY 等关键字并空格后，自动换行，避免单行过长',
     'settings.formatter_keyword_case': '关键字大小写',
     'settings.formatter_keyword_case_hint': '格式化时 SQL 关键字的大小写',
     'settings.formatter_keyword_upper': '大写',

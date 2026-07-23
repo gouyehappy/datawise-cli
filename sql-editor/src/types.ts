@@ -218,6 +218,12 @@ export interface SqlEditorContextInfo {
     shortcutItems: HintShortcutItem[]
     /** 提示条快捷键完整说明（hover） */
     shortcutHintTitle: string
+    /** 开发态：补全阶段可观测信息 */
+    completionDebug?: {
+        stage: string
+        keywordSlot: string
+        keywordPhase: string
+    }
 }
 
 /** 提示条快捷键芯片 */
@@ -265,7 +271,7 @@ export interface SqlEditorExpose {
 
     getExecutableSql(): string
 
-    formatDocument(): void
+    formatDocument(): boolean
 
     /** 仅格式化选区；无选区时返回 false */
     formatSelection(): boolean

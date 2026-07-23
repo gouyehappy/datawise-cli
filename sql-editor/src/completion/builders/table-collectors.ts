@@ -1,6 +1,12 @@
-import {preferredAlias, tableCompletionInsertText} from '@sql-editor/utils/alias'
-import {catalogForTable, fkJoinConditions, relatedTablesForJoin} from '@sql-editor/utils/schema-columns'
-import {buildInnerJoinLine, buildLeftJoinLine, fkJoinLineCandidates} from '@sql-editor/utils/fk-join-lines'
+import {
+    buildInnerJoinLine,
+    buildInnerJoinLineInsert,
+    buildLeftJoinLine,
+    buildLeftJoinLineInsert,
+    fkJoinLineCandidates,
+    matchesFkJoinLinePrefix,
+} from '@sql-editor/utils/fk-join-lines'
+import {adjustKeywordInsertNewlines} from '@sql-editor/utils/format-as-you-type'
 import {tablesReferencedInQuery} from '../context'
 import type {SqlCompletionContext} from '../context'
 import type {SqlCompletionPlan} from '../grammar/types'
@@ -17,6 +23,10 @@ import {LARGE_SCHEMA_TABLE_THRESHOLD, MAX_TABLE_SUGGESTIONS} from '../limits'
 import {getSchemaContext, localeT, typeT, uniqueTables} from './collector-locale'
 import {collectCatalogSchemaSuggestions} from './catalog-schema-collectors'
 import {isCatalogSchemaTableStage} from '@sql-editor/utils/from-qualified-input'
+import {preferredAlias, tableCompletionInsertText} from '@sql-editor/utils/alias'
+import {catalogForTable, fkJoinConditions, relatedTablesForJoin} from '@sql-editor/utils/schema-columns'
+
+const TRIGGER_SUGGEST_COMMAND = {id: 'editor.action.triggerSuggest', title: 'Trigger Suggest'} as const
 
 export function collectFkJoinLineSuggestions(
     ctx: SqlCompletionContext,
@@ -45,49 +55,67 @@ export function collectFkJoinLineSuggestions(
 
     let index = 0
     for (const candidate of candidates) {
-        if (prefix && !candidate.targetTable.toLowerCase().startsWith(prefix.toLowerCase())) continue
+        const showInner = matchesFkJoinLinePrefix(candidate, prefix, 'inner')
+        const showLeft = matchesFkJoinLinePrefix(candidate, prefix, 'left')
+        if (!showInner && !showLeft) continue
 
-        const innerLine = buildInnerJoinLine(candidate)
-        push({
-            label: categoryCompletionLabel(
-                localeT('completion.alias_arrow', {table: candidate.targetTable}),
-                typeT('fk'),
-            ),
-            kind: completionItemKind('fk'),
-            insertText: innerLine,
-            detail: localeT('completion.inner_join_fk', {condition: candidate.condition}),
-            filterText: buildFilterText(candidate.targetTable, [
-                innerLine,
-                candidate.sourceTable,
-                'join',
-                'fk',
-                'inner',
-            ]),
-            range,
-            sortText: completionSort('fkjoin', index),
-            preselect: index === 0,
-        })
+        if (showInner) {
+            const innerLine = buildInnerJoinLine(candidate)
+            const insertText = adjustKeywordInsertNewlines(
+                buildInnerJoinLineInsert(candidate),
+                editor.lineBeforeCursor,
+            )
+            push({
+                label: categoryCompletionLabel(
+                    localeT('completion.alias_arrow', {table: candidate.targetTable}),
+                    typeT('fk'),
+                ),
+                kind: completionItemKind('fk'),
+                insertText,
+                detail: localeT('completion.inner_join_fk', {condition: candidate.condition}),
+                filterText: buildFilterText(candidate.targetTable, [
+                    innerLine,
+                    candidate.sourceTable,
+                    'join',
+                    'fk',
+                    'inner',
+                    'ij',
+                ]),
+                range,
+                sortText: completionSort('fkjoin', index),
+                preselect: index === 0,
+                command: TRIGGER_SUGGEST_COMMAND,
+            })
+        }
 
-        const leftLine = buildLeftJoinLine(candidate)
-        push({
-            label: categoryCompletionLabel(
-                localeT('completion.fk_join_target_left', {table: candidate.targetTable}),
-                typeT('fk'),
-            ),
-            kind: completionItemKind('fk'),
-            insertText: leftLine,
-            detail: localeT('completion.left_join_fk', {condition: candidate.condition}),
-            filterText: buildFilterText(candidate.targetTable, [
-                leftLine,
-                candidate.sourceTable,
-                'join',
-                'fk',
-                'left',
-                'lf',
-            ]),
-            range,
-            sortText: completionSort('fkjoin', index + 500),
-        })
+        if (showLeft) {
+            const leftLine = buildLeftJoinLine(candidate)
+            const insertText = adjustKeywordInsertNewlines(
+                buildLeftJoinLineInsert(candidate),
+                editor.lineBeforeCursor,
+            )
+            push({
+                label: categoryCompletionLabel(
+                    localeT('completion.fk_join_target_left', {table: candidate.targetTable}),
+                    typeT('fk'),
+                ),
+                kind: completionItemKind('fk'),
+                insertText,
+                detail: localeT('completion.left_join_fk', {condition: candidate.condition}),
+                filterText: buildFilterText(candidate.targetTable, [
+                    leftLine,
+                    candidate.sourceTable,
+                    'join',
+                    'fk',
+                    'left',
+                    'lj',
+                    'lf',
+                ]),
+                range,
+                sortText: completionSort('fkjoin', index + 500),
+                command: TRIGGER_SUGGEST_COMMAND,
+            })
+        }
 
         index++
     }
@@ -113,7 +141,6 @@ export function collectTableSuggestions(
     const line = editor.lineAtRange
     const sql = editor.fullSql
     const cursorOffset = editor.cursorOffset
-    const knownTables = getSchemaContext().tables
     const inQuery = tablesReferencedInQuery(ctx)
     const related = new Set(relatedTablesForJoin(getSchemaContext(), inQuery).map((t) => t.toLowerCase()))
 

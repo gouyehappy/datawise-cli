@@ -270,6 +270,21 @@ function patchAi(patch: Partial<SqlEditorAiSettings>) {
       </label>
     </div>
 
+    <!-- 边写边断行（与库格式化独立） -->
+    <div class="bh-group">
+      <label class="bh-row" :title="t('settings.formatter_as_you_type_hint')">
+        <span class="bh-row-label">{{ t('settings.formatter_as_you_type') }}</span>
+        <span class="bh-switch bh-switch-sm">
+          <input
+              type="checkbox"
+              :checked="formatterSettings.formatAsYouType"
+              @change="emit('patchFormatter', { formatAsYouType: ($event.target as HTMLInputElement).checked })"
+          />
+          <span class="bh-switch-track" aria-hidden="true"/>
+        </span>
+      </label>
+    </div>
+
     <!-- 格式化 -->
     <div class="bh-group" :class="{ 'bh-group-dim': !formatterSettings.useLibrary }">
       <header class="bh-group-head bh-group-head-split">

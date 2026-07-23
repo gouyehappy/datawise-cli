@@ -10,6 +10,8 @@ export type SqlFormatterLogicalOperatorNewline = 'before' | 'after'
 export interface SqlEditorFormatterSettings {
     /** 使用 sql-formatter 库；关闭时仅用关键字换行回退 */
     useLibrary?: boolean
+    /** 手写时在子句关键字前自动换行，避免单行过长 */
+    formatAsYouType?: boolean
     keywordCase?: SqlFormatterKeywordCase
     identifierCase?: SqlFormatterKeywordCase
     functionCase?: SqlFormatterKeywordCase
@@ -29,6 +31,7 @@ export type ResolvedSqlEditorFormatterSettings = Required<SqlEditorFormatterSett
 
 export const DEFAULT_SQL_EDITOR_FORMATTER_SETTINGS: ResolvedSqlEditorFormatterSettings = {
     useLibrary: true,
+    formatAsYouType: true,
     keywordCase: 'upper',
     identifierCase: 'preserve',
     functionCase: 'preserve',
@@ -57,6 +60,7 @@ export function normalizeSqlEditorFormatterLayer(
 
     const next: SqlEditorFormatterSettings = {}
     if (typeof raw.useLibrary === 'boolean') next.useLibrary = raw.useLibrary
+    if (typeof raw.formatAsYouType === 'boolean') next.formatAsYouType = raw.formatAsYouType
     if (isKeywordCase(raw.keywordCase)) next.keywordCase = raw.keywordCase
     if (isKeywordCase(raw.identifierCase)) next.identifierCase = raw.identifierCase
     if (isKeywordCase(raw.functionCase)) next.functionCase = raw.functionCase
@@ -85,6 +89,7 @@ export function resolveSqlEditorFormatterSettings(
     const normalized = normalizeSqlEditorFormatterLayer(layer) ?? {}
     return {
         useLibrary: normalized.useLibrary ?? base.useLibrary,
+        formatAsYouType: normalized.formatAsYouType ?? base.formatAsYouType,
         keywordCase: normalized.keywordCase ?? base.keywordCase,
         identifierCase: normalized.identifierCase ?? base.identifierCase,
         functionCase: normalized.functionCase ?? base.functionCase,

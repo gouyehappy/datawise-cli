@@ -39,6 +39,14 @@ const FIXTURE_LIST: Array<{
         statement: 'select', clauseId: null, stateId: 'global_where_complete',
         fixture: {sql: 'SELECT * FROM t WHERE 1=1 |', stage: 'predicate.after_where_complete', clauseId: null},
     },
+    {
+        statement: 'select', clauseId: null, stateId: 'global_having_complete',
+        fixture: {
+            sql: 'SELECT status FROM orders GROUP BY status HAVING status = 1 |',
+            stage: 'predicate.after_having_complete',
+            clauseId: null,
+        },
+    },
 
     // ── SELECT select_list ──
     {
@@ -195,7 +203,9 @@ const FIXTURE_LIST: Array<{
         statement: 'select', clauseId: 'having', stateId: 'having_complete',
         fixture: {
             sql: 'SELECT status FROM orders GROUP BY status HAVING status = 1 |',
-            stage: 'predicate.after_where_complete', clauseId: null, stateId: 'global_where_complete',
+            stage: 'predicate.after_having_complete',
+            clauseId: null,
+            stateId: 'global_having_complete',
         },
     },
     {
@@ -232,6 +242,15 @@ const FIXTURE_LIST: Array<{
     },
 
     // ── SELECT order_by ──
+    {
+        statement: 'select', clauseId: 'order_by', stateId: 'clause_next',
+        fixture: {
+            sql: 'SELECT status FROM orders ORDER BY status ASC |',
+            stage: 'order_by.clause_next',
+            clauseId: 'order_by',
+            hasKeywords: true,
+        },
+    },
     {
         statement: 'select', clauseId: 'order_by', stateId: 'after_column',
         fixture: {

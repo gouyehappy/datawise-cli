@@ -4,6 +4,8 @@ import {SQL_EDITOR_SCROLLBAR_OPTIONS} from './scrollbar-options'
 /** SQL 工程师向 Monaco 编辑体验 */
 export const SQL_EDITOR_MONACO_OPTIONS: monaco.editor.IStandaloneEditorConstructionOptions = {
     scrollbar: SQL_EDITOR_SCROLLBAR_OPTIONS,
+    wordWrap: 'on',
+    wrappingIndent: 'same',
     autoClosingBrackets: 'always',
     autoClosingQuotes: 'always',
     autoSurround: 'languageDefined',

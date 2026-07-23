@@ -12,6 +12,8 @@ import {
 } from '../completion/policy/guards.ts'
 import {shouldOfferKeywordAtCursor} from '../completion/completed-keyword.ts'
 import {matchesKeywordPrefix} from '../completion/filter-text.ts'
+import {resolveCompletionKeywords, filterOperatorsByValueKind, nextKeywordHintsForPlan} from '../completion/plan-keywords.ts'
+import {shouldRunCollector} from '../completion/policy/collector-gate.ts'
 
 const Invoke = 0
 const TriggerCharacter = 1
@@ -424,6 +426,135 @@ describe('completion scenarios — ON / WHERE / ORDER', () => {
         assert.equal(ctx.signals.after_complete_where_predicate, true)
         assert.equal(plan.keywordSlot, 'after_where')
         assert.deepEqual(plan.collectors, ['keywords', 'snippets'])
+    })
+
+    it('WHERE 条件完整：不提示 JOIN（JOIN 须在 WHERE 前）', () => {
+        const {ctx, plan} = at('SELECT * FROM users WHERE status = 1 |')
+        const kws = resolveCompletionKeywords(ctx, plan).map((k) => k.toUpperCase())
+        assert.equal(kws.includes('GROUP BY'), true)
+        assert.equal(kws.includes('ORDER BY'), true)
+        assert.equal(kws.includes('AND'), true)
+        assert.equal(kws.some((k) => k.includes('JOIN')), false)
+        assert.equal(kws.includes('WHERE'), false)
+    })
+
+    it('SELECT 列表 clause-prefix：仅 FROM/DISTINCT/AS（避免 or→ORDER BY）', () => {
+        const {ctx, plan} = at('SELECT ord|')
+        assert.equal(plan.stage, 'select_list.default')
+        assert.equal(plan.keywordPhase, 'clause-prefix')
+        const kws = resolveCompletionKeywords(ctx, plan, {prefix: 'ord'}).map((k) => k.toUpperCase())
+        assert.equal(kws.every((k) => ['FROM', 'DISTINCT', 'AS'].includes(k)), true)
+        assert.equal(kws.includes('ORDER BY'), false)
+        assert.equal(kws.includes('WHERE'), false)
+    })
+
+    it('SELECT 空前缀：top FROM / DISTINCT', () => {
+        const {ctx, plan} = at('SELECT |')
+        assert.equal(plan.keywordPhase, 'clause-prefix')
+        const kws = resolveCompletionKeywords(ctx, plan, {prefix: ''}).map((k) => k.toUpperCase())
+        assert.deepEqual(kws, ['FROM', 'DISTINCT'])
+    })
+
+    it('SELECT 列项后空前缀：top AS / FROM', () => {
+        const {ctx, plan} = at('SELECT id |')
+        assert.equal(ctx.signals.after_select_list_item, true)
+        const kws = resolveCompletionKeywords(ctx, plan, {prefix: ''}).map((k) => k.toUpperCase())
+        assert.deepEqual(kws, ['AS', 'FROM'])
+    })
+
+    it('HAVING 完整：ORDER BY / LIMIT，无 JOIN / WHERE', () => {
+        const {ctx, plan} = at(
+            'SELECT status, COUNT(*) c FROM orders GROUP BY status HAVING COUNT(*) > 1 |',
+        )
+        assert.equal(ctx.signals.after_complete_having_predicate, true)
+        assert.equal(plan.stage, 'predicate.after_having_complete')
+        assert.equal(plan.keywordSlot, 'after_having')
+        const kws = resolveCompletionKeywords(ctx, plan, {prefix: ''}).map((k) => k.toUpperCase())
+        assert.equal(kws.includes('ORDER BY'), true)
+        assert.equal(kws.includes('LIMIT'), true)
+        assert.equal(kws.includes('WHERE'), false)
+        assert.equal(kws.some((k) => k.includes('JOIN')), false)
+        assert.equal(kws.includes('GROUP BY'), false)
+    })
+
+    it('ORDER BY ASC 后：LIMIT / OFFSET', () => {
+        const {ctx, plan} = at('SELECT id FROM orders ORDER BY id ASC |')
+        assert.equal(ctx.signals.after_complete_order_by, true)
+        assert.equal(plan.stage, 'order_by.clause_next')
+        assert.equal(plan.keywordSlot, 'after_order_by')
+        const kws = resolveCompletionKeywords(ctx, plan, {prefix: ''}).map((k) => k.toUpperCase())
+        assert.equal(kws.includes('LIMIT'), true)
+        assert.equal(kws.includes('OFFSET'), true)
+        assert.equal(kws.includes('WHERE'), false)
+        assert.equal(kws.some((k) => k.includes('JOIN')), false)
+    })
+
+    it('WHERE 空前缀：snippets 门控关闭，关键字保留', () => {
+        const {ctx, plan} = at('SELECT * FROM users WHERE status = 1 |')
+        assert.equal(shouldRunCollector('keywords', plan, ctx, ''), true)
+        assert.equal(shouldRunCollector('snippets', plan, ctx, ''), false)
+        assert.equal(shouldRunCollector('snippets', plan, ctx, 'sel'), true)
+    })
+
+    it('运算符按列类型过滤：字符串无 >', () => {
+        const ops = filterOperatorsByValueKind(
+            ['=', '<>', '>', '<', 'LIKE', 'IN', 'IS', 'BETWEEN'],
+            'string',
+        ).map((k) => k.toUpperCase())
+        assert.equal(ops.includes('LIKE'), true)
+        assert.equal(ops.includes('>'), false)
+        assert.equal(ops.includes('<'), false)
+    })
+
+    it('运算符按列类型过滤：数值有比较符无 LIKE', () => {
+        const ops = filterOperatorsByValueKind(
+            ['=', '<>', '>', '<', 'LIKE', 'IN', 'BETWEEN'],
+            'numeric',
+        ).map((k) => k.toUpperCase())
+        assert.equal(ops.includes('>'), true)
+        assert.equal(ops.includes('LIKE'), false)
+    })
+
+    it('提示条 next 关键字与 after_where top 同源', () => {
+        const {plan} = at('SELECT * FROM users WHERE status = 1 |')
+        assert.deepEqual(nextKeywordHintsForPlan(plan), [
+            'AND',
+            'GROUP BY',
+            'ORDER BY',
+            'HAVING',
+            'LIMIT',
+        ])
+    })
+
+    it('GROUP BY 完整：无 WHERE / JOIN', () => {
+        const {ctx, plan} = at('SELECT status FROM orders GROUP BY status |')
+        assert.equal(plan.keywordSlot, 'after_group_by')
+        const kws = resolveCompletionKeywords(ctx, plan).map((k) => k.toUpperCase())
+        assert.equal(kws.includes('ORDER BY'), true)
+        assert.equal(kws.includes('HAVING'), true)
+        assert.equal(kws.includes('WHERE'), false)
+        assert.equal(kws.some((k) => k.includes('JOIN')), false)
+    })
+
+    it('ON 完整后仍可提示下一跳 LEFT JOIN', () => {
+        const sql =
+            'SELECT * FROM orders t1 LEFT JOIN users u ON t1.id = u.id |'
+        const {ctx, plan} = at(sql)
+        assert.equal(plan.keywordSlot, 'after_on')
+        const kws = resolveCompletionKeywords(ctx, plan).map((k) => k.toUpperCase())
+        assert.equal(kws.includes('WHERE'), true)
+        assert.equal(kws.includes('LEFT JOIN'), true)
+        assert.equal(
+            shouldOfferKeywordAtCursor(sql.replace('|', ''), 'LEFT JOIN', ''),
+            true,
+        )
+    })
+
+    it('UPDATE SET：不倾泻全集关键字', () => {
+        const {plan} = at('UPDATE orders SET |')
+        assert.equal(plan.stage, 'update.set')
+        assert.equal(plan.keywordPhase, 'none')
+        assert.equal(plan.collectors.includes('keywords'), false)
     })
 
     it('WHERE 复合条件写完后应同时提示 AND/OR 与 GROUP BY', () => {

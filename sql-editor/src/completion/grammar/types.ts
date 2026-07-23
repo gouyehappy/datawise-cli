@@ -21,6 +21,7 @@ export type CompletionStage =
     | 'predicate.after_connector'
     | 'predicate.after_on_complete'
     | 'predicate.after_where_complete'
+    | 'predicate.after_having_complete'
     // SELECT 列表与其它列槽
     | 'select_list.default'
     | 'select_list.after_comma'
@@ -32,6 +33,7 @@ export type CompletionStage =
     | 'order_by.pick_column'
     | 'order_by.after_comma'
     | 'order_by.after_column'
+    | 'order_by.clause_next'
     // DML
     | 'insert.values'
     | 'insert.columns'
@@ -58,6 +60,8 @@ export type KeywordSlotOverride =
     | 'after_on'
     | 'after_where'
     | 'after_group_by'
+    | 'after_having'
+    | 'after_order_by'
     | 'select_aggregate'
 
 /** 阶段计划模板 */

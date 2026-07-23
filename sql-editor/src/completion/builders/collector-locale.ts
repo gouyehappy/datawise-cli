@@ -6,10 +6,10 @@ import type {SqlCompletionContext} from '../context'
 import {completionItemKind} from '../completion-labels'
 import {isColumnAlreadySelected} from '@sql-editor/utils/selected-columns'
 import {isFkColumn} from '../predicate-column'
-import {sqlEditorT} from '@sql-editor/i18n'
+import {sqlEditorSuggestT} from '@sql-editor/i18n'
 
 export function localeT(key: string, params?: Record<string, string | number>) {
-    return sqlEditorT(getActiveSqlEditorRuntime().getLocale(), key, params)
+    return sqlEditorSuggestT(key, params)
 }
 
 export function typeT(category: Parameters<typeof completionItemKind>[0]) {

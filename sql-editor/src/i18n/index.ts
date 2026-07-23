@@ -33,6 +33,17 @@ export function sqlEditorT(
     return text
 }
 
+/**
+ * Monaco suggest-widget copy stays English (type badges, detail, snippet summaries).
+ * App UI locale still drives HintBar / settings / diagnostics.
+ */
+export function sqlEditorSuggestT(
+    key: SqlEditorMessageKey | string,
+    params?: Record<string, string | number>,
+): string {
+    return sqlEditorT('en', key, params)
+}
+
 export function translateSnippetDetail(
     locale: SqlEditorLocale,
     label: string,

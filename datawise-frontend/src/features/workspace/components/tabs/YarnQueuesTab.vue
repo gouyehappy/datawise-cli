@@ -148,8 +148,8 @@ watch(connectionId, loadQueues)
                 :class="{ 'is-selected': selectedQueueName === queue.name }"
                 @click="selectQueue(queue)"
             >
-              <td>{{ queue.name ?? 'ù? }}</td>
-              <td>{{ queue.state ?? 'ù? }}</td>
+              <td>{{ queue.name ?? '‚Äî' }}</td>
+              <td>{{ queue.state ?? '‚Äî' }}</td>
               <td>{{ queue.capacity?.toFixed?.(1) ?? 0 }}%</td>
               <td>{{ queue.usedCapacity?.toFixed?.(1) ?? 0 }}%</td>
               <td>{{ queue.numApplications }}</td>

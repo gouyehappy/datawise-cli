@@ -70,9 +70,9 @@ watch(connectionId, loadNodes)
         </thead>
         <tbody>
           <tr v-for="node in nodes" :key="node.id ?? node.state ?? Math.random()">
-            <td>{{ node.id ?? 'ù? }}</td>
-            <td>{{ node.state ?? 'ù? }}</td>
-            <td>{{ node.nodeHealthStatus ?? 'ù? }}</td>
+            <td>{{ node.id ?? '‚Äî' }}</td>
+            <td>{{ node.state ?? '‚Äî' }}</td>
+            <td>{{ node.nodeHealthStatus ?? '‚Äî' }}</td>
             <td>{{ node.numContainers }}</td>
             <td>{{ formatYarnMemory(node.usedMemoryMb) }}</td>
             <td>{{ formatYarnMemory(node.availMemoryMb) }}</td>

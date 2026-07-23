@@ -5,7 +5,7 @@ import type {AiDatabaseTarget} from '@/features/ai/shared/utils/database-targets
 import {useI18n} from 'vue-i18n'
 import type {Ref} from 'vue'
 
-/** �?AI 回复中的 SQL 打开到工作区控制�?*/
+/** —AI 回复中的 SQL 打开到工作区控制—*/
 export function useAiConsoleBridge(selectedTargets: Ref<AiDatabaseTarget[]>) {
     const {t} = useI18n()
     const layout = useLayoutStore()

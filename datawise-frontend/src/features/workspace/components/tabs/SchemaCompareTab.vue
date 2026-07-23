@@ -694,8 +694,8 @@ async function onSubmitSyncProductionApproval(teamId: string) {
               <td>
                 <StatusPill inline :status="column.status" domain="schema">{{ statusLabel(column.status) }}</StatusPill>
               </td>
-              <td class="mono">{{ column.left?.dataType ?? '¡ª' }}</td>
-              <td class="mono">{{ column.right?.dataType ?? '¡ª' }}</td>
+              <td class="mono">{{ column.left?.dataType ?? 'â€”' }}</td>
+              <td class="mono">{{ column.right?.dataType ?? 'â€”' }}</td>
             </tr>
             </tbody>
           </table>

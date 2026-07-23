@@ -17,11 +17,15 @@ import {SQL_DDL_COLUMN_TYPES} from '../ddl-column-types'
 import {completionSort} from './sort-state'
 import type {SuggestEditorSlice, SuggestItem, SuggestPush, SuggestTextRange} from '../suggest-types'
 import {SUGGEST_INSERT_AS_SNIPPET} from '../suggest-types'
-import {localeT, typeT} from './collector-locale'
+import {getSchemaContext, localeT, typeT} from './collector-locale'
 import type {SqlCompletionSlot} from '@sql-editor/types'
 import {getActiveSqlEditorRuntime} from '@sql-editor/runtime/sql-editor-runtime'
 import {resolveSqlDialectFile} from '@sql-editor/completion/dialect-aliases'
 import {suggestRangeReplacingTypedPrefix} from '../range'
+import {classifyColumnType} from '../column-type'
+import {resolvePredicateLeftColumn} from '../predicate-column'
+import {tablesReferencedInQuery} from '../context'
+import {buildKeywordInsert, structureKeywordsForSlot} from '../keyword-insert'
 
 const CHAIN_CONNECTOR_KEYWORDS = new Set([
     'AND',
@@ -32,6 +36,8 @@ const CHAIN_CONNECTOR_KEYWORDS = new Set([
     'LIMIT',
     'OFFSET',
 ])
+
+const TRIGGER_SUGGEST_COMMAND = {id: 'editor.action.triggerSuggest', title: 'Trigger Suggest'} as const
 
 /** 表达式槽位：注入方言函数。ORDER BY / GROUP BY 以列优先，不在此注入（避免 c → COUNT 抢选）。 */
 const FUNCTION_SUGGESTION_SLOTS = new Set([
@@ -58,12 +64,18 @@ export function collectKeywordSuggestions(
         plan.keywordSlot === 'after_on' ||
         plan.keywordSlot === 'after_where' ||
         plan.keywordSlot === 'after_group_by' ||
+        plan.keywordSlot === 'after_having' ||
+        plan.keywordSlot === 'after_order_by' ||
         plan.keywordPhase === 'insert-clause-next' ||
         plan.keywordPhase === 'update-clause-next'
     let index = 0
     let preselected = false
     const predicateClauseExit =
-        ctx.signals.after_complete_where_predicate || ctx.signals.after_complete_on_predicate || ctx.signals.after_complete_group_by_list
+        ctx.signals.after_complete_where_predicate ||
+        ctx.signals.after_complete_on_predicate ||
+        ctx.signals.after_complete_group_by_list ||
+        ctx.signals.after_complete_having_predicate ||
+        ctx.signals.after_complete_order_by
     const fromParser = (plan.parserKeywords?.length ?? 0) > 0
     const lineBefore = editor.lineBeforeCursor
 
@@ -96,7 +108,34 @@ export function collectKeywordSuggestions(
         }
     }
 
-    for (const keyword of resolveCompletionKeywords(ctx, plan)) {
+    // CASE / OVER / WITH：前缀命中时注入结构片段（不进 clause 白名单，避免空前缀噪音）
+    for (const structure of structureKeywordsForSlot(slot, prefix)) {
+        push({
+            label: categoryCompletionLabel(structure.label, kwType),
+            kind: completionItemKind('keyword'),
+            insertText: structure.insertText,
+            insertTextRules: SUGGEST_INSERT_AS_SNIPPET,
+            detail: localeT('completion.keyword'),
+            filterText: keywordFilterText(structure.label),
+            range: keywordRange,
+            sortText: completionSort('keyword', index++),
+            command: TRIGGER_SUGGEST_COMMAND,
+        })
+    }
+
+    let valueKind: ReturnType<typeof classifyColumnType> | undefined
+    if (plan.keywordPhase === 'operators') {
+        const schema = getSchemaContext()
+        const left = resolvePredicateLeftColumn(
+            ctx.segment,
+            ctx.aliases,
+            tablesReferencedInQuery(ctx),
+            schema,
+        )
+        valueKind = classifyColumnType(left?.meta.type)
+    }
+
+    for (const keyword of resolveCompletionKeywords(ctx, plan, {prefix, valueKind})) {
         const prefixOk = matchesKeywordPrefix(keyword, prefix)
         if (predicateClauseExit) {
             if (!prefixOk) continue
@@ -113,21 +152,40 @@ export function collectKeywordSuggestions(
         const preferWhere =
             plan.keywordSlot === 'after_table' &&
             !preselected &&
-            (!prefix || prefix.toLowerCase().startsWith('wh'))
+            Boolean(prefix) &&
+            prefix.toLowerCase().startsWith('wh')
         const preselect =
             !preselected &&
             ((preferWhere && keyword.toUpperCase() === 'WHERE') ||
                 (!preferWhere && plan.sortProfile === 'keyword-first' && index === 0))
         if (preselect) preselected = true
+
+        const insert = buildKeywordInsert(keyword, {
+            trailingSpaceFallback: afterClause || plan.keywordPhase === 'clause-next',
+            lineBefore,
+        })
+        // 非子句出口（如运算符）保持纯文本，避免 = 变成 snippet
+        const useSnippet =
+            insert.asSnippet &&
+            (afterClause ||
+                plan.keywordPhase === 'clause-next' ||
+                plan.keywordPhase === 'clause-prefix' ||
+                plan.keywordPhase === 'connectors' ||
+                plan.keywordPhase === 'insert-clause-next' ||
+                plan.keywordPhase === 'update-clause-next' ||
+                plan.keywordPhase === 'join-on-only')
+
         push({
             label: categoryCompletionLabel(keyword, kwType),
             kind: completionItemKind('keyword'),
-            insertText: afterClause ? `${keyword} ` : keyword,
+            insertText: useSnippet ? insert.insertText : afterClause ? `${keyword} ` : keyword,
+            insertTextRules: useSnippet ? SUGGEST_INSERT_AS_SNIPPET : undefined,
             detail: localeT('completion.keyword'),
             filterText: keywordFilterText(keyword),
             range: keywordRange,
             sortText: completionSort('keyword', index),
             preselect,
+            command: useSnippet && insert.chainSuggest ? TRIGGER_SUGGEST_COMMAND : undefined,
         })
         index++
     }
@@ -163,13 +221,12 @@ export function collectSnippetSuggestions(
     _plan: SqlCompletionPlan,
 ) {
     let index = 0
-    const locale = getActiveSqlEditorRuntime().getLocale()
     const dialectFile = resolveSqlDialectFile(getActiveSqlEditorRuntime().getDialect())
     const snippetType = typeT('snippet')
     for (const snippet of snippetsForContext(ctx.statement, snippetSlot, prefix, ctx.segment)) {
         const presentation = presentSnippetFromConfig(
             snippet,
-            locale,
+            'en',
             snippetType,
             dialectFile === 'sqlserver' ? 'sqlserver' : undefined,
         )

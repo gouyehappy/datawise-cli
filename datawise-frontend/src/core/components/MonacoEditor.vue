@@ -50,11 +50,29 @@ function getExecutableSql(): string {
   return selected || (editor?.getValue() ?? '')
 }
 
-function formatDocument() {
-  if (!editor || props.readonly) return
+function formatSelection(): boolean {
+  if (!editor || props.readonly) return false
+  const selection = editor.getSelection()
+  const model = editor.getModel()
+  if (!selection || !model || selection.isEmpty()) return false
+  const selected = model.getValueInRange(selection)
+  if (!selected.trim()) return false
+  const formatted = formatSql(selected)
+  editor.executeEdits('sql-editor-format-selection', [
+    {range: selection, text: formatted, forceMoveMarkers: true},
+  ])
+  emit('update:modelValue', editor.getValue())
+  return true
+}
+
+/** 有选区只格式化选区；无选区才格式化全文（兼容非 SQL 控制台场景） */
+function formatDocument(): boolean {
+  if (!editor || props.readonly) return false
+  if (formatSelection()) return true
   const formatted = formatSql(editor.getValue())
   editor.setValue(formatted)
   emit('update:modelValue', formatted)
+  return Boolean(formatted)
 }
 
 function layout() {
@@ -147,6 +165,7 @@ defineExpose({
   getSelectedText,
   getExecutableSql,
   formatDocument,
+  formatSelection,
   layout,
 })
 </script>

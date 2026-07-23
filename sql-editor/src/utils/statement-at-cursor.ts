@@ -54,13 +54,42 @@ function offsetAtLine(sql: string, lineNumber: number): number | null {
     return (lineStarts[lineNumber - 1] ?? 0) + line.length - line.trimStart().length
 }
 
+function offsetToLineNumber(sql: string, offset: number): number {
+    const lineStarts = lineStartOffsets(sql)
+    const clamped = Math.max(0, Math.min(offset, sql.length))
+    for (let line = lineStarts.length; line >= 1; line--) {
+        if (clamped >= (lineStarts[line - 1] ?? 0)) return line
+    }
+    return 1
+}
+
 /** 光标所在的可执行 SQL 语句（支持多行；忽略字符串/注释内分号） */
 export function resolveStatementAtCursor(sql: string, cursorOffset: number): SqlStatementAtCursor | null {
     const cursor = Math.max(0, Math.min(cursorOffset, sql.length))
     if (isCommentOnlyCursorLine(sql, cursor)) return null
 
-    const span = findStatementContainingOffset(indexSqlStatements(sql), cursor)
-    return span ? spanToAtCursor(span) : null
+    const statements = indexSqlStatements(sql)
+    const byOffset = findStatementContainingOffset(statements, cursor)
+    if (byOffset) return spanToAtCursor(byOffset)
+
+    /**
+     * 按行向上/下归属完整语句：
+     * - 光标在多行语句的任意一行（含 SELECT / FROM / JOIN / WHERE）
+     * - 光标落在语句末尾分号之后（同行），仍执行该整句（Ctrl+R 常见位置）
+     */
+    const lineNumber = offsetToLineNumber(sql, cursor)
+    if (isBlankOrCommentOnlyLine(sql, lineNumber)) return null
+
+    const byLine = findStatementContainingLine(statements, lineNumber)
+    if (!byLine) return null
+
+    if (cursor > byLine.endOffset) {
+        if (lineNumber !== byLine.endLine) return null
+        const between = sql.slice(byLine.endOffset, cursor)
+        if (!/^[\s;]*$/.test(between)) return null
+    }
+
+    return spanToAtCursor(byLine)
 }
 
 /** 指定行（1-based）所属的可执行 SQL；空行/纯注释行返回 null */

@@ -20,10 +20,13 @@ export const TRANSITION_IDS: readonly TransitionId[] = [
     'after_complete_on_predicate',
     'after_complete_where_predicate',
     'after_complete_group_by_list',
+    'after_complete_order_by',
+    'after_complete_having_predicate',
     'after_predicate_operator',
     'after_complete_column_ref',
     'after_condition_connector',
     'order_by_after_column',
+    'after_select_list_item',
     'from_awaiting_on_clause',
     'from_table_clause_complete',
     'from_awaiting_table_name',
@@ -182,11 +185,15 @@ export function computeGrammarSignals(input: ComputeSignalsInput): GrammarSignal
     signals.after_comma = detectAfterComma(segment, slot)
     signals.after_select_aggregate = detectAfterSelectAggregateKeyword(segment, slot)
     signals.after_complete_on_predicate = detectAfterCompleteOnPredicate(segment, slot)
-    signals.after_complete_where_predicate = detectAfterCompleteWherePredicate(segment, slot)
+    const whereOrHavingComplete = detectAfterCompleteWherePredicate(segment, slot)
+    signals.after_complete_where_predicate = slot === 'where' && whereOrHavingComplete
+    signals.after_complete_having_predicate = slot === 'having' && whereOrHavingComplete
     signals.after_complete_group_by_list = detectAfterCompleteGroupByList(segment, slot)
 
     const clauseComplete =
-        signals.after_complete_on_predicate || signals.after_complete_where_predicate
+        signals.after_complete_on_predicate ||
+        signals.after_complete_where_predicate ||
+        signals.after_complete_having_predicate
 
     signals.after_complete_column_ref = clauseComplete
         ? false
@@ -200,7 +207,22 @@ export function computeGrammarSignals(input: ComputeSignalsInput): GrammarSignal
         !signals.after_condition_connector &&
         detectAfterPredicateOperator(segment, slot)
 
-    signals.order_by_after_column = slot === 'order_by' && signals.after_complete_column_ref
+    signals.order_by_after_column =
+        slot === 'order_by' &&
+        signals.after_complete_column_ref &&
+        !/\b(ASC|DESC)\s*$/i.test(segment.trimEnd())
+
+    signals.after_complete_order_by =
+        slot === 'order_by' && /\b(ASC|DESC)\s*$/i.test(segment.trimEnd())
+
+    // 列项写完（trim 后以标识符结尾）；勿对 trimEnd 后再要求 \\s+$（恒失败）
+    const selectListTail = segment.trimEnd()
+    signals.after_select_list_item =
+        slot === 'select_list' &&
+        !signals.after_comma &&
+        !signals.after_select_aggregate &&
+        /(?:^|,|\bSELECT\b)\s*(?:DISTINCT\s+)?(?:[\w$]+\.)?[\w$]+$/i.test(selectListTail) &&
+        !/\b(AS|DISTINCT|ALL|SELECT)$/i.test(selectListTail)
 
     signals.from_awaiting_on_clause = fromJoin?.awaitingOnClause === true
     signals.from_table_clause_complete =

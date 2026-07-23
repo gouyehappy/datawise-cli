@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import {computed} from 'vue'
 import HintBarContextBadges from '@sql-editor/components/hint-bar/HintBarContextBadges.vue'
 import HintBarQuickChips from '@sql-editor/components/hint-bar/HintBarQuickChips.vue'
 import HintBarAliases from '@sql-editor/components/hint-bar/HintBarAliases.vue'
 import HintBarTrailing from '@sql-editor/components/hint-bar/HintBarTrailing.vue'
 import type {SqlEditorContextInfo, SqlQuickAction} from '@sql-editor/types'
 
-withDefaults(
+const props = withDefaults(
     defineProps<{
       contextInfo: SqlEditorContextInfo
       statementLabel: string
@@ -27,6 +28,20 @@ const emit = defineEmits<{
   'open-settings': []
   'hide-hint-bar': []
 }>()
+
+const showCompletionDebug = import.meta.env.DEV
+
+const debugLabel = computed(() => {
+  const debug = props.contextInfo.completionDebug
+  if (!debug) return ''
+  return `${debug.stage}`
+})
+
+const debugTitle = computed(() => {
+  const debug = props.contextInfo.completionDebug
+  if (!debug) return ''
+  return `${debug.stage} · ${debug.keywordSlot} · ${debug.keywordPhase}`
+})
 </script>
 
 <template>
@@ -39,6 +54,11 @@ const emit = defineEmits<{
     />
 
     <span class="hint-text">{{ contextInfo.hint }}</span>
+    <span
+        v-if="showCompletionDebug && contextInfo.completionDebug"
+        class="hint-debug"
+        :title="debugTitle"
+    >{{ debugLabel }}</span>
 
     <HintBarQuickChips
         v-if="contextInfo.quickActions.length"
@@ -91,5 +111,20 @@ const emit = defineEmits<{
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--dw-text-secondary, #5c5c6e);
+}
+
+.hint-debug {
+  flex-shrink: 0;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--dw-bg-muted, #f1f5f9) 80%, transparent);
+  color: var(--dw-text-muted, #7a7a8c);
+  font-family: var(--dw-font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  opacity: 0.85;
 }
 </style>

@@ -29,6 +29,12 @@ export const SELECT_STATEMENT_GRAMMAR: StatementGrammar = {
             hint: P.onComplete.hint,
         },
         {
+            id: 'global_having_complete',
+            when: 'after_complete_having_predicate',
+            stage: 'predicate.after_having_complete',
+            hint: 'HAVING 条件完整 → ORDER BY / LIMIT',
+        },
+        {
             id: 'global_where_complete',
             when: 'after_complete_where_predicate',
             stage: 'predicate.after_where_complete',
@@ -182,7 +188,12 @@ export const SELECT_STATEMENT_GRAMMAR: StatementGrammar = {
             slot: 'having',
             markers: ['HAVING'],
             states: [
-                {...P.whereComplete, id: 'having_complete'},
+                {
+                    id: 'having_complete',
+                    when: 'after_complete_having_predicate',
+                    stage: 'predicate.after_having_complete',
+                    hint: 'HAVING 条件完整 → ORDER BY / LIMIT',
+                },
                 {...P.pickValue, id: 'having_pick_value'},
                 {...P.afterColumn, id: 'having_after_column'},
                 {...P.afterConnector, id: 'having_after_connector'},
@@ -199,6 +210,12 @@ export const SELECT_STATEMENT_GRAMMAR: StatementGrammar = {
             slot: 'order_by',
             markers: ['ORDER BY'],
             states: [
+                {
+                    id: 'clause_next',
+                    when: 'after_complete_order_by',
+                    stage: 'order_by.clause_next',
+                    hint: 'ORDER BY ASC/DESC 后 → LIMIT / OFFSET',
+                },
                 {
                     id: 'after_column',
                     when: 'order_by_after_column',

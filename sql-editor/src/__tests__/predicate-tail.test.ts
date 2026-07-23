@@ -37,4 +37,34 @@ describe('predicate-tail', () => {
         const segment = 'SELECT * FROM a JOIN b ON a.id = b.id AND a.x = 1'
         assert.equal(detectAfterCompleteOnPredicate(segment, 'on'), true)
     })
+
+    it('HAVING aggregate comparison completes', () => {
+        const segment =
+            'SELECT status, COUNT(*) c FROM orders GROUP BY status HAVING COUNT(*) > 1'
+        assert.equal(detectAfterCompleteWherePredicate(segment, 'having'), true)
+    })
+
+    it('IN list completes', () => {
+        assert.equal(
+            detectAfterCompleteWherePredicate('SELECT * FROM t WHERE id IN (1, 2)', 'where'),
+            true,
+        )
+    })
+
+    it('BETWEEN completes', () => {
+        assert.equal(
+            detectAfterCompleteWherePredicate(
+                'SELECT * FROM t WHERE amount BETWEEN 1 AND 10',
+                'where',
+            ),
+            true,
+        )
+    })
+
+    it('IS NOT NULL completes', () => {
+        assert.equal(
+            detectAfterCompleteWherePredicate('SELECT * FROM t WHERE name IS NOT NULL', 'where'),
+            true,
+        )
+    })
 })

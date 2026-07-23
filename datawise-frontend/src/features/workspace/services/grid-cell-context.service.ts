@@ -31,6 +31,12 @@ export function buildWhereEqualsClause(columnName: string, value: unknown): stri
     return `${column} = ${sqlLiteral(value)}`
 }
 
+/** `ORDER BY \`col\`` / `ORDER BY \`col\` DESC` */
+export function buildOrderByClause(columnName: string, direction: 'asc' | 'desc' = 'asc'): string {
+    const dir = direction === 'desc' ? ' DESC' : ''
+    return `ORDER BY ${quoteColumn(columnName)}${dir}`
+}
+
 /** 从当前页行集生成 `column` IN (...)，去重且上限 50 个值 */
 export function buildWhereInClause(
     columnName: string,

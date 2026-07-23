@@ -14,6 +14,7 @@ import IconButton from '@/core/components/IconButton.vue'
 import ConsoleToolbarIcon from '@/core/components/ConsoleToolbarIcon.vue'
 import {SqlEditor} from '@datawise/sql-editor'
 import type {SqlEditorExpose} from '@datawise/sql-editor'
+import {getActiveSqlEditorRuntime} from '@datawise/sql-editor/runtime/sql-editor-runtime'
 import {useExplorerSqlSchemaProvider} from '@/features/workspace/adapters/explorer-sql-schema-provider'
 import SplitHandle from '@/core/components/SplitHandle.vue'
 import {shortcutTooltip} from '@/features/layout/composables/useAppShortcutListener'
@@ -57,6 +58,10 @@ import {useTeamStore} from '@/features/team/stores/team-store'
 import {resolveProductionApprovalTeams} from '@/features/team/services/production-approval-policy.service'
 import {canDmlConnection} from '@/features/team/services/connection-access.service'
 import {applySqlParameters, extractSqlParameters} from '@/features/workspace/services/sql-parameters.service'
+import {
+  buildOrderByFillInsert,
+  buildWhereFillInsert,
+} from '@/features/workspace/services/result-sql-fill.service'
 import {
     supportsExplainAnalyze,
     wrapExplainSql,
@@ -365,6 +370,7 @@ const {runSql, saveConsole, formatSql, formatSelection, jumpToErrorLine, running
   },
   applyParameters: (text) => applySqlParameters(text, sqlParamValues.value),
   getProductionPerfActive: () => productionPerfActive.value,
+  getSchema: () => getActiveSqlEditorRuntime().getSchema(),
 })
 
 const showToolbarRunGroup = computed(() =>
@@ -741,6 +747,21 @@ function onRaiseMaxRows(maxRows: number) {
     skipDangerousCheck: true,
     maxRowsOverride: maxRows,
   })
+}
+
+function onInsertOrderByFromResult(payload: {column: string; direction: 'asc' | 'desc'}) {
+  const editor = editorRef.value
+  if (!editor) return
+  editor.insertTextAtCursor(buildOrderByFillInsert(payload.column, payload.direction))
+  layout.showSuccessToast(t('console.sqlFillInserted'))
+}
+
+function onInsertWhereFromResult(payload: {column: string; value: unknown}) {
+  const editor = editorRef.value
+  if (!editor) return
+  const statement = editor.getCurrentLineSql?.()?.trim() || sql.value
+  editor.insertTextAtCursor(buildWhereFillInsert(statement, payload.column, payload.value))
+  layout.showSuccessToast(t('console.sqlFillInserted'))
 }
 
 async function onLoadMoreResult(index: number) {
@@ -1120,6 +1141,7 @@ onMounted(async () => {
           :export-suggest-mask="connectionEnvironment === 'prod'"
           :production-perf-active="productionPerfActive"
           :cursor-loading="cursorLoading"
+          enable-sql-fill
           @collapse="collapseResultPanel"
           @update:active-view="onActiveViewChange"
           @close-result="onCloseResult"
@@ -1137,6 +1159,8 @@ onMounted(async () => {
           @refresh="refreshActiveResult"
           @load-more="onLoadMoreResult"
           @raise-max-rows="onRaiseMaxRows"
+          @insert-order-by="onInsertOrderByFromResult"
+          @insert-where="onInsertWhereFromResult"
       />
       <button
           v-if="!isEditorFullscreen && !showResultPanel"

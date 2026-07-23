@@ -1,5 +1,5 @@
 <!--
-  AI 模块左侧面板：会话历�?/ 目标数据库互斥切换，始终有一块展开
+  AI 模块左侧面板：会话历史 / 目标数据库互斥切换，始终有一块展开
 -->
 <script setup lang="ts">
 import {computed} from 'vue'

@@ -68,6 +68,12 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
         keywordPhase: 'clause-next',
         keywordSlot: 'after_where',
     },
+    'predicate.after_having_complete': {
+        collectors: ['keywords', 'snippets'],
+        sortProfile: 'keyword-first',
+        keywordPhase: 'clause-next',
+        keywordSlot: 'after_having',
+    },
 
     'select_list.default': {
         collectors: [
@@ -139,11 +145,17 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
         sortProfile: 'keyword-first',
         keywordPhase: 'sort-direction',
     },
+    'order_by.clause_next': {
+        collectors: ['keywords', 'snippets'],
+        sortProfile: 'keyword-first',
+        keywordPhase: 'clause-next',
+        keywordSlot: 'after_order_by',
+    },
 
     'insert.values': {
-        collectors: ['keywords', 'snippets', 'columns', 'aliasComplete'],
-        sortProfile: 'keyword-first',
-        keywordPhase: 'all',
+        collectors: ['columns', 'aliasComplete'],
+        sortProfile: 'column-first',
+        keywordPhase: 'none',
     },
     'insert.columns': {
         collectors: ['fkJoinLines', 'tables', 'snippets'],
@@ -172,9 +184,9 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
         suppressTables: true,
     },
     'update.set': {
-        collectors: ['columns', 'aliasComplete', 'keywords', 'snippets'],
+        collectors: ['columns', 'aliasComplete'],
         sortProfile: 'column-first',
-        keywordPhase: 'all',
+        keywordPhase: 'none',
     },
     'delete.from': {
         collectors: ['fkJoinLines', 'tables', 'snippets'],
@@ -199,12 +211,13 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
             'aliasComplete',
         ],
         sortProfile: 'keyword-first',
-        keywordPhase: 'all',
+        /** 回退槽：只给子句级关键字，避免 format_keywords 全集倾泻 */
+        keywordPhase: 'clause-next',
     },
     'clause.column_first': {
         collectors: ['columns', 'aliasComplete', 'keywords', 'snippets'],
         sortProfile: 'column-first',
-        keywordPhase: 'all',
+        keywordPhase: 'none',
     },
     'ddl.keywords': {
         collectors: ['keywords', 'snippets'],

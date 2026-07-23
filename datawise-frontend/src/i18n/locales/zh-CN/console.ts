@@ -5,7 +5,7 @@ export default {
     saveAsFile: '另存为文件',
     saveBookmark: '保存书签',
     saveViewModel: '保存为视图模型',
-    format: '格式化 SQL',
+    format: '格式化选区（无选区则当前语句）',
     visualQuery: {
         toolbar: '可视化查询构建',
         title: '可视化查询构建器',
@@ -170,7 +170,9 @@ export default {
     readOnlyConnection: '当前连接为只读权限，无法执行写 SQL 或事务操作',
     ddlNotAllowed: '当前连接不允许 DDL（仅可读写 DML）',
     selectionRequired: '请先在编辑器中选中要执行的 SQL',
+    schemaWarn: '发现 {count} 处表/列问题（{message}）。已定位到问题处，再次执行将跳过校验。',
     runFailed: 'SQL 执行失败',
+    sqlFillInserted: '已插入到编辑器',
     consoleTitle: '控制台 {n}',
     newConnectionTitle: '新建 {dbType}',
     parameters: {

@@ -112,6 +112,8 @@ const props = withDefaults(
       showExport?: boolean
       enableFakeData?: boolean
       enableRowDocumentView?: boolean
+      /** 控制台：结果网格回填 SQL 到编辑器 */
+      enableSqlFill?: boolean
     }>(),
     {
       showFilter: true,
@@ -127,6 +129,7 @@ const props = withDefaults(
       enableDmlGenerate: false,
       showExport: true,
       enableRowDocumentView: false,
+      enableSqlFill: false,
     },
 )
 
@@ -149,6 +152,8 @@ const emit = defineEmits<{
   'open-cross-env-compare': [index: number]
   'generate-fake-data': []
   'raise-max-rows': [maxRows: number]
+  'insert-order-by': [payload: { column: string; direction: 'asc' | 'desc' }]
+  'insert-where': [payload: { column: string; value: unknown }]
 }>()
 
 const layout = useLayoutStore()
@@ -937,6 +942,7 @@ watch(
           :ai-summary-loading="!!aiSummaryLoading"
           :show-fake-data="canShowFakeData"
           :enable-row-document-view="enableRowDocumentView"
+          :enable-sql-fill="enableSqlFill"
           full-toolbar
           :has-more="gridHasMore"
           :truncated-at-cap="gridTruncatedAtCap"
@@ -953,6 +959,8 @@ watch(
           @generate-dml="onGenerateDml"
           @request-ai-summary="onRequestAiSummary"
           @generate-fake-data="emit('generate-fake-data')"
+          @insert-order-by="emit('insert-order-by', $event)"
+          @insert-where="emit('insert-where', $event)"
       >
         <template v-if="canShowFakeData || canShowResultChart" #toolbar-extra>
           <QueryResultViewToggle v-if="canShowResultChart" v-model="resultView"/>

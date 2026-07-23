@@ -5,7 +5,7 @@ export default {
     saveAsFile: 'Save as file',
     saveBookmark: 'Save bookmark',
     saveViewModel: 'Save as view model',
-    format: 'Format SQL',
+    format: 'Format selection (or current statement)',
     visualQuery: {
         toolbar: 'Visual query builder',
         title: 'Visual Query Builder',
@@ -170,7 +170,9 @@ export default {
     readOnlyConnection: 'This connection is read-only; write SQL and transaction commands are not allowed',
     ddlNotAllowed: 'DDL is not allowed on this connection (read & write DML only)',
     selectionRequired: 'Select the SQL to run in the editor first',
+    schemaWarn: 'Found {count} table/column issue(s) ({message}). Jumped to the first; run again to skip the check.',
     runFailed: 'SQL execution failed',
+    sqlFillInserted: 'Inserted into editor',
     consoleTitle: 'Console {n}',
     newConnectionTitle: 'New {dbType}',
     parameters: {
