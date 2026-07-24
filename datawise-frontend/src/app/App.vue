@@ -10,6 +10,7 @@ import AppShell from './AppShell.vue'
 import AppSplash from './components/AppSplash.vue'
 import DesktopTitleBar from '@/features/layout/components/DesktopTitleBar.vue'
 import {bootstrapApp, bootstrapProgress} from './services/bootstrap-app.service'
+import {scheduleWorkbenchWarmup} from './services/workbench-warmup.service'
 import {
     desktopStartupProgress,
     initDesktopBackendStartupListener,
@@ -185,6 +186,7 @@ async function completeDesktopStartup() {
         }
 
         bootReady.value = true
+        scheduleWorkbenchWarmup()
         notifyDesktopSplashReady()
 
         if (splashForceReadyTimer) {
@@ -204,6 +206,7 @@ function scheduleSplashForceReady() {
     splashForceReadyTimer = window.setTimeout(() => {
         if (!bootReady.value) {
             bootReady.value = true
+            scheduleWorkbenchWarmup()
         }
         notifyDesktopSplashReady()
     }, SPLASH_FORCE_READY_MS)
@@ -224,6 +227,7 @@ onMounted(() => {
     }
     stopDesktopSplashReporter()
     bootReady.value = true
+    scheduleWorkbenchWarmup()
   }, BOOTSTRAP_MAX_MS)
 
   void bootstrapApp().finally(() => {
@@ -234,6 +238,7 @@ onMounted(() => {
     }
     stopDesktopSplashReporter()
     bootReady.value = true
+    scheduleWorkbenchWarmup()
   })
 })
 
@@ -247,8 +252,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="app" :class="{'app--desktop': desktopApp}">
-    <DesktopTitleBar v-if="bootReady || !desktopApp"/>
+  <div class="app" :class="{'app--desktop': desktopApp, 'app--splash': desktopApp && !bootReady}">
+    <DesktopTitleBar v-if="desktopApp" :minimal="!bootReady"/>
     <div class="app-body">
       <template v-if="desktopApp">
         <AppSplash v-if="!bootReady" key="splash"/>
@@ -277,8 +282,23 @@ onUnmounted(() => {
   background: var(--dw-bg-chrome);
 }
 
+.app--splash {
+  background:
+      radial-gradient(120% 80% at 50% -10%, color-mix(in srgb, var(--dw-primary) 10%, transparent), transparent 55%),
+      linear-gradient(
+          165deg,
+          color-mix(in srgb, var(--dw-bg-editor) 88%, var(--dw-bg-chrome)) 0%,
+          var(--dw-bg-editor) 48%,
+          color-mix(in srgb, var(--dw-bg-muted) 70%, var(--dw-bg-editor)) 100%
+      );
+}
+
 .app--desktop .app-body {
   background: var(--dw-bg-chrome);
+}
+
+.app--splash .app-body {
+  background: transparent;
 }
 
 .app-body {

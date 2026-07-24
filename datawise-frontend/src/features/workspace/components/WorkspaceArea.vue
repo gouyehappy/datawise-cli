@@ -90,6 +90,16 @@ watch(activeTab, () => nextTick(reconcileBrokenActiveTab))
   min-height: 0;
 }
 
+.workspace-body > :deep(.panel-loading-shell),
+.workspace-body > :deep(.panel-load-error) {
+  position: absolute;
+  inset: 0;
+  flex: none;
+  width: auto;
+  height: auto;
+  min-height: 0;
+}
+
 .workspace-body > :deep(.connection-reconnect-overlay) {
   position: absolute;
   inset: 0;

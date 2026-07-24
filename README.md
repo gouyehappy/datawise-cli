@@ -159,7 +159,19 @@ npm install && npm run dev
 # → http://localhost:28413
 ```
 
-Or start both from the frontend folder: `npm run dev:all` (see [scripts/README.md](./scripts/README.md)).
+Or from the repo root: `npm run dev` / `npm run stop` (see [scripts/README.md](./scripts/README.md)).
+
+**Common build commands** (repo root):
+
+```bash
+npm run clean       # clean build artifacts
+npm run frontend    # build desktop frontend
+npm run backend     # build Spring Boot JAR
+npm run plugins     # connector plugins → config/plugins/
+npm run all         # clean + backend + plugins + frontend + desktop package
+npm run dist        # desktop package only
+npm run help        # list commands
+```
 
 **First-time config**
 
@@ -173,16 +185,14 @@ Put connector JARs in `config/plugins/` and JDBC drivers in `config/drivers/`. D
 **Desktop**
 
 ```bash
-cd datawise-frontend
-npm run dist:desktop        # host OS JCEF zip (Win / Mac / Linux)
-npm run dist:desktop:mac    # alias — must run on macOS
-npm run dist:desktop:linux  # alias — must run on Linux
+# repo root
+npm run dist                # host OS JCEF package (Win / Mac / Linux)
 # output → datawise-desktop/dist/{windows|macos|linux}/
 #       → datawise-frontend/release/DataWiseCLI-*-{os}-{arch}.zip
 # Windows Setup.exe (needs WiX 3.x):
 #       → release/DataWiseCLI-*-windows-x64-setup.exe
 #   winget install --id WiXToolset.WiXToolset -e
-# legacy Electron: npm run dist:electron*
+# finer scripts remain under datawise-frontend (e.g. dist:desktop:slim)
 ```
 **Query Library CI** (no server for validate):
 

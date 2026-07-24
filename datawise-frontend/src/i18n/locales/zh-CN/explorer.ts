@@ -1067,5 +1067,6 @@ export default {
         restore: '恢复此版本',
         restoreSuccess: '已恢复所选版本',
         restoreFailed: '恢复失败',
+        emptyPreview: '<空>',
     },
 }

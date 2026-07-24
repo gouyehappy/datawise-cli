@@ -1067,5 +1067,6 @@ export default {
         restore: 'Restore this version',
         restoreSuccess: 'Version restored',
         restoreFailed: 'Restore failed',
+        emptyPreview: '<empty>',
     },
 }

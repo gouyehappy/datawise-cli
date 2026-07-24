@@ -12,6 +12,7 @@ import {useSqlEditorShortcutsStore} from '@/features/settings/stores/sql-editor-
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
 import SqlSnippetsSourcesBar from '@/features/settings/components/SqlSnippetsSourcesBar.vue'
+import DwPanelState from '@/core/components/DwPanelState.vue'
 
 const {t} = useI18n()
 const toast = useAppToast()
@@ -131,6 +132,12 @@ async function onSharedFileChange(event: Event) {
           :controller="controller!"
           :readonly="readOnly"
           :new-snippet-signal="newSnippetSignal"
+      />
+      <DwPanelState
+          v-else
+          status="loading"
+          fill
+          :message="t('common.editorLoading')"
       />
     </div>
 

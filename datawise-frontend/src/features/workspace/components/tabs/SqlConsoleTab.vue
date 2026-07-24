@@ -49,6 +49,7 @@ import DangerousSqlPendingBar from '@/features/workspace/components/DangerousSql
 import ConsoleSqlCancelDialog from '@/features/workspace/components/ConsoleSqlCancelDialog.vue'
 import SqlParameterPanel from '@/features/workspace/components/SqlParameterPanel.vue'
 import SqlExecutionLimitHint from '@/features/workspace/components/SqlExecutionLimitHint.vue'
+import DwPanelState from '@/core/components/DwPanelState.vue'
 import {useIndexDraftSuggest} from '@/features/workspace/composables/useIndexDraftSuggest'
 import {useDangerousSqlPending} from '@/features/workspace/composables/useDangerousSqlPending'
 import {normalizeConnectionEnvironment} from '@/features/connection/services/connection-environment.service'
@@ -1179,6 +1180,14 @@ onMounted(async () => {
               @contextmenu="onEditorContextMenu"
               @run-statement="onRunStatementFromGutter"
           />
+          <DwPanelState
+              v-else
+              class="editor-surface__loading"
+              status="loading"
+              fill
+              compact
+              :message="t('common.editorLoading')"
+          />
         </div>
       </div>
       <SplitHandle
@@ -1374,6 +1383,13 @@ onMounted(async () => {
 
 .editor-surface {
   position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-surface__loading {
   flex: 1;
   min-height: 0;
 }

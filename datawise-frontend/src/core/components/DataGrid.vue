@@ -53,8 +53,6 @@ import {useContextMenuAnchor} from '@/core/context-menu/useContextMenuAnchor'
 import type {ContextMenuItem} from '@/core/types'
 import {useLayoutStore} from '@/features/layout/stores/layout'
 import {
-  buildWhereEqualsClause,
-  buildWhereInClause,
   readGridCellValue,
 } from '@/features/workspace/services/grid-cell-context.service'
 import {
@@ -646,6 +644,28 @@ const submitEnabled = computed(
     () => inlineEnabled.value && hasPendingChanges.value && !submitting.value,
 )
 
+const discardEnabled = computed(
+    () => hasPendingChanges.value && !submitting.value,
+)
+
+const submitActionTitle = computed(() =>
+    submitEnabled.value
+        ? t('dataGrid.submitChanges', {count: pendingCount.value})
+        : t('dataGrid.submitChangesDisabled'),
+)
+
+const discardActionTitle = computed(() =>
+    discardEnabled.value
+        ? t('dataGrid.discardChanges')
+        : t('dataGrid.discardChangesDisabled'),
+)
+
+const deleteActionTitle = computed(() =>
+    deleteEnabled.value
+        ? t('dataGrid.deleteRow')
+        : t('dataGrid.deleteRowDisabled'),
+)
+
 watch(
     () => props.rows,
     () => {
@@ -1171,29 +1191,8 @@ const {
 const cellMenuItems = computed<ContextMenuItem[]>(() => {
   const items: ContextMenuItem[] = [
     {id: 'copy-cell', label: t('dataGrid.contextMenu.copyCell'), icon: 'copy'},
-    {id: 'copy-where-equals', label: t('dataGrid.contextMenu.copyWhereEquals'), icon: 'filter'},
-    {id: 'copy-where-in', label: t('dataGrid.contextMenu.copyWhereIn'), icon: 'filter'},
+    {id: 'copy-row', label: t('dataGrid.contextMenu.copyRow'), icon: 'copy'},
   ]
-
-  if (props.enableSqlFill) {
-    items.push(
-        {
-          id: 'insert-where',
-          label: t('dataGrid.contextMenu.insertWhere'),
-          icon: 'filter',
-        },
-        {
-          id: 'insert-where-in',
-          label: t('dataGrid.contextMenu.insertWhereIn'),
-          icon: 'filter',
-        },
-        {
-          id: 'rewrite-where',
-          label: t('dataGrid.contextMenu.rewriteWhere'),
-          icon: 'filter',
-        },
-    )
-  }
 
   // 与工具栏一致：按 editable 显示，不依赖 columnDetails 是否已加载
   if (props.editable) {
@@ -1252,15 +1251,9 @@ function onCellContextMenu(event: MouseEvent, item: GridDisplayRow, column: Tabl
   openCellMenu(event, {item, column})
 }
 
-function resolveContextPageRows(): TableRow[] {
-  return pagedRows.value
-      .filter((row) => row.kind !== 'insert' && row.originalRow)
-      .map((row) => row.originalRow!)
-}
-
 async function copyGridContextText(
     text: string,
-    toastKey: 'copied' | 'whereCopied' | 'statsCopied',
+    toastKey: 'copied' | 'statsCopied',
 ) {
   if (!text.trim()) return
   await navigator.clipboard.writeText(text)
@@ -1278,26 +1271,11 @@ async function onCellMenuSelect(id: string) {
     await copyGridContextText(formatCellFullValue(cellValue), 'copied')
     return
   }
-  if (id === 'copy-where-equals') {
-    await copyGridContextText(buildWhereEqualsClause(column.name, cellValue), 'whereCopied')
-    return
-  }
-  if (id === 'copy-where-in') {
-    const clause = buildWhereInClause(column.name, resolveContextPageRows(), column)
-    if (clause) await copyGridContextText(clause, 'whereCopied')
-    return
-  }
-  if (id === 'insert-where') {
-    emit('insert-where', {column: column.name, value: cellValue})
-    return
-  }
-  if (id === 'insert-where-in') {
-    const clause = buildWhereInClause(column.name, resolveContextPageRows(), column)
-    if (clause) emit('insert-where-in', {column: column.name, clause})
-    return
-  }
-  if (id === 'rewrite-where') {
-    emit('rewrite-where', {column: column.name, value: cellValue})
+  if (id === 'copy-row') {
+    const text = displayColumns.value
+        .map((col) => getCellDisplayText(item, col.name))
+        .join('\t')
+    await copyGridContextText(text, 'copied')
     return
   }
   if (id === 'add-row') {
@@ -1486,30 +1464,30 @@ function dismissColumnStats() {
         <div v-if="editable" class="grid-toolbar-group" role="group" :aria-label="t('dataGrid.editGroup')">
           <IconButton
               class="grid-action-save"
-              :title="t('dataGrid.submitChanges', { count: pendingCount })"
+              :title="submitActionTitle"
               :disabled="!submitEnabled"
               @click="onSubmitClick"
           >
-            <DwIcon class="grid-glyph" name="submit" fit :stroke-width="1.5"/>
+            <DwIcon class="grid-glyph" name="submit" fit :stroke-width="3.2"/>
           </IconButton>
           <IconButton
               class="grid-action-cancel"
-              :title="t('dataGrid.discardChanges')"
-              :disabled="!hasPendingChanges || submitting"
+              :title="discardActionTitle"
+              :disabled="!discardEnabled"
               @click="onDiscardClick"
           >
-            <DwIcon class="grid-glyph" name="rollback" fit :stroke-width="1.5"/>
+            <DwIcon class="grid-glyph" name="rollback" fit :stroke-width="3.2"/>
           </IconButton>
           <IconButton class="grid-action-neutral" :title="t('dataGrid.addRow')" @click="onAddRowClick">
-            <DwIcon class="grid-glyph" name="plus" fit :stroke-width="1.5"/>
+            <DwIcon class="grid-glyph" name="plus" fit :stroke-width="3.2"/>
           </IconButton>
           <IconButton
               class="grid-action-neutral"
-              :title="t('dataGrid.deleteRow')"
+              :title="deleteActionTitle"
               :disabled="!deleteEnabled"
               @click="onDeleteRowClick"
           >
-            <DwIcon class="grid-glyph" name="minus" fit :stroke-width="1.5"/>
+            <DwIcon class="grid-glyph" name="minus" fit :stroke-width="3.2"/>
           </IconButton>
           <span
               v-if="inlineEnabled"
@@ -1980,29 +1958,43 @@ function dismissColumnStats() {
   border-radius: var(--dw-btn-radius);
 }
 
-.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-save.dw-icon-btn),
-.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-cancel.dw-icon-btn) {
-  color: inherit;
+/* Available actions read clearly; disabled ones stay washed out via .dw-icon-btn:disabled */
+.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-save.dw-icon-btn:not(:disabled)) {
+  color: var(--dw-success);
+}
+
+.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-cancel.dw-icon-btn:not(:disabled)) {
+  color: var(--dw-danger);
+}
+
+.data-grid :deep(.dw-data-grid__toolbar-left .grid-action-neutral.dw-icon-btn:not(:disabled)),
+.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-neutral.dw-icon-btn:not(:disabled)) {
+  color: var(--dw-text-secondary);
 }
 
 .data-grid :deep(.dw-data-grid__toolbar-right .grid-action-save.dw-icon-btn:hover:not(:disabled)) {
-  background: color-mix(in srgb, var(--dw-success) 10%, transparent);
-  border-color: transparent;
+  background: color-mix(in srgb, var(--dw-success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--dw-success) 22%, transparent);
+  color: var(--dw-success);
 }
 
 .data-grid :deep(.dw-data-grid__toolbar-right .grid-action-cancel.dw-icon-btn:hover:not(:disabled)) {
-  background: color-mix(in srgb, var(--dw-danger) 10%, transparent);
-  border-color: transparent;
-}
-
-.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-save.dw-icon-btn:disabled),
-.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-cancel.dw-icon-btn:disabled) {
-  opacity: 0.42;
+  background: color-mix(in srgb, var(--dw-danger) 12%, transparent);
+  border-color: color-mix(in srgb, var(--dw-danger) 22%, transparent);
+  color: var(--dw-danger);
 }
 
 .data-grid :deep(.dw-data-grid__toolbar-left .grid-action-neutral.dw-icon-btn:hover:not(:disabled)),
 .data-grid :deep(.dw-data-grid__toolbar-right .grid-action-neutral.dw-icon-btn:hover:not(:disabled)) {
-  color: var(--dw-text-secondary);
+  color: var(--dw-text);
+}
+
+.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-save.dw-icon-btn:disabled),
+.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-cancel.dw-icon-btn:disabled),
+.data-grid :deep(.dw-data-grid__toolbar-right .grid-action-neutral.dw-icon-btn:disabled) {
+  opacity: 0.28;
+  color: var(--dw-text-muted);
+  filter: grayscale(0.45);
 }
 
 .toolbar-filter {

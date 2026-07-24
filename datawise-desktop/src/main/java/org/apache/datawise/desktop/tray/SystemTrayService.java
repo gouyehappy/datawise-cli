@@ -17,9 +17,9 @@ import java.util.function.BooleanSupplier;
  * to avoid mojibake; balloon tip also uses ASCII for the same reason.
  */
 public final class SystemTrayService {
-    private static final String NOTIFY_TITLE = "DataWise CLI";
+    private static final String NOTIFY_TITLE = "Still running in the background";
     private static final String NOTIFY_BODY =
-            "Still running in the background. Click the tray icon to restore, or right-click to quit.";
+            "Click the tray icon to restore the window, or right-click the tray icon to quit.";
 
     private final JFrame mainFrame;
     private final BooleanSupplier isQuitting;

@@ -49,6 +49,10 @@ public final class DesktopMainFrame extends JFrame {
     private final BooleanSupplier closeToTray;
     private final boolean frameless;
     private Timer persistTimer;
+    private volatile boolean revealRequested;
+    private volatile boolean revealed;
+    private volatile boolean mainDocumentLoaded;
+    private Timer revealFallbackTimer;
 
     public DesktopMainFrame(
             String startUrl,
@@ -101,6 +105,8 @@ public final class DesktopMainFrame extends JFrame {
             public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
                 if (frame != null && frame.isMain()) {
                     browser.executeJavaScript(bridgeScript, frame.getURL(), 0);
+                    mainDocumentLoaded = true;
+                    revealWhenReady();
                 }
             }
 
@@ -117,6 +123,8 @@ public final class DesktopMainFrame extends JFrame {
                 }
                 System.err.println("[datawise-desktop] CEF load error "
                         + errorCode + " url=" + failedUrl + " " + errorText);
+                mainDocumentLoaded = true;
+                revealWhenReady();
             }
         });
 
@@ -179,21 +187,61 @@ public final class DesktopMainFrame extends JFrame {
         }
     }
 
-    /** Open the main window immediately (in-app AppSplash covers boot). */
+    /** Prepare chrome; show after first paint/load to avoid blank white window. */
     public void showMainWindow() {
-        getContentPane().setBackground(new java.awt.Color(0xF8, 0xFA, 0xFC));
-        setBackground(new java.awt.Color(0xF8, 0xFA, 0xFC));
-        setVisible(true);
-        toFront();
-        requestFocus();
-        SwingUtilities.invokeLater(() -> {
-            FramelessResizeSupport.notifyBrowserResized(browser, this);
+        java.awt.Color bootBg = new java.awt.Color(0xF8, 0xFA, 0xFC);
+        getContentPane().setBackground(bootBg);
+        setBackground(bootBg);
+        try {
+            JComponent ui = (JComponent) browser.getUIComponent();
+            ui.setOpaque(true);
+            ui.setBackground(bootBg);
+        } catch (Exception ignored) {
+        }
+        revealRequested = true;
+        if (revealed) {
+            return;
+        }
+        if (mainDocumentLoaded) {
+            revealWhenReady();
+            return;
+        }
+        // Fallback if load events are delayed (slow Vite / network).
+        if (revealFallbackTimer != null) {
+            revealFallbackTimer.stop();
+        }
+        revealFallbackTimer = new Timer(2_500, e -> revealWhenReady());
+        revealFallbackTimer.setRepeats(false);
+        revealFallbackTimer.start();
+    }
+
+    private void revealWhenReady() {
+        if (!revealRequested || revealed) {
+            return;
+        }
+        revealed = true;
+        if (revealFallbackTimer != null) {
+            revealFallbackTimer.stop();
+            revealFallbackTimer = null;
+        }
+        Runnable show = () -> {
+            if (!isVisible()) {
+                setVisible(true);
+            }
+            toFront();
+            requestFocus();
+            FramelessResizeSupport.notifyBrowserResized(browser, DesktopMainFrame.this);
             String url = browser.getURL();
             System.out.println("[datawise-desktop] show url=" + url);
             if (url == null || url.isBlank() || "about:blank".equalsIgnoreCase(url)) {
                 browser.reload();
             }
-        });
+        };
+        if (SwingUtilities.isEventDispatchThread()) {
+            show.run();
+        } else {
+            SwingUtilities.invokeLater(show);
+        }
     }
 
     private void bindPersistHooks() {

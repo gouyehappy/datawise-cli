@@ -1,0 +1,17 @@
+{
+  "name": "datawise-cli",
+  "version": "4.0.1",
+  "private": true,
+  "description": "DataWise monorepo — 常用命令入口（详见 npm run help）",
+  "scripts": {
+    "help": "node scripts/dw.mjs help",
+    "clean": "node scripts/dw.mjs clean",
+    "frontend": "node scripts/dw.mjs frontend",
+    "backend": "node scripts/dw.mjs backend",
+    "plugins": "node scripts/dw.mjs plugins",
+    "all": "node scripts/dw.mjs all",
+    "dist": "node scripts/dw.mjs dist",
+    "dev": "node scripts/dw.mjs dev",
+    "stop": "node scripts/dw.mjs stop"
+  }
+}

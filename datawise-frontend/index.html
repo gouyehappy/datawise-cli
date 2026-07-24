@@ -21,10 +21,69 @@
         height: 100%;
         background: #f8fafc;
       }
+
+      /* Vue 挂载前占位，避免窗口已显示但 #app 仍空白 */
+      .dw-boot {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        padding: 48px 24px;
+        color: #0f172a;
+        background:
+          radial-gradient(120% 80% at 50% -10%, rgba(37, 99, 235, 0.1), transparent 55%),
+          linear-gradient(165deg, #eef3f9 0%, #f8fafc 48%, #f1f5f9 100%);
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        user-select: none;
+      }
+
+      .dw-boot__mark {
+        width: 56px;
+        height: 56px;
+        margin-bottom: 18px;
+        border-radius: 50%;
+        background: linear-gradient(180deg, #6d72f8 0%, #5248e8 100%);
+        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+      }
+
+      .dw-boot__kicker {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #3b82f6;
+      }
+
+      .dw-boot__title {
+        margin: 0;
+        font-size: 40px;
+        font-weight: 750;
+        letter-spacing: -0.045em;
+        line-height: 1;
+      }
+
+      .dw-boot__tagline {
+        margin: 12px 0 0;
+        font-size: 15px;
+        font-weight: 500;
+        color: #64748b;
+      }
     </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app">
+  <div class="dw-boot" role="status" aria-live="polite">
+    <div class="dw-boot__mark" aria-hidden="true"></div>
+    <p class="dw-boot__kicker">本地数据库工作台</p>
+    <h1 class="dw-boot__title">DataWise CLI</h1>
+    <p class="dw-boot__tagline">连接、查询、分析、导出 — 一站完成</p>
+  </div>
+</div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

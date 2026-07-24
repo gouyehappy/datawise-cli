@@ -27,7 +27,8 @@ export function useTableDetail(
     const explorer = useExplorerStore()
     const properties = ref<TablePropertiesResult>(EMPTY_PROPERTIES)
     const ddl = ref<TableDdlResult | null>(null)
-    const loadingProperties = ref(false)
+    /** 打开表详情时默认加载中，避免首帧空壳闪现 */
+    const loadingProperties = ref(Boolean(tab.tableName?.trim() && tab.connectionId))
     const loadingDdl = ref(false)
     const propertiesError = ref<string | null>(null)
     const ddlError = ref<string | null>(null)
@@ -38,6 +39,7 @@ export function useTableDetail(
         propertiesError.value = null
         if (!tab.tableName?.trim() || !tab.connectionId) {
             properties.value = EMPTY_PROPERTIES
+            loadingProperties.value = false
             return
         }
         loadingProperties.value = true

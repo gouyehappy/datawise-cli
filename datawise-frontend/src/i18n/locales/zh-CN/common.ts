@@ -7,6 +7,7 @@ export default {
     more: '更多',
     locate: '定位',
     refresh: '刷新',
+    reload: '重新加载',
     export: '导出',
     search: '搜索',
     generate: '生成',
@@ -19,4 +20,8 @@ export default {
     yes: '是',
     no: '否',
     saving: '保存中…',
+    panelLoading: '正在加载页面…',
+    panelLoadFailedTitle: '页面加载失败',
+    panelLoadFailedHint: '资源未能及时加载。请检查网络后重试，或重新加载应用。',
+    editorLoading: '正在加载编辑器…',
 }

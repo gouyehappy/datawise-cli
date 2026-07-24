@@ -73,7 +73,7 @@ function backToWorkspace() {
       </button>
     </aside>
 
-    <main class="module-shell__main">
+    <main class="module-shell__main module-shell__main--async-panel">
       <component :is="activePanel" v-if="activePanel"/>
     </main>
   </div>

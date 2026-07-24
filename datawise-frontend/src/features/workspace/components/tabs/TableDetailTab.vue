@@ -243,11 +243,13 @@ async function copyDdl() {
       <DwPanelState
           v-if="loadingProperties"
           status="loading"
+          fill
           :message="t('workspace.tableDetail.loading')"
       />
       <DwPanelState
           v-else-if="propertiesError"
           status="error"
+          fill
           :message="propertiesError"
       />
       <template v-else>
@@ -431,11 +433,13 @@ async function copyDdl() {
       <DwPanelState
           v-if="loadingDdl"
           status="loading"
+          fill
           :message="t('workspace.tableDetail.loading')"
       />
       <DwPanelState
           v-else-if="ddlError"
           status="error"
+          fill
           :message="ddlError"
       />
       <div v-else-if="ddl?.ddl" class="table-detail__ddl-card">
@@ -558,7 +562,7 @@ async function copyDdl() {
       color-mix(in srgb, var(--dw-primary) 7%, var(--dw-bg-panel)) 0%,
       var(--dw-bg-panel) 58%
   );
-  box-shadow: var(--dw-panel-shadow));
+  box-shadow: var(--dw-panel-shadow);
 }
 
 .table-detail__hero-icon {
@@ -647,7 +651,7 @@ async function copyDdl() {
   border-radius: var(--dw-radius-xl);
   overflow: hidden;
   background: var(--dw-wb-card-bg);
-  box-shadow: var(--dw-panel-shadow));
+  box-shadow: var(--dw-panel-shadow);
 }
 
 .table-detail__sidebar {
@@ -851,7 +855,7 @@ async function copyDdl() {
   border-radius: var(--dw-radius-xl);
   overflow: hidden;
   background: var(--dw-wb-card-bg);
-  box-shadow: var(--dw-panel-shadow));
+  box-shadow: var(--dw-panel-shadow);
 }
 
 .table-detail__ddl-head {

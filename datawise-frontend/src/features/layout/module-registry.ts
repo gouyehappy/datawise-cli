@@ -6,25 +6,45 @@
  */
 import type {Component} from 'vue'
 import type {NavModule} from '@/core/types'
-import DashboardView from '@/features/dashboard/DashboardView.vue'
-import PluginView from '@/features/plugin/PluginView.vue'
-import PluginDevToolsView from '@/features/plugin/PluginDevToolsView.vue'
-import ConnectorMarketView from '@/features/plugin/ConnectorMarketView.vue'
-import TeamView from '@/features/team/TeamView.vue'
-import SettingsView from '@/features/settings/SettingsView.vue'
 import {createRegistry, resolveRegistryComponent} from '@/core/registry/create-registry'
+import {
+    createLazyView,
+    prefetchLazyLoaders,
+    type LazyViewLoader,
+} from '@/core/registry/create-lazy-view'
 
-const definitions = [
-    {key: 'dashboard' as const, component: DashboardView},
-    {key: 'plugin' as const, component: PluginView},
-    {key: 'pluginDev' as const, component: PluginDevToolsView},
-    {key: 'connectorMarket' as const, component: ConnectorMarketView},
-    {key: 'team' as const, component: TeamView},
-    {key: 'settings' as const, component: SettingsView},
-]
+const MODULE_LOADERS = {
+    dashboard: () => import('@/features/dashboard/DashboardView.vue'),
+    plugin: () => import('@/features/plugin/PluginView.vue'),
+    pluginDev: () => import('@/features/plugin/PluginDevToolsView.vue'),
+    connectorMarket: () => import('@/features/plugin/ConnectorMarketView.vue'),
+    team: () => import('@/features/team/TeamView.vue'),
+    settings: () => import('@/features/settings/SettingsView.vue'),
+} as const satisfies Record<string, LazyViewLoader>
+
+type RegisteredModule = keyof typeof MODULE_LOADERS
+
+const definitions = (Object.keys(MODULE_LOADERS) as RegisteredModule[]).map((key) => ({
+    key,
+    component: createLazyView(MODULE_LOADERS[key]),
+}))
 
 export const WORKBENCH_MODULE_REGISTRY = createRegistry(definitions)
 
+export const WORKBENCH_MODULE_WARMUP: RegisteredModule[] = [
+    'dashboard',
+    'settings',
+]
+
 export function resolveWorkbenchModule(module: NavModule): Component | null {
-    return resolveRegistryComponent(WORKBENCH_MODULE_REGISTRY, module as keyof typeof WORKBENCH_MODULE_REGISTRY)
+    return resolveRegistryComponent(
+        WORKBENCH_MODULE_REGISTRY,
+        module as keyof typeof WORKBENCH_MODULE_REGISTRY,
+    )
+}
+
+export function prefetchWorkbenchModules(
+    modules: readonly RegisteredModule[] = WORKBENCH_MODULE_WARMUP,
+): Promise<void> {
+    return prefetchLazyLoaders(modules.map((module) => MODULE_LOADERS[module]))
 }

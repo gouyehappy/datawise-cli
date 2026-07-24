@@ -23,136 +23,306 @@
     }
 
     .splash {
+      --accent: #2563eb;
+      --accent-deep: #1d4ed8;
+      --sky: #0ea5e9;
+      --text: #0f172a;
+      --muted: #64748b;
+      --track: #e2e8f0;
+
+      position: relative;
       width: 100%;
       height: 100%;
       display: flex;
       flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 36px;
+      padding: 28px 40px 24px;
       border-radius: 14px;
       overflow: hidden;
-      background: #f8fafc;
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      position: relative;
       isolation: isolate;
+      color: var(--text);
+      background:
+        radial-gradient(120% 80% at 50% -10%, rgba(37, 99, 235, 0.1), transparent 55%),
+        linear-gradient(165deg, #eef3f9 0%, #f8fafc 48%, #f1f5f9 100%);
+      border: 1px solid rgba(148, 163, 184, 0.18);
     }
 
-    .splash__wave {
+    .splash__atmosphere {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .splash__orb {
       position: absolute;
       border-radius: 50%;
-      pointer-events: none;
+      filter: blur(2px);
     }
 
-    .splash__wave--a {
-      width: 78%;
-      height: 150%;
-      top: -48%;
-      left: -20%;
-      background: radial-gradient(
-          ellipse at 42% 58%,
-          rgba(109, 114, 248, 0.16) 0%,
-          rgba(109, 114, 248, 0.04) 44%,
-          transparent 70%
-      );
-      transform: rotate(-10deg);
+    .splash__orb--a {
+      width: 420px;
+      height: 420px;
+      top: -18%;
+      left: 50%;
+      translate: -50% 0;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.22) 0%, transparent 68%);
+      animation: splash-drift 12s ease-in-out infinite alternate;
     }
 
-    .splash__wave--b {
-      width: 62%;
-      height: 120%;
-      right: -14%;
-      bottom: -34%;
-      background: radial-gradient(
-          ellipse at 55% 45%,
-          rgba(34, 211, 238, 0.12) 0%,
-          rgba(82, 72, 232, 0.05) 40%,
-          transparent 72%
-      );
-      transform: rotate(14deg);
+    .splash__orb--b {
+      width: 280px;
+      height: 280px;
+      right: -8%;
+      bottom: 6%;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.18) 0%, transparent 70%);
+      animation: splash-drift 16s ease-in-out infinite alternate-reverse;
     }
 
-    .splash__main {
+    .splash__orb--c {
+      width: 220px;
+      height: 220px;
+      left: -6%;
+      bottom: -8%;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 72%);
+      animation: splash-drift 14s ease-in-out infinite alternate;
+    }
+
+    .splash__grid {
+      position: absolute;
+      inset: 0;
+      opacity: 0.3;
+      background-image:
+        linear-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 42%, #000 20%, transparent 75%);
+    }
+
+    .splash__hero {
       position: relative;
       z-index: 1;
-      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 14px;
-      padding: 36px 40px 20px;
+      text-align: center;
+      max-width: 34rem;
+      animation: splash-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
-    .splash__brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
+    .splash__mark {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 84px;
+      height: 84px;
+      margin-bottom: 18px;
+    }
+
+    .splash__ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(37, 99, 235, 0.28);
+      box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.05);
+      animation: splash-pulse 2.8s ease-out infinite;
+    }
+
+    .splash__ring--lag {
+      inset: -8px;
+      border-color: rgba(14, 165, 233, 0.22);
+      box-shadow: none;
+      animation-delay: 0.9s;
+      opacity: 0.7;
     }
 
     .splash__logo {
-      width: 48px;
-      height: 48px;
-      flex-shrink: 0;
-      filter: drop-shadow(0 4px 10px rgba(99, 102, 241, 0.28));
+      position: relative;
+      z-index: 1;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      filter: drop-shadow(0 10px 22px rgba(37, 99, 235, 0.34));
+    }
+
+    .splash__kicker {
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--accent) 72%, var(--muted));
     }
 
     .splash__title {
-      font-size: 32px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      color: #0f172a;
+      margin: 0;
+      font-size: 40px;
+      font-weight: 750;
+      letter-spacing: -0.045em;
       line-height: 1;
+      background: linear-gradient(
+        120deg,
+        var(--text) 12%,
+        color-mix(in srgb, var(--accent) 55%, var(--text)) 52%,
+        var(--text) 88%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
 
     .splash__tagline {
+      margin: 12px 0 0;
+      max-width: 28rem;
       font-size: 15px;
       font-weight: 500;
-      color: #94a3b8;
+      line-height: 1.5;
+      color: var(--muted);
+      letter-spacing: 0.01em;
     }
 
-    .splash__footer {
+    .splash__load {
       position: relative;
       z-index: 1;
-      padding: 0 40px 30px;
+      width: min(100%, 360px);
+      animation: splash-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+    }
+
+    .splash__load-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
     }
 
     .splash__status {
-      margin-bottom: 10px;
       font-size: 13px;
-      color: #64748b;
+      color: var(--muted);
       line-height: 1.45;
       min-height: 1.45em;
     }
 
+    .splash__percent {
+      font-size: 11px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+    }
+
     .splash__progress {
-      height: 2px;
+      position: relative;
+      height: 3px;
       border-radius: 999px;
-      background: #e2e8f0;
+      background: color-mix(in srgb, var(--text) 8%, var(--track));
       overflow: hidden;
     }
 
     .splash__progress-fill {
+      position: relative;
       display: block;
       height: 100%;
       width: 0;
       border-radius: inherit;
-      background: linear-gradient(90deg, #6d72f8 0%, #5248e8 100%);
-      transition: width 0.75s ease-out;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--sky) 55%, var(--accent-deep) 100%);
+      box-shadow: 0 0 12px rgba(37, 99, 235, 0.45);
+      transition: width 0.75s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .splash__version {
+    .splash__progress-fill::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.45) 50%,
+        transparent 100%
+      );
+      animation: splash-shimmer 1.6s ease-in-out infinite;
+    }
+
+    .splash__footer-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
       margin-top: 14px;
-      text-align: center;
       font-size: 12px;
       color: #94a3b8;
+    }
+
+    .splash__dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(148, 163, 184, 0.8);
+    }
+
+    @keyframes splash-rise {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes splash-pulse {
+      0% {
+        transform: scale(0.92);
+        opacity: 0.85;
+      }
+      70% {
+        transform: scale(1.12);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1.12);
+        opacity: 0;
+      }
+    }
+
+    @keyframes splash-drift {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(12px, -18px, 0); }
+    }
+
+    @keyframes splash-shimmer {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(120%); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .splash__hero,
+      .splash__load,
+      .splash__orb,
+      .splash__ring,
+      .splash__progress-fill::after {
+        animation: none;
+      }
     }
   </style>
 </head>
 <body>
   <div class="splash" role="status" aria-live="polite">
-    <div class="splash__wave splash__wave--a" aria-hidden="true"></div>
-    <div class="splash__wave splash__wave--b" aria-hidden="true"></div>
+    <div class="splash__atmosphere" aria-hidden="true">
+      <span class="splash__orb splash__orb--a"></span>
+      <span class="splash__orb splash__orb--b"></span>
+      <span class="splash__orb splash__orb--c"></span>
+      <span class="splash__grid"></span>
+    </div>
 
-    <div class="splash__main">
-      <div class="splash__brand">
+    <div class="splash__hero">
+      <div class="splash__mark">
+        <span class="splash__ring" aria-hidden="true"></span>
+        <span class="splash__ring splash__ring--lag" aria-hidden="true"></span>
         <svg class="splash__logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <defs>
             <linearGradient id="dw-flat-bg" x1="16" y1="0" x2="16" y2="32" gradientUnits="userSpaceOnUse">
@@ -173,52 +343,64 @@
           <path fill="url(#dw-d-fill)" fill-rule="evenodd" d="M3.6 4.2h10.5c5.75 0 10.2 4.2 10.2 9.45 0 5.25-4.45 9.45-10.2 9.45H3.6V4.2Zm3.65 3.4v12.1h4.05c3.45 0 6-2.6 6-5.85 0-3.25-2.55-5.85-6-5.85H7.25V7.6Z"/>
           <path d="M11.4 16.8c.8.2 2.1 10.8 5.4 9.8 1.8-.6 2.1-4.2 3.2-3.8 1.2.4 2.2 5.8 5.2 6.2 3.2.4 4.6-9.8 5.2-10.2" stroke="url(#dw-w-stroke)" stroke-width="3.85" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </svg>
-        <h1 class="splash__title">DataWise CLI</h1>
       </div>
+      <p class="splash__kicker">本地数据库工作台</p>
+      <h1 class="splash__title">DataWise CLI</h1>
       <p class="splash__tagline">连接、查询、分析、导出 — 一站完成</p>
     </div>
 
-    <div class="splash__footer">
-      <p class="splash__status" id="status">正在启动桌面客户端…</p>
+    <div class="splash__load">
+      <div class="splash__load-row">
+        <p class="splash__status" id="status">正在启动桌面客户端…</p>
+        <span class="splash__percent" id="percent">0%</span>
+      </div>
       <div class="splash__progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <span class="splash__progress-fill" id="progress"></span>
       </div>
-      <p class="splash__version" id="version">版本号：V1.0.0</p>
+      <p class="splash__footer-line">
+        <span>正在为你准备工作台</span>
+        <span class="splash__dot" aria-hidden="true"></span>
+        <span id="version">版本 V1.0.0</span>
+      </p>
     </div>
   </div>
 
   <script>
     const statusEl = document.getElementById('status')
     const progressEl = document.getElementById('progress')
+    const percentEl = document.getElementById('percent')
     const versionEl = document.getElementById('version')
     const progressBar = progressEl?.parentElement
+    const kickerEl = document.querySelector('.splash__kicker')
+    const taglineEl = document.querySelector('.splash__tagline')
 
     let meta = null
     const bridge = window.__datawiseDesktopBridge
     if (bridge?.splash?.getMeta) {
       meta = bridge.splash.getMeta()
       if (meta?.version && versionEl) {
-        versionEl.textContent = '版本号：V' + meta.version
+        versionEl.textContent = '版本 V' + meta.version
       }
-      if (meta?.tagline && document.querySelector('.splash__tagline')) {
-        document.querySelector('.splash__tagline').textContent = meta.tagline
+      if (meta?.tagline && taglineEl) {
+        taglineEl.textContent = meta.tagline
+      }
+      if (meta?.kicker && kickerEl) {
+        kickerEl.textContent = meta.kicker
       }
     }
 
     const phaseText = {
       idle: '正在启动桌面客户端…',
       config: meta?.isPackaged
-        ? '正在准备工作区目录与配置文件…'
-        : '正在加载开发环境工作区配置…',
+        ? '正在准备工作区…'
+        : '正在加载开发环境配置…',
       spawning: meta?.isPackaged
-        ? '正在启动内嵌 Java 服务 (datawise-server.jar)…'
-        : '正在连接本地后端服务 (127.0.0.1:18421)…',
-      warming: meta?.isPackaged
-        ? '正在等待 Spring Boot 服务就绪 (127.0.0.1:18423/api/health)…'
-        : '正在探测后端健康检查 (127.0.0.1:18421/api/health)…',
-      session: '正在建立用户会话与鉴权令牌…',
-      sync: '正在同步连接、SQL 片段与编辑器设置…',
-      ready: '正在加载主界面与资源树…',
+        ? '正在启动本地服务…'
+        : '正在连接本地服务…',
+      warming: '正在等待服务就绪…',
+      session: '正在恢复登录状态…',
+      sync: '正在同步工作区数据…',
+      ready: '正在加载主界面…',
       complete: '启动完成，正在进入工作台…',
       failed: '服务启动失败，请查看运行日志',
     }
@@ -229,6 +411,7 @@
       const progress = Math.max(paintedProgress, incoming)
       paintedProgress = progress
       if (progressEl) progressEl.style.width = progress + '%'
+      if (percentEl) percentEl.textContent = Math.round(progress) + '%'
       if (progressBar) progressBar.setAttribute('aria-valuenow', String(progress))
       if (payload.status && statusEl) statusEl.textContent = payload.status
       if (progress >= 100) {

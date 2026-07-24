@@ -1,6 +1,8 @@
 /**
  * 本地开发：后台启动 Spring Boot（18421），前台启动 JCEF 桌面 + Vite。
  * Usage: node scripts/dev-start.mjs
+ *        node scripts/dev-start.mjs --compile   # 启动前强制 mvn compile
+ *        npm run dev   (仓库根目录)
  *        npm run dev:all   (from datawise-frontend)
  */
 import {spawn} from 'node:child_process'
@@ -140,14 +142,21 @@ async function isFrontendReady() {
 }
 
 async function main() {
+    const forceCompile = process.argv.includes('--compile')
+
     if (await isBackendReady()) {
         log('dev-start', `backend already listening on :${ports.dev.backend}`)
         log(
             'dev-start',
-            'after backend Java changes run: npm run stop:dev && npm run dev:all',
+            'after backend Java changes run: npm run stop && npm run dev',
         )
     } else {
-        await compileBackend()
+        // 默认不预编译，直接 spring-boot:run（已编译则秒启；有改动时 Maven 会按需编译）
+        if (forceCompile) {
+            await compileBackend()
+        } else {
+            log('dev-start', 'skip pre-compile — starting spring-boot:run directly')
+        }
         startBackend()
         log('dev-start', `waiting for backend on :${ports.dev.backend}...`)
         const ready = await waitForBackend()

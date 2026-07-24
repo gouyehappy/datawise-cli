@@ -5,8 +5,8 @@ let tray: Tray | null = null
 let quitting = false
 
 const TRAY_HIDE_NOTIFICATION = {
-    title: 'DataWise CLI',
-    body: '已在后台继续运行。点击通知或托盘图标可恢复窗口，右键托盘图标可退出。',
+    title: '仍在后台运行',
+    body: '点击通知或托盘图标可恢复窗口，右键托盘图标可退出。',
 }
 
 export function markAppQuitting() {

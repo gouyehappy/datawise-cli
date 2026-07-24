@@ -1,38 +1,64 @@
 /**
  * 设置页分区 → 面板组件 的注册表（与 tab-registry / module-registry 同模式）
  */
-import {defineAsyncComponent, type Component} from 'vue'
+import type {Component} from 'vue'
 import type {SettingsSection} from '@/core/types'
 import {createRegistry, resolveRegistryComponent} from '@/core/registry/create-registry'
+import {
+    createLazyView,
+    prefetchLazyLoaders,
+    type LazyViewLoader,
+} from '@/core/registry/create-lazy-view'
 
-function lazyPanel(loader: () => Promise<{ default: Component }>) {
-    return defineAsyncComponent(loader)
+const PANEL_LOADERS = {
+    basic: () => import('@/features/settings/components/BasicSettingsPanel.vue'),
+    layout: () => import('@/features/settings/components/LayoutSettingsPanel.vue'),
+    connectionHealth: () => import('@/features/settings/components/ConnectionHealthSettingsPanel.vue'),
+    systemMetrics: () => import('@/features/settings/components/SystemMetricsSettingsPanel.vue'),
+    runtime: () => import('@/features/settings/components/RuntimeSettingsPanel.vue'),
+    profile: () => import('@/features/settings/components/ProfileSettingsPanel.vue'),
+    editor: () => import('@/features/settings/components/EditorSettingsPanel.vue'),
+    sqlEditor: () => import('@/features/settings/components/SqlEditorShortcutsPanel.vue'),
+    sqlSnippets: () => import('@/features/settings/components/SqlSnippetsSettingsPanel.vue'),
+    shortcuts: () => import('@/features/settings/components/ShortcutSettingsPanel.vue'),
+    plugins: () => import('@/features/settings/components/PluginSettingsPanel.vue'),
+    ai: () => import('@/features/settings/components/AiSettingsPanel.vue'),
+    dataAgent: () => import('@/features/settings/components/AiDataAgentHubPanel.vue'),
+    knowledge: () => import('@/features/settings/components/AiDataAgentHubPanel.vue'),
+    about: () => import('@/features/settings/components/AboutSettingsPanel.vue'),
+    integrations: () => import('@/features/settings/components/IntegrationsSettingsPanel.vue'),
+    secrets: () => import('@/features/settings/components/SecretsSettingsPanel.vue'),
+    userPermissions: () => import('@/features/settings/components/UserPermissionSettingsPanel.vue'),
+    tenants: () => import('@/features/settings/components/TenantsSettingsPanel.vue'),
+} as const satisfies Record<string, LazyViewLoader>
+
+type RegisteredSettingsSection = keyof typeof PANEL_LOADERS
+
+function lazyPanel(loader: LazyViewLoader) {
+    return createLazyView(loader)
 }
 
-const definitions = [
-    {key: 'basic' as const, component: lazyPanel(() => import('@/features/settings/components/BasicSettingsPanel.vue'))},
-    {key: 'layout' as const, component: lazyPanel(() => import('@/features/settings/components/LayoutSettingsPanel.vue'))},
-    {key: 'connectionHealth' as const, component: lazyPanel(() => import('@/features/settings/components/ConnectionHealthSettingsPanel.vue'))},
-    {key: 'systemMetrics' as const, component: lazyPanel(() => import('@/features/settings/components/SystemMetricsSettingsPanel.vue'))},
-    {key: 'runtime' as const, component: lazyPanel(() => import('@/features/settings/components/RuntimeSettingsPanel.vue'))},
-    {key: 'profile' as const, component: lazyPanel(() => import('@/features/settings/components/ProfileSettingsPanel.vue'))},
-    {key: 'editor' as const, component: lazyPanel(() => import('@/features/settings/components/EditorSettingsPanel.vue'))},
-    {key: 'sqlEditor' as const, component: lazyPanel(() => import('@/features/settings/components/SqlEditorShortcutsPanel.vue'))},
-    {key: 'sqlSnippets' as const, component: lazyPanel(() => import('@/features/settings/components/SqlSnippetsSettingsPanel.vue'))},
-    {key: 'shortcuts' as const, component: lazyPanel(() => import('@/features/settings/components/ShortcutSettingsPanel.vue'))},
-    {key: 'plugins' as const, component: lazyPanel(() => import('@/features/settings/components/PluginSettingsPanel.vue'))},
-    {key: 'ai' as const, component: lazyPanel(() => import('@/features/settings/components/AiSettingsPanel.vue'))},
-    {key: 'dataAgent' as const, component: lazyPanel(() => import('@/features/settings/components/AiDataAgentHubPanel.vue'))},
-    {key: 'knowledge' as const, component: lazyPanel(() => import('@/features/settings/components/AiDataAgentHubPanel.vue'))},
-    {key: 'about' as const, component: lazyPanel(() => import('@/features/settings/components/AboutSettingsPanel.vue'))},
-    {key: 'integrations' as const, component: lazyPanel(() => import('@/features/settings/components/IntegrationsSettingsPanel.vue'))},
-    {key: 'secrets' as const, component: lazyPanel(() => import('@/features/settings/components/SecretsSettingsPanel.vue'))},
-    {key: 'userPermissions' as const, component: lazyPanel(() => import('@/features/settings/components/UserPermissionSettingsPanel.vue'))},
-    {key: 'tenants' as const, component: lazyPanel(() => import('@/features/settings/components/TenantsSettingsPanel.vue'))},
-]
+const definitions = (Object.keys(PANEL_LOADERS) as RegisteredSettingsSection[]).map((key) => ({
+    key,
+    component: lazyPanel(PANEL_LOADERS[key]),
+}))
 
 export const SETTINGS_SECTION_REGISTRY = createRegistry(definitions)
 
+export const SETTINGS_PANEL_WARMUP_SECTIONS: SettingsSection[] = [
+    'basic',
+    'layout',
+    'editor',
+]
+
 export function resolveSettingsPanel(section: SettingsSection): Component | null {
     return resolveRegistryComponent(SETTINGS_SECTION_REGISTRY, section)
+}
+
+export function prefetchSettingsPanels(
+    sections: readonly SettingsSection[] = SETTINGS_PANEL_WARMUP_SECTIONS,
+): Promise<void> {
+    return prefetchLazyLoaders(
+        sections.map((section) => PANEL_LOADERS[section as RegisteredSettingsSection]),
+    )
 }

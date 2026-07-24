@@ -16,6 +16,7 @@ import {useFeaturePermission} from '@/features/auth/composables/useFeaturePermis
 import {FeaturePermission} from '@/features/auth/types/feature-permission.types'
 import {isProductionEnvironment} from '@/features/connection/services/connection-environment.service'
 import {useI18n} from 'vue-i18n'
+import DwPanelState from '@/core/components/DwPanelState.vue'
 
 const props = defineProps<{ tab: WorkspaceTab }>()
 const {t} = useI18n()
@@ -63,6 +64,11 @@ const {
   applyDocumentFilter,
   clearDocumentFilter,
 } = useTableDataView(props.tab)
+
+/** 首屏尚无列信息时整页占位，避免空工具栏挤在左上角 */
+const showBootstrapLoading = computed(
+    () => loading.value && tableData.value.columns.length === 0,
+)
 
 async function onAuditRestored() {
   await refresh()
@@ -124,6 +130,14 @@ function onRequestAiSummary() {
 
 <template>
   <div class="table-data-tab">
+    <DwPanelState
+        v-if="showBootstrapLoading"
+        class="table-data-tab__boot"
+        status="loading"
+        fill
+        :message="t('workspace.tableDetail.loading')"
+    />
+    <template v-else>
     <div
         v-if="supportsDocumentFilter"
         class="mongo-filter-bar"
@@ -213,6 +227,7 @@ function onRequestAiSummary() {
         :refresh-token="changeRevision"
         @restored="onAuditRestored"
     />
+    </template>
   </div>
 </template>
 
@@ -221,6 +236,11 @@ function onRequestAiSummary() {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+}
+
+.table-data-tab__boot {
+  flex: 1;
   min-height: 0;
 }
 

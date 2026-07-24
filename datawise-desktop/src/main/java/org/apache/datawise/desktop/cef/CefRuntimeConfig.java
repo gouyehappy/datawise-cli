@@ -6,8 +6,7 @@ import org.cef.CefSettings;
 
 /**
  * Tunes CEF/Chromium so embedded desktop does not phone home or enable unused GPU/ML stacks.
- * The console noise (GCM, SSL to Google, Dawn/dxil, on_device_model) is Chromium internals —
- * not DataWise business traffic.
+ * Chromium GCM / Google SSL ERROR lines are internal noise — not DataWise business traffic.
  */
 public final class CefRuntimeConfig {
     private CefRuntimeConfig() {
@@ -25,9 +24,17 @@ public final class CefRuntimeConfig {
         settings.persist_session_cookies = true;
         settings.cache_path = DesktopPaths.userDataDir().resolve("cef-cache").toString();
         settings.root_cache_path = DesktopPaths.userDataDir().resolve("cef-cache").toString();
-        settings.log_severity = CefSettings.LogSeverity.LOGSEVERITY_ERROR;
         settings.log_file = DesktopPaths.userDataDir().resolve("logs").resolve("cef.log").toString();
         settings.user_agent_product = "DataWiseCLI/4.0.1";
+
+        // Default: mute Chromium ERROR spam (GCM DEPRECATED_ENDPOINT, SSL to Google, …).
+        // Set DATAWISE_CEF_LOG=1 to keep ERROR+ lines in cef.log for debugging.
+        String cefLog = System.getenv("DATAWISE_CEF_LOG");
+        boolean verboseCefLog = cefLog != null
+                && (cefLog.equals("1") || cefLog.equalsIgnoreCase("true") || cefLog.equalsIgnoreCase("error"));
+        settings.log_severity = verboseCefLog
+                ? CefSettings.LogSeverity.LOGSEVERITY_ERROR
+                : CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
 
         // Suppress Chromium cloud / push / update / ML / WebGPU side channels.
         builder.addJcefArgs(
@@ -41,10 +48,13 @@ public final class CefRuntimeConfig {
                 "--disable-domain-reliability",
                 "--disable-features="
                         + "AutofillServerCommunication,"
+                        + "BackgroundFetch,"
+                        + "BackgroundSync,"
                         + "CalculateNativeWinOcclusion,"
                         + "InterestFeedContentSuggestions,"
                         + "MediaRouter,"
                         + "OptimizationHints,"
+                        + "PushMessaging,"
                         + "TranslateUI,"
                         + "WebGPU,"
                         + "Vulkan,"
@@ -56,6 +66,12 @@ public final class CefRuntimeConfig {
                 "--disable-renderer-backgrounding",
                 "--disable-sync",
                 "--disable-web-resources",
+                // Fail GCM locally instead of hitting Google's deprecated endpoint.
+                "--gcm-checkin-url=http://127.0.0.1:9/",
+                "--gcm-mcs-endpoint=127.0.0.1:9",
+                "--gcm-registration-url=http://127.0.0.1:9/",
+                // 3 = FATAL only (drops GCM/SSL ERROR lines from the process console).
+                "--log-level=3",
                 "--metrics-recording-only",
                 "--no-first-run",
                 "--no-default-browser-check",

@@ -25,6 +25,7 @@
 
 .module-panel,
 .dw-panel {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -38,3 +39,14 @@
     min-width: 0;
     min-height: 0;
 }
+
+.module-panel > :deep(.panel-loading-shell),
+.module-panel > :deep(.panel-load-error),
+.dw-panel > :deep(.panel-loading-shell),
+.dw-panel > :deep(.panel-load-error) {
+    position: absolute;
+    inset: 0;
+    flex: none;
+    background: var(--dw-bg-editor);
+}
+

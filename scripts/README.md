@@ -1,6 +1,24 @@
 # 仓库脚本
 
-根目录 `scripts/` — 联调、提交检查与少量工具脚本。桌面打包脚本在前端目录。
+## 常用命令（推荐）
+
+在**仓库根目录**执行（`npm run` 只保留这几条）：
+
+| 命令 | 含义 |
+|------|------|
+| `npm run clean` | 项目清理 |
+| `npm run frontend` | 前端编译打包 |
+| `npm run backend` | 后端编译打包 |
+| `npm run plugins` | 后端插件 → `config/plugins/` |
+| `npm run all` | 全部（清理 + 后端 + 插件 + 前端 + 桌面包） |
+| `npm run dist` | 仅打桌面安装包 |
+| `npm run dev` | 开发联调（直接启动，不预编译） |
+| `npm run stop` | 停止联调 |
+| `npm run help` | 打印说明 |
+
+Cursor / VS Code：`Terminal → Run Task…` 也有同名中文任务。
+
+实现：[`scripts/dw.mjs`](./dw.mjs)。`datawise-frontend/package.json` 里仍有细粒度脚本（CI / 少用场景），日常不必记。
 
 ---
 
@@ -18,19 +36,14 @@ node scripts/pre-commit-check.mjs --full # 全量
 
 ## 本地前后端联调
 
-在 `datawise-frontend` 下：
+推荐根目录：
 
 ```bash
-npm run dev:all     # → node ../scripts/dev-start.mjs
-npm run stop:dev    # → node ../scripts/dev-stop.mjs
+npm run dev
+npm run stop
 ```
 
-或直接：
-
-```bash
-node scripts/dev-start.mjs
-node scripts/dev-stop.mjs
-```
+等价于前端目录的 `dev:all` / `stop:dev`（→ `dev-start.mjs` / `dev-stop.mjs`）。
 
 默认端口：前端 `28413` · 后端 `18421`。
 
@@ -58,6 +71,6 @@ node scripts/extract-brand-icon-paths.mjs
 
 ---
 
-## 桌面打包
+## 桌面打包细节
 
 见 [`datawise-frontend/scripts/desktop/README.md`](../datawise-frontend/scripts/desktop/README.md)。

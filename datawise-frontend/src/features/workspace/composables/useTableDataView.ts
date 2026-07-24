@@ -47,7 +47,8 @@ export function useTableDataView(tab: WorkspaceTab) {
     const {t} = useI18n()
     const tableData = ref<TableDataResult>(EMPTY)
     const tableProperties = ref<TablePropertiesResult>(EMPTY_PROPERTIES)
-    const loading = ref(false)
+    /** 打开表时默认视为加载中，避免首帧空工具栏/空态闪在左上角 */
+    const loading = ref(Boolean(tab.tableName?.trim() && tab.connectionId))
     const cursorLoading = ref(false)
     const mutating = ref(false)
     const loadError = ref<string | null>(null)
@@ -127,6 +128,7 @@ export function useTableDataView(tab: WorkspaceTab) {
         loadError.value = null
         if (!tab.tableName?.trim() || !tab.connectionId) {
             tableData.value = EMPTY
+            loading.value = false
             return
         }
 

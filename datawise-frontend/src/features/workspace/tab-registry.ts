@@ -1,82 +1,75 @@
 /**
-
  * Tab 类型 → Vue 组件 的注册表
-
  *
-
  * 扩展方式：在 definitions 数组追加一条即可，无需改 Record 结构。
-
  */
-
-import {defineAsyncComponent, type Component} from 'vue'
-
+import type {Component} from 'vue'
 import type {WorkspaceTabType} from '@/core/types'
-
 import {createRegistry, resolveRegistryComponent} from '@/core/registry/create-registry'
+import {
+    createLazyView,
+    prefetchLazyLoaders,
+    type LazyViewLoader,
+} from '@/core/registry/create-lazy-view'
 
-function lazyTab(loader: () => Promise<{ default: Component }>) {
-    return defineAsyncComponent(loader)
+const TAB_LOADERS = {
+    welcome: () => import('./components/tabs/WelcomeTab.vue'),
+    console: () => import('./components/tabs/SqlConsoleTab.vue'),
+    table: () => import('./components/tabs/TableDetailTab.vue'),
+    connection: () => import('./components/tabs/ConnectionFormTab.vue'),
+    terminal: () => import('./components/tabs/TerminalTab.vue'),
+    'schema-compare': () => import('./components/tabs/SchemaCompareTab.vue'),
+    'schema-er': () => import('./components/tabs/SchemaErTab.vue'),
+    'schema-tables': () => import('./components/tabs/SchemaTablesTab.vue'),
+    metadoc: () => import('./components/tabs/MetadocTab.vue'),
+    'cross-env-compare': () => import('./components/tabs/CrossEnvCompareTab.vue'),
+    'table-migration': () => import('./components/tabs/TableMigrationTab.vue'),
+    view_model: () => import('./components/tabs/ViewModelDataTab.vue'),
+    view_model_editor: () => import('./components/tabs/ViewModelEditorTab.vue'),
+    view_model_lineage: () => import('./components/tabs/ViewModelLineageTab.vue'),
+    'redis-key': () => import('./components/tabs/RedisKeyTab.vue'),
+    'redis-console': () => import('./components/tabs/RedisConsoleTab.vue'),
+    'kafka-topics': () => import('./components/tabs/KafkaTopicsTab.vue'),
+    'kafka-topic': () => import('./components/tabs/KafkaTopicTab.vue'),
+    'kafka-consumer-groups': () => import('./components/tabs/KafkaConsumerGroupsTab.vue'),
+    'kafka-table-publish': () => import('./components/tabs/KafkaTablePublishTab.vue'),
+    'yarn-applications': () => import('./components/tabs/YarnApplicationsTab.vue'),
+    'yarn-nodes': () => import('./components/tabs/YarnNodesTab.vue'),
+    'yarn-queues': () => import('./components/tabs/YarnQueuesTab.vue'),
+    'ssh-terminal': () => import('./components/tabs/SshTerminalTab.vue'),
+    'ssh-script-record': () => import('./components/tabs/SshScriptRecordTab.vue'),
+    platform_catalog: () => import('./components/tabs/PlatformCatalogTab.vue'),
+    data_catalog: () => import('./components/tabs/DataCatalogTab.vue'),
+    'create-database': () => import('./components/tabs/CreateDatabaseTab.vue'),
+} as const satisfies Record<string, LazyViewLoader>
+
+type RegisteredTabType = keyof typeof TAB_LOADERS
+
+function lazyTab(loader: LazyViewLoader) {
+    return createLazyView(loader)
 }
 
-const definitions = [
-
-    {key: 'welcome' as const, component: lazyTab(() => import('./components/tabs/WelcomeTab.vue'))},
-
-    {key: 'console' as const, component: lazyTab(() => import('./components/tabs/SqlConsoleTab.vue'))},
-
-    {key: 'table' as const, component: lazyTab(() => import('./components/tabs/TableDetailTab.vue'))},
-
-    {key: 'connection' as const, component: lazyTab(() => import('./components/tabs/ConnectionFormTab.vue'))},
-
-    {key: 'terminal' as const, component: lazyTab(() => import('./components/tabs/TerminalTab.vue'))},
-
-    {key: 'schema-compare' as const, component: lazyTab(() => import('./components/tabs/SchemaCompareTab.vue'))},
-
-    {key: 'schema-er' as const, component: lazyTab(() => import('./components/tabs/SchemaErTab.vue'))},
-
-    {key: 'schema-tables' as const, component: lazyTab(() => import('./components/tabs/SchemaTablesTab.vue'))},
-
-    {key: 'metadoc' as const, component: lazyTab(() => import('./components/tabs/MetadocTab.vue'))},
-
-    {key: 'cross-env-compare' as const, component: lazyTab(() => import('./components/tabs/CrossEnvCompareTab.vue'))},
-
-    {key: 'table-migration' as const, component: lazyTab(() => import('./components/tabs/TableMigrationTab.vue'))},
-
-    {key: 'view_model' as const, component: lazyTab(() => import('./components/tabs/ViewModelDataTab.vue'))},
-
-    {key: 'view_model_editor' as const, component: lazyTab(() => import('./components/tabs/ViewModelEditorTab.vue'))},
-
-    {key: 'view_model_lineage' as const, component: lazyTab(() => import('./components/tabs/ViewModelLineageTab.vue'))},
-
-    {key: 'redis-key' as const, component: lazyTab(() => import('./components/tabs/RedisKeyTab.vue'))},
-
-    {key: 'redis-console' as const, component: lazyTab(() => import('./components/tabs/RedisConsoleTab.vue'))},
-
-    {key: 'kafka-topics' as const, component: lazyTab(() => import('./components/tabs/KafkaTopicsTab.vue'))},
-
-    {key: 'kafka-topic' as const, component: lazyTab(() => import('./components/tabs/KafkaTopicTab.vue'))},
-
-    {key: 'kafka-consumer-groups' as const, component: lazyTab(() => import('./components/tabs/KafkaConsumerGroupsTab.vue'))},
-
-    {key: 'kafka-table-publish' as const, component: lazyTab(() => import('./components/tabs/KafkaTablePublishTab.vue'))},
-    {key: 'yarn-applications' as const, component: lazyTab(() => import('./components/tabs/YarnApplicationsTab.vue'))},
-    {key: 'yarn-nodes' as const, component: lazyTab(() => import('./components/tabs/YarnNodesTab.vue'))},
-    {key: 'yarn-queues' as const, component: lazyTab(() => import('./components/tabs/YarnQueuesTab.vue'))},
-    {key: 'ssh-terminal' as const, component: lazyTab(() => import('./components/tabs/SshTerminalTab.vue'))},
-    {key: 'ssh-script-record' as const, component: lazyTab(() => import('./components/tabs/SshScriptRecordTab.vue'))},
-
-    {key: 'platform_catalog' as const, component: lazyTab(() => import('./components/tabs/PlatformCatalogTab.vue'))},
-
-    {key: 'data_catalog' as const, component: lazyTab(() => import('./components/tabs/DataCatalogTab.vue'))},
-
-    {key: 'create-database' as const, component: lazyTab(() => import('./components/tabs/CreateDatabaseTab.vue'))},
-
-]
-
+const definitions = (Object.keys(TAB_LOADERS) as RegisteredTabType[]).map((key) => ({
+    key,
+    component: lazyTab(TAB_LOADERS[key]),
+}))
 
 export const WORKSPACE_TAB_REGISTRY = createRegistry(definitions)
 
+/** 启动后空闲预取：覆盖最常打开的工作区页，降低首次打开卡顿与占位闪现 */
+export const WORKSPACE_TAB_WARMUP_TYPES: WorkspaceTabType[] = [
+    'console',
+    'table',
+    'connection',
+    'welcome',
+]
 
 export function resolveWorkspaceTab(type: WorkspaceTabType): Component | null {
     return resolveRegistryComponent(WORKSPACE_TAB_REGISTRY, type)
+}
+
+export function prefetchWorkspaceTabs(
+    types: readonly WorkspaceTabType[] = WORKSPACE_TAB_WARMUP_TYPES,
+): Promise<void> {
+    return prefetchLazyLoaders(types.map((type) => TAB_LOADERS[type as RegisteredTabType]))
 }

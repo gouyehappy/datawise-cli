@@ -8,6 +8,7 @@ export default {
     more: 'More',
     locate: 'Locate',
     refresh: 'Refresh',
+    reload: 'Reload',
     export: 'Export',
     search: 'Search',
     generate: 'Generate',
@@ -19,4 +20,8 @@ export default {
     inDevelopment: 'In development',
     yes: 'Yes',
     no: 'No',
+    panelLoading: 'Loading page…',
+    panelLoadFailedTitle: 'Failed to load page',
+    panelLoadFailedHint: 'The view could not be loaded in time. Check your network and try again, or reload the app.',
+    editorLoading: 'Loading editor…',
 }

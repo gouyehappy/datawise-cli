@@ -14,7 +14,7 @@ import IconButton from '@/core/components/IconButton.vue'
 import ConsoleToolbarIcon from '@/core/components/ConsoleToolbarIcon.vue'
 import EditorFullscreenButton from '@/core/components/EditorFullscreenButton.vue'
 import SplitHandle from '@/core/components/SplitHandle.vue'
-import {DwButton, DwInlineAlert} from '@/core/components'
+import {DwButton, DwInlineAlert, DwPanelState} from '@/core/components'
 import type {WorkspaceTab} from '@/core/types'
 import {shortcutTooltip} from '@/features/layout/composables/useAppShortcutListener'
 import {useViewModelEditor} from '@/features/workspace/composables/useViewModelEditor'
@@ -532,6 +532,14 @@ onMounted(async () => {
               :dialect="dbDialect"
               show-hint-bar
           />
+          <DwPanelState
+              v-else
+              class="editor-surface__loading"
+              status="loading"
+              fill
+              compact
+              :message="t('common.editorLoading')"
+          />
         </div>
         <ViewModelLineagePreviewPanel
             v-if="!isEditorFullscreen && showLineagePreview"
@@ -688,6 +696,13 @@ onMounted(async () => {
 
 .editor-surface {
   position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-surface__loading {
   flex: 1;
   min-height: 0;
 }

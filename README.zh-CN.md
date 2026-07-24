@@ -159,7 +159,19 @@ npm install && npm run dev
 # → http://localhost:28413
 ```
 
-也可在前端目录一键起前后端：`npm run dev:all`（见 [scripts/README.md](./scripts/README.md)）。
+也可在仓库根目录一键起停：`npm run dev` / `npm run stop`（见 [scripts/README.md](./scripts/README.md)）。
+
+**常用构建命令**（仓库根目录）：
+
+```bash
+npm run clean       # 项目清理
+npm run frontend    # 前端编译打包
+npm run backend     # 后端编译打包
+npm run plugins     # 后端插件 → config/plugins/
+npm run all         # 清理 + 后端 + 插件 + 前端 + 桌面包
+npm run dist        # 仅桌面安装包
+npm run help        # 列出说明
+```
 
 **首次配置**
 
@@ -173,16 +185,14 @@ cp config/users.json.example config/users.json
 **桌面版**
 
 ```bash
-cd datawise-frontend
-npm run dist:desktop        # 当前系统 JCEF zip（Win / Mac / Linux）
-npm run dist:desktop:mac    # 别名 — 须在 macOS 上执行
-npm run dist:desktop:linux  # 别名 — 须在 Linux 上执行
+# 仓库根目录
+npm run dist                # 当前系统 JCEF 包（Win / Mac / Linux）
 # 产物 → datawise-desktop/dist/{windows|macos|linux}/
 #      → datawise-frontend/release/DataWiseCLI-*-{os}-{arch}.zip
 # Windows 安装包（需 WiX 3.x）：
 #      → release/DataWiseCLI-*-windows-x64-setup.exe
 #   winget install --id WiXToolset.WiXToolset -e
-# 旧 Electron：npm run dist:electron*
+# 细粒度脚本仍在 datawise-frontend（如 dist:desktop:slim）
 ```
 
 **Query Library CI**（校验无需启动服务）：

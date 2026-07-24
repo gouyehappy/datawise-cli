@@ -201,6 +201,7 @@ contextBridge.exposeInMainWorld('__datawiseDesktopBridge', {
             ipcRenderer.on('splash:progress', listener)
             return () => ipcRenderer.removeListener('splash:progress', listener)
         },
-        getMeta: (): { version: string; tagline: string; isPackaged: boolean } => ipcRenderer.sendSync('splash:getMeta'),
+        getMeta: (): { version: string; kicker: string; tagline: string; isPackaged: boolean } =>
+            ipcRenderer.sendSync('splash:getMeta'),
     },
 })

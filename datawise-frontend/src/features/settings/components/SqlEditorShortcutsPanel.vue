@@ -8,6 +8,7 @@ import {ensureSqlEditorPlugin} from '@/features/workspace/services/ensure-sql-ed
 import SettingsPageShell from '@/features/settings/components/SettingsPageShell.vue'
 import SettingsSegmentTabs from '@/features/settings/components/SettingsSegmentTabs.vue'
 import SettingsTipsCard from '@/features/settings/components/SettingsTipsCard.vue'
+import DwPanelState from '@/core/components/DwPanelState.vue'
 
 type SqlEditorTab = 'behavior' | 'keybindings' | 'quick'
 
@@ -61,5 +62,11 @@ const tabs = computed(() => [
           @update:active-tab="activeTab = $event as SqlEditorTab"
       />
     </div>
+    <DwPanelState
+        v-else
+        status="loading"
+        fill
+        :message="t('common.editorLoading')"
+    />
   </SettingsPageShell>
 </template>

@@ -50,10 +50,29 @@ import {registerUpdaterIpc} from './updater-service'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = !app.isPackaged
 
-/** Windows：禁用 overlay 滚动条，使全局 ::-webkit-scrollbar 样式生效 */
-if (process.platform === 'win32') {
-    app.commandLine.appendSwitch('disable-features', 'OverlayScrollbars')
-}
+/** Quiet Chromium internals (GCM DEPRECATED_ENDPOINT, Google SSL, …) — not app errors. */
+app.commandLine.appendSwitch('disable-background-networking')
+app.commandLine.appendSwitch('disable-component-update')
+app.commandLine.appendSwitch('disable-sync')
+app.commandLine.appendSwitch('disable-notifications')
+app.commandLine.appendSwitch('metrics-recording-only')
+app.commandLine.appendSwitch('no-pings')
+app.commandLine.appendSwitch('log-level', '3')
+app.commandLine.appendSwitch('gcm-checkin-url', 'http://127.0.0.1:9/')
+app.commandLine.appendSwitch('gcm-mcs-endpoint', '127.0.0.1:9')
+app.commandLine.appendSwitch('gcm-registration-url', 'http://127.0.0.1:9/')
+
+const disabledChromiumFeatures = [
+    'BackgroundFetch',
+    'BackgroundSync',
+    'InterestFeedContentSuggestions',
+    'MediaRouter',
+    'OptimizationHints',
+    'PushMessaging',
+    'TranslateUI',
+    ...(process.platform === 'win32' ? ['OverlayScrollbars'] : []),
+]
+app.commandLine.appendSwitch('disable-features', disabledChromiumFeatures.join(','))
 
 const pendingOpenUrls: string[] = []
 let deepLinkHandlersReady = false
@@ -91,7 +110,10 @@ if (!gotSingleInstanceLock) {
 }
 
 if (process.platform === 'win32') {
-    app.setAppUserModelId('org.apache.datawise.cli')
+    // Packaged builds must keep the installer AppUserModelID so Start Menu / toast
+    // branding resolve correctly. Dev launches have no matching shortcut, so use the
+    // display name to avoid showing the raw package id in notification headers.
+    app.setAppUserModelId(app.isPackaged ? 'org.apache.datawise.cli' : 'DataWise CLI')
 }
 
 interface WindowStatePayload {
@@ -149,6 +171,7 @@ function registerSplashIpc() {
     ipcMain.on('splash:getMeta', (event) => {
         event.returnValue = {
             version: app.getVersion(),
+            kicker: '本地数据库工作台',
             tagline: '连接、查询、分析、导出 — 一站完成',
             isPackaged: app.isPackaged,
         }
@@ -269,7 +292,7 @@ function createWindow() {
         show: false,
         title: 'DataWise CLI',
         icon: windowIcon.isEmpty() ? undefined : windowIcon,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#f8fafc',
         frame: !useFramelessChrome && !isMac,
         titleBarStyle: isMac ? 'hiddenInset' : 'default',
         trafficLightPosition: {x: 12, y: 10},

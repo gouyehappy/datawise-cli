@@ -7,24 +7,49 @@ import TitleBarAppMenu from '@/features/layout/components/TitleBarAppMenu.vue'
 import WorkspaceActionDialogs from '@/features/layout/components/WorkspaceActionDialogs.vue'
 import {useDesktopTitleBar} from '@/features/layout/composables/useDesktopTitleBar'
 
+withDefaults(
+    defineProps<{
+      /** 启动页：只保留拖拽区与窗口按钮，隐藏菜单，背景与 Splash 融合 */
+      minimal?: boolean
+    }>(),
+    {minimal: false},
+)
+
 const {t} = useI18n()
 const {visible, maximized, isMac, minimize, toggleMaximize, close, beginFramelessWindowDrag} = useDesktopTitleBar()
 </script>
 
 <template>
-  <header v-if="visible" class="desktop-titlebar" :class="{'desktop-titlebar--mac': isMac}">
+  <header
+      v-if="visible"
+      class="desktop-titlebar"
+      :class="{
+        'desktop-titlebar--mac': isMac,
+        'desktop-titlebar--minimal': minimal,
+      }"
+  >
     <div class="desktop-titlebar__lead">
       <div
           class="desktop-titlebar__icon"
           @pointerdown="beginFramelessWindowDrag"
           @dblclick.stop="toggleMaximize"
       >
-        <AppBrandLogo size="titlebar"/>
+        <AppBrandLogo v-if="!minimal" size="titlebar"/>
       </div>
-      <TitleBarAppMenu/>
+      <TitleBarAppMenu v-if="!minimal"/>
     </div>
 
-    <DesktopTitleBarMenu class="desktop-titlebar__menu" @dblclick-drag="toggleMaximize"/>
+    <div
+        v-if="minimal"
+        class="desktop-titlebar__drag"
+        @pointerdown="beginFramelessWindowDrag"
+        @dblclick.stop="toggleMaximize"
+    />
+    <DesktopTitleBarMenu
+        v-else
+        class="desktop-titlebar__menu"
+        @dblclick-drag="toggleMaximize"
+    />
 
     <div v-if="!isMac" class="desktop-titlebar__controls">
       <button
@@ -55,7 +80,7 @@ const {visible, maximized, isMac, minimize, toggleMaximize, close, beginFrameles
     </div>
   </header>
 
-  <WorkspaceActionDialogs/>
+  <WorkspaceActionDialogs v-if="!minimal"/>
 </template>
 
 <style scoped>
@@ -69,6 +94,10 @@ const {visible, maximized, isMac, minimize, toggleMaximize, close, beginFrameles
   position: relative;
   z-index: var(--dw-z-toolbar);
   user-select: none;
+}
+
+.desktop-titlebar--minimal {
+  background: transparent;
 }
 
 .desktop-titlebar--mac {
@@ -85,6 +114,11 @@ const {visible, maximized, isMac, minimize, toggleMaximize, close, beginFrameles
   -webkit-app-region: no-drag;
 }
 
+.desktop-titlebar--minimal .desktop-titlebar__lead {
+  width: var(--dw-space-7);
+  padding: 0;
+}
+
 .desktop-titlebar__icon {
   display: inline-flex;
   align-items: center;
@@ -92,6 +126,19 @@ const {visible, maximized, isMac, minimize, toggleMaximize, close, beginFrameles
   flex-shrink: 0;
   height: 100%;
   padding: 0 0 0 var(--dw-space-7);
+  -webkit-app-region: drag;
+}
+
+.desktop-titlebar--minimal .desktop-titlebar__icon {
+  padding: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+.desktop-titlebar__drag {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
   -webkit-app-region: drag;
 }
 

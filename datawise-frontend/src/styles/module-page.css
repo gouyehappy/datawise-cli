@@ -676,6 +676,23 @@
     padding: var(--mp-pad);
 }
 
+.module-shell__main--async-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.module-shell__main--async-panel > .panel-loading-shell,
+.module-shell__main--async-panel > .panel-load-error {
+    position: absolute;
+    inset: 0;
+    flex: none;
+    margin: 0;
+    width: auto;
+    height: auto;
+    min-height: 0;
+}
+
 .module-shell__main--fit {
     display: flex;
     flex-direction: column;
