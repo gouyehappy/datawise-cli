@@ -4,9 +4,9 @@ Backend / JRE bundling for the **JCEF** desktop host lives under `datawise-front
 
 | Host OS | Default artifact |
 |---------|------------------|
-| Windows | Zip + `DataWiseCLI.exe` (jpackage) — [datawise-desktop/README.md](../../../datawise-desktop/README.md) |
-| macOS | Zip + optional `.app` — [DESKTOP_MAC.md](../../../docs/DESKTOP_MAC.md) |
-| Linux | Zip + optional native launcher — [DESKTOP_LINUX.md](../../../docs/DESKTOP_LINUX.md) |
+| Windows | Zip + Setup.exe (`jpackage` + WiX) — [datawise-desktop/README.md](../../../datawise-desktop/README.md) |
+| macOS | Zip + DMG — [DESKTOP_MAC.md](../../../docs/DESKTOP_MAC.md) |
+| Linux | Zip + deb (`fakeroot`) — [DESKTOP_LINUX.md](../../../docs/DESKTOP_LINUX.md) |
 
 Legacy Electron packaging still uses `scripts/desktop/build.mjs` via `npm run dist:electron*`.
 
@@ -46,7 +46,14 @@ desktop mvn  →  datawise-backend/**/target-desktop/  →  resources/desktop/  
 | `npm run stop:desktop` | 结束正在运行的 DataWise / 内嵌后端 |
 | `npm run dist:electron*` | **Legacy** Electron（electron-builder） |
 
-产物：`datawise-frontend/release/DataWiseCLI-*-{windows\|linux\|macos}-*.zip`。
+产物：
+
+- `datawise-frontend/release/DataWiseCLI-*-{windows\|linux\|macos}-*.zip`
+- Windows：`DataWiseCLI-*-windows-x64-setup.exe`（需 WiX 3.x）
+- macOS：`DataWiseCLI-*-macos-{arm64\|x64}.dmg`
+- Linux：`DataWiseCLI-*-linux-{x64\|arm64}.deb`（需 `fakeroot`）
+
+跳过安装包：`npm run dist:desktop -- --no-installer`。三端安装包须在对应 OS（或 `desktop-release` CI）上构建，不可交叉打包。
 
 ---
 

@@ -9,6 +9,8 @@
  *   datawise-desktop/dist/{windows|linux|macos}/
  *   datawise-frontend/release/DataWiseCLI-{version}-{os}-{arch}.zip
  *   datawise-frontend/release/DataWiseCLI-{version}-windows-x64-setup.exe  (Windows + WiX)
+ *   datawise-frontend/release/DataWiseCLI-{version}-macos-{arch}.dmg
+ *   datawise-frontend/release/DataWiseCLI-{version}-linux-{arch}.deb
  */
 import {spawnSync} from 'node:child_process'
 import {
@@ -62,7 +64,7 @@ function parseArgs(argv) {
         skipBackend: argv.includes('--skip-backend'),
         dir: argv.includes('--dir'),
         publish: argv.includes('--publish'),
-        // Windows Setup.exe via jpackage (needs WiX). Default on for Windows.
+        // Native installer via jpackage (Win Setup.exe / Mac DMG / Linux deb). Default on.
         installer: !argv.includes('--no-installer'),
     }
 }
@@ -245,13 +247,64 @@ async function assembleLayout(version, jarPath, target) {
 }
 
 /**
+ * Run jpackage without shell so args with spaces (e.g. description) are not split on Windows.
+ * shell:true concatenates argv and turns "DataWise CLI" into invalid option [CLI].
+ */
+function resolveJpackageBin() {
+    if (process.platform === 'win32') {
+        const where = spawnSync('where.exe', ['jpackage'], {
+            encoding: 'utf8',
+            shell: false,
+            windowsHide: true,
+        })
+        if (where.status === 0 && where.stdout) {
+            const line = where.stdout
+                .split(/\r?\n/)
+                .map((s) => s.trim())
+                .find((s) => s.toLowerCase().endsWith('jpackage.exe') || s.toLowerCase().endsWith('jpackage'))
+            if (line && existsSync(line)) {
+                return line
+            }
+        }
+    } else {
+        const which = spawnSync('which', ['jpackage'], {encoding: 'utf8', shell: false})
+        if (which.status === 0 && which.stdout) {
+            const line = which.stdout.trim().split(/\r?\n/)[0]
+            if (line && existsSync(line)) {
+                return line
+            }
+        }
+    }
+    const javaHome = process.env.JAVA_HOME
+    if (javaHome) {
+        const candidate = join(javaHome, 'bin', process.platform === 'win32' ? 'jpackage.exe' : 'jpackage')
+        if (existsSync(candidate)) {
+            return candidate
+        }
+    }
+    return null
+}
+
+function runJpackage(args) {
+    const bin = resolveJpackageBin()
+    if (!bin) {
+        return {status: 1, missing: true}
+    }
+    return spawnSync(bin, args, {
+        cwd: desktopRoot,
+        stdio: 'inherit',
+        shell: false,
+        windowsHide: true,
+        env: process.env,
+    })
+}
+
+/**
  * Produce a native launcher via jpackage when available.
  * Windows: DataWiseCLI.exe · Linux: DataWiseCLI · macOS: DataWiseCLI.app
  */
 function wrapWithJpackage(layoutDir, version, target) {
-    const jpackage = process.platform === 'win32' ? 'jpackage.exe' : 'jpackage'
-    const which = spawnSync(jpackage, ['--version'], {encoding: 'utf8', shell: true})
-    if (which.status !== 0) {
+    if (!resolveJpackageBin()) {
         log('jpackage not found — keeping java launcher only')
         return
     }
@@ -296,7 +349,7 @@ function wrapWithJpackage(layoutDir, version, target) {
     }
 
     log('running jpackage…')
-    const result = spawnSync(jpackage, args, {cwd: desktopRoot, stdio: 'inherit', shell: true})
+    const result = runJpackage(args)
     if (result.status !== 0) {
         log('jpackage failed — keeping java launcher only')
         return
@@ -386,86 +439,165 @@ function ensureWixOnPath() {
     return again.status === 0
 }
 
-/**
- * Windows Setup.exe installer from the assembled app-image (requires WiX Toolset 3.x).
- * @returns {string|null} path to setup exe
- */
-function buildWindowsSetupExe(version, layoutDir, target) {
-    if (target.osKey !== 'windows') {
-        return null
-    }
-    if (!existsSync(join(layoutDir, 'DataWiseCLI.exe'))) {
-        log('Setup.exe skipped — DataWiseCLI.exe missing (jpackage app-image failed)')
-        return null
-    }
-    if (!ensureWixOnPath()) {
-        log('Setup.exe skipped — WiX Toolset 3.x not found (candle.exe).')
-        log('  Install: winget install --id WiXToolset.WiXToolset -e')
-        log('  Or:      choco install wixtoolset -y')
-        log('  Then re-run: npm run dist:desktop')
-        return null
-    }
+function hasCommand(cmd) {
+    const which = process.platform === 'win32' ? 'where.exe' : 'which'
+    const result = spawnSync(which, [cmd], {encoding: 'utf8', shell: true})
+    return result.status === 0
+}
 
-    const jpackage = 'jpackage.exe'
+/**
+ * Native installer from the assembled app-image:
+ *   Windows → Setup.exe (WiX) · macOS → DMG · Linux → deb (fakeroot)
+ * @returns {string|null} path to installer in release/
+ */
+function buildNativeInstaller(version, layoutDir, target) {
     const dest = join(desktopRoot, 'target', 'jpackage-installer')
     rmSync(dest, {recursive: true, force: true})
     mkdirSync(dest, {recursive: true})
 
-    const icon = join(layoutDir, 'icons', 'icon.ico')
-    const args = [
-        '--type', 'exe',
-        '--app-image', layoutDir,
-        '--name', 'DataWiseCLI',
-        '--app-version', version,
-        '--copyright', 'DataWise',
-        '--description', 'DataWise CLI',
-        '--vendor', 'DataWise',
-        '--dest', dest,
-        '--win-menu',
-        '--win-shortcut',
-        '--win-dir-chooser',
-        '--win-upgrade-uuid', WINDOWS_UPGRADE_UUID,
-    ]
-    if (existsSync(icon)) {
-        args.push('--icon', icon)
-    }
+    /** @type {{type: string, releaseSuffix: string, extensions: string[], args: string[]}|null} */
+    let spec = null
 
-    log('running jpackage --type exe (Setup installer)…')
-    const result = spawnSync(jpackage, args, {cwd: desktopRoot, stdio: 'inherit', shell: true})
-    if (result.status !== 0) {
-        log('jpackage --type exe failed — zip/portable still available')
+    if (target.osKey === 'windows') {
+        if (!existsSync(join(layoutDir, 'DataWiseCLI.exe'))) {
+            log('Setup.exe skipped — DataWiseCLI.exe missing (jpackage app-image failed)')
+            return null
+        }
+        if (!ensureWixOnPath()) {
+            log('Setup.exe skipped — WiX Toolset 3.x not found (candle.exe).')
+            log('  Install: winget install --id WiXToolset.WiXToolset -e')
+            log('  Or:      choco install wixtoolset -y')
+            log('  Then re-run: npm run dist:desktop')
+            return null
+        }
+        const icon = join(layoutDir, 'icons', 'icon.ico')
+        const args = [
+            '--type', 'exe',
+            '--app-image', layoutDir,
+            '--name', 'DataWiseCLI',
+            '--app-version', version,
+            '--copyright', 'DataWise',
+            '--description', 'DataWise CLI',
+            '--vendor', 'DataWise',
+            '--dest', dest,
+            '--win-menu',
+            '--win-shortcut',
+            '--win-dir-chooser',
+            '--win-upgrade-uuid', WINDOWS_UPGRADE_UUID,
+        ]
+        if (existsSync(icon)) {
+            args.push('--icon', icon)
+        }
+        spec = {
+            type: 'exe',
+            releaseSuffix: `-setup.exe`,
+            extensions: ['.exe'],
+            args,
+        }
+    } else if (target.osKey === 'macos') {
+        if (!existsSync(join(layoutDir, 'DataWiseCLI.app'))) {
+            log('DMG skipped — DataWiseCLI.app missing (jpackage app-image failed)')
+            return null
+        }
+        // jpackage --type dmg expects the .app as --app-image root
+        const appImage = join(layoutDir, 'DataWiseCLI.app')
+        const icon = join(layoutDir, 'icons', 'icon.png')
+        const args = [
+            '--type', 'dmg',
+            '--app-image', appImage,
+            '--name', 'DataWiseCLI',
+            '--app-version', version,
+            '--copyright', 'DataWise',
+            '--description', 'DataWise CLI',
+            '--vendor', 'DataWise',
+            '--dest', dest,
+        ]
+        if (existsSync(icon)) {
+            args.push('--icon', icon)
+        }
+        spec = {
+            type: 'dmg',
+            releaseSuffix: '.dmg',
+            extensions: ['.dmg'],
+            args,
+        }
+    } else if (target.osKey === 'linux') {
+        if (!existsSync(join(layoutDir, 'DataWiseCLI')) && !existsSync(join(layoutDir, 'bin'))) {
+            log('deb skipped — native launcher missing (jpackage app-image failed)')
+            return null
+        }
+        if (!hasCommand('fakeroot')) {
+            log('deb skipped — fakeroot not found.')
+            log('  Install: sudo apt-get install -y fakeroot binutils')
+            log('  Then re-run: npm run dist:desktop')
+            return null
+        }
+        const icon = join(layoutDir, 'icons', 'icon.png')
+        const args = [
+            '--type', 'deb',
+            '--app-image', layoutDir,
+            '--name', 'DataWiseCLI',
+            '--app-version', version,
+            '--copyright', 'DataWise',
+            '--description', 'DataWise CLI',
+            '--vendor', 'DataWise',
+            '--dest', dest,
+            '--linux-package-name', 'datawise-cli',
+        ]
+        if (existsSync(icon)) {
+            args.push('--icon', icon)
+        }
+        spec = {
+            type: 'deb',
+            releaseSuffix: '.deb',
+            extensions: ['.deb'],
+            args,
+        }
+    } else {
         return null
     }
 
-    // jpackage names the installer DataWiseCLI-{version}.exe
-    const produced = [
-        join(dest, `DataWiseCLI-${version}.exe`),
-        join(dest, 'DataWiseCLI.exe'),
-    ].find((p) => existsSync(p))
-    if (!produced) {
-        const found = existsSync(dest)
-            ? readdirSync(dest).filter((n) => n.toLowerCase().endsWith('.exe'))
-            : []
-        if (found.length === 1) {
-            const p = join(dest, found[0])
-            const releaseDir = join(frontendRoot, 'release')
-            mkdirSync(releaseDir, {recursive: true})
-            const outName = `DataWiseCLI-${version}-${target.osKey}-${target.zipArch}-setup.exe`
-            const outPath = join(releaseDir, outName)
-            cpSync(p, outPath)
-            log(`release setup → ${outPath}`)
-            return outPath
-        }
-        log('Setup.exe output not found in jpackage-installer/')
+    log(`running jpackage --type ${spec.type} (native installer)…`)
+    const result = runJpackage(spec.args)
+    if (result.missing) {
+        log(`jpackage not found — skip ${spec.type} installer`)
+        return null
+    }
+    if (result.status !== 0) {
+        log(`jpackage --type ${spec.type} failed — zip/portable still available`)
         return null
     }
 
     const releaseDir = join(frontendRoot, 'release')
     mkdirSync(releaseDir, {recursive: true})
-    const outName = `DataWiseCLI-${version}-${target.osKey}-${target.zipArch}-setup.exe`
+    const outName = `DataWiseCLI-${version}-${target.osKey}-${target.zipArch}${spec.releaseSuffix}`
     const outPath = join(releaseDir, outName)
+
+    const candidates = [
+        join(dest, `DataWiseCLI-${version}${spec.extensions[0]}`),
+        join(dest, `DataWiseCLI${spec.extensions[0]}`),
+        join(dest, `datawise-cli_${version}_amd64.deb`),
+        join(dest, `datawise-cli_${version}_arm64.deb`),
+    ]
+    let produced = candidates.find((p) => existsSync(p))
+    if (!produced && existsSync(dest)) {
+        const found = readdirSync(dest).filter((n) =>
+            spec.extensions.some((ext) => n.toLowerCase().endsWith(ext)),
+        )
+        if (found.length === 1) {
+            produced = join(dest, found[0])
+        } else if (found.length > 1) {
+            // Prefer versioned name when jpackage emits multiple files
+            produced = join(dest, found.find((n) => n.includes(version)) || found[0])
+        }
+    }
+    if (!produced) {
+        log(`installer output not found in jpackage-installer/ (type=${spec.type})`)
+        return null
+    }
+
     cpSync(produced, outPath)
-    log(`release setup → ${outPath}`)
+    log(`release installer → ${outPath}`)
     return outPath
 }
 
@@ -553,9 +685,11 @@ async function publishRelease(version, assetPaths) {
     for (const assetPath of paths) {
         const assetName = assetPath.split(/[/\\]/).pop()
         log(`uploading ${assetName} to GitHub release ${tag}…`)
-        const contentType = assetName.endsWith('.exe')
-            ? 'application/octet-stream'
-            : 'application/zip'
+        const lower = assetName.toLowerCase()
+        const contentType =
+            lower.endsWith('.zip')
+                ? 'application/zip'
+                : 'application/octet-stream' // .exe / .dmg / .deb
         const uploadUrl = `https://uploads.github.com/repos/gouyehappy/datawise-cli/releases/${releaseId}/assets?name=${assetName}`
         const uploaded = spawnSync(
             curl,
@@ -594,13 +728,13 @@ async function main() {
 
     if (!opts.dir) {
         const zip = zipRelease(version, layout, target)
-        const setup = opts.installer ? buildWindowsSetupExe(version, layout, target) : null
+        const installer = opts.installer ? buildNativeInstaller(version, layout, target) : null
         if (opts.publish) {
-            await publishRelease(version, [zip, setup])
+            await publishRelease(version, [zip, installer])
         }
     } else if (opts.installer) {
-        // Unpacked layout still useful for local Setup.exe smoke builds.
-        buildWindowsSetupExe(version, layout, target)
+        // Unpacked layout still useful for local installer smoke builds.
+        buildNativeInstaller(version, layout, target)
     }
 
     log('done')

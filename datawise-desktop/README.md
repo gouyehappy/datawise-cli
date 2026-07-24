@@ -13,10 +13,11 @@ Legacy Electron remains available via `npm run dist:electron*` if needed.
 | Backend child process + configDir reuse | Done |
 | In-app splash / tray / icons / window state | Done |
 | Workspace switch relaunch | Done |
-| Updater (GitHub zip) | Done |
+| Updater (GitHub Releases) | Done — prefers setup.exe / DMG / deb over zip |
 | Zip release (`dist:desktop`) | Done — Win / Linux / macOS |
 | Windows Setup.exe (`jpackage` + WiX) | Done when WiX 3.x installed |
-| NSIS / DMG / AppImage installers | Optional later |
+| macOS DMG (`jpackage`) | Done (unsigned; Gatekeeper warns) |
+| Linux deb (`jpackage` + fakeroot) | Done when fakeroot installed |
 
 ## Quick start (dev)
 
@@ -45,6 +46,8 @@ npm run dist:desktop
 # → datawise-desktop/dist/{windows|linux|macos}/
 # → datawise-frontend/release/DataWiseCLI-{version}-{os}-{arch}.zip
 # → datawise-frontend/release/DataWiseCLI-{version}-windows-x64-setup.exe  (Windows + WiX)
+# → datawise-frontend/release/DataWiseCLI-{version}-macos-{arch}.dmg
+# → datawise-frontend/release/DataWiseCLI-{version}-linux-{arch}.deb
 ```
 
 ### Windows installer (Setup.exe)
@@ -67,11 +70,51 @@ npm run dist:desktop
 # Portable zip still produced alongside
 ```
 
+### macOS installer (DMG)
+
+On a Mac, `dist:desktop` runs `jpackage --type dmg` after the `.app` app-image is ready.
+
+```bash
+cd datawise-frontend
+npm run dist:desktop
+# DMG: release/DataWiseCLI-4.0.1-macos-arm64.dmg  (or -x64)
+```
+
+Builds are **unsigned**. Users may need to allow the app in System Settings → Privacy & Security. Sign + notarize for distribution outside your org.
+
+### Linux installer (deb)
+
+On Linux, `dist:desktop` runs `jpackage --type deb` when `fakeroot` is available:
+
+```bash
+sudo apt-get install -y fakeroot binutils
+cd datawise-frontend
+npm run dist:desktop
+# deb: release/DataWiseCLI-4.0.1-linux-x64.deb
+```
+
 Skip installer: `npm run dist:desktop -- --no-installer`
 
 Aliases: `dist:desktop:mac`, `dist:desktop:linux` (same script; must run on that OS).
 
+**Cross-packaging is not supported** — build Windows on Windows, macOS on a Mac, Linux on Linux (or use `.github/workflows/desktop-release.yml`).
+
 Requirements on target machine: **JDK 17+** on PATH (or bundled JRE under `backend/jre` when using full/core profile).
+
+### Publishing a release
+
+1. Merge packaging changes to the default branch.
+2. (Optional) On Windows, install WiX 3.x and run `npm run dist:desktop` locally to smoke-test Setup.exe.
+3. Tag and push (version aligns with `datawise-frontend/package.json`):
+
+```bash
+git tag v4.0.1
+git push origin v4.0.1
+```
+
+Or run **Desktop release** via GitHub Actions `workflow_dispatch`.
+
+4. Confirm GitHub Releases has six assets (zip + installer × three OS). macOS DMGs are unsigned until you add signing/notarization.
 
 ## Environment overrides
 

@@ -85,7 +85,7 @@
 | 方式 | 适用场景 |
 |------|----------|
 | **Web** | 本地后端 + Vite（`npm run dev`） |
-| **桌面** | JCEF 一体化包（`npm run dist:desktop`，Win / Mac / Linux） |
+| **桌面** | JCEF 一体化包（`npm run dist` — Win Setup.exe / Mac DMG / Linux deb） |
 | **IDE 智能体** | [`datawise-mcp`](./datawise-mcp/) |
 | **VS Code** | [`datawise-vscode`](./datawise-vscode/) Deep Link 打开桌面版 |
 | **CI / 无头** | [`headless-cli`](./headless-cli/) |
@@ -169,7 +169,9 @@ npm run frontend    # 前端编译打包
 npm run backend     # 后端编译打包
 npm run plugins     # 后端插件 → config/plugins/
 npm run all         # 清理 + 后端 + 插件 + 前端 + 桌面包
-npm run dist        # 仅桌面安装包
+npm run dist        # 桌面安装包（当前系统）
+npm run dist:full   # 桌面全量包
+npm run dist:publish # 打包并发布到 GitHub Releases
 npm run help        # 列出说明
 ```
 
@@ -185,14 +187,19 @@ cp config/users.json.example config/users.json
 **桌面版**
 
 ```bash
-# 仓库根目录
-npm run dist                # 当前系统 JCEF 包（Win / Mac / Linux）
-# 产物 → datawise-desktop/dist/{windows|macos|linux}/
-#      → datawise-frontend/release/DataWiseCLI-*-{os}-{arch}.zip
-# Windows 安装包（需 WiX 3.x）：
-#      → release/DataWiseCLI-*-windows-x64-setup.exe
-#   winget install --id WiXToolset.WiXToolset -e
-# 细粒度脚本仍在 datawise-frontend（如 dist:desktop:slim）
+# 仓库根目录（须在目标 OS 上执行；不可交叉编译）
+npm run dist                  # zip + 安装程序（默认 core）
+npm run dist -- --no-installer
+npm run dist:slim             # 瘦包
+npm run dist:full             # 全连接器 + JRE
+npm run dist:publish          # 上传 GitHub Releases（需 GH_TOKEN）
+
+# 产物 → datawise-frontend/release/
+#   DataWiseCLI-*-{windows|macos|linux}-{arch}.zip
+#   Windows: *-windows-x64-setup.exe   (需 WiX: winget install --id WiXToolset.WiXToolset -e)
+#   macOS:   *-macos-{arm64|x64}.dmg
+#   Linux:   *-linux-{x64|arm64}.deb   (需: sudo apt-get install -y fakeroot binutils)
+# 三端一并发布：git tag v4.0.1 && git push origin v4.0.1  →  desktop-release.yml
 ```
 
 **Query Library CI**（校验无需启动服务）：

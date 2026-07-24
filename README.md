@@ -85,7 +85,7 @@
 | Mode | When to use |
 |------|-------------|
 | **Web** | Local backend + Vite (`npm run dev`) |
-| **Desktop** | All-in-one JCEF (`npm run dist:desktop` — Win / Mac / Linux) |
+| **Desktop** | All-in-one JCEF (`npm run dist` — Win Setup.exe / Mac DMG / Linux deb) |
 | **IDE agent** | [`datawise-mcp`](./datawise-mcp/) |
 | **VS Code** | [`datawise-vscode`](./datawise-vscode/) deep links into desktop |
 | **CI / headless** | [`headless-cli`](./headless-cli/) |
@@ -169,7 +169,9 @@ npm run frontend    # build desktop frontend
 npm run backend     # build Spring Boot JAR
 npm run plugins     # connector plugins → config/plugins/
 npm run all         # clean + backend + plugins + frontend + desktop package
-npm run dist        # desktop package only
+npm run dist        # desktop installer (current OS)
+npm run dist:full   # full desktop package
+npm run dist:publish # package and upload to GitHub Releases
 npm run help        # list commands
 ```
 
@@ -185,14 +187,17 @@ Put connector JARs in `config/plugins/` and JDBC drivers in `config/drivers/`. D
 **Desktop**
 
 ```bash
-# repo root
-npm run dist                # host OS JCEF package (Win / Mac / Linux)
-# output → datawise-desktop/dist/{windows|macos|linux}/
-#       → datawise-frontend/release/DataWiseCLI-*-{os}-{arch}.zip
-# Windows Setup.exe (needs WiX 3.x):
-#       → release/DataWiseCLI-*-windows-x64-setup.exe
-#   winget install --id WiXToolset.WiXToolset -e
-# finer scripts remain under datawise-frontend (e.g. dist:desktop:slim)
+# repo root (must run on the target OS; no cross-compile)
+npm run dist                  # zip + native installer (default core)
+npm run dist -- --no-installer
+npm run dist:slim
+npm run dist:full
+npm run dist:publish          # needs GH_TOKEN
+
+# → datawise-frontend/release/
+#   DataWiseCLI-*-{windows|macos|linux}-{arch}.zip
+#   Windows: *-setup.exe (WiX) · macOS: *.dmg · Linux: *.deb (fakeroot)
+# All three OS: git tag v4.0.1 && git push origin v4.0.1 → desktop-release.yml
 ```
 **Query Library CI** (no server for validate):
 

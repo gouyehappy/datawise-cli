@@ -139,11 +139,21 @@ public final class DesktopUpdaterService {
         try {
             if (installer != null && Files.isRegularFile(installer)) {
                 String name = installer.getFileName().toString().toLowerCase(Locale.ROOT);
+                String abs = installer.toAbsolutePath().toString();
                 if (name.endsWith(".zip")) {
                     openExplorer(installer.getParent());
                     return true;
                 }
-                new ProcessBuilder(installer.toAbsolutePath().toString()).start();
+                if (name.endsWith(".dmg")) {
+                    new ProcessBuilder("open", abs).start();
+                    return true;
+                }
+                if (name.endsWith(".deb")) {
+                    new ProcessBuilder("xdg-open", abs).start();
+                    return true;
+                }
+                // Windows Setup.exe / .msi
+                new ProcessBuilder(abs).start();
                 return true;
             }
             openBrowser(RELEASES_PAGE);
@@ -197,7 +207,9 @@ public final class DesktopUpdaterService {
         }
         String osToken = platformZipToken();
         JsonArray assets = release.getAsJsonArray("assets");
-        Asset fallback = null;
+        Asset preferredInstaller = null;
+        Asset otherInstaller = null;
+        Asset zipFallback = null;
         for (JsonElement el : assets) {
             if (!el.isJsonObject()) continue;
             JsonObject obj = el.getAsJsonObject();
@@ -205,18 +217,57 @@ public final class DesktopUpdaterService {
             String name = obj.get("name").getAsString();
             String url = obj.get("browser_download_url").getAsString();
             String lower = name.toLowerCase(Locale.ROOT);
-            if (lower.endsWith(".zip") && lower.contains(osToken)) {
-                return new Asset(name, url);
+            if (!lower.contains(osToken) && !isBareInstallerName(lower, osToken)) {
+                continue;
             }
-            if ("windows".equals(osToken) && (lower.endsWith(".exe") || lower.endsWith(".msi"))) {
-                Asset asset = new Asset(name, url);
-                if (lower.contains("setup") || lower.contains("installer")) {
-                    return asset;
-                }
-                fallback = asset;
+            Asset asset = new Asset(name, url);
+            if (isPreferredInstaller(lower, osToken)) {
+                preferredInstaller = asset;
+                break;
+            }
+            if (isInstallerAsset(lower, osToken) && otherInstaller == null) {
+                otherInstaller = asset;
+            }
+            if (lower.endsWith(".zip") && lower.contains(osToken) && zipFallback == null) {
+                zipFallback = asset;
             }
         }
-        return fallback;
+        if (preferredInstaller != null) {
+            return preferredInstaller;
+        }
+        if (otherInstaller != null) {
+            return otherInstaller;
+        }
+        return zipFallback;
+    }
+
+    /** Prefer setup.exe / .dmg / .deb over portable zip. */
+    private static boolean isPreferredInstaller(String lower, String osToken) {
+        return switch (osToken) {
+            case "windows" ->
+                    (lower.endsWith(".exe") || lower.endsWith(".msi"))
+                            && (lower.contains("setup") || lower.contains("installer"));
+            case "macos" -> lower.endsWith(".dmg");
+            case "linux" -> lower.endsWith(".deb");
+            default -> false;
+        };
+    }
+
+    private static boolean isInstallerAsset(String lower, String osToken) {
+        return switch (osToken) {
+            case "windows" -> lower.endsWith(".exe") || lower.endsWith(".msi");
+            case "macos" -> lower.endsWith(".dmg") || lower.endsWith(".pkg");
+            case "linux" -> lower.endsWith(".deb") || lower.endsWith(".rpm");
+            default -> false;
+        };
+    }
+
+    /** Allow installer names that omit the os token (e.g. DataWiseCLI-4.0.1.dmg). */
+    private static boolean isBareInstallerName(String lower, String osToken) {
+        return isInstallerAsset(lower, osToken)
+                && !lower.contains("windows")
+                && !lower.contains("macos")
+                && !lower.contains("linux");
     }
 
     private static String platformZipToken() {

@@ -11,6 +11,9 @@
     "plugins": "node scripts/dw.mjs plugins",
     "all": "node scripts/dw.mjs all",
     "dist": "node scripts/dw.mjs dist",
+    "dist:slim": "node scripts/dw.mjs dist:slim",
+    "dist:full": "node scripts/dw.mjs dist:full",
+    "dist:publish": "node scripts/dw.mjs dist:publish",
     "dev": "node scripts/dw.mjs dev",
     "stop": "node scripts/dw.mjs stop"
   }

@@ -1,14 +1,19 @@
 # Desktop packaging — Linux (JCEF)
 
-Default desktop host is **JCEF** (`datawise-desktop`). Build on a Linux machine; output is a zip (plus optional `jpackage` native launcher).
+Default desktop host is **JCEF** (`datawise-desktop`). Build on a Linux machine; output is a portable zip plus a **deb** installer (`jpackage --type deb`).
 
 ## Prerequisites
 
 - Linux **x64** or **arm64**
-- JDK **17+** (`JAVA_HOME`)
+- JDK **17+** (`JAVA_HOME`) — must include `jpackage`
 - Maven 3.9+
 - Node 20+ / npm
 - `zip` on PATH
+- **`fakeroot`** and **`binutils`** (required for `.deb`):
+
+```bash
+sudo apt-get update && sudo apt-get install -y fakeroot binutils
+```
 
 ## Commands
 
@@ -16,10 +21,13 @@ Default desktop host is **JCEF** (`datawise-desktop`). Build on a Linux machine;
 cd datawise-frontend
 npm install
 npm run dist:desktop        # or dist:desktop:linux
-npm run pack:desktop        # unpacked dir only
+npm run pack:desktop        # unpacked dir only (no zip/deb)
+npm run dist:desktop -- --no-installer   # zip only
 ```
 
 Must run **on Linux**. Cross-packaging from Windows/macOS is not supported (natives are OS-activated in Maven).
+
+CI: push a `v*` tag (or run `desktop-release` via `workflow_dispatch`) — the Ubuntu job installs fakeroot and uploads zip + deb.
 
 ## Output
 
@@ -27,10 +35,12 @@ Must run **on Linux**. Cross-packaging from Windows/macOS is not supported (nati
 |----------|----------------|
 | Layout | `datawise-desktop/dist/linux/` |
 | Zip | `datawise-frontend/release/DataWiseCLI-*-linux-{x64\|arm64}.zip` |
+| deb | `datawise-frontend/release/DataWiseCLI-*-linux-{x64\|arm64}.deb` |
 
 Config dir: `~/.config/DataWiseCLI/` (override with `DATAWISE_USER_DATA`).
 
-Run: `./DataWiseCLI.sh` or `./DataWiseCLI` when jpackage produced a native binary.
+Install: `sudo dpkg -i DataWiseCLI-*-linux-*.deb` (or open the deb in your software center).  
+Portable: unzip and run `./DataWiseCLI.sh` or `./bin/DataWiseCLI` when jpackage produced a native binary.
 
 ## Architecture checklist
 
