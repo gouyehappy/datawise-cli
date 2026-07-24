@@ -221,7 +221,8 @@ export const STAGE_PLAN_TEMPLATES: Record<CompletionStage, StagePlanTemplate> = 
     },
 
     'statement.start': {
-        collectors: ['recentSql', 'keywords', 'snippets'],
+        // 不掺 recentSql：长历史语句会把关键字提示面板撑得很丑；历史走独立入口。
+        collectors: ['keywords', 'snippets'],
         sortProfile: 'keyword-first',
         keywordPhase: 'all',
         keywordSlot: 'statement_start',

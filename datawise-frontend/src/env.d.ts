@@ -33,6 +33,8 @@ declare global {
         datawise?: {
             platform: string
             apiBaseUrl?: string
+            appVersion?: string
+            isPackaged?: boolean
             window?: {
                 getState: () => Promise<WindowPreferences | null>
                 setState: (state: WindowPreferences) => Promise<boolean>
@@ -45,6 +47,10 @@ declare global {
                 close: () => Promise<boolean>
                 isMaximized: () => Promise<boolean>
                 onMaximizeChange: (callback: (maximized: boolean) => void) => () => void
+                /** JCEF frameless only; Electron uses -webkit-app-region */
+                startDrag?: (screenX: number, screenY: number) => Promise<boolean>
+                dragTo?: (screenX: number, screenY: number) => Promise<boolean>
+                endDrag?: () => Promise<boolean>
             }
             updater?: {
                 checkForUpdates: () => Promise<{
@@ -141,6 +147,11 @@ declare global {
                 reportProgress: (payload: { progress: number; status: string }) => void
                 onProgress: (callback: (payload: { progress: number; status?: string }) => void) => () => void
                 getMeta: () => { version: string; tagline: string; isPackaged: boolean }
+            }
+            /** JCEF host file-backed UI keys (session / onboarding) */
+            uiStore?: {
+                persist: (patch: Record<string, string | null | undefined>) => Promise<boolean>
+                clearSession: () => Promise<boolean>
             }
             registerPluginHooks?: (pluginId: string, handlers: PluginHookHandlers) => void
             unregisterPluginHooks?: (pluginId: string) => void

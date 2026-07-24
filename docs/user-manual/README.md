@@ -26,7 +26,7 @@ npm run capture:demos --prefix datawise-frontend
 | [09 · Schema 对比与迁移](./09-schema-migration.md) | 对比、迁移向导、闭环 | `12` |
 | [10 · 团队与治理](./10-team-governance.md) | 共享、加入审批、生产 SQL 审批、权限、租户 | 设置侧栏见 `06` |
 | [11 · 设置与插件](./11-settings-plugins.md) | 偏好、健康、AI、插件 | `05`–`09` |
-| [12 · 桌面与生态](./12-desktop-ecosystem.md) | Electron、MCP、CLI、扩展 | — |
+| [12 · 桌面与生态](./12-desktop-ecosystem.md) | JCEF 桌面、MCP、CLI、扩展 | — |
 
 ---
 

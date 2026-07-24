@@ -2,22 +2,23 @@
 
 ## 12.1 Windows / macOS / Linux 桌面
 
-### Windows
+### Windows / macOS / Linux
 
 ```bash
 cd datawise-frontend
 npm run dist:desktop
-# 产物在 release/
+# 产物：datawise-desktop/dist/{windows|macos|linux}/
+#       datawise-frontend/release/DataWiseCLI-*-{os}-{arch}.zip
 ```
 
-桌面壳基于 Electron，内嵌后端配置端口（默认 desktop `18423`），无需单独开 Vite。
+桌面壳基于 **JCEF**（[`datawise-desktop/`](../../datawise-desktop/)），内嵌后端端口默认 `18423`，无需单独开 Vite。
 
-### macOS / Linux
+平台说明：
 
-- macOS：Apple Silicon 等产物与说明见 [DESKTOP_MAC.md](../DESKTOP_MAC.md)
-- Linux：AppImage 等见 [DESKTOP_LINUX.md](../DESKTOP_LINUX.md)
+- macOS：[DESKTOP_MAC.md](../DESKTOP_MAC.md)
+- Linux：[DESKTOP_LINUX.md](../DESKTOP_LINUX.md)
 
-签名 / 公证 / CI 自动发版为 backlog；当前以研发可用产物为准。
+签名 / 公证为 backlog；当前以研发可用 zip / app-image 为准。
 
 ### 桌面特有能力
 

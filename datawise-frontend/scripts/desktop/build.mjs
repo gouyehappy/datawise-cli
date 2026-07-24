@@ -1,5 +1,6 @@
 /**
- * Build DataWise desktop executable (Windows / macOS / Linux).
+ * Build DataWise desktop via legacy Electron (electron-builder).
+ * Prefer `npm run dist:desktop` (JCEF) for releases.
  *
  * Usage:
  *   node scripts/desktop/build.mjs [--clean] [--skip-backend] [--dir] [--publish]
@@ -7,10 +8,10 @@
  *     [--win] [--mac] [--linux] [--arm64] [--x64] [--ide-target]
  *
  * npm scripts:
- *   dist:desktop           host platform (Windows → NSIS/portable; macOS → DMG/zip arm64)
- *   dist:desktop:mac       macOS Apple Silicon DMG + zip (must run on macOS)
- *   dist:desktop:linux     Linux AppImage (must run on Linux)
- *   pack:desktop           unpacked dir for quick testing
+ *   dist:electron           host platform Electron package
+ *   dist:electron:mac       macOS Apple Silicon DMG + zip
+ *   dist:electron:linux     Linux AppImage
+ *   pack:electron           unpacked dir for quick testing
  */
 import {existsSync, readFileSync} from 'node:fs'
 import {join} from 'node:path'

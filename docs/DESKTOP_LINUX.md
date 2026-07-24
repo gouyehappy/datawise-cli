@@ -1,64 +1,49 @@
-# Desktop packaging — Linux (G6)
+# Desktop packaging — Linux (JCEF)
 
-DataWise desktop runs the bundled Spring Boot backend via `jre/bin/java` on Linux, same as macOS. Packaging was Windows-first; macOS Apple Silicon is documented in [DESKTOP_MAC.md](./DESKTOP_MAC.md). This doc covers the **Linux AppImage** path.
+Default desktop host is **JCEF** (`datawise-desktop`). Build on a Linux machine; output is a zip (plus optional `jpackage` native launcher).
 
 ## Prerequisites
 
-- Linux **x64** (glibc; AppImage target)
-- JDK **17+** (`JAVA_HOME` must point at that JDK)
+- Linux **x64** or **arm64**
+- JDK **17+** (`JAVA_HOME`)
 - Maven 3.9+
 - Node 20+ / npm
-- FUSE / AppImage runtime deps on the smoke-test machine (`libfuse2` on many distros)
-
-Code signing is **not** required for internal unsigned AppImages.
+- `zip` on PATH
 
 ## Commands
 
 ```bash
 cd datawise-frontend
 npm install
-npm run dist:desktop:linux    # AppImage
-# or
-npm run pack:desktop          # unpacked dir for smoke test (host platform)
+npm run dist:desktop        # or dist:desktop:linux
+npm run pack:desktop        # unpacked dir only
 ```
 
-Host default on Linux:
-
-```bash
-npm run dist:desktop          # same as --linux when on a Linux host
-```
-
-Cross-packaging from Windows/macOS is blocked by default. Override only for experiments:
-
-```bash
-DATAWISE_ALLOW_CROSS_PACKAGING=1 npm run dist:desktop:linux
-```
+Must run **on Linux**. Cross-packaging from Windows/macOS is not supported (natives are OS-activated in Maven).
 
 ## Output
 
 | Artifact | Path pattern |
 |----------|----------------|
-| AppImage | `release/DataWiseCLI-*-linux-*.AppImage` (exact name follows electron-builder) |
-| Unpacked | `release/linux-unpacked/` (or similar) |
+| Layout | `datawise-desktop/dist/linux/` |
+| Zip | `datawise-frontend/release/DataWiseCLI-*-linux-{x64\|arm64}.zip` |
 
-Config dir: `~/.config/DataWise CLI/config` (Electron `userData` on Linux).
+Config dir: `~/.config/DataWiseCLI/` (override with `DATAWISE_USER_DATA`).
+
+Run: `./DataWiseCLI.sh` or `./DataWiseCLI` when jpackage produced a native binary.
 
 ## Architecture checklist
 
-1. Electron Linux x64 binary (electron-builder `--linux`)
-2. Bundled JRE for the host arch (copied from `JAVA_HOME`)
+1. JCEF host + `jcef-natives-linux-*`
+2. Bundled JRE for the host arch when using `core`/`full` profile
 3. Backend JAR is platform-neutral; native connector drivers must ship Linux `.so` where needed
-4. AppImage must be marked executable (`chmod +x`) before first run
 
-## Still open
+## Legacy Electron
 
-- Official signing / update channel for AppImage
-- arm64 Linux desktop target
-- CI `ubuntu-latest` workflow publishing release assets
-- Distro packages (`.deb` / `.rpm`) beyond AppImage
+`npm run dist:electron:linux` still builds an AppImage via electron-builder. Prefer JCEF for new releases.
 
 ## Related
 
 - macOS: [DESKTOP_MAC.md](./DESKTOP_MAC.md)
-- Scripts: `datawise-frontend/scripts/desktop/build.mjs`, `platform.mjs`, `bundle-backend.mjs`
-- Runtime: `electron/backend-service.ts` (`jre/bin/java` on non-Windows)
+- Host module: [`datawise-desktop/`](../datawise-desktop/)
+- Backend bundle: `datawise-frontend/scripts/desktop/bundle-backend.mjs`

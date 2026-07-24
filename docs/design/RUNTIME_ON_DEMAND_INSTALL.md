@@ -98,7 +98,7 @@ Server 运行时：`datawise-connector-all` 仅 `test` scope；生产靠 `config
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  瘦安装包 (Electron + server.jar + runtime-catalog.json)     │
+│  瘦安装包 (JCEF host + server.jar + runtime-catalog.json)     │
 │  JRE 可选: jlink 精简 / 无内嵌 (slim)                         │
 └──────────────────────────┬──────────────────────────────────┘
                            │
@@ -474,7 +474,7 @@ jlink \
 
 ### 6.1 Profile 定义
 
-| Profile | Electron + server.jar | JRE | Connectors | catalog | 预估体积 |
+| Profile | JCEF host + server.jar | JRE | Connectors | catalog | 预估体积 |
 |---------|----------------------|-----|------------|---------|---------|
 | `slim` | ✓ | 无 | 0 | ✓ | ~180 MB |
 | `core`（**推荐默认**） | ✓ | jlink | 4（core tier） | ✓ | ~220 MB |

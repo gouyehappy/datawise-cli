@@ -1,5 +1,7 @@
 <!--
-  根组件：Web 版显示内嵌启动页；桌面版使用独立小窗启动页。
+  根组件：启动完成前显示 AppSplash。
+  JCEF：内嵌 AppSplash，无宿主 splash IPC / 收尾动画。
+  Electron：仍走宿主 splash 协议（reportProgress / notifyReady）。
 -->
 <script setup lang="ts">
 import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
@@ -16,16 +18,17 @@ import {
 import {readDesktopBridge} from '@/features/layout/services/desktop-bridge'
 import {currentLocale} from '@/i18n'
 import {isDesktopApp} from '@/features/layout/services/desktop-chrome'
-import ports from '../../runtime-ports.json'
 
-const DEV_BACKEND_ENDPOINT = `127.0.0.1:${ports.dev.backend}`
-const PACKAGED_BACKEND_ENDPOINT = `127.0.0.1:${ports.desktop.backend}`
 const SPLASH_PROGRESS_STEP_MS = 850
 const SPLASH_BAR_TRANSITION_MS = 720
 const SPLASH_WAIT_BAR_TIMEOUT_MS = 2_500
 const SPLASH_FORCE_READY_MS = 30_000
 
-/** 从当前已显示进度平滑补到 100%，绝不回退 */
+/** Electron has host splash; JCEF exposes cefQuery and uses in-renderer AppSplash only. */
+function hasHostSplashProtocol(): boolean {
+    return isDesktopApp() && typeof (window as Window & {cefQuery?: unknown}).cefQuery !== 'function'
+}
+
 function buildSplashFinishSteps(from: number): number[] {
     const start = Math.max(0, Math.min(99, Math.round(from)))
     const gap = 100 - start
@@ -54,6 +57,7 @@ function waitNextPaint(): Promise<void> {
 const {t, locale} = useI18n()
 const bootReady = ref(false)
 const desktopApp = computed(() => isDesktopApp())
+const hostSplash = computed(() => hasHostSplashProtocol())
 
 watch(
     [currentLocale, locale],
@@ -66,8 +70,7 @@ watch(
 function resolveDesktopSplashStatus(): string {
     const phase = desktopStartupProgress.phase as BackendStartupPhase
     const bridge = readDesktopBridge()
-    const isPackaged = bridge?.splash?.getMeta?.()?.isPackaged ?? false
-    const endpoint = isPackaged ? PACKAGED_BACKEND_ENDPOINT : DEV_BACKEND_ENDPOINT
+    const isPackaged = bridge?.isPackaged ?? bridge?.splash?.getMeta?.()?.isPackaged ?? false
 
     switch (phase) {
         case 'config':
@@ -75,11 +78,11 @@ function resolveDesktopSplashStatus(): string {
         case 'spawning':
             return isPackaged
                 ? t('app.splashBackend.startupSpawning')
-                : t('app.splashBackend.startupSpawningDev', {endpoint})
+                : t('app.splashBackend.startupSpawningDev')
         case 'warming':
             return isPackaged
-                ? t('app.splashBackend.startupWarming', {endpoint})
-                : t('app.splashBackend.startupWarmingDev', {endpoint})
+                ? t('app.splashBackend.startupWarming')
+                : t('app.splashBackend.startupWarmingDev')
         case 'session':
             return t('app.splashBackend.startupSession')
         case 'sync':
@@ -114,6 +117,7 @@ let splashForceReadyTimer: ReturnType<typeof setTimeout> | null = null
 let lastSplashProgressSent = 0
 
 function startDesktopSplashReporter() {
+    if (!hostSplash.value) return
     reportDesktopSplashProgress()
     splashProgressTimer = setInterval(reportDesktopSplashProgress, 120)
 }
@@ -126,10 +130,12 @@ function stopDesktopSplashReporter() {
 }
 
 function notifyDesktopSplashReady() {
+    if (!hostSplash.value) return
     readDesktopBridge()?.splash?.notifyReady?.()
 }
 
 async function animateSplashProgressToComplete() {
+    if (!hostSplash.value) return
     const bridge = readDesktopBridge()
     if (!bridge?.splash?.reportProgress) return
 
@@ -170,10 +176,12 @@ async function completeDesktopStartup() {
     desktopStartupPromise = (async () => {
         stopDesktopSplashReporter()
 
-        try {
-            await animateSplashProgressToComplete()
-        } catch (error) {
-            console.warn('[datawise] splash completion animation failed', error)
+        if (hostSplash.value) {
+            try {
+                await animateSplashProgressToComplete()
+            } catch (error) {
+                console.warn('[datawise] splash completion animation failed', error)
+            }
         }
 
         bootReady.value = true
@@ -192,7 +200,7 @@ async function completeDesktopStartup() {
 }
 
 function scheduleSplashForceReady() {
-    if (splashForceReadyTimer) return
+    if (!hostSplash.value || splashForceReadyTimer) return
     splashForceReadyTimer = window.setTimeout(() => {
         if (!bootReady.value) {
             bootReady.value = true
@@ -243,7 +251,8 @@ onUnmounted(() => {
     <DesktopTitleBar v-if="bootReady || !desktopApp"/>
     <div class="app-body">
       <template v-if="desktopApp">
-        <AppShell v-if="bootReady" key="shell"/>
+        <AppSplash v-if="!bootReady" key="splash"/>
+        <AppShell v-else key="shell"/>
       </template>
       <template v-else>
         <Transition name="app-boot" mode="out-in">

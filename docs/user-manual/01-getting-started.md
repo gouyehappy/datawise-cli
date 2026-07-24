@@ -61,7 +61,7 @@ npm install && npm run dev
 | 环境 | 后端 | 前端 |
 |------|------|------|
 | 开发 | `18421` | `28413` |
-| 桌面 | `18423` | Electron 内嵌 |
+| 桌面 | `18423` | JCEF 内嵌 |
 
 ## 1.4 首次进入（照着做）
 
@@ -83,11 +83,12 @@ npm install && npm run dev
 - 企业环境可启用 **OIDC SSO**（Authorization Code + PKCE），由管理员在集成设置中配置。
 - 访客模式部分写操作（如测试连接）不可用，请登录后再操作。
 
-## 1.6 桌面版快速打包（Windows）
+## 1.6 桌面版快速打包
 
 ```bash
 cd datawise-frontend
-npm run dist:desktop    # 需要 JAVA_HOME + Maven，产物在 release/
+npm run dist:desktop    # 需要 JAVA_HOME + Maven；在目标 OS 上执行
+# → datawise-frontend/release/DataWiseCLI-*-{windows|linux|macos}-*.zip
 ```
 
 macOS / Linux 说明见 [DESKTOP_MAC.md](../DESKTOP_MAC.md)、[DESKTOP_LINUX.md](../DESKTOP_LINUX.md)。

@@ -1,5 +1,5 @@
 /**
- * 停止本地 dev 前后端：Electron/Vite + Spring Boot（18421）。
+ * 停止本地 dev 前后端：JCEF/Vite + Spring Boot（18421）。
  * Usage: node scripts/dev-stop.mjs
  *        npm run stop:dev   (from datawise-frontend)
  */

@@ -8,13 +8,17 @@ import WorkspaceActionDialogs from '@/features/layout/components/WorkspaceAction
 import {useDesktopTitleBar} from '@/features/layout/composables/useDesktopTitleBar'
 
 const {t} = useI18n()
-const {visible, maximized, isMac, minimize, toggleMaximize, close} = useDesktopTitleBar()
+const {visible, maximized, isMac, minimize, toggleMaximize, close, beginFramelessWindowDrag} = useDesktopTitleBar()
 </script>
 
 <template>
   <header v-if="visible" class="desktop-titlebar" :class="{'desktop-titlebar--mac': isMac}">
     <div class="desktop-titlebar__lead">
-      <div class="desktop-titlebar__icon" @dblclick.stop="toggleMaximize">
+      <div
+          class="desktop-titlebar__icon"
+          @pointerdown="beginFramelessWindowDrag"
+          @dblclick.stop="toggleMaximize"
+      >
         <AppBrandLogo size="titlebar"/>
       </div>
       <TitleBarAppMenu/>

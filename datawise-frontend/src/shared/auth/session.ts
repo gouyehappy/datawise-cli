@@ -1,3 +1,8 @@
+import {
+    clearDesktopSessionKeys,
+    persistDesktopUiKeys,
+} from '@/features/layout/services/desktop-ui-store'
+
 export const SESSION_KEY = 'dw-cli-session-id'
 export const USERNAME_KEY = 'dw-cli-username'
 export const USER_ID_KEY = 'dw-cli-user-id'
@@ -52,6 +57,15 @@ export function persistSession(
     } else {
         localStorage.removeItem(EXPIRES_AT_KEY)
     }
+    persistDesktopUiKeys({
+        sessionId,
+        userName,
+        guest: isGuest ? '1' : '0',
+        expiresAt: expiresAtEpochMs != null && Number.isFinite(expiresAtEpochMs)
+            ? String(expiresAtEpochMs)
+            : null,
+        userId: userId != null && Number.isFinite(userId) ? String(userId) : null,
+    })
 }
 
 export function clearSession(): void {
@@ -60,4 +74,5 @@ export function clearSession(): void {
     localStorage.removeItem(USER_ID_KEY)
     localStorage.removeItem(GUEST_KEY)
     localStorage.removeItem(EXPIRES_AT_KEY)
+    clearDesktopSessionKeys()
 }

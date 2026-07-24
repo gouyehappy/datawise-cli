@@ -41,7 +41,7 @@
 
 | 层次 | 包 / 目录 | 职责 |
 |------|-----------|------|
-| 客户端 | [`datawise-frontend`](./datawise-frontend/) | Explorer、工作区 Tab、AI 对话、设置、Electron 壳 |
+| 客户端 | [`datawise-frontend`](./datawise-frontend/) | Explorer、工作区 Tab、AI 对话、设置、JCEF 桌面宿主（[`datawise-desktop/`](./datawise-desktop/)） |
 | API | [`datawise-backend`](./datawise-backend/) | 连接、SQL 执行、AI、平台任务、团队共享 |
 | 编辑器 | [`sql-editor`](./sql-editor/) | 可嵌入的 `@datawise/sql-editor`（语法补全、提示条） |
 | 智能体 | [`datawise-mcp`](./datawise-mcp/) | 面向 Cursor / Claude Desktop 的 MCP 工具 |
@@ -85,7 +85,7 @@
 | 方式 | 适用场景 |
 |------|----------|
 | **Web** | 本地后端 + Vite（`npm run dev`） |
-| **桌面** | Electron 一体化包（`npm run dist:desktop`，Win / Mac / Linux） |
+| **桌面** | JCEF 一体化包（`npm run dist:desktop`，Win / Mac / Linux） |
 | **IDE 智能体** | [`datawise-mcp`](./datawise-mcp/) |
 | **VS Code** | [`datawise-vscode`](./datawise-vscode/) Deep Link 打开桌面版 |
 | **CI / 无头** | [`headless-cli`](./headless-cli/) |
@@ -120,7 +120,8 @@ npm run capture:demos --prefix datawise-frontend
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  datawise-frontend (Vue 3 · Pinia · Vite · Electron)      │
+│  datawise-frontend (Vue 3 · Pinia · Vite)                 │
+│  + datawise-desktop (JCEF 宿主)                            │
 │  Explorer · 工作区 · AI · 设置 · 仪表盘                    │
 └────────────────────────────┬─────────────────────────────┘
                              │ REST / SSE
@@ -173,10 +174,15 @@ cp config/users.json.example config/users.json
 
 ```bash
 cd datawise-frontend
-npm run dist:desktop        # 当前系统（Windows 默认 NSIS / 便携）
-npm run dist:desktop:mac    # Apple Silicon，须在 macOS 上执行
-npm run dist:desktop:linux  # AppImage
-# 产物 → release/
+npm run dist:desktop        # 当前系统 JCEF zip（Win / Mac / Linux）
+npm run dist:desktop:mac    # 别名 — 须在 macOS 上执行
+npm run dist:desktop:linux  # 别名 — 须在 Linux 上执行
+# 产物 → datawise-desktop/dist/{windows|macos|linux}/
+#      → datawise-frontend/release/DataWiseCLI-*-{os}-{arch}.zip
+# Windows 安装包（需 WiX 3.x）：
+#      → release/DataWiseCLI-*-windows-x64-setup.exe
+#   winget install --id WiXToolset.WiXToolset -e
+# 旧 Electron：npm run dist:electron*
 ```
 
 **Query Library CI**（校验无需启动服务）：
@@ -194,7 +200,8 @@ node dist/main.js query-library validate -m ../examples/query-library/query-libr
 
 | 目录 | 说明 |
 |------|------|
-| [datawise-frontend/](./datawise-frontend/) | Vue 3 客户端与 Electron 打包 |
+| [datawise-frontend/](./datawise-frontend/) | Vue 3 客户端 |
+| [datawise-desktop/](./datawise-desktop/) | JCEF 桌面宿主与打包 |
 | [datawise-backend/](./datawise-backend/) | Spring Boot API（多模块） |
 | [sql-editor/](./sql-editor/) | 可嵌入 SQL 编辑器（MIT） |
 | [datawise-mcp/](./datawise-mcp/) | IDE 智能体 MCP 服务 |

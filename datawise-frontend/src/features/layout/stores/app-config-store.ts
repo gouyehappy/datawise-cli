@@ -87,6 +87,7 @@ import {syncUpdatePreferencesFromServer} from '@/features/settings/services/abou
 import {useUpdateSettingsStore} from '@/features/settings/stores/update-settings'
 import {setupElectronWindowSync} from '@/features/layout/composables/useElectronWindowSync'
 import {toWindowStatePayload} from '@/features/layout/services/electron-window-state.service'
+import {isDesktopApp} from '@/features/layout/services/desktop-chrome'
 
 export const useAppConfigStore = defineStore('app-config', () => {
     migrateLegacyStorageKeysOnce()
@@ -546,7 +547,11 @@ export const useAppConfigStore = defineStore('app-config', () => {
             applyEditor: (settings) => editor.patchSettings(sanitizeEditorSettings(settings)),
             applyWindow: (windowPrefs) => {
                 config.value.window = windowPrefs
-                void globalThis.window.datawise?.window?.setState?.(toWindowStatePayload(windowPrefs))
+                // Desktop host already restored window-state.json; pushing config defaults
+                // here causes visible resize flicker on every boot.
+                if (!isDesktopApp()) {
+                    void globalThis.window.datawise?.window?.setState?.(toWindowStatePayload(windowPrefs))
+                }
             },
             applyLayout: (layoutPrefs) => applyLayoutEffects(layoutPrefs),
             applyExplorer: (explorerPrefs) => {

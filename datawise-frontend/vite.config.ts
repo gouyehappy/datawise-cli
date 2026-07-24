@@ -15,6 +15,7 @@ import {electronBuildPlugin} from './vite/electron-build-plugin'
 import ports from './runtime-ports.json' with {type: 'json'}
 
 const enableElectron = process.env.ELECTRON === 'true'
+const enableDesktopPackaging = process.env.DATAWISE_DESKTOP === 'true'
 const backendOrigin = `http://127.0.0.1:${ports.dev.backend}`
 const projectRoot = dirname(fileURLToPath(import.meta.url))
 
@@ -60,7 +61,7 @@ export default defineConfig(async () => {
     }
 
     return {
-        base: enableElectron ? './' : '/',
+        base: enableElectron || enableDesktopPackaging ? './' : '/',
         plugins,
         build: enableElectron
             ? {

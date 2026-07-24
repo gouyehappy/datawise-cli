@@ -1,5 +1,5 @@
 /**
- * 本地开发：后台启动 Spring Boot（18421），前台启动 Electron + Vite。
+ * 本地开发：后台启动 Spring Boot（18421），前台启动 JCEF 桌面 + Vite。
  * Usage: node scripts/dev-start.mjs
  *        npm run dev:all   (from datawise-frontend)
  */
@@ -100,6 +100,45 @@ function startBackend() {
     return child.pid
 }
 
+async function waitForFrontend(timeoutMs = 60_000) {
+    const url = `http://127.0.0.1:${ports.dev.frontend}/`
+    const started = Date.now()
+    while (Date.now() - started < timeoutMs) {
+        try {
+            const res = await fetch(url, {signal: AbortSignal.timeout(2_000)})
+            if (res.ok) return true
+        } catch {
+            // retry
+        }
+        await new Promise((r) => setTimeout(r, 400))
+    }
+    return false
+}
+
+function startViteDevServer() {
+    log('dev-start', 'starting Vite (npm run dev)…')
+    const child = spawn('npm', ['run', 'dev'], {
+        cwd: frontendRoot,
+        detached: true,
+        stdio: 'ignore',
+        shell: process.platform === 'win32',
+        env: process.env,
+    })
+    child.unref()
+    return child.pid
+}
+
+async function isFrontendReady() {
+    try {
+        const res = await fetch(`http://127.0.0.1:${ports.dev.frontend}/`, {
+            signal: AbortSignal.timeout(1_500),
+        })
+        return res.ok
+    } catch {
+        return false
+    }
+}
+
 async function main() {
     if (await isBackendReady()) {
         log('dev-start', `backend already listening on :${ports.dev.backend}`)
@@ -121,8 +160,21 @@ async function main() {
         log('dev-start', 'backend ready')
     }
 
-    log('dev-start', 'starting frontend (npm run dev:electron)...')
-    const frontend = spawn('npm', ['run', 'dev:electron'], {
+    if (!(await isFrontendReady())) {
+        startViteDevServer()
+        log('dev-start', `waiting for Vite on :${ports.dev.frontend}…`)
+        const viteReady = await waitForFrontend()
+        if (!viteReady) {
+            console.error(`[dev-start] Vite did not become ready within 60s`)
+            process.exit(1)
+        }
+        log('dev-start', 'Vite ready')
+    } else {
+        log('dev-start', `Vite already listening on :${ports.dev.frontend}`)
+    }
+
+    log('dev-start', 'starting desktop host (npm run dev:jcef)…')
+    const frontend = spawn('npm', ['run', 'dev:jcef'], {
         cwd: frontendRoot,
         stdio: 'inherit',
         shell: process.platform === 'win32',

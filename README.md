@@ -41,7 +41,7 @@
 
 | Layer | Package | Role |
 |-------|---------|------|
-| Client | [`datawise-frontend`](./datawise-frontend/) | Explorer, workspace tabs, AI chat, settings, Electron shell |
+| Client | [`datawise-frontend`](./datawise-frontend/) | Explorer, workspace tabs, AI chat, settings, JCEF desktop host ([`datawise-desktop/`](./datawise-desktop/)) |
 | API | [`datawise-backend`](./datawise-backend/) | Connections, SQL execution, AI, platform jobs, team sharing |
 | Editor | [`sql-editor`](./sql-editor/) | Embeddable `@datawise/sql-editor` (grammar completion, hint bar) |
 | Agents | [`datawise-mcp`](./datawise-mcp/) | MCP tools for Cursor / Claude Desktop |
@@ -85,7 +85,7 @@
 | Mode | When to use |
 |------|-------------|
 | **Web** | Local backend + Vite (`npm run dev`) |
-| **Desktop** | All-in-one Electron (`npm run dist:desktop` — Win / Mac / Linux) |
+| **Desktop** | All-in-one JCEF (`npm run dist:desktop` — Win / Mac / Linux) |
 | **IDE agent** | [`datawise-mcp`](./datawise-mcp/) |
 | **VS Code** | [`datawise-vscode`](./datawise-vscode/) deep links into desktop |
 | **CI / headless** | [`headless-cli`](./headless-cli/) |
@@ -120,7 +120,8 @@ Chinese user manual: [docs/user-manual/](./docs/user-manual/) · Shot list: [MAN
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  datawise-frontend (Vue 3 · Pinia · Vite · Electron)      │
+│  datawise-frontend (Vue 3 · Pinia · Vite)                 │
+│  + datawise-desktop (JCEF host)                           │
 │  Explorer · Workspace · AI · Settings · Dashboard         │
 └────────────────────────────┬─────────────────────────────┘
                              │ REST / SSE
@@ -173,12 +174,16 @@ Put connector JARs in `config/plugins/` and JDBC drivers in `config/drivers/`. D
 
 ```bash
 cd datawise-frontend
-npm run dist:desktop        # host OS (Windows NSIS/portable by default)
-npm run dist:desktop:mac    # Apple Silicon — must run on macOS
-npm run dist:desktop:linux  # AppImage
-# output → release/
+npm run dist:desktop        # host OS JCEF zip (Win / Mac / Linux)
+npm run dist:desktop:mac    # alias — must run on macOS
+npm run dist:desktop:linux  # alias — must run on Linux
+# output → datawise-desktop/dist/{windows|macos|linux}/
+#       → datawise-frontend/release/DataWiseCLI-*-{os}-{arch}.zip
+# Windows Setup.exe (needs WiX 3.x):
+#       → release/DataWiseCLI-*-windows-x64-setup.exe
+#   winget install --id WiXToolset.WiXToolset -e
+# legacy Electron: npm run dist:electron*
 ```
-
 **Query Library CI** (no server for validate):
 
 ```bash
@@ -194,7 +199,8 @@ See [examples/query-library/README.md](./examples/query-library/README.md).
 
 | Path | Role |
 |------|------|
-| [datawise-frontend/](./datawise-frontend/) | Vue 3 UI & Electron packaging |
+| [datawise-frontend/](./datawise-frontend/) | Vue 3 UI |
+| [datawise-desktop/](./datawise-desktop/) | JCEF desktop host & packaging |
 | [datawise-backend/](./datawise-backend/) | Spring Boot API (multi-module) |
 | [sql-editor/](./sql-editor/) | Embeddable SQL editor (MIT) |
 | [datawise-mcp/](./datawise-mcp/) | MCP server for IDE agents |

@@ -1,6 +1,6 @@
 # DataWise 团队服务器部署手册
 
-面向多用户 / SaaS / 私有化服务器部署。桌面 Electron 打包见 [DESKTOP_MAC.md](./DESKTOP_MAC.md) / [DESKTOP_LINUX.md](./DESKTOP_LINUX.md)。
+面向多用户 / SaaS / 私有化服务器部署。桌面 JCEF 打包见 [DESKTOP_MAC.md](./DESKTOP_MAC.md) / [DESKTOP_LINUX.md](./DESKTOP_LINUX.md) 与 [`datawise-desktop/`](../datawise-desktop/)。
 
 ## 推荐配置对照
 

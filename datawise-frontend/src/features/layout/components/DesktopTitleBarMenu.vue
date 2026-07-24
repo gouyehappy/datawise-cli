@@ -12,6 +12,7 @@ import {
 import TitleBarMenuIcon from '@/features/layout/components/TitleBarMenuIcon.vue'
 import {DwIcon} from '@/core/icons'
 import {useTitleBarMenuDensity} from '@/features/layout/composables/useTitleBarMenuDensity'
+import {beginFramelessWindowDrag} from '@/features/layout/composables/useDesktopTitleBar'
 import {useOnboardingStore} from '@/features/onboarding/stores/onboarding-store'
 import {getActiveFeaturePermissions} from '@/features/auth/services/feature-permission.service'
 
@@ -186,7 +187,12 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="titlebar-menu__drag" aria-hidden="true" @dblclick="$emit('dblclick-drag')"/>
+    <div
+        class="titlebar-menu__drag"
+        aria-hidden="true"
+        @pointerdown="beginFramelessWindowDrag"
+        @dblclick="$emit('dblclick-drag')"
+    />
 
     <Teleport to="body">
       <Transition name="titlebar-dropdown">

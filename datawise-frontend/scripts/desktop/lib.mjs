@@ -59,6 +59,9 @@ export function stopDesktopProcesses() {
             "CommandLine like '%datawise-server%'",
             "CommandLine like '%resources\\\\desktop%'",
             "CommandLine like '%resources/desktop%'",
+            "CommandLine like '%DatawiseDesktopApp%'",
+            "CommandLine like '%datawise-desktop.jar%'",
+            "CommandLine like '%datawise-desktop%dist%windows%'",
         ]
         for (const filter of wmicFilters) {
             try {
@@ -76,9 +79,21 @@ export function stopDesktopProcesses() {
                 // wmic unavailable or no matches
             }
         }
+
+        // PowerShell fallback when wmic is missing (newer Windows)
+        try {
+            execSync(
+                `powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'DatawiseDesktopApp|datawise-desktop\\.jar|datawise-server' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`,
+                {stdio: 'ignore', windowsHide: true},
+            )
+        } catch {
+            // ignore
+        }
     } else {
         killTask('pkill -f "datawise-server"')
         killTask('pkill -f "DataWise CLI"')
+        killTask('pkill -f "DatawiseDesktopApp"')
+        killTask('pkill -f "datawise-desktop.jar"')
     }
     log('stop-desktop', 'stale desktop/backend processes stopped (if any)')
 }

@@ -1,12 +1,14 @@
 # Desktop packaging scripts
 
-把内嵌后端与 JRE 打进 Electron 可执行包。脚本目录：`datawise-frontend/scripts/desktop/`。
+Backend / JRE bundling for the **JCEF** desktop host lives under `datawise-frontend/scripts/desktop/`. The host itself is packaged by [`datawise-desktop/scripts/build-desktop.mjs`](../../../datawise-desktop/scripts/build-desktop.mjs).
 
-| 主机 | 默认产物 |
-|------|----------|
-| Windows | NSIS 安装包 + 便携版 |
-| macOS (Apple Silicon) | DMG + zip（`arm64`）— [DESKTOP_MAC.md](../../../docs/DESKTOP_MAC.md) |
-| Linux | AppImage — [DESKTOP_LINUX.md](../../../docs/DESKTOP_LINUX.md) |
+| Host OS | Default artifact |
+|---------|------------------|
+| Windows | Zip + `DataWiseCLI.exe` (jpackage) — [datawise-desktop/README.md](../../../datawise-desktop/README.md) |
+| macOS | Zip + optional `.app` — [DESKTOP_MAC.md](../../../docs/DESKTOP_MAC.md) |
+| Linux | Zip + optional native launcher — [DESKTOP_LINUX.md](../../../docs/DESKTOP_LINUX.md) |
+
+Legacy Electron packaging still uses `scripts/desktop/build.mjs` via `npm run dist:electron*`.
 
 ---
 
@@ -32,103 +34,28 @@ desktop mvn  →  datawise-backend/**/target-desktop/  →  resources/desktop/  
 
 | 命令 | 说明 |
 |------|------|
-| `npm run dist:desktop` | 当前系统全量构建（默认 **`core`** 配置档） |
-| `npm run dist:desktop:slim` | 瘦包：无 JRE、无连接器 JAR（仅目录） |
+| `npm run dist:desktop` | **JCEF** 当前系统全量构建（默认 **`core`** 配置档） |
+| `npm run dist:desktop:slim` | 瘦包：无 JRE、无连接器 JAR |
 | `npm run dist:desktop:full` | 全连接器 + 完整 JRE |
-| `npm run dist:desktop:mac` | macOS Apple Silicon（**须在 Mac 上跑**） |
-| `npm run dist:desktop:linux` | Linux AppImage |
-| `npm run dist:desktop:clean` | 先清理再全量重建 |
+| `npm run dist:desktop:mac` | macOS 别名（**须在 Mac 上跑**） |
+| `npm run dist:desktop:linux` | Linux 别名（**须在 Linux 上跑**） |
 | `npm run pack:desktop` | 仅 unpacked 目录，便于试跑 |
 | `npm run prepare:desktop` | 只组装后端 → `resources/desktop/` |
 | `npm run build:backend` | 仅 Maven → `target-desktop/` |
-| `npm run clean:desktop` | 清前端打包产物 + 全部 `target-desktop/`（保留 IDE `target/`） |
+| `npm run clean:desktop` | 清前端打包产物 + 全部 `target-desktop/` |
 | `npm run stop:desktop` | 结束正在运行的 DataWise / 内嵌后端 |
+| `npm run dist:electron*` | **Legacy** Electron（electron-builder） |
 
-产物：`release/`（若目录被锁则为 `release-<timestamp>/`）。
+产物：`datawise-frontend/release/DataWiseCLI-*-{windows\|linux\|macos}-*.zip`。
 
 ---
 
-## 配置档（profile）
+## Profiles
 
-| Profile | JRE | 包内连接器 | Maven `-pl` |
+| Profile | JRE | Connectors | Typical use |
 |---------|-----|------------|-------------|
-| `slim` | 无 | 无（runtime-catalog） | 仅 server |
-| `core`（默认） | jlink（失败则整包） | mysql · postgresql · sqlite · h2 | server + 4 |
-| `full` | 完整拷贝 | 全部 `CONNECTOR_MODULES` | server + all |
+| `slim` | no | no | smallest; download runtime later |
+| `core` (default) | yes | curated set | recommended release |
+| `full` | yes | all in-tree | offline / air-gapped |
 
-设计说明：[RUNTIME_ON_DEMAND_INSTALL.md](../../../docs/design/RUNTIME_ON_DEMAND_INSTALL.md)
-
----
-
-## 发布自动更新
-
-客户端从以下地址解析更新：
-
-`https://github.com/gouyehappy/datawise-cli/releases/latest/download/latest.yml`
-
-仅打 Git tag **不够**。需要发布非 draft 的 GitHub Release，并附带 electron-builder 产物（`latest.yml`、NSIS/便携包等）：
-
-```bash
-# 需要 GH_TOKEN / 具备 release 权限的 GitHub 鉴权
-npx electron-builder --win --publish always
-```
-
-包内使用 **generic** feed URL（而非 GitHubProvider JSON），以避免 GitHub 对 `Accept: application/json` 偶发 HTTP 406。
-
----
-
-## Maven 策略
-
-桌面打包**始终跳过测试**（`-Dmaven.test.skip=true` / `-DskipTests`）。
-
-流水线（[`maven.mjs`](./maven.mjs)）：
-
-1. 清空所有 `datawise-backend/**/target-desktop`（不动 IDE `target/`）
-2. 停止残留桌面/后端进程（在 purge 内执行一次）
-3. `mvn install -pl datawise-server,<connectors> -am`，`target-desktop`，关闭增量编译，`-T 1`
-4. 校验 Spring Boot JAR 与 sqlflow `Statement.class`
-
-默认**不**结束 Java LS。仍遇文件锁时可：`DATAWISE_KILL_JAVA_LS=1`。
-
----
-
-## 清理语义
-
-| 命令 | 清理范围 |
-|------|----------|
-| `npm run clean:desktop` | `dist/` · `dist-electron/` · `release*` · `resources/desktop/` · `**/target-desktop` |
-| `node scripts/desktop/clean.mjs --all --ide-target` | 以上 **加上** IDE `**/target` |
-| `node scripts/desktop/build.mjs --clean --ide-target` | 同 clean `--all --ide-target`，再全量构建 |
-
----
-
-## 脚本布局
-
-```
-scripts/desktop/
-  paths.mjs                   — 路径与模块列表
-  lib.mjs                     — 杀进程、删除、JAR 校验
-  maven.mjs                   — purge → install → validate
-  bundle-backend.mjs          — 组装 resources/desktop + AppCDS
-  generate-runtime-catalog.mjs
-  jlink-jre.mjs               — core 档瘦 JRE
-  clean.mjs / build.mjs / platform.mjs
-```
-
----
-
-## 进阶参数
-
-```powershell
-node scripts/desktop/build.mjs --profile core
-node scripts/desktop/build.mjs --profile slim
-node scripts/desktop/build.mjs --profile full
-node scripts/desktop/build.mjs --mac --arm64
-node scripts/desktop/build.mjs --linux
-node scripts/desktop/bundle-backend.mjs --skip-maven
-node scripts/desktop/clean.mjs --all
-node scripts/desktop/clean.mjs --all --ide-target
-npm run stop:desktop
-npm run build:backend
-$env:DATAWISE_KILL_JAVA_LS=1; npm run build:backend
-```
+See also [RUNTIME_ON_DEMAND_INSTALL.md](../../../docs/design/RUNTIME_ON_DEMAND_INSTALL.md).

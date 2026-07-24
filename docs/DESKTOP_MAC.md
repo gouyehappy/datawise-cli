@@ -1,64 +1,51 @@
-# Desktop packaging — macOS (G6)
+# Desktop packaging — macOS (JCEF)
 
-DataWise desktop already runs the bundled Spring Boot backend via `jre/bin/java` on Darwin. Packaging was Windows-first; this doc covers the **Apple Silicon** path.
+Default desktop host is **JCEF** (`datawise-desktop`). Build on a Mac; output is a zip (plus optional `DataWiseCLI.app` via `jpackage`).
 
 ## Prerequisites (on a Mac)
 
-- macOS on **Apple Silicon** (arm64)
-- JDK **17+ arm64** (`JAVA_HOME` must point at that JDK — Temurin / Zulu / Oracle)
+- macOS on **Apple Silicon** (arm64) or Intel (x64)
+- JDK **17+** matching the host arch (`JAVA_HOME`)
 - Maven 3.9+
 - Node 20+ / npm
-- Xcode CLT (for native deps such as `node-pty` if rebuilt)
+- `zip` on PATH
 
-Code signing / notarization are **not** required for internal unsigned builds (`CSC_IDENTITY_AUTO_DISCOVERY=false`). Gatekeeper will warn until you sign + notarize.
+Code signing / notarization are **not** required for internal unsigned builds. Gatekeeper will warn until you sign + notarize.
 
 ## Commands
 
 ```bash
 cd datawise-frontend
 npm install
-npm run dist:desktop:mac    # DMG + zip, arm64
-# or
-npm run pack:desktop        # unpacked .app for smoke test (host platform)
+npm run dist:desktop        # or dist:desktop:mac
+npm run pack:desktop        # unpacked dir only
 ```
 
-Host default on Darwin:
-
-```bash
-npm run dist:desktop        # same as --mac --arm64 when on Apple Silicon
-```
-
-Cross-packaging from Windows/Linux is blocked by default. Override only for experiments:
-
-```bash
-DATAWISE_ALLOW_CROSS_PACKAGING=1 npm run dist:desktop:mac
-```
+Must run **on macOS**. Cross-packaging from Windows/Linux is not supported.
 
 ## Output
 
 | Artifact | Path pattern |
 |----------|----------------|
-| DMG | `release/DataWiseCLI-*-mac-arm64.dmg` |
-| ZIP | `release/DataWiseCLI-*-mac-arm64.zip` |
-| Unpacked | `release/mac-arm64/` (or similar) |
+| Layout | `datawise-desktop/dist/macos/` |
+| Zip | `datawise-frontend/release/DataWiseCLI-*-macos-{arm64\|x64}.zip` |
 
-Config dir: `~/Library/Application Support/DataWise CLI/config` (Electron `userData`).
+Config dir: `~/Library/Application Support/DataWiseCLI/` (override with `DATAWISE_USER_DATA`).
+
+Run: `./DataWiseCLI.sh` or open `DataWiseCLI.app`.
 
 ## Architecture checklist
 
-1. Electron arm64 binary (electron-builder `--arm64`)
-2. Bundled JRE arm64 (copied from `JAVA_HOME`)
-3. Backend JAR is platform-neutral; native connector drivers must ship macOS `.dylib` / `.jnilib` where needed
+1. JCEF host + `jcef-natives-macosx-*`
+2. Bundled JRE matching host arch when using `core`/`full` profile
+3. Backend JAR is platform-neutral; native connector drivers must ship macOS `.dylib` where needed
 
-## Still open
+## Legacy Electron
 
-- Linux AppImage polish — see [DESKTOP_LINUX.md](./DESKTOP_LINUX.md) (`npm run dist:desktop:linux`)
-- Apple Developer ID signing + notarization
-- Intel (x64) Mac dual-arch universal build
-- CI `macos-14` workflow publishing release assets
+`npm run dist:electron:mac` still builds DMG/zip via electron-builder. Prefer JCEF for new releases.
 
 ## Related
 
 - Linux: [DESKTOP_LINUX.md](./DESKTOP_LINUX.md)
-- Scripts: `scripts/desktop/build.mjs`, `platform.mjs`, `bundle-backend.mjs`
-- Runtime: `electron/backend-service.ts` (`jre/bin/java` on non-Windows)
+- Host module: [`datawise-desktop/`](../datawise-desktop/)
+- Backend bundle: `datawise-frontend/scripts/desktop/bundle-backend.mjs`

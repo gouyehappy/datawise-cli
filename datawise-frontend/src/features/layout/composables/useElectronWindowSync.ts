@@ -13,12 +13,16 @@ export function setupElectronWindowSync(options: {
 
     void (async () => {
         try {
+            // Host window-state.json is authoritative on desktop — never overwrite it
+            // with app-config defaults on boot (that caused visible size jumps).
+            const current = await api.getState()
+            if (current?.width && current?.height) {
+                options.applyInitial(normalizeWindow(current))
+                return
+            }
             const saved = options.getWindow()
             if (saved?.width && saved?.height) {
                 await api.setState(toWindowStatePayload(saved))
-            } else {
-                const current = await api.getState()
-                if (current) options.applyInitial(normalizeWindow(current))
             }
         } catch (error) {
             console.warn('[desktop] window state sync skipped', error)
@@ -29,3 +33,4 @@ export function setupElectronWindowSync(options: {
         options.onWindowChange(state)
     })
 }
+
